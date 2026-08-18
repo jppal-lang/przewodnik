@@ -8,6 +8,59 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+.landing-section{padding:48px 0 0}
+.landing-section .caps{margin-bottom:16px}
+
+.usp-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px}
+.usp{
+  background:var(--parchment);border-radius:20px;padding:24px;
+  box-shadow:var(--sh2);display:flex;gap:18px;align-items:flex-start;
+}
+.usp-icon{
+  width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
+  font-size:24px;font-weight:800;flex-shrink:0;
+}
+.usp-icon.terra{background:rgba(180,80,46,.1);color:var(--terra)}
+.usp-icon.olive{background:var(--olive-bg);color:var(--olive)}
+.usp-icon.sea{background:var(--sea-bg);color:var(--sea)}
+.usp-title{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+.usp-text{font-size:17px;color:var(--ink2);line-height:1.5}
+
+.how-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px;counter-reset:step}
+.how-step{
+  background:var(--parchment);border-radius:16px;padding:20px 20px 20px 64px;
+  box-shadow:var(--sh1);position:relative;counter-increment:step;
+}
+.how-step::before{
+  content:counter(step);position:absolute;left:20px;top:20px;
+  width:32px;height:32px;border-radius:999px;background:var(--terra);color:var(--parchment);
+  display:grid;place-items:center;font-size:16px;font-weight:800;
+}
+.how-step strong{font-weight:700}
+.how-step p{font-size:17px;color:var(--ink2);margin-top:4px;line-height:1.5}
+
+.cta-box{
+  background:var(--parchment);border-radius:20px;padding:32px;margin-top:48px;
+  box-shadow:var(--sh2);text-align:center;
+}
+.cta-box h2{font-size:28px;font-weight:800;letter-spacing:-.015em}
+.cta-box p{font-size:18px;color:var(--ink2);margin:12px 0 20px;line-height:1.5}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--terra);color:var(--parchment);
+  font-size:18px;font-weight:700;padding:16px 32px;border-radius:999px;
+  text-decoration:none;transition:background .15s;
+}
+.cta-btn:hover{background:var(--terra-h)}
+
+.footer{margin-top:56px;padding:24px 0;border-top:1px solid var(--line);text-align:center;font-size:15px;color:var(--label)}
+
+@media (min-width:680px){
+  .usp-grid{grid-template-columns:repeat(3,1fr)}
+  .how-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
 </head>
 <body>
 <div class="wrap-wide">
@@ -25,27 +78,79 @@
 </header>
 
 <div class="landing-hero">
-  <h1>Rodzinne wypady autem, rozpisane co do godziny</h1>
-  <p class="subtitle">Gotowe plany zwiedzania miast Europy: parking, trasa, ciekawostki dla dzieci i godzina powrotu do bazy.</p>
+  <h1>Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
+  <p class="subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy. Każde miasto: trasa z parkingu, przystanki z godzinami, misje i zagadki dla dzieci, kolacja na koniec. Drukujesz albo otwierasz na telefonie — i ruszasz.</p>
 </div>
 
 <div class="hero-photo">
   <div class="hero-badge">7 miast · Marche & Umbria</div>
 </div>
 
-<div class="regions">
+<!-- USP -->
+<div class="landing-section">
+  <p class="caps">Dlaczego Questini</p>
+  <div class="usp-grid">
+    <div class="usp">
+      <div class="usp-icon terra">🎯</div>
+      <div>
+        <div class="usp-title">Dzieci grają, nie marudzą</div>
+        <div class="usp-text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie staje się grą terenową, a nie obowiązkiem.</div>
+      </div>
+    </div>
+    <div class="usp">
+      <div class="usp-icon olive">☀️</div>
+      <div>
+        <div class="usp-title">Godziny pod klimat</div>
+        <div class="usp-text">W ciepłych krajach trasa omija największe słońce — zwiedzanie zaczyna się pod wieczór, kończy kolacją przy zachodzie. Zero bitew z upałem.</div>
+      </div>
+    </div>
+    <div class="usp">
+      <div class="usp-icon sea">🅿️</div>
+      <div>
+        <div class="usp-title">Zaczynasz od parkingu</div>
+        <div class="usp-text">Każde miasto: najpierw gdzie zostawić auto (z ceną i linkiem nawigacyjnym), potem dopiero zabytki. Koniec z krążeniem po strefach ZTL.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="landing-section">
+  <p class="caps">Jak to działa</p>
+  <div class="how-grid">
+    <div class="how-step">
+      <strong>Wybierz region i miasto</strong>
+      <p>Lista miast posortowana od najbliższego twojej bazy. Jedno kliknięcie i masz cały dzień zaplanowany.</p>
+    </div>
+    <div class="how-step">
+      <strong>Jedź — nawigacja z telefonu</strong>
+      <p>Przycisk „Prowadź" ustawia trasę do parkingu prosto z twojej lokalizacji. Bez wpisywania adresów.</p>
+    </div>
+    <div class="how-step">
+      <strong>Zwiedzaj przystanek po przystanku</strong>
+      <p>Godziny, ceny biletów, opisy, ciekawostki dla dorosłych i osobne misje dla dzieci. Wszystko w jednym widoku.</p>
+    </div>
+    <div class="how-step">
+      <strong>Zakończ kolacją</strong>
+      <p>Ostatni przystanek to zawsze restauracja z linkiem do WhatsAppa — rezerwujesz stolik, zanim usiądziesz w auto.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Regions -->
+<div class="landing-section">
   <p class="caps">Wybierz region</p>
 
   <a class="region-card" href="marche-umbria.html">
     <div>
       <p class="caps">Włochy</p>
       <p class="region-name">Marche & Umbria</p>
-      <p class="region-sub">7 miast · plany na 7 dni</p>
+      <p class="region-sub">7 miast · gotowe plany na 7 dni</p>
     </div>
     <div class="region-arrow">→</div>
   </a>
 
-  <div class="region-soon">
+  <div class="region-soon" style="margin-top:12px">
     <div>
       <p class="caps">Włochy</p>
       <p class="region-name">Toskania</p>
@@ -53,7 +158,7 @@
     <span class="chip-soon">Wkrótce</span>
   </div>
 
-  <div class="region-soon">
+  <div class="region-soon" style="margin-top:12px">
     <div>
       <p class="caps">Polska</p>
       <p class="region-name">Kraków i okolice</p>
@@ -62,19 +167,18 @@
   </div>
 </div>
 
-<div class="values">
-  <div class="val-tile">
-    <div class="val-num c-terra">01</div>
-    <div class="val-label">zawsze parking na start</div>
+<!-- CTA -->
+<div class="cta-box">
+  <h2>Pierwszy region jest za darmo</h2>
+  <p>Marche & Umbria — 7 miast, 46 przystanków, misje dla dzieci, zadania foto i album wspólnych zdjęć. Otwórz i jedź.</p>
+  <a class="cta-btn" href="marche-umbria.html">Otwórz przewodnik →</a>
+</div>
+
+<div class="footer">
+  <div class="logo" style="justify-content:center;margin-bottom:8px">
+    <span class="logo-name">questini</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
   </div>
-  <div class="val-tile">
-    <div class="val-num c-olive">7</div>
-    <div class="val-label">przystanków z godzinami</div>
-  </div>
-  <div class="val-tile">
-    <div class="val-num c-sea">23:59</div>
-    <div class="val-label">gwarantowany powrót</div>
-  </div>
+  © 2026 · Rodzinne przewodniki wypadowe
 </div>
 
 </div>
