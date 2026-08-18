@@ -408,22 +408,22 @@ Ten sam design system (Figtree, ta sama paleta), ale w widoku dziecka:
 
 ## 11. BUY ME A COFFEE
 
+**Wdrożone.** Realny widget (konto `questini`), wstawiony przed `</body>`
+na wszystkich 10 stronach (landing, oba indeksy regionów, wszystkie karty
+miast):
+
 ```html
-<script data-name="BMC-Widget" data-cfasync="false"
-  src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
-  data-id="questini"
-  data-description="Wspieraj rodzinne przewodniki po Europie"
-  data-message="Questini jest za darmo. Jeśli pomogło — postaw nam kawę!"
-  data-color="#B4502E"
-  data-position="Right"
-  data-x_margin="18" data-y_margin="18">
-</script>
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+  data-name="bmc-button" data-slug="questini" data-color="#FFDD00" data-emoji=""
+  data-font="Poppins" data-text="Postaw mi kawę" data-outline-color="#000000"
+  data-font-color="#000000" data-coffee-color="#ffffff"></script>
 ```
 
-Miejsca integracji:
-- Floating widget na każdej stronie
-- CTA na landingu (przed footerem)
-- CTA po sekcji oceny w widoku rodzica
+To floating button (BMC sam pozycjonuje go w rogu ekranu) — nie trzeba
+osobnego CTA na landingu ani po sekcji oceny, jeden widget wystarcza na
+każdej podstronie. Jeśli w przyszłości dojdzie kontekstowe CTA (np. po
+ukończeniu wszystkich misji w widoku dziecka), niech woła to samo konto
+`questini`, nie osobny link.
 
 ---
 
@@ -513,8 +513,14 @@ Zdjęcie full-bleed → ← wstecz + lang switcher → H1 + lead + chipy
 
 Nagłówek (widoczny BEZ rozwinięcia):
 1. `{num} · {time}` terra → nazwa 21px/600 → ▼
-2. Chipy: rok budowy (neutral) + cena (olive)
-3. Akcje: Nawiguj (terra) / Napisz (outline) / WWW (outline)
+2. Chipy: rok budowy (neutral) + cena (olive). **Rok zawsze z jednostką** —
+   „1345 r.", „526–547 r.", „75 r. p.n.e." — nigdy goła liczba (wygląda jak
+   przypadkowa wartość, nie data). Zapisy z już istniejącą jednostką zostają
+   bez zmian: „XIII w.", „115 n.e.", „27 p.n.e.".
+3. Akcje: Nawiguj/Prowadź (terra) / Napisz (outline) / WWW (outline) —
+   `.stop-actions` wyrównane do prawej (`justify-content:flex-end`), każdy
+   przycisk ~1/3 szerokości kolumny (`flex:0 1 calc(33.333% - 6px)`),
+   jednakowy rozmiar niezależnie od liczby przycisków (1–3)
 
 Wnętrze:
 - Zdjęcie Wikimedia (`data-wiki`)
@@ -570,14 +576,29 @@ zamknięcie (chłodno, cicho, podświetlone łuki).
 Przed dodaniem nowego miejsca **sprawdź liczbę słów w `stop-desc`** — jeśli
 suma akapitów w przystanku wychodzi poniżej ~60 słów, dopisz.
 
+### Menu sekcji (kotwice)
+Zaraz pod hero, przed `.stops` — pasek `.city-menu` (poziomo scrollowalny,
+jak `.filters`/`.region-tabs`) z linkami-kotwicami do czterech sekcji
+stopki: Punkty awaryjne (`#punkty-awaryjne`) / Rozmówki (`#rozmowki`) /
+Telefony (`#telefony`) / QR dla dziecka (`#qr-dziecka`). Ukryty w trybie
+dziecka (`body.kid-mode .city-menu{display:none}`), bo te sekcje i tak
+znikają w widoku dziecka. Każda docelowa `.foot-section` musi mieć
+odpowiednie `id` — sprawdź przy dodawaniu nowego miasta.
+
 ### Stopka miasta
 - Plan dnia (tabela godzinowa)
-- Punkty awaryjne — każdy wiersz (`.info-row`) ma tekst PLUS przycisk
-  „Nawiguj" (`.info-nav`) do Google Maps, tak jak `.tel-row` ma klikalny numer
-- Rozmówki (język użytkownika ↔ język lokalny)
-- Telefony (klikalne)
+- Warto wiedzieć (opcjonalnie — swobodny akapit kontekstu o mieście)
+- Punkty awaryjne (`id="punkty-awaryjne"`) — każdy wiersz (`.info-row`) ma
+  tekst PLUS przycisk „Nawiguj" (`.info-nav`) do Google Maps, tak jak
+  `.tel-row` ma klikalny numer. Apteka / Toalety / Plac zabaw / Szpital —
+  4 rzeczy, ale lepiej 3 prawdziwe niż 4 z jedną zmyśloną (patrz sekcja 17)
+- Rozmówki (`id="rozmowki"`) — generyczny rozmówki PL↔IT, te same 4 pary w
+  każdym mieście (nie trzeba tłumaczyć/researchować osobno per miasto)
+- Telefony (`id="telefony"`, klikalne) — zawsze 112 (numer alarmowy UE),
+  dalej tylko numery, które da się zweryfikować (nie zgaduj)
+- QR dla dziecka (`id="qr-dziecka"`)
 - Oceń wycieczkę
-- BMC CTA
+- BMC CTA (floating widget, patrz sekcja 11 — nie trzeba nic dodawać w stopce)
 
 ---
 
@@ -610,13 +631,22 @@ suma akapitów w przystanku wychodzi poniżej ~60 słów, dopisz.
 ### Zależności JS
 Zasada „zero dependencies" (sekcja 17) dotyczy frameworków (React, Vue,
 jQuery i podobne) i zewnętrznych CDN-ów w runtime — nie zabrania w ogóle
-żadnego kodu. Jedyny obecny wyjątek: `qrcode.js` (biblioteka
-`qrcode-generator`, Kazuhiko Arase, licencja MIT) — zvendorowana jako
-zwykły plik w repo, bez menedżera pakietów i bez fetchowania z CDN w
-runtime, żeby kod QR działał offline i bez zapytań do zewnętrznych API
-(zero trackerów zostaje zachowane). Jeśli dochodzi kolejna taka potrzeba:
-vendoruj tak samo — jeden plik, bez build stepu, z komentarzem o źródle
-i licencji na górze.
+żadnego kodu. Dwa udokumentowane wyjątki:
+
+1. `qrcode.js` (biblioteka `qrcode-generator`, Kazuhiko Arase, licencja
+   MIT) — zvendorowana jako zwykły plik w repo, bez menedżera pakietów i
+   bez fetchowania z CDN w runtime, żeby kod QR działał offline i bez
+   zapytań do zewnętrznych API (zero trackerów zostaje zachowane).
+2. Widget Buy Me a Coffee (`cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js`,
+   sekcja 11) — TO jest zewnętrzny CDN w runtime, świadomy wyjątek, bo
+   funkcjonalnie nie da się go zvendorować (to serwis płatności, nie
+   biblioteka). Ładowany na każdej stronie — jedyny request do zewnętrznej
+   domeny na całej witrynie poza fontami Google.
+
+Jeśli dochodzi kolejna taka potrzeba: dla bibliotek vendoruj jak `qrcode.js`
+(jeden plik, bez build stepu, komentarz o źródle/licencji na górze); dla
+zewnętrznych usług (płatności, itp.) — dodaj do tej listy z uzasadnieniem,
+dlaczego nie da się zvendorować.
 
 ---
 

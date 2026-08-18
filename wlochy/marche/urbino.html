@@ -39,6 +39,13 @@
   </div>
 </div>
 
+<nav class="city-menu" aria-label="Skróty do sekcji">
+  <a href="#punkty-awaryjne">Punkty awaryjne</a>
+  <a href="#rozmowki">Rozmówki</a>
+  <a href="#telefony">Telefony</a>
+  <a href="#qr-dziecka">QR dla dziecka</a>
+</nav>
+
 <div class="stops" id="stops">
 
   <div class="stop open" data-id="01">
@@ -61,7 +68,7 @@
   <div class="stop" data-id="02" data-wiki="Palazzo Ducale (Urbino)">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 9:30</span><span class="stop-name">Palazzo Ducale i Galleria Nazionale delle Marche</span><span class="stop-chev">▼</span></div>
-      <div class="stop-chips"><span class="chip-sm chip-neutral">od 1454</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">od 1454 r.</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
       <div class="stop-actions">
         <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Palazzo+Ducale+Urbino" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
       </div>
@@ -95,7 +102,7 @@
   <div class="stop" data-id="04" data-wiki="Oratorio di San Giovanni Battista (Urbino)">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 12:15</span><span class="stop-name">Oratorio di San Giovanni</span><span class="stop-chev">▼</span></div>
-      <div class="stop-chips"><span class="chip-sm chip-neutral">freski 1416</span><span class="chip-sm chip-olive">bilet kilka €</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">freski 1416 r.</span><span class="chip-sm chip-olive">bilet kilka €</span></div>
       <div class="stop-actions">
         <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Oratorio+di+San+Giovanni+Battista+Urbino" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
       </div>
@@ -157,7 +164,44 @@
   <p class="note" style="margin-top:0">Urbino jest 35 minut od bazy — najłatwiejszy logistycznie dzień całego wyjazdu i naturalny kandydat na „plan B" przy niepewnej pogodzie: pałac i oratoria są pod dachem. Miasto jest strome; wygodne buty ważniejsze niż gdziekolwiek indziej.</p>
 </div>
 
-<div class="foot-section">
+<div class="foot-section" id="punkty-awaryjne">
+  <p class="caps">Punkty awaryjne</p>
+  <div class="info-row">
+    <div class="info-row-text"><strong>Apteka</strong> Farmacia Comunale, Viale Comandino 39</div>
+    <a class="info-nav" href="https://maps.google.com/?q=Farmacia+Comunale,+Viale+Comandino+39,+Urbino" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+  </div>
+  <div class="info-row">
+    <div class="info-row-text"><strong>Toalety</strong> Bagni pubblici przy Borgo Mercatale, tuż koło parkingu</div>
+    <a class="info-nav" href="https://maps.google.com/?q=Bagni+pubblici,+Borgo+Mercatale,+Urbino" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+  </div>
+  <div class="info-row">
+    <div class="info-row-text"><strong>Plac zabaw</strong> Parco della Resistenza przy Fortezza Albornoz — przystanek 06 na trasie</div>
+    <a class="info-nav" href="https://maps.google.com/?q=Parco+della+Resistenza,+Fortezza+Albornoz,+Urbino" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+  </div>
+  <div class="info-row">
+    <div class="info-row-text"><strong>Szpital</strong> Ospedale Santa Maria della Misericordia, Viale Comandino 70</div>
+    <a class="info-nav" href="https://maps.google.com/?q=Ospedale+Santa+Maria+della+Misericordia,+Viale+Comandino+70,+Urbino" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+  </div>
+</div>
+
+<div class="foot-section" id="rozmowki">
+  <p class="caps">Rozmówki</p>
+  <div class="phrase-card">
+    <div class="phrase-pair"><div class="phrase-pl">Dzień dobry / do widzenia</div><div class="phrase-it">Buongiorno / arrivederci</div></div>
+    <div class="phrase-pair"><div class="phrase-pl">Gdzie jest toaleta?</div><div class="phrase-it">Dov'è il bagno?</div></div>
+    <div class="phrase-pair"><div class="phrase-pl">Dwa gelato poproszę</div><div class="phrase-it">Due gelati, per favore</div></div>
+    <div class="phrase-pair"><div class="phrase-pl">Rachunek poproszę</div><div class="phrase-it">Il conto, per favore</div></div>
+  </div>
+</div>
+
+<div class="foot-section" id="telefony">
+  <p class="caps">Telefony</p>
+  <div class="tel-row"><span>Numer alarmowy (UE)</span><a href="tel:112">112</a></div>
+  <div class="tel-row"><span>Farmacia Comunale</span><a href="tel:+3907222251">+39 0722 2251</a></div>
+  <div class="tel-row"><span>Ospedale Santa Maria della Misericordia</span><a href="tel:+390722301111">+39 0722 301111</a></div>
+</div>
+
+<div class="foot-section" id="qr-dziecka">
   <p class="caps">QR dla dziecka</p>
   <div class="qr-share">
     <div class="qr-share-code"></div>
@@ -187,5 +231,6 @@ document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListe
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>
 <script src="../../qr-share.js"></script>
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="questini" data-color="#FFDD00" data-emoji="" data-font="Poppins" data-text="Postaw mi kawę" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff"></script>
 </body>
 </html>

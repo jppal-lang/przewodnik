@@ -210,18 +210,18 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .stop.open .stop-chev{transform:rotate(180deg)}
 .stop-chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip-sm{font-size:15px;font-weight:600;padding:5px 10px;border-radius:12px}
-.stop-actions{display:flex;gap:8px;flex-wrap:wrap}
+.stop-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .act{
-  display:inline-flex;align-items:center;gap:7px;min-height:44px;
-  border-radius:12px;padding:0 16px;font-size:16px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;
+  border-radius:12px;padding:0 12px;font-size:16px;font-weight:700;
   text-decoration:none;white-space:nowrap;transition:background .12s;
+  flex:0 1 calc(33.333% - 6px);min-width:96px;
 }
 .act svg{width:16px;height:16px;flex-shrink:0}
-.act-pri{background:var(--terra);color:var(--parchment);flex:1.4;justify-content:center}
+.act-pri{background:var(--terra);color:var(--parchment)}
 .act-pri:hover{background:var(--terra-h)}
-.act-sec{background:transparent;color:var(--terra-h);border:1.5px solid var(--btn2-border);flex:1;justify-content:center}
+.act-sec{background:transparent;color:var(--terra-h);border:1.5px solid var(--btn2-border)}
 .act-sec:hover{background:var(--btn2-hover)}
-.act-www{flex:.8;justify-content:center}
 .act:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
 .stop-body{display:none;border-top:1px solid var(--chip-bg);padding:4px 14px 18px}
 .stop.open .stop-body{display:block}
@@ -391,6 +391,22 @@ body.kid-mode .hero-chips{display:none}
 .kid-rank-avatar{width:56px;height:56px;border-radius:999px;background:var(--parchment);display:grid;place-items:center;font-size:24px;border:3px solid var(--olive)}
 .kid-rank-name{font-size:16px;font-weight:700}
 .kid-rank-score{font-size:18px;font-weight:800;color:var(--terra)}
+
+/* ===== Menu sekcji karty miasta (kotwice) ===== */
+.city-menu{
+  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+  padding:16px 0 4px;-webkit-overflow-scrolling:touch;
+}
+.city-menu::-webkit-scrollbar{display:none}
+.city-menu a{
+  flex-shrink:0;min-height:44px;padding:0 16px;border-radius:999px;
+  background:var(--parchment);border:1.5px solid var(--line);color:var(--ink2);
+  font-size:15px;font-weight:700;display:inline-flex;align-items:center;
+  text-decoration:none;transition:border-color .12s,color .12s;
+}
+.city-menu a:hover{border-color:var(--terra);color:var(--terra-h)}
+.city-menu a:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+body.kid-mode .city-menu{display:none}
 
 /* ===== QR dla dziecka (udostępnij widok dziecka) ===== */
 .qr-share{display:flex;gap:16px;align-items:center;background:var(--parchment);border-radius:16px;padding:16px;box-shadow:var(--sh1);border:1.5px solid var(--line);flex-wrap:wrap}
