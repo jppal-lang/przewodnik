@@ -151,6 +151,8 @@ questini.com/
 ├── styles.css                     # design system — jedno źródło prawdy
 ├── app.js                         # album zdjęć, Wikimedia, interakcje
 ├── kids-view.js                   # widok dziecka — czyta box-kids/box-foto z DOM widoku rodzica
+├── qr-share.js                    # generuje kod QR do ?view=kid w stopce karty miasta
+├── qrcode.js                      # vendorowany qrcode-generator (Kazuhiko Arase, MIT) — patrz "Zależności JS"
 ├── i18n.js                        # runtime tłumaczeń
 ├── supabase-client.js             # wrapper Supabase (faza 2)
 ├── lang/
@@ -220,16 +222,37 @@ wtedy przenieść do własnego katalogu `wlochy/emilia-romania/`.
 - Treści partnerskie (oznaczone chipem „Partner")
 
 ### Widok dziecka
-Przełącznik: toggle w nagłówku lub `?view=kid`.
-Stan: `localStorage('questini_view')`.
+Przełącznik: przycisk „👁 Widok dziecka" w nagłówku KAŻDEJ karty miasta, lub
+`?view=kid` w URL (linki generowane przez QR — patrz niżej). Implementacja:
+`kids-view.js`, czysty JS, zero zależności poza vendorowanym `qrcode.js`
+(patrz sekcja „Zależności JS" niżej).
+
+Stan zapisu:
+- `sessionStorage('questini_kidmode')` — czy widok dziecka jest włączony na
+  tej karcie w tej sesji (celowo NIE `localStorage` — rodzic wraca następnym
+  razem do widoku rodzica, nie zostaje w trybie dziecka)
+- `localStorage('questini_missions:{miasto}')` — `{taskId: true|personId}`,
+  ukończone misje per miasto
+- `localStorage('questini_family')` — roster domowników (imię + avatar) do rankingu
+- `localStorage('questini_active_player')` — kto obecnie „gra"
+
+Misje NIE mają osobnej bazy danych — `kids-view.js` czyta je bezpośrednio
+z `box-kids` i `box-foto` każdego `.stop` w widoku rodzica przy starcie
+strony. Dodanie/zmiana misji = edycja treści w `box-kids`/`box-foto`, nic więcej.
 
 Dziecko widzi:
-- Mapę przystanków (wizualną, nie listę tekstu)
-- Kartę misji: co znaleźć, policzyć, sfotografować
+- Kartę misji per przystanek: co znaleźć, policzyć, sfotografować
 - Odznaki / checkboxy — ukończone misje zaznaczają się
 - Ranking rodzinny — kto wykonał więcej misji
-- Galerię zdjęć — dowody wykonania misji
 - Progress bar: ile misji ukończono / ile jest
+
+### QR dla dziecka
+Sekcja w stopce każdej karty miasta („QR dla dziecka"): kod QR generowany
+w przeglądarce (bez zewnętrznego API — offline, zero trackerów) prowadzący
+do tej samej strony z `?view=kid`. Rodzic pokazuje ekran, dziecko skanuje
+swoim telefonem/tabletem i od razu ląduje w widoku dziecka. Widoczne tylko
+w widoku rodzica (`.foot-section` znika w `body.kid-mode`, więc dziecko nie
+zobaczy tam własnego kodu QR). Implementacja: `qr-share.js`.
 
 Dziecko NIE widzi:
 - Cen, godzin otwarcia, historii
@@ -495,15 +518,62 @@ Nagłówek (widoczny BEZ rozwinięcia):
 
 Wnętrze:
 - Zdjęcie Wikimedia (`data-wiki`)
-- Opis dorosły 2–3 akapity z datami
+- Opis dorosły 2–3 akapity z datami — patrz zasada niżej
 - Boks „Dla dzieci" (olive-bg)
 - Boks „Zadanie foto" (sea-bg)
 - Album zdjęć
 - Zgłoś uwagę (tylko rodzic)
 
+### Zasada: jak pisać `stop-desc` (opis dla rodzica)
+
+**Ma dawać rodzicowi tyle wiedzy, żeby sam, bez googlowania, mógł coś
+ciekawego opowiedzieć dziecku na miejscu.** Dwa krótkie zdania to za mało —
+to jest materiał dla `box-kids`, nie dla `stop-desc`. Trzy trafione,
+konkretne fakty w 2–3 akapitach.
+
+**Format:** dwa akapity `<p class="stop-desc">` (osobne `<p>`, nie jeden
+blok tekstu), 100–180 słów łącznie. Jeden akapit też wystarczy, jeśli
+miejsce jest naprawdę drobne (np. krótki przystanek widokowy) — ale
+wtedy nadal musi mieć konkretną treść, nie dwa ogólnikowe zdania.
+
+**Co musi się znaleźć (nie wszystko naraz, ale przynajmniej 2–3 z tych):**
+- konkretna data lub wiek („zbudowano w 1540 roku", nie „dawno temu")
+- nazwisko: architekt, fundator, artysta, władca — ktoś, kogo można wymienić z imienia
+- anegdota lub zwrot akcji — coś, co da się opowiedzieć jak mini-historię, nie tylko opisać
+- „dlaczego to ważne" — kontekst, który tłumaczy, czemu w ogóle warto stanąć i patrzeć
+- powiązanie z innym przystankiem trasy, jeśli istnieje (np. „ten sam akwedukt co przy fontannie z przystanku 03")
+
+**Czego unikać:**
+- ogólników bez treści („piękne, historyczne miejsce")
+- zdań, które właściwie są opisem dla dziecka przepisanym innymi słowami
+  (jeśli `stop-desc` i `box-kids` mówią to samo, `stop-desc` jest za płytki)
+- wymyślonych faktów, dat, cen, nazwisk — jeśli nie masz pewności, pisz
+  ostrożniej („podobno", „wg lokalnej tradycji") albo pomiń, nigdy nie zgaduj
+
+**Rejestr — trzy różne głosy w jednym przystanku:**
+| Element | Kto czyta | Długość | Ton |
+|---|---|---|---|
+| `stop-desc` | rodzic | 2–3 akapity, 100–180 słów | rzeczowy, konkretny, z datami i nazwiskami — jak dobry przewodnik turystyczny |
+| `box-kids` | dziecko (lub rodzic na głos) | 1 zdanie, czasem pytanie/zadanie | proste, zaczepne, angażujące („znajdźcie…", „policzcie…") |
+| `box-foto` | rodzic/dziecko przy aparacie | 1 zdanie | konkretna instrukcja kadru, nie opis miejsca |
+
+Przykład złego `stop-desc` (za płytki — to jest właściwie `box-kids`):
+„Papież zburzył dzielnicę i przykrył ją twierdzą. Dziś idzie się tam jak
+zamrożonym w czasie miastem."
+
+Przykład dobrego `stop-desc` (dwa akapity, patrz `wlochy/umbria/perugia.html`
+przystanek 02 „Rocca Paolina" dla pełnego wzorca): zawiera datę (1540),
+nazwisko architekta (Antonio da Sangallo Młodszy), przyczynę (wojna o sól),
+zwrot akcji (Perugianie rozbierają fortecę w 1860) i sensoryczny detal na
+zamknięcie (chłodno, cicho, podświetlone łuki).
+
+Przed dodaniem nowego miejsca **sprawdź liczbę słów w `stop-desc`** — jeśli
+suma akapitów w przystanku wychodzi poniżej ~60 słów, dopisz.
+
 ### Stopka miasta
 - Plan dnia (tabela godzinowa)
-- Punkty awaryjne
+- Punkty awaryjne — każdy wiersz (`.info-row`) ma tekst PLUS przycisk
+  „Nawiguj" (`.info-nav`) do Google Maps, tak jak `.tel-row` ma klikalny numer
 - Rozmówki (język użytkownika ↔ język lokalny)
 - Telefony (klikalne)
 - Oceń wycieczkę
@@ -515,10 +585,13 @@ Wnętrze:
 
 ### Dodawanie nowego miejsca
 1. Wybierz kraj/region (utwórz katalog jeśli nowy)
-2. Skopiuj wzorcowy plik miasta
+2. Skopiuj wzorcowy plik miasta (`wlochy/umbria/perugia.html`)
 3. Przystanek 01 = parking (Prowadź z lokalizacji użytkownika)
-4. Każdy zabytek: chip roku + `data-wiki` do zdjęcia
-5. Misje dla widoku dziecka
+4. Każdy zabytek: chip roku + `data-wiki` do zdjęcia + **`stop-desc` wg
+   zasady w sekcji 15** (2–3 akapity, konkretne fakty — nie dwa ogólnikowe
+   zdania; sprawdź liczbę słów przed commitem)
+5. Misje dla widoku dziecka (`box-kids` + `box-foto`) — dostaje je
+   automatycznie `kids-view.js`, nic dodatkowo nie trzeba spinać
 6. Dodaj do `places.html` i regionu `index.html`
 7. Klucze tłumaczeń w `lang/*.json`
 8. Commit + push → live w minutę
@@ -534,6 +607,17 @@ Wnętrze:
 2. Dodaj do nawigacji i `places.html`
 3. Dodaj na mapę SVG Europy (faza 2)
 
+### Zależności JS
+Zasada „zero dependencies" (sekcja 17) dotyczy frameworków (React, Vue,
+jQuery i podobne) i zewnętrznych CDN-ów w runtime — nie zabrania w ogóle
+żadnego kodu. Jedyny obecny wyjątek: `qrcode.js` (biblioteka
+`qrcode-generator`, Kazuhiko Arase, licencja MIT) — zvendorowana jako
+zwykły plik w repo, bez menedżera pakietów i bez fetchowania z CDN w
+runtime, żeby kod QR działał offline i bez zapytań do zewnętrznych API
+(zero trackerów zostaje zachowane). Jeśli dochodzi kolejna taka potrzeba:
+vendoruj tak samo — jeden plik, bez build stepu, z komentarzem o źródle
+i licencji na górze.
+
 ---
 
 ## 17. CZEGO NIGDY NIE ROBIĆ
@@ -543,7 +627,7 @@ Wnętrze:
 - Ukrywanie akcji wewnątrz akordeonu
 - Wymyślanie dat, cen, telefonów — brak źródła → „sprawdź na miejscu"
 - Treści partnerskie w widoku dziecka
-- Import frameworków JS/CSS (zero dependencies)
+- Import frameworków JS/CSS (zero dependencies — wyjątek: patrz „Zależności JS" w sekcji 16)
 - Łączenie regionów (Marche ≠ Umbria)
 - Pop-upy, auto-play, overlay reklamy
 - Tracking użytkowników (zero GA, zero pixeli, zero cookies śledzących)
