@@ -4,18 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rawenna — przewodnik</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="wrap">
 
-<div class="topbar">
-  <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M15 18l-6-6 6-6"/></svg> Wszystkie miasta</a>
-  <span class="bartitle">Rawenna</span>
-</div>
+<div class="hero-img"><div class="hero-over"><a href="index.html" class="btn-back" aria-label="Wróć">←</a><div class="lang-sw" role="radiogroup" aria-label="Język"><button class="active" aria-pressed="true">PL</button><button aria-pressed="false">EN</button><button aria-pressed="false">IT</button><button aria-pressed="false">DE</button></div></div></div>
 
 <div class="hero">
   <span class="era">Emilia-Romania · cały dzień · miasto płaskie!</span>
@@ -189,5 +187,6 @@
 
 <script src="app.js"></script>
 </div>
+<script>document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});</script>
 </body>
 </html>

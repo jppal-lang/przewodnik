@@ -3,238 +3,209 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Perugia po zmierzchu — przewodnik</title>
+<title>Perugia — przewodnik rodzinny</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap">
 
-<div class="topbar">
-  <a href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M15 18l-6-6 6-6"/></svg>
-    Wszystkie miasta
-  </a>
-  <span class="bartitle">Perugia</span>
+<div class="hero-img">
+  <div class="hero-over">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div class="lang-sw" role="radiogroup" aria-label="Język">
+      <button class="active" aria-pressed="true">PL</button>
+      <button aria-pressed="false">EN</button>
+      <button aria-pressed="false">IT</button>
+      <button aria-pressed="false">DE</button>
+    </div>
+  </div>
 </div>
 
-<div class="hero">
-  <span class="era">Umbria · wieczorny wypad</span>
-  <h2 class="pt">Perugia po zmierzchu</h2>
-  <span class="meta">100 km · 1h45 · parking Piazza Partigiani · powrót przed 24:00</span>
-  <p class="lead">Miasto, które zamiast burzyć przeszłość, zasypywało ją i budowało wyżej. Schody ruchome przewiozą was przez trzy tysiące lat w cztery minuty.</p>
+<div class="city-hero-body">
+  <h1>Perugia</h1>
+  <p class="subtitle">Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.</p>
+  <div class="hero-chips">
+    <span class="chip chip-neutral">100 km</span>
+    <span class="chip chip-neutral">1h45</span>
+    <span class="chip chip-sea">powrót do 23:59</span>
+  </div>
 </div>
 
-<div class="body">
-  <p>Perugia stoi na wzgórzu i broni się przed samochodami strefą ZTL pilnowaną kamerami — mandat przychodzi do Polski pocztą. Auto zostaje na dole, na parkingu Piazza Partigiani (czynny 24/7, doba ok. 8 €), a do centrum wjeżdża się schodami ruchomymi, które kursują do 2:00 w nocy. Jadą środkiem zasypanego miasta — o czym za chwilę.</p>
-  <p><strong>Uwaga sierpniowa:</strong> Minimetrò stoi do 23 sierpnia (coroczny przegląd), więc darmowy parking Pian di Massiano tym razem odpada.</p>
+<div class="stops" id="stops">
+
+  <div class="stop open" data-id="01">
+    <button class="stop-header" onclick="toggleStop('01')">
+      <div class="stop-row1"><span class="stop-num">01 · 16:15</span><span class="stop-name">Parking Piazza Partigiani</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">~8 €/doba</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=43.1054,12.3861&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a>
+        <a class="act act-sec" href="https://wa.me/390755721010" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/></svg><span>Napisz</span></a>
+        <a class="act act-sec act-www" href="https://www.sipaonline.it" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>WWW</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo" data-wiki="Perugia"></div>
+      <p class="stop-desc">Wielopoziomowy parking tuż pod murami starego miasta. Stąd na górę wjeżdżacie darmowymi ruchomymi schodami (scale mobili) prosto przez wnętrze twierdzy Rocca Paolina — zero wspinaczki z wózkiem.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Ruchome schody jadą przez prawdziwe podziemne miasto! Policzcie, ile odcinków schodów minie, zanim zobaczycie niebo.</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Rodzinne zdjęcie przy wejściu do scale mobili — to start trasy.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="02" data-wiki="Rocca Paolina">
+    <button class="stop-header" onclick="toggleStop('02')">
+      <div class="stop-row1"><span class="stop-num">02 · 16:30</span><span class="stop-name">Rocca Paolina</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1540</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://maps.google.com/?q=Rocca+Paolina,+Perugia" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-sec act-www" href="https://turismo.comune.perugia.it" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>WWW</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Papież Paweł III zburzył dzielnicę zbuntowanych Perugian i przykrył ją twierdzą — całe ulice, domy i studnie zostały pod sklepieniami. Dziś idzie się nimi jak zamrożonym w czasie miastem: chłodno, cicho, z podświetlonymi łukami. Latem to najprzyjemniejsze miejsce w Perugii.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>To miasto-duch pod miastem! Poszukajcie zamurowanych okien i drzwi domów, w których 500 lat temu mieszkali ludzie.</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Sylwetka rodzica z dzieckiem pod wielkim ceglanym łukiem — pod światło.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="03" data-wiki="Fontana Maggiore">
+    <button class="stop-header" onclick="toggleStop('03')">
+      <div class="stop-row1"><span class="stop-num">03 · 17:10</span><span class="stop-name">Fontana Maggiore</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1278</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://maps.google.com/?q=Fontana+Maggiore,+Perugia" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Średniowieczna fontanna z 50 rzeźbionymi płaskorzeźbami: miesiące roku, znaki zodiaku, wilczyca z Romulusem i Remusem. Woda płynęła tu akweduktem z gór — cud techniki XIII wieku i do dziś serce miasta.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Znajdźcie na fontannie: lwa, wilczycę i rolnika ścinającego zboże. Kto pierwszy?</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Cała fontanna z katedrą w tle — najlepiej z klęczki, nisko.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="04" data-wiki="Cattedrale di San Lorenzo (Perugia)">
+    <button class="stop-header" onclick="toggleStop('04')">
+      <div class="stop-row1"><span class="stop-num">04 · 17:30</span><span class="stop-name">Katedra San Lorenzo</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1345</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://maps.google.com/?q=Cattedrale+San+Lorenzo,+Perugia" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-sec act-www" href="https://www.cattedrale.perugia.it" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>WWW</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Nietypowa katedra: do placu zwrócona bokiem, z niedokończoną różową fasadą. W środku relikwia pierścienia Marii, a na schodach przed wejściem od wieków przesiaduje pół Perugii — usiądźcie i wy.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Ściana katedry ma tylko kawałek różowo-białej szachownicy. Budowniczym… skończyły się pieniądze 600 lat temu i tak zostało!</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Nogi całej rodziny na schodach katedry — buty w rządku.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="05" data-wiki="Palazzo dei Priori (Perugia)">
+    <button class="stop-header" onclick="toggleStop('05')">
+      <div class="stop-row1"><span class="stop-num">05 · 18:00</span><span class="stop-name">Palazzo dei Priori</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1293</span><span class="chip-sm chip-olive">8 € / dorosły</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://maps.google.com/?q=Palazzo+dei+Priori,+Perugia" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-sec" href="https://wa.me/390755721009" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/></svg><span>Napisz</span></a>
+        <a class="act act-sec act-www" href="https://gallerianazionaledellumbria.it" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>WWW</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Gotycki ratusz z Galleria Nazionale dell'Umbria — Perugino, Piero della Francesca i złote ołtarze. Zwiedzanie z dziećmi: 40 minut, sale 22–26 wystarczą. Wejście na schodach z brązowym gryfem.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Gryf to pół orzeł, pół lew — symbol Perugii. Policzcie, ile gryfów znajdziecie na całym budynku (jest ich ponad 10!).</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Dziecko naśladujące pozę gryfa przy wejściu.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="06">
+    <button class="stop-header" onclick="toggleStop('06')">
+      <div class="stop-row1"><span class="stop-num">06 · 18:50</span><span class="stop-name">Via dell'Acquedotto</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">XIII w.</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://maps.google.com/?q=Via+dell'Acquedotto,+Perugia" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Średniowieczny akwedukt zamieniony w wiszącą uliczkę dla pieszych — idziecie po łukach nad dachami dzielnicy. Najładniejsze światło właśnie teraz, pod wieczór. Trasa w dół i z powrotem: 25 minut.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Idziecie po moście, którym 700 lat temu płynęła woda do fontanny z przystanku 03. Cała trasa wody: góry → akwedukt → fontanna!</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Perspektywa uliczki-akweduktu z linią dachów po obu stronach.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="07">
+    <button class="stop-header" onclick="toggleStop('07')">
+      <div class="stop-row1"><span class="stop-num">07 · 19:30</span><span class="stop-name">Kolacja przy Corso Vannucci</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">~15 €/os.</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://maps.google.com/?q=Corso+Vannucci,+Perugia" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-sec" href="https://wa.me/390755736161" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/></svg><span>Napisz</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Pasta na Corso Vannucci albo pizza al taglio w bocznej uliczce. Na deser obowiązkowo Baci Perugina lub gelato — a potem spacer deptakiem na taras Giardini Carducci na zachód słońca nad doliną.</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Perugia to stolica czekolady. Bacio znaczy „całus" — w każdym czekoladowym całusie ukryta jest karteczka z sekretem.</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Zachód słońca z tarasu Giardini Carducci — sylwetki na tle doliny.</p></div>
+    </div>
+  </div>
+
 </div>
 
-<h3 class="sec">Przystanki</h3>
-
-<details class="stop">
-  <summary>
-    <span class="num">01</span><span class="hd"><span class="t">Parking: Piazza Partigiani</span><span class="qrow"><span class="pricechip">~8 €/doba</span><a class="qbtn" href="https://www.google.com/maps/dir/?api=1&destination=43.1054043,12.3861248&destination_place_id=ChIJvf9J6oigLhMR0t-NrbMbkH4&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="Nawiguj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>Jedyny sensowny wybór na ten tydzień: czynny 24/7, ponad 500 miejsc, a schody ruchome prowadzą z niego prosto przez podziemia Rocca Paoliny na szczyt — kursują do 2:00 w nocy. Minimetrò stoi do 23 sierpnia (przegląd), więc Pian di Massiano odpada.</p>
-    <p>Nawigację ustaw na parking, nie na Piazza IV Novembre — całe wzgórze to strefa ZTL z kamerami, mandat przyjdzie do Polski pocztą. Przy wyjeździe płaci się w kasie automatycznej przed podejściem do auta.</p>
-    <div class="kids"><h4>Dla dzieci</h4><ul>
-      <li>Zapamiętajcie poziom i sektor — wieczorem wyjście ze schodów wygląda inaczej niż wejście.</li>
-      <li>Policzcie odcinki schodów ruchomych w górę. Wieczorem sprawdzicie, czy w dół jest tyle samo.</li>
-    </ul></div>
-    <div class="foto"><h4>Zadanie foto</h4><p>Tabliczka z sektorem parkingu — zdjęcie, które o 22:00 będzie na wagę złota.</p></div>
-    <a class="nav" href="https://www.google.com/maps/dir/?api=1&destination=43.1054043,12.3861248&destination_place_id=ChIJvf9J6oigLhMR0t-NrbMbkH4&travelmode=driving" target="_blank" rel="noopener">Prowadź z mojej lokalizacji</a>
+<div class="foot-section">
+  <p class="caps">Plan dnia</p>
+  <div class="plan-card">
+    <div class="plan-row"><span class="plan-time">16:15</span><span>Parking Piazza Partigiani → scale mobili</span></div>
+    <div class="plan-row"><span class="plan-time">16:30</span><span>Rocca Paolina — podziemne miasto</span></div>
+    <div class="plan-row"><span class="plan-time">17:10</span><span>Fontana Maggiore i katedra</span></div>
+    <div class="plan-row"><span class="plan-time">18:00</span><span>Palazzo dei Priori (galeria, 40 min)</span></div>
+    <div class="plan-row"><span class="plan-time">18:50</span><span>Spacer akweduktem</span></div>
+    <div class="plan-row"><span class="plan-time">19:30</span><span>Kolacja + gelato, zachód słońca</span></div>
+    <div class="plan-row"><span class="plan-time">21:30</span><span>Powrót do auta, wyjazd</span></div>
+    <div class="plan-row"><span class="plan-time">23:15</span><span>Powrót do bazy</span></div>
   </div>
-</details>
-
-<details class="stop" data-wiki="Rocca Paolina" open>
-  <summary>
-    <span class="num">02</span><span class="hd"><span class="t">Rocca Paolina</span><span class="qrow"><span class="pricechip year">1540–1543</span><span class="pricechip">wstęp wolny</span><a class="qbtn" href="https://www.google.com/maps/search/?api=1&query=43.1086012,12.3879135&query_place_id=ChIJJ2DpRoagLhMRqZIe16iXwwM" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>W 1540 roku Perugia zbuntowała się przeciw papieskiemu podatkowi od soli. Wojna solna skończyła się kapitulacją, a kara była wymyślna: Paweł III kazał zburzyć górne piętra całej dzielnicy rodu Baglionich — ponad sto domów, wieże, kościoły — a resztę zasypać i postawić na tym twierdzę. Projektował Antonio da Sangallo Młodszy, ten od bazyliki św. Piotra.</p>
-    <p>Ród Baglionich zasłużył sobie na tę sławę: w 1500 roku, podczas wesela, jedna część rodziny wymordowała drugą we śnie — <em>Nozze Rosse</em>, Czerwone Wesele. Matka jednego z zabitych zamówiła potem u młodego Rafaela obraz, w którym uwieczniła twarz syna.</p>
-    <p>Nad bramą twierdzy wykuto napis <em>ad coercendam Perusinorum audaciam</em> — „aby poskromić zuchwałość perugińczyków". W 1860 roku, gdy tylko padło państwo papieskie, mieszkańcy rozebrali twierdzę gołymi rękami. Z radości. Zostały podziemia — średniowieczna Via Bagliona, która przez 400 lat nie widziała nieba.</p>
-    <div class="pricebox">Wstęp wolny · w środku stałe ok. 18°C · schodami ruchomymi prosto z parkingu</div>
-    <div class="kids">
-      <h4>Dla dzieci</h4>
-      <ul>
-        <li>Idziecie ulicą pochowaną pod ziemią — domy mają drzwi i okna, tylko zamiast nieba jest sufit, a na nim plac z ludźmi.</li>
-        <li>Poszukajcie zamurowanych okien. Kto przez nie wyglądał 500 lat temu? Wymyślcie mieszkańców.</li>
-        <li>To chyba jedyny zamek świata rozebrany przez mieszkańców z czystej radości.</li>
-      </ul>
-    </div>
-    <div class="foto">
-      <h4>Zadanie foto</h4>
-      <p>Zdjęcie zamurowanego okna albo portalu domu, który stoi pod ziemią. Wyzwanie: złapać w kadrze i dom, i sklepienie zamiast nieba.</p>
-    </div>
-    <a class="nav" href="https://www.google.com/maps/search/?api=1&query=43.1086012,12.3879135&query_place_id=ChIJJ2DpRoagLhMRqZIe16iXwwM" target="_blank" rel="noopener">Nawiguj</a>
-  </div>
-</details>
-
-<details class="stop" data-wiki="Pozzo etrusco (Perugia)">
-  <summary>
-    <span class="num">03</span><span class="hd"><span class="t">Pozzo Etrusco</span><span class="qrow"><span class="pricechip year">III w. p.n.e.</span><span class="pricechip">ok. 4 €</span><a class="qbtn" href="https://www.google.com/maps/search/?api=1&query=43.1125506,12.3898838&query_place_id=ChIJ5eiH2oCgLhMRqesU2pTtoWw" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>Studnia wykuta w litej skale przez Etrusków w III wieku p.n.e. — około 37 metrów głębokości, głęboka jak dziesięciopiętrowy blok. Poiła miasto przez stulecia i mieściła zapas wody na oblężenia. Schodzi się metalową kładką nad samo lustro wody.</p>
-    <p>Najbardziej zdumiewa nakrycie: potężne belki z trawertynu trzymają się bez grama zaprawy, samą geometrią i ciężarem — od 2300 lat, mimo trzęsień ziemi, które kładły kościoły.</p>
-    <div class="pricebox">Bilet ok. 4 € · ostatnie wejście przed 18:00 · wejście przy Piazza Danti, za katedrą</div>
-    <div class="kids">
-      <h4>Dla dzieci</h4>
-      <ul>
-        <li>Etruskowie nie znali cementu — belki nad głową trzymają się tylko dlatego, że ktoś genialnie policzył, jak je ułożyć.</li>
-        <li>Stańcie na dole kładki i spójrzcie w górę: tak wyglądał świat z perspektywy wiadra.</li>
-        <li>Kuli ją ludzie z dłutami i pochodniami, bez kasków i latarek, przez całe lata.</li>
-      </ul>
-    </div>
-    <div class="foto">
-      <h4>Zadanie foto</h4>
-      <p>Zdjęcie pionowo w górę z dna studni — tak, żeby było widać kamienne belki stropu. Uwaga na wilgotny obiektyw.</p>
-    </div>
-    <a class="nav" href="https://www.google.com/maps/search/?api=1&query=43.1125506,12.3898838&query_place_id=ChIJ5eiH2oCgLhMRqesU2pTtoWw" target="_blank" rel="noopener">Nawiguj</a>
-  </div>
-</details>
-
-<details class="stop" data-wiki="Fontana Maggiore">
-  <summary>
-    <span class="num">04</span><span class="hd"><span class="t">Piazza IV Novembre i Fontana Maggiore</span><span class="qrow"><span class="pricechip year">1275–1278</span><span class="pricechip">wstęp wolny</span><a class="qbtn" href="https://www.google.com/maps/search/?api=1&query=43.1121487,12.3888254&query_place_id=ChIJ8av2LIGgLhMR4L3HM8ejoa4" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>Serce miasta od czasów Etrusków. Fontana Maggiore (1275–1278, Nicola i Giovanni Pisano) to zwieńczenie akweduktu, który przez ołowiane rury, na zasadzie naczyń połączonych, pchał wodę pod górę z Monte Pacciano. Dolna misa ma pięćdziesiąt płaskorzeźb — miesiące z zodiakiem, sztuki wyzwolone, sceny biblijne, historia Rzymu. Wikipedia wykuta w kamieniu: niepiśmienny człowiek mógł ją obejść i „przeczytać" porządek świata.</p>
-    <p><strong>Nasze miesiące:</strong> Marzec (Baran) — wieśniak wyjmuje cierń ze stopy; rzeźbiarz zażartował, pokazując przerwę w pracy zamiast pracy. Grudzień (Koziorożec) — brodacz wraca z tuszą świni na ramionach, a wita go rozentuzjazmowany pies; siedemset lat, a merdanie to merdanie. Październik (Skorpion) — opisu tej płyty nie ma w wiarygodnych źródłach: znajdźcie Skorpiona i sprawdźcie sami. To będzie wasze odkrycie.</p>
-    <p>Katedra San Lorenzo (budowana od XIV do XV wieku) pokazuje placowi bok — fasada nigdy nie doczekała się okładziny, bo pieniądze skończyły się szybciej niż ambicje. W środku Święty Pierścień: według tradycji obrączka zaręczynowa Marii, wykradziona z Chiusi w XV wieku, strzeżona w szkatule na kilkanaście zamków.</p>
-    <div class="pricebox">Plac i fontanna: za darmo · na stopniach fontanny nie wolno siadać — strażnicy gwiżdżą bez wyjątków</div>
-    <div class="kids">
-      <h4>Dla dzieci</h4>
-      <ul>
-        <li>Misja: znajdźcie nasze trzy miesiące. Marzec — pan z cierniem. Grudzień — pies wita pana ze świnią. Październik — nikt z nas nie wie, co tam jest. Kto pierwszy?</li>
-        <li>Policzcie gryfy — pół orły, pół lwy, herb Perugii. Siedzą nad drzwiami pałacu, na latarniach, tablicach. Dziesięć sztuk = deser.</li>
-        <li>Woda płynęła tu POD GÓRĘ, rurami, bez żadnej pompy. Jak? (Podpowiedź: naczynia połączone.)</li>
-      </ul>
-    </div>
-    <div class="foto">
-      <h4>Zadanie foto</h4>
-      <p>Portret naszych trzech płaskorzeźb: marzec, październik, grudzień. Bonus: selfie rodzinne z gryfem z Palazzo dei Priori (1293–1443) w tle.</p>
-    </div>
-    <a class="nav" href="https://www.google.com/maps/search/?api=1&query=43.1121487,12.3888254&query_place_id=ChIJ8av2LIGgLhMR4L3HM8ejoa4" target="_blank" rel="noopener">Nawiguj</a>
-  </div>
-</details>
-
-<details class="stop" data-wiki="Corso Vannucci">
-  <summary>
-    <span class="num">05</span><span class="hd"><span class="t">Corso Vannucci i Giardini Carducci</span><span class="qrow"><span class="pricechip">gelato 3 €</span><a class="qbtn" href="https://www.google.com/maps/search/?api=1&query=43.1110000,12.3888000" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>Główna oś miasta nosi imię Perugina — malarza, u którego terminował nastoletni Rafael. Wieczorna <em>passeggiata</em> to rytuał: całe miasto wychodzi przejść się tam i z powrotem, a spacer jest celem, nie środkiem.</p>
-    <p>Perugia to miasto czekolady nie tylko z nazwy: w 1922 roku Luisa Spagnoli wymyśliła tu czekoladki z całym orzechem, nazwane najpierw <em>cazzotti</em> — „pięściaki". Wspólnik przemianował je na <em>Baci</em>, „pocałunki", i dołożył liściki z sentencjami. Legenda mówi, że pomysł wziął się z miłosnych karteczek, które Luisa i on posyłali sobie w czekoladkach przez fabrykę.</p>
-    <p>Na końcu Corso — Giardini Carducci, balkon miasta z widokiem na pół Umbrii.</p>
-    <div class="pricebox">Spacer za darmo · gelato 2,50–3,50 € · paczka Baci w każdym sklepie ok. 5–7 €</div>
-    <div class="kids">
-      <h4>Dla dzieci</h4>
-      <ul>
-        <li>Kupcie paczkę Baci — w każdej czekoladce jest liścik. Kiedyś nazywały się „pięściaki".</li>
-        <li>Zabawa: kto usłyszy najwięcej języków między placem a ogrodami? Włoski i polski się nie liczą.</li>
-        <li>Sto lat temu chodził tędy do pracy nastolatek imieniem Rafael — dziś jeden z trzech najsłynniejszych malarzy świata.</li>
-      </ul>
-    </div>
-    <div class="foto">
-      <h4>Zadanie foto</h4>
-      <p>Panorama z Giardini Carducci w dziennym świetle — to samo ujęcie powtórzycie za godzinę z tarasu, w różu. Porównanie idzie do albumu.</p>
-    </div>
-    <a class="nav" href="https://www.google.com/maps/search/?api=1&query=43.1110000,12.3888000" target="_blank" rel="noopener">Nawiguj</a>
-  </div>
-</details>
-
-<details class="stop">
-  <summary>
-    <span class="num">06</span><span class="hd"><span class="t">Taras nad doliną — aperitivo</span><span class="qrow"><span class="pricechip">6–8 €/drink</span><a class="qbtn" href="https://www.google.com/maps/search/?api=1&query=43.1100601,12.3901939&query_place_id=ChIJhY6ND4egLhMROPBqeKhIE_E" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>Via della Rupe — „ulica Urwiska" — nie przesadza z nazwą. Taras wisi nad wschodnią krawędzią wzgórza, naprzeciwko, na zboczu Monte Subasio, bieleje Asyż. Restauracja del Sole ma w sierpniu ferie, ale bar na tarasie działa od 17:00 — ten sam widok, mniejszy rachunek.</p>
-    <p>Taras patrzy na wschód, więc słońce zajdzie za plecami ok. 20:25. To nie wada: dolina i Subasio robią się najpierw złote, potem różowe — malarze nazywają to „drugim światłem" i cenią wyżej niż sam dysk.</p>
-    <div class="pricebox">Spritz 6–8 € · sok/crodino 3–4 € · przekąski do drinków w cenie — tak działa aperitivo</div>
-    <div class="kids">
-      <h4>Dla dzieci</h4>
-      <ul>
-        <li>Biała plamka naprzeciwko to Asyż — miasto świętego, który podobno rozmawiał z ptakami. 20 km. Pomachajcie.</li>
-        <li>Do drinków przyjdą darmowe przekąski. Uwaga na gołębie na barierkach — czyhają jak zawodowcy.</li>
-        <li>Konkurs: kto złapie moment, gdy dolina robi się różowa (ok. 20:20)?</li>
-      </ul>
-    </div>
-    <div class="foto">
-      <h4>Zadanie foto</h4>
-      <p>„Drugie światło": dolina i Asyż w różu, ok. 20:20–20:35. Nie fotografujcie pod słońce — odwróćcie się od niego.</p>
-    </div>
-    <a class="nav" href="https://www.google.com/maps/search/?api=1&query=43.1100601,12.3901939&query_place_id=ChIJhY6ND4egLhMROPBqeKhIE_E" target="_blank" rel="noopener">Nawiguj</a>
-  </div>
-</details>
-
-<details class="stop">
-  <summary>
-    <span class="num">07</span><span class="hd"><span class="t">Kolacja: Trattoria Oberdan</span><span class="qrow"><span class="pricechip">~95–150 €/4 os.</span><a class="qbtn" href="https://www.google.com/maps/search/?api=1&query=43.1097882,12.3897501&query_place_id=ChIJw0TLanuhLhMRbIZuanMHaNY" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a><a class="qbtn gold" href="tel:+393762387733" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/></svg><span>Zadzwoń</span></a></span></span><span class="chev">›</span>
-  </summary>
-  <div class="inner">
-    <p>Kuchnia umbryjska w ścisłej czołówce miasta. Klucz do karty: „alla norcina" = kiełbasa z Norcii, śmietana i zwykle czarna trufla; <em>strangozzi</em> i <em>umbricelli</em> to lokalne makarony z mąki i wody, bez jajek. Chleb będzie bez soli — pamiątka po wojnie solnej z 1540 roku: pierwszy kęs dziwi, drugi ma sens, bo to tło dla słonych wędlin.</p>
-    <p>Rytm włoskiej kolacji: antipasto do podziału, primo (makaron), ewentualnie secondo (mięso) z contorno. Coperto 2–3 €/os. to standard, nie oszustwo. Rachunek nie przyjdzie sam — poproście przy deserze: <em>il conto, per favore</em>.</p>
-    <div class="pricebox">Primi 10–14 € · secondi 14–20 € · orientacyjnie 95–150 € na czwórkę · kuchnia do 22:00 · wt. zamknięte</div>
-    <div class="kids">
-      <h4>Dla dzieci</h4>
-      <ul>
-        <li>Chleb bez soli to nie pomyłka — perugińczycy 500 lat temu pokłócili się z papieżem o podatek od soli. Spróbujcie i oceńcie, kto wygrał.</li>
-        <li>Trufla to grzyb spod ziemi, szukany z psami. Kilogram kosztuje tyle, co konsola.</li>
-        <li>Makaronów jest we Włoszech ponad 300 rodzajów. Wasz nazywa się „strangozzi" — zapytajcie kelnera o wymowę.</li>
-      </ul>
-    </div>
-    <div class="foto">
-      <h4>Zadanie foto</h4>
-      <p>Talerz strangozzi z truflą, zanim zniknie. Macie ok. 90 sekund od podania.</p>
-    </div>
-    <a class="nav" href="https://www.google.com/maps/search/?api=1&query=43.1097882,12.3897501&query_place_id=ChIJw0TLanuhLhMRbIZuanMHaNY" target="_blank" rel="noopener">Nawiguj</a>
-    <a class="nav gold" href="tel:+393762387733">Zadzwoń</a>
-  </div>
-</details>
-
-<h3 class="sec">Plan godzinowy</h3>
-<table class="rows">
-  <tr><td>14:30</td><td>Wyjazd z Montefelcino (Flaminia, zatankuj wcześniej)</td></tr>
-  <tr><td>16:15</td><td>Parking Partigiani, schody ruchome w górę</td></tr>
-  <tr><td>16:30</td><td>Rocca Paolina</td></tr>
-  <tr><td>17:00</td><td>Pozzo Etrusco — ostatnie wejście przed 18:00</td></tr>
-  <tr><td>17:45</td><td>Piazza IV Novembre: fontanna, katedra, nasze miesiące</td></tr>
-  <tr><td>18:30</td><td>Corso Vannucci → Giardini Carducci</td></tr>
-  <tr><td>19:00</td><td>Aperitivo na tarasie</td></tr>
-  <tr><td>20:00</td><td>Kolacja: Oberdan (stolik na Jan)</td></tr>
-  <tr><td>22:00</td><td>Zejście przez podziemia — oświetlone, puste</td></tr>
-  <tr><td>~23:45</td><td>Montefelcino</td></tr>
-</table>
-
-<h3 class="sec">Awaryjne</h3>
-<table class="rows">
-  <tr><td>Kolacja z widokiem</td><td>Il Giardino, Via dei Pellari 20, do 24:00 · <a href="tel:+393468695770">+39 346 869 5770</a></td></tr>
-  <tr><td>Szybko z dzieckiem</td><td>Il Bacio, Via Boncambi 6, pizza 10–12 €/os., do 23:00 · <a href="tel:+390755720909">+39 075 572 0909</a></td></tr>
-  <tr><td>Zachód za darmo</td><td>Terrazza del Mercato Coperto, Piazza Matteotti</td></tr>
-  <tr><td>Deszcz</td><td>Rocca + Pozzo są pod dachem — dwie godziny programu</td></tr>
-</table>
-
-<h3 class="sec">Rozmówki</h3>
-<table class="rows">
-  <tr><td>Mamy rezerwację na Jan</td><td class="it">Abbiamo una prenotazione a nome Jan</td></tr>
-  <tr><td>Prosty makaron dla dziecka?</td><td class="it">Una pasta semplice per il bambino?</td></tr>
-  <tr><td>Woda niegazowana / gazowana</td><td class="it">Acqua naturale / frizzante</td></tr>
-  <tr><td>Poproszę rachunek</td><td class="it">Il conto, per favore</td></tr>
-  <tr><td>Gdzie są schody ruchome?</td><td class="it">Dove sono le scale mobili?</td></tr>
-</table>
-
-<div class="pager">
-  <a href="index.html">← Wszystkie miasta</a>
-  <a href="asyz.html">Asyż →</a>
 </div>
 
+<div class="foot-section">
+  <p class="caps">Punkty awaryjne</p>
+  <div class="info-row"><strong>Apteka</strong> Farmacia San Martino, Corso Vannucci 46 (do 20:00)</div>
+  <div class="info-row"><strong>Toalety</strong> Mercato Coperto, Piazza Matteotti (bezpłatne)</div>
+  <div class="info-row"><strong>Plac zabaw</strong> Giardini Carducci — na końcu Corso Vannucci</div>
+  <div class="info-row"><strong>Szpital</strong> Ospedale Santa Maria della Misericordia, 15 min autem</div>
+</div>
+
+<div class="foot-section">
+  <p class="caps">Rozmówki</p>
+  <div class="phrase-card">
+    <div class="phrase-pair"><div class="phrase-pl">Dzień dobry / do widzenia</div><div class="phrase-it">Buongiorno / arrivederci</div></div>
+    <div class="phrase-pair"><div class="phrase-pl">Gdzie jest toaleta?</div><div class="phrase-it">Dov'è il bagno?</div></div>
+    <div class="phrase-pair"><div class="phrase-pl">Dwa gelato poproszę</div><div class="phrase-it">Due gelati, per favore</div></div>
+    <div class="phrase-pair"><div class="phrase-pl">Rachunek poproszę</div><div class="phrase-it">Il conto, per favore</div></div>
+  </div>
+</div>
+
+<div class="foot-section">
+  <p class="caps">Telefony</p>
+  <div class="tel-row"><span>Numer alarmowy (UE)</span><a href="tel:112">112</a></div>
+  <div class="tel-row"><span>Parking Piazza Partigiani</span><a href="tel:+390755721010">+39 075 572 1010</a></div>
+  <div class="tel-row"><span>Pediatra dyżurny (Guardia Medica)</span><a href="tel:+390755054077">+39 075 505 4077</a></div>
+</div>
+
+</div>
+<script>
+function toggleStop(id){
+  document.querySelectorAll('.stop').forEach(function(s){
+    if(s.dataset.id===id){s.classList.toggle('open')}
+    else{s.classList.remove('open')}
+  });
+}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+</script>
 <script src="app.js"></script>
-</div>
 </body>
 </html>

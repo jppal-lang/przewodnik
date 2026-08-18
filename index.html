@@ -3,151 +3,108 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Marche &amp; Umbria — przewodniki rodzinne</title>
+<title>Przewodniki rodzinne — Marche &amp; Umbria</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-<style>
-.loc-bar{
-  background:var(--panel);border:1px solid var(--line);border-radius:6px;
-  padding:16px 20px;margin:28px 0 8px;display:flex;align-items:center;gap:14px;
-  flex-wrap:wrap;
-}
-.loc-bar svg{width:20px;height:20px;flex:none;color:var(--grifo)}
-.loc-text{flex:1;font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--soft)}
-.loc-btn{
-  font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.04em;
-  color:var(--night);background:var(--grifo);border:none;border-radius:4px;
-  padding:10px 16px;cursor:pointer;font-weight:500;
-}
-.loc-btn:hover{background:#96D6C3}
-.distance{
-  font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--oro);
-  flex:none;text-align:right;line-height:1.4;
-}
-.distance small{display:block;color:var(--muted);font-size:12px}
-.sorting .city{transition:opacity .2s}
-</style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">Marche &amp; Umbria</p>
-  <h1>Przewodniki<span>rodzinne</span></h1>
-  <p class="dek">Wycieczki na jeden dzień z twojej bazy. Każdy przewodnik: plan od parkingu, przystanki z cenami, ciekawostki i zadania fotograficzne dla dzieci.</p>
-  <div class="chips">
-    <span class="chip">AUTO</span>
-    <span class="chip">RODZINA Z DZIEĆMI</span>
-    <span class="chip">STATYCZNY HTML</span>
+  <div class="hdr-left">
+    <p class="caps">Wypady z bazy</p>
+    <h1>Marche &amp; Umbria</h1>
+    <p class="subtitle">7 miast · sortowane od najbliższego</p>
+  </div>
+  <div class="lang-sw" role="radiogroup" aria-label="Język">
+    <button class="active" aria-pressed="true">PL</button>
+    <button aria-pressed="false">EN</button>
+    <button aria-pressed="false">IT</button>
+    <button aria-pressed="false">DE</button>
   </div>
 </header>
 
+<div class="filters">
+  <div class="filt"><span class="caps">Państwo</span><span class="filt-val">Włochy ▾</span></div>
+  <div class="filt"><span class="caps">Region</span><span class="filt-val">Marche &amp; Umbria ▾</span></div>
+  <div class="filt"><span class="caps">Miasto</span><span class="filt-val">Wszystkie ▾</span></div>
+</div>
+
 <div class="loc-bar" id="locBar">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
-  <span class="loc-text" id="locText">Udostępnij lokalizację, aby posortować miasta od najbliższego</span>
+  <span class="loc-text" id="locText">Udostępnij lokalizację, aby posortować od najbliższego</span>
   <button class="loc-btn" id="locBtn" onclick="getLocation()">Zlokalizuj mnie</button>
 </div>
 
-<div class="cities" id="cityList">
-  <h2 id="cityHeader">Kierunki</h2>
+<div class="city-list" id="cityList">
 
-  <a class="city done" href="perugia.html" data-lat="43.1107" data-lng="12.3908">
-    <span class="n"><b>Perugia</b><small>Miasto zasypane przez papieża · wieczór</small></span>
-    <span class="distance" data-default="100 km">100 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="perugia.html" data-lat="43.1107" data-lng="12.3908">
+    <div class="thumb"><div class="badge-today">DZIŚ</div></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Perugia</span><span class="chip chip-olive">100 km · 1h45</span></div>
+      <p class="city-lead">Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.</p>
+    </div>
   </a>
 
-  <a class="city done" href="asyz.html" data-lat="43.0707" data-lng="12.6196">
-    <span class="n"><b>Asyż</b><small>Św. Franciszek, Giotto i Monte Subasio</small></span>
-    <span class="distance" data-default="115 km">115 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="asyz.html" data-lat="43.0707" data-lng="12.6196">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Asyż</span><span class="chip chip-olive">110 km · 1h50</span></div>
+      <p class="city-lead">Bazylika św. Franciszka i uliczki z różowego kamienia.</p>
+    </div>
   </a>
 
-  <a class="city done" href="frasassi.html" data-lat="43.4012" data-lng="12.9636">
-    <span class="n"><b>Jaskinie Frasassi</b><small>Podziemna katedra wielkości katedry</small></span>
-    <span class="distance" data-default="55 km">55 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="frasassi.html" data-lat="43.4012" data-lng="12.9636">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Jaskinie Frasassi</span><span class="chip chip-olive">55 km · 1h00</span></div>
+      <p class="city-lead">Podziemna katedra wielkości katedry — odkryta w 1971.</p>
+    </div>
   </a>
 
-  <a class="city done" href="urbino.html" data-lat="43.7262" data-lng="12.6366">
-    <span class="n"><b>Urbino</b><small>Renesansowe miasto idealne, dom Rafaela</small></span>
-    <span class="distance" data-default="25 km">25 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="urbino.html" data-lat="43.7262" data-lng="12.6366">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Urbino</span><span class="chip chip-olive">25 km · 0h35</span></div>
+      <p class="city-lead">Renesansowe miasto idealne, dom Rafaela.</p>
+    </div>
   </a>
 
-  <a class="city done" href="rimini.html" data-lat="44.0598" data-lng="12.5684">
-    <span class="n"><b>Rimini</b><small>Fellini i rzymski most, po którym wciąż jeżdżą auta</small></span>
-    <span class="distance" data-default="70 km">70 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="rimini.html" data-lat="44.0598" data-lng="12.5684">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Rimini</span><span class="chip chip-olive">70 km · 1h05</span></div>
+      <p class="city-lead">Fellini i rzymski most, po którym wciąż jeżdżą auta.</p>
+    </div>
   </a>
 
-  <a class="city done" href="ancona.html" data-lat="43.6158" data-lng="13.5189">
-    <span class="n"><b>Ancona</b><small>Port, łuk Trajana i najlepsze ryby regionu</small></span>
-    <span class="distance" data-default="65 km">65 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="ancona.html" data-lat="43.6158" data-lng="13.5189">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Ancona</span><span class="chip chip-olive">65 km · 1h00</span></div>
+      <p class="city-lead">Port, łuk Trajana i najlepsze ryby regionu.</p>
+    </div>
   </a>
 
-  <a class="city done" href="rawenna.html" data-lat="44.4184" data-lng="12.2035">
-    <span class="n"><b>Rawenna</b><small>Bizantyjskie mozaiki i grób Dantego</small></span>
-    <span class="distance" data-default="120 km">120 km</span>
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+  <a class="city-card" href="rawenna.html" data-lat="44.4184" data-lng="12.2035">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Rawenna</span><span class="chip chip-olive">120 km · 1h30</span></div>
+      <p class="city-lead">Bizantyjskie mozaiki i grób Dantego.</p>
+    </div>
   </a>
+
 </div>
 
-<p class="note">Odległości w linii prostej — rzeczywista trasa autem będzie dłuższa. Zdjęcia dodawane przy przystankach zapisują się w pamięci przeglądarki tego urządzenia.</p>
+<p class="note">Odległości orientacyjne. Po zlokalizowaniu — sortowanie i dystans w linii prostej. Zdjęcia przy przystankach zapisują się w pamięci przeglądarki.</p>
 
 </div>
 <script>
-function haversine(lat1,lon1,lat2,lon2){
-  var R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
-  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
-        Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-        Math.sin(dLon/2)*Math.sin(dLon/2);
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-function getLocation(){
-  var btn=document.getElementById('locBtn');
-  var txt=document.getElementById('locText');
-  btn.textContent='Szukam…';
-  btn.disabled=true;
-
-  if(!navigator.geolocation){
-    txt.textContent='Twoja przeglądarka nie obsługuje lokalizacji';
-    btn.textContent='Niedostępne'; return;
-  }
-
-  navigator.geolocation.getCurrentPosition(function(pos){
-    var lat=pos.coords.latitude, lng=pos.coords.longitude;
-    txt.textContent='Twoja pozycja: '+lat.toFixed(4)+'°N, '+lng.toFixed(4)+'°E';
-    btn.textContent='Zaktualizuj';
-    btn.disabled=false;
-    document.getElementById('cityHeader').textContent='Kierunki — od najbliższego';
-
-    var list=document.getElementById('cityList');
-    var cities=Array.prototype.slice.call(list.querySelectorAll('.city'));
-    cities.forEach(function(c){
-      var clat=parseFloat(c.getAttribute('data-lat'));
-      var clng=parseFloat(c.getAttribute('data-lng'));
-      var d=haversine(lat,lng,clat,clng);
-      c._dist=d;
-      var el=c.querySelector('.distance');
-      if(d<1) el.innerHTML=Math.round(d*1000)+' m<small>w linii prostej</small>';
-      else el.innerHTML=Math.round(d)+' km<small>w linii prostej</small>';
-    });
-
-    cities.sort(function(a,b){ return a._dist - b._dist; });
-    var h2=list.querySelector('h2');
-    cities.forEach(function(c){ list.appendChild(c); });
-
-  }, function(err){
-    txt.textContent='Nie udało się pobrać lokalizacji — sprawdź uprawnienia';
-    btn.textContent='Spróbuj ponownie';
-    btn.disabled=false;
-  }, {enableHighAccuracy:true, timeout:10000});
-}
+function haversine(a,b,c,d){var R=6371,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180,z=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(y/2)*Math.sin(y/2);return R*2*Math.atan2(Math.sqrt(z),Math.sqrt(1-z))}
+function getLocation(){var b=document.getElementById('locBtn'),t=document.getElementById('locText');b.textContent='Szukam…';b.disabled=true;if(!navigator.geolocation){t.textContent='Przeglądarka nie obsługuje lokalizacji';b.textContent='Niedostępne';return}navigator.geolocation.getCurrentPosition(function(p){var la=p.coords.latitude,lo=p.coords.longitude;t.textContent='Pozycja: '+la.toFixed(4)+'°N, '+lo.toFixed(4)+'°E';b.textContent='Odśwież';b.disabled=false;var l=document.getElementById('cityList'),cs=Array.prototype.slice.call(l.querySelectorAll('.city-card'));cs.forEach(function(c){var d=haversine(la,lo,parseFloat(c.dataset.lat),parseFloat(c.dataset.lng));c._dist=d;var el=c.querySelector('.chip-olive');if(el)el.textContent=Math.round(d)+' km';});cs.sort(function(a,b){return a._dist-b._dist});cs.forEach(function(c){l.appendChild(c)})},function(){t.textContent='Nie udało się — sprawdź uprawnienia';b.textContent='Spróbuj ponownie';b.disabled=false},{enableHighAccuracy:true,timeout:10000})}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
 </body>
 </html>
