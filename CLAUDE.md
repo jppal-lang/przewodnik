@@ -1,270 +1,448 @@
-# CLAUDE.md — instrukcje projektu
+# CLAUDE.md — Questini.com — instrukcje projektu
 
-## Czym jest ten projekt
+---
 
-Statyczny serwis z rodzinnymi przewodnikami wypadowymi po regionach Europy.
-Użytkownik: rodzina z dziećmi, podróżująca autem, używa telefonu w jednej ręce
-w pełnym słońcu. Start: region Marche & Umbria (Włochy). Docelowo: wiele regionów
-Europy, wiele języków.
+## 1. CZYM JEST QUESTINI
 
-Hosting: GitHub Pages, repo `jppal-lang/przewodnik`, branch `main`, katalog `/`.
-Brak backendu, baz danych, bundlerów — czysty HTML + CSS + vanilla JS.
+Questini zamienia zwiedzanie miast i atrakcji Europy w grę terenową dla rodzin
+z dziećmi. Rodzic dostaje plan dnia (od parkingu po kolację), dziecko dostaje
+misje i zagadki do wykonania na miejscu. Dwa widoki, jedno zwiedzanie.
 
-## Struktura plików
+**Slogan:** Let's Explore!
+**Model:** wszystko za darmo, wsparcie przez Buy Me a Coffee.
+**BMC:** https://buymeacoffee.com/questini
+**Hosting:** GitHub Pages, repo `jppal-lang/przewodnik`, branch `main`.
+**Stack:** statyczny HTML + CSS + vanilla JS. Zero backendu, zero frameworków.
 
-```
-/
-├── index.html          # strona główna — lista miast regionu
-├── perugia.html        # karta miasta (wzorcowa — pełny format wg handoffu)
-├── asyz.html           # karta miasta
-├── frasassi.html       # karta miasta
-├── urbino.html         # karta miasta
-├── rimini.html         # karta miasta
-├── ancona.html         # karta miasta
-├── rawenna.html        # karta miasta
-├── styles.css          # wspólny design system — JEDNO źródło prawdy
-├── app.js              # album zdjęć (localStorage) + Wikimedia images
-├── README.md           # opis repo
-└── CLAUDE.md           # ten plik
-```
+---
 
-Docelowa struktura wielojęzyczna i wieloregionowa:
+## 2. STRUKTURA SERWISU
 
 ```
-/
-├── index.html                  # landing / wybór regionu
-├── styles.css
-├── app.js
-├── i18n.js                     # runtime tłumaczeń
+questini.com/
+├── index.html                     # landing page + wybór języka
+├── cookie-policy.html             # polityka cookies (wielojęzyczna)
+├── places.html                    # indeks: kraj → region → miejsca
+├── styles.css                     # design system — jedno źródło prawdy
+├── app.js                         # album zdjęć, Wikimedia, interakcje
+├── i18n.js                        # runtime tłumaczeń
 ├── lang/
-│   ├── pl.json                 # tłumaczenia UI + treści (domyślny)
-│   ├── en.json
-│   ├── it.json
-│   └── de.json
-├── marche-umbria/
-│   ├── index.html              # lista miast regionu
-│   ├── perugia.html
-│   ├── asyz.html
+│   ├── pl.json                    # polski (domyślny)
+│   ├── en.json                    # angielski
+│   ├── it.json                    # włoski
+│   ├── de.json                    # niemiecki
+│   ├── fr.json                    # francuski
+│   ├── es.json                    # hiszpański
+│   ├── cs.json                    # czeski
+│   ├── sk.json                    # słowacki
+│   ├── ro.json                    # rumuński
+│   ├── at.json                    # austriacki (de-AT)
+│   ├── hr.json                    # chorwacki
+│   ├── el.json                    # grecki
+│   └── no.json                    # norweski
+├── wlochy/
+│   ├── marche/
+│   │   ├── index.html             # lista miast regionu Marche
+│   │   ├── ancona.html
+│   │   ├── frasassi.html
+│   │   ├── urbino.html
+│   │   └── rimini.html
+│   ├── umbria/
+│   │   ├── index.html             # lista miast regionu Umbria
+│   │   ├── perugia.html
+│   │   └── asyz.html
+│   ├── toskania/                  # przyszły region
+│   │   └── index.html
 │   └── ...
-├── toskania/                   # przyszły region
-│   ├── index.html
+├── polska/
+│   └── malopolska/
+│       └── index.html
+├── chorwacja/                     # przyszły kraj
 │   └── ...
-└── CLAUDE.md
+├── CLAUDE.md                      # ten plik
+└── README.md
 ```
 
-## Design system — tokeny (źródło prawdy: styles.css)
+### Zasada podziału regionów
+Marche i Umbria to OSOBNE regiony, NIE łączone. Każdy region ma własny
+katalog, własną stronę z listą miast, własne plany dnia. Użytkownik wybiera:
+Włochy → Marche → Ancona, ALBO Włochy → Umbria → Perugia.
 
-### Paleta
-| Token               | Hex       | Użycie                                    |
-|----------------------|-----------|-------------------------------------------|
-| `--sand`             | `#F7F0E3` | tło strony                                |
-| `--parchment`        | `#FFFCF5` | tło kart, akordeonów                      |
-| `--ink`              | `#383026` | tekst główny                              |
-| `--ink2`             | `#6E6154` | tekst wtórny, leady                       |
-| `--label`            | `#8A7B68` | etykiety caps                             |
-| `--line`             | `#E7DBC6` | obramowania, separatory                   |
-| `--terra`            | `#B4502E` | primary / CTA (hover `--terra-h` `#8F3D1F`) |
-| `--olive`            | `#5F6637` | chipy logistyczne (dystans, cena)         |
-| `--olive-bg`         | `#EEF0E0` | tło chipów oliwkowych, boks „Dla dzieci"  |
-| `--sea`              | `#23677A` | akcent kontekstowy, focus outline         |
-| `--sea-bg`           | `#E4EEF0` | tło boksu „Zadanie foto", chip morski     |
-| `--chip-bg`          | `#F1E6D2` | chip neutralny (rok budowy), filtry       |
-| `--btn2-border`      | `#D9A88F` | obramowanie przycisków outline            |
+---
 
-### Typografia — JEDEN krój: Figtree (Google Fonts, wagi 400–800)
-- H1: 32–34px mobile / 44px desktop, weight 800, ls −0.015em
-- Nazwa miasta: 24px, weight 600
-- Nazwa przystanku: 21px, weight 600
-- Tekst podstawowy: 19–20px, weight 400 — **NIGDY poniżej 18px**
-- Chip / przycisk: 15–16px, weight 600–700
-- Etykieta caps: 13px, weight 700, uppercase, ls 0.11em, kolor `--label`
-- Numer+godzina: 16px, weight 700, kolor `--terra`
+## 3. DWA WIDOKI: RODZIC i DZIECKO
 
-### Spacing, zaokrąglenia, cienie
-- Spacing: 4 · 8 · 12 · 16 · 24 · 32 · 48
-- Radius: 12 (chip/przycisk) · 16 (boks/akordeon) · 20 (karta) · 999 (pill)
-- Cień 1 (akordeon): `0 1px 2px rgba(60,42,20,.08)`
-- Cień 2 (karta): `0 1px 2px rgba(60,42,20,.06), 0 8px 24px rgba(60,42,20,.08)`
-- Hover karty: `0 2px 4px rgba(60,42,20,.08), 0 12px 32px rgba(60,42,20,.14)`
-- Cele dotykowe: min 44×44px, odstęp min 8px
+### Widok rodzica (domyślny)
+Pełna strona z:
+- Opisami zabytków (2–3 akapity, historia, kontekst, daty)
+- Cenami biletów, godzinami, ostrzeżeniami
+- Przyciskami nawigacji (Nawiguj / Napisz WhatsApp / WWW)
+- Rozmówkami, telefonami awaryjnymi, planem dnia
+- Sekcją „Dla dzieci" (widoczna, ale nie dominująca)
+- Zadaniami foto
+- Albumem zdjęć
+- **Oceną miejsca** (1–5 gwiazdek + opcjonalny komentarz)
+- **Przyciskiem „Zgłoś uwagę"** (do konkretnego przystanku)
+- **Przyciskiem „Postaw kawę"** (Buy Me a Coffee)
 
-## Anatomia karty miasta (wzorzec: perugia.html)
+### Widok dziecka
+Rodzic generuje link lub przełącza widok — dziecko widzi:
+- **Mapę przystanków** wizualną (nie listę tekstu)
+- **Kartę misji** przy każdym przystanku: co znaleźć, policzyć, sfotografować
+- **Odznaki / checkboxy** — ukończone misje się zaznaczają
+- **Ranking rodzinny** — kto wykonał więcej misji
+- **Galerię zdjęć** — dziecko dodaje zdjęcia jako dowody wykonania misji
+- **BRAK:** cen, godzin, historii, telefonów awaryjnych, ocen
 
-### Hero
-- Zdjęcie full-bleed 260px (mobile), `object-fit: cover`
-- Nad zdjęciem (absolute): przycisk wstecz `←` 44×44 pill + przełącznik języka
-- Pod zdjęciem: H1, lead (subtitle), chipy hero (dystans, czas, powrót)
+Przełącznik widoku: toggle w nagłówku lub parametr URL `?view=kid`.
+Stan zapisywany w `localStorage('questini_view')`.
 
-### Przystanki (`.stops`)
-Akordeony, jeden otwarty naraz. **Przystanek 01 to ZAWSZE parking.**
+### Wizualnie
+Widok rodzica: ciepły, piaskowy, elegancki (obecny design).
+Widok dziecka: ten sam design system, ale:
+- Większe ikony misji, wyraźniejsze kolory
+- Czcionka taka sama (Figtree), ale tytuły mogą być większe
+- Progress bar: ile misji ukończono / ile jest w mieście
+- Gratulacja po ukończeniu wszystkich misji przystanku
+- Spójność z widokiem rodzica — to ta sama marka, nie oddzielna apka
 
-Nagłówek przystanku (widoczny BEZ rozwinięcia!):
-1. Rząd: `{num} · {time}` (terrakota) → nazwa (21px/600) → strzałka ▼
-2. Rząd chipów: rok budowy (neutral) + cena (oliwka)
-3. Rząd akcji (min-h 44px):
-   - **Nawiguj** (terrakota wypełniony, ikona pinezki) — Google Maps; parking: „Prowadź" + `maps/dir` z lokalizacji
-   - **Napisz** (outline, ikona dymka) — WhatsApp `wa.me/{numer}` — ZAMIAST telefonu (bariera językowa)
-   - **WWW** (outline, ikona globusa) — strona obiektu
+---
 
-Wnętrze przystanku:
-- Zdjęcie 200px radius 14 (Wikimedia lub slot)
-- Opis 19px/1.55
-- Boks „Dla dzieci" (oliwka)
-- Boks „Zadanie foto" (morski)
-- Album zdjęć użytkownika (miniatury 72×72 + „Dodaj zdjęcie z galerii")
+## 4. WIELOJĘZYCZNOŚĆ (i18n)
 
-### Stopka miasta
-Sekcje z etykietą caps:
-- **Plan dnia**: karta, grid 72px+1fr, godziny bold terrakota
-- **Punkty awaryjne**: apteka, toalety, plac zabaw, szpital
-- **Rozmówki**: pary PL/język lokalny
-- **Telefony**: klikalne `tel:`, numer bold terrakota
+### Obsługiwane języki
+| Kod  | Język       | Flaga CSS                | Priorytet |
+|------|-------------|--------------------------|-----------|
+| `pl` | polski      | biało-czerwona           | P0 — domyślny |
+| `en` | angielski   | Union Jack               | P0 |
+| `it` | włoski      | tricolore pionowy        | P0 |
+| `de` | niemiecki   | czarno-czerwono-złota    | P0 |
+| `fr` | francuski   | tricolore pionowy        | P1 |
+| `es` | hiszpański  | czerwono-żółto-czerwona  | P1 |
+| `cs` | czeski      | biało-czerwono-niebieska | P1 |
+| `sk` | słowacki    | biało-niebiesko-czerwona | P1 |
+| `ro` | rumuński    | niebiesko-żółto-czerwona | P1 |
+| `at` | austriacki  | czerwono-biało-czerwona  | P1 |
+| `hr` | chorwacki   | czerwono-biało-niebieska | P2 |
+| `el` | grecki      | niebiesko-biała          | P2 |
+| `no` | norweski    | czerwono-biało-niebieska | P2 |
 
-## Strona główna (index.html)
-
-- Nagłówek: caps „Wypady z bazy", H1 region, podtytuł, przełącznik języka
-- Filtry: Państwo / Region / Miasto (overflow-x scroll, rozszerzalne o „Dzielnicę")
-- Karty miast: thumb 150px + nazwa + chip dystansu + lead; jedno miasto „DZIŚ" (badge terrakota)
-- Geolokalizacja: przycisk „Zlokalizuj mnie" → sortowanie od najbliższego (haversine)
-- Desktop: grid `repeat(3, 1fr)`, gap 24, hover uniesienie −3px
-
-## Wielojęzyczność (i18n) — strategia wdrożenia
-
-### Zasada
-Interfejs (UI labels, przyciski, etykiety sekcji) i treść (opisy przystanków,
-ciekawostki, leady miast) są tłumaczone na 4 języki: **PL** (domyślny), **EN**, **IT**, **DE**.
-
-### Implementacja (docelowa)
-1. Pliki `lang/{kod}.json` zawierają WSZYSTKIE stringi — UI i treść.
-2. Plik `i18n.js` ładuje JSON wybranego języka i wstrzykuje treść przez `data-i18n` atrybuty.
-3. HTML zawiera `data-i18n="klucz"` zamiast tekstu; tekst PL jako fallback w innerHTML.
-4. Przełącznik języka zmienia `lang` na `<html>`, ładuje JSON, podmienia treści bez przeładowania.
-5. Wybrany język zapisywany w `localStorage('lang')`.
-
-### Struktura klucza i18n
-```
-{
-  "ui.back": "Wróć",
-  "ui.navigate": "Nawiguj",
-  "ui.drive": "Prowadź",
-  "ui.write": "Napisz",
-  "ui.kids": "Dla dzieci",
-  "ui.photo_task": "Zadanie foto",
-  "ui.add_photo": "Dodaj zdjęcie z galerii",
-  "ui.day_plan": "Plan dnia",
-  "ui.emergency": "Punkty awaryjne",
-  "ui.phrases": "Rozmówki",
-  "ui.phones": "Telefony",
-  "ui.locate": "Zlokalizuj mnie",
-  "ui.today": "DZIŚ",
-  "ui.free": "bezpłatnie",
-  "ui.return_by": "powrót do {time}",
-  "ui.filter.country": "Państwo",
-  "ui.filter.region": "Region",
-  "ui.filter.city": "Miasto",
-
-  "region.marche.title": "Marche & Umbria",
-  "region.marche.subtitle": "7 miast · sortowane od najbliższego",
-
-  "city.perugia.name": "Perugia",
-  "city.perugia.lead": "Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.",
-  "city.perugia.stop.01.name": "Parking Piazza Partigiani",
-  "city.perugia.stop.01.desc": "Wielopoziomowy parking tuż pod murami...",
-  "city.perugia.stop.01.kids": "Ruchome schody jadą przez prawdziwe podziemne miasto!...",
-  "city.perugia.stop.01.foto": "Rodzinne zdjęcie przy wejściu do scale mobili..."
-}
-```
+### Mechanizm
+1. Pierwsze wejście: przeglądarka sugeruje język na podstawie `navigator.language`
+2. Użytkownik może zmienić ręcznie (przełącznik z flagami w nagłówku)
+3. Wybór zapisywany w `localStorage('questini_lang')`
+4. Przy kolejnych wizytach: automatycznie ładuje zapamiętany język
+5. Plik `i18n.js` ładuje `/lang/{kod}.json` i podmienia `data-i18n` atrybuty
+6. Zmiana języka: bez przeładowania strony (podmiana DOM)
+7. URL: `?lang=it` jako override (linkowanie do konkretnej wersji)
 
 ### Reguły tłumaczeniowe
-- Tekst DE bywa +30% dłuższy niż PL — layout MUSI to znosić (flex + wrap, chipy nowrap)
-- Nazwy własne zabytków: w IT/DE zostawić oryginał włoski, w EN/PL tłumaczyć jeśli jest ustalony polski/angielski odpowiednik (np. „Katedra San Lorenzo" / „Cathedral of San Lorenzo")
-- Rozmówki w stopce: zawsze para język_przewodnika ↔ język_lokalny (np. EN↔IT, DE↔IT)
-- Ceny, godziny, numery telefonów, linki Maps/WhatsApp — NIE podlegają tłumaczeniu
+- Nazwy własne zabytków: oryginał włoski/lokalny (np. „Fontana Maggiore")
+- Opis zabytku: tłumaczony w całości
+- Ceny, godziny, telefony, linki Maps/WhatsApp: NIE tłumaczone
+- Rozmówki: para język_użytkownika ↔ język_lokalny (np. FR ↔ IT)
+- Tekst DE/NO/EL bywa +30% dłuższy — layout MUSI to znosić
 
-## Zdjęcia
+---
 
-### Wikimedia Commons (zabytki)
-- Ładowane dynamicznie z API Wikipedii (`it.wikipedia.org/api/rest_v1/page/summary/`)
-- Atrybut `data-wiki="Tytuł_artykułu"` na elemencie `.stop` lub `.stop-photo`
-- Licencja CC BY-SA wymaga atrybucji — link „Foto: Wikimedia Commons" pod zdjęciem
-- Wymagają internetu; offline = puste sloty (graceful degradation)
+## 5. POLITYKA COOKIES (cookie-policy.html)
 
-### Album użytkownika (app.js)
-- Zdjęcia z galerii telefonu, kompresowane do JPEG 72% / max 1000px
-- Zapisywane w `localStorage` pod kluczem `album:{strona}:{indeks_przystanku}`
-- Usuwanie: tap na miniaturę → confirm
-- Limit: pojemność localStorage (~5–10 MB zależnie od przeglądarki)
+### Co zapisujemy
+| Klucz localStorage                  | Cel                   | Czas życia   |
+|--------------------------------------|-----------------------|--------------|
+| `questini_lang`                      | wybrany język         | bezterminowo |
+| `questini_view`                      | widok rodzic/dziecko  | bezterminowo |
+| `questini_cookie_consent`            | zgoda na localStorage | bezterminowo |
+| `album:{strona}:{przystanek}`        | zdjęcia użytkownika   | bezterminowo |
+| `questini_rating:{miasto}:{stop}`    | ocena przystanku      | bezterminowo |
+| `questini_missions:{miasto}`         | ukończone misje       | bezterminowo |
 
-## Konwencje kodowania
+### Treść polityki
+- Strona cookie-policy.html w pełni wielojęzyczna (data-i18n)
+- Informacja: „Questini nie używa ciasteczek śledzących, reklamowych ani
+  analitycznych. Zapisujemy wyłącznie twoje preferencje (język, widok) i zdjęcia
+  z albumu w pamięci przeglądarki (localStorage). Dane nie opuszczają twojego
+  urządzenia."
+- Prosty baner przy pierwszym wejściu: „Zapisujemy twoje preferencje lokalnie.
+  Żadnych trackerów." + przycisk OK
+- Baner znika po kliknięciu OK → `questini_cookie_consent` = true
+- Link do pełnej polityki w footerze każdej strony
 
-### HTML
-- Semantyczny: `<header>`, `<main>`, `<nav>`, `<article>` (w kartach miast)
-- Akordeony: `<div class="stop">` z `<button class="stop-header">`, NIE `<details>` (wymagana kontrola „jeden otwarty")
-- Akcje w nagłówku: `onclick="event.stopPropagation()"` — klik na Nawiguj/Napisz/WWW nie przełącza akordeonu
-- Atrybuty `data-*`: `data-id` (stop), `data-wiki` (artykuł Wikipedia), `data-lat`/`data-lng` (koordynaty), `data-i18n` (klucz tłumaczenia)
+---
 
-### CSS
-- Jeden plik `styles.css`, zmienne CSS (custom properties) w `:root`
-- Mobile-first, breakpoint desktop: `@media (min-width: 800px)`
-- Klasy BEM-light: `.stop-header`, `.stop-body`, `.city-card`, `.chip-olive`
-- Focus widoczny zawsze: `outline: 3px solid var(--sea); outline-offset: 2px`
+## 6. MENU I INDEKS MIEJSC (places.html)
 
-### JS
-- Vanilla, zero zależności, zero bundlera
-- `app.js`: album zdjęć + ładowanie Wikimedia — oba jako IIFE
-- `i18n.js` (do zbudowania): ładowanie JSON, podmiana `data-i18n`, zapis `localStorage('lang')`
-- Geolokalizacja: w `index.html` inline (haversine + sort)
+### Struktura menu
+Hierarchiczne rozwijane menu w nawigacji:
 
-## Dodawanie nowego miasta
+```
+🇮🇹 Włochy
+  ├── Marche (4 miejsca)
+  │   ├── Ancona
+  │   ├── Jaskinie Frasassi
+  │   ├── Urbino
+  │   └── Rimini
+  ├── Umbria (2 miejsca)
+  │   ├── Perugia
+  │   └── Asyż
+  └── Toskania (wkrótce)
+🇵🇱 Polska
+  └── Małopolska (wkrótce)
+🇭🇷 Chorwacja (wkrótce)
+```
 
-1. Skopiuj `perugia.html` jako szablon
-2. Zamień: H1, lead, chipy hero, przystanki (dane), stopkę (plan/awaryjne/rozmówki/telefony)
-3. Przystanek 01 = parking z przyciskiem „Prowadź" (`maps/dir`)
-4. Każdy zabytek: chip z rokiem budowy + `data-wiki="Tytuł_artykułu"` do zdjęcia
-5. Dodaj kartę w `index.html` z `data-lat`/`data-lng` i leadem
-6. Dodaj klucze tłumaczeń w `lang/*.json`
+### Strona indeksu (places.html)
+- Lista wszystkich krajów, regionów i miejsc
+- Każde miejsce: nazwa, krótki lead, średnia ocen, liczba przystanków
+- Filtrowanie: kraj, region
+- Przyszłość: wyszukiwarka tekstowa
 
-## Dodawanie nowego regionu
+---
 
-1. Utwórz katalog `/nazwa-regionu/`
-2. Skopiuj `index.html` regionu jako szablon listy miast
-3. Dodaj kartę regionu na landing page `/index.html`
-4. Dodaj klucze `region.{slug}.*` w `lang/*.json`
+## 7. MAPA EUROPY (faza 2)
 
-## Czego NIGDY nie robić
+### Koncept
+Interaktywna mapa Europy (SVG lub Leaflet):
+1. Widok kontynentu: kraje z liczbą regionów
+2. Klik na kraj → regiony z liczbą dostępnych atrakcji
+3. Klik na region → pinezki atrakcji na mapie + średnia ocen użytkowników
+4. Klik na pinezkę → otwiera kartę miasta
+
+### Wymagania techniczne
+- SVG mapa dla prostego widoku krajów (zero API key)
+- Leaflet + OpenStreetMap dla widoku pinezek (darmowe)
+- Dane o atrakcjach: statyczny JSON ładowany z repo
+- Oceny: agregowane z localStorage (faza MVP) lub z prostego API (faza 2+)
+
+---
+
+## 8. SYSTEM OCEN I KOMENTARZY
+
+### Ocena miejsca (widok rodzica)
+- Na każdej karcie miasta, pod ostatnim przystankiem: „Oceń tę wycieczkę"
+- 5 gwiazdek (1–5), kliknięcie = ocena
+- Opcjonalny komentarz (textarea, max 500 znaków)
+- Jedno kliknięcie „Wyślij"
+
+### Zabezpieczenie przed wielokrotnymi ocenami
+**Faza 1 (localStorage, MVP):**
+- `questini_rating:{miasto}` = { stars: 4, comment: "...", ts: "..." }
+- Po wystawieniu oceny przycisk zmienia się na „Twoja ocena: ★★★★☆ [Edytuj]"
+- Jeden użytkownik = jedna ocena per urządzenie per przeglądarka
+
+**Faza 2 (backend):**
+- Fingerprint: hash z `navigator.userAgent` + rozdzielczość + strefa czasowa
+- Rate limiting: max 1 ocena z jednego fingerprinta na 24h
+- Alternatywa: logowanie przez Google/Apple (dopiero gdy skala uzasadni)
+
+### Wyświetlanie średniej
+- Na karcie regionu przy każdym mieście: „★ 4.3 (12 ocen)"
+- Na karcie miasta w hero: pełna średnia z liczbą głosów
+- Faza 1: dane lokalne, faza 2: API
+
+---
+
+## 9. ZGŁASZANIE UWAG
+
+### Faza 1 — email
+- Przycisk „Zgłoś uwagę" przy KAŻDYM przystanku (widok rodzica)
+- Formularz: dropdown (typ: błędna cena / zamknięte / złe godziny /
+  zły adres / inne) + pole tekstowe + opcjonalne zdjęcie
+- Po wysłaniu: `mailto:kontakt@questini.com` z preformatowanym tematem:
+  `[Uwaga] Perugia > Przystanek 03 Fontana Maggiore`
+- Treść: typ uwagi + komentarz + data + język użytkownika
+
+### Faza 2 — agent AI
+- Uwagi wpadają do kolejki (Notion / Google Sheet / API)
+- Agent AI czyta uwagę, sprawdza fakty i:
+  - jednoznaczna zmiana → generuje PR na GitHubie
+  - niejasna → taguje do ręcznego sprawdzenia
+- Powiadomienie do użytkownika: „Dzięki! Sprawdzimy."
+
+---
+
+## 10. BUY ME A COFFEE
+
+### Integracja
+**Floating widget (każda strona):**
+```html
+<script data-name="BMC-Widget"
+  data-cfasync="false"
+  src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
+  data-id="questini"
+  data-description="Wspieraj rodzinne przewodniki po Europie"
+  data-message="Questini jest za darmo. Jeśli pomogło — postaw nam kawę!"
+  data-color="#B4502E"
+  data-position="Right"
+  data-x_margin="18"
+  data-y_margin="18">
+</script>
+```
+
+**CTA na landingu:** „Questini jest za darmo. Jeśli pomogło wam na
+wakacjach — postaw nam kawę." Przycisk → buymeacoffee.com/questini
+
+**CTA po zwiedzaniu (widok rodzica):** „Spodobała się wycieczka?
+Pomóż nam opisać kolejne miasto." Link do BMC.
+
+---
+
+## 11. WSPÓŁPRACA Z INFLUENCERAMI
+
+### Profil idealnego influencera
+- Rodzinny/travel, 5k–50k followersów (mikro/nano)
+- Treści: podróże autem po Europie z dziećmi, camping, city breaks
+- Platformy: Instagram, TikTok, YouTube
+- Języki: PL, EN, DE, CS
+
+### Model współpracy
+1. **Barter:** influencer testuje Questini, relacjonuje w stories/reels.
+   W zamian: dedykowany region/miasto opisane pod jego trasę.
+2. **Affiliate:** unikalny link `questini.com/?ref=nazwa` → tracking.
+3. **Co-creation:** influencer współtworzy przewodnik — kredytowany jako autor.
+4. **UGC:** influencer używa Questini, taguje @questini — repost.
+
+### Outreach — szablon
+```
+Cześć [imię]!
+
+Śledzę wasz profil i widzę, że [konkret o ich treściach z dziećmi].
+Buduję Questini — darmowe przewodniki po miastach Europy, które zamieniają
+zwiedzanie z dziećmi w grę terenową (misje, zagadki, album zdjęć).
+
+Chciałbym zaproponować: opiszę miasto/region pod waszą następną trasę
+— gotowy plan od parkingu po kolację. Wy testujecie, relacjonujecie.
+Żadnych opłat, żadnych zobowiązań.
+
+Rzuć okiem: questini.com
+
+[imię]
+```
+
+---
+
+## 12. PARTNERSTWA B2B
+
+### Potencjalni partnerzy
+| Partner          | Produkt               | Model współpracy                         |
+|------------------|-----------------------|------------------------------------------|
+| **Zen.com**      | Karty wielowalutowe   | Banner „Płać w € bez prowizji" + affiliate |
+| **Sail / Airalo**| eSIM podróżne         | „Internet w Europie" + affiliate         |
+| **EasyPark**     | Aplikacja parkingowa  | Link przy przystanku 01 parkingowym      |
+| **Booking.com**  | Noclegi               | „Szukaj noclegu" na stronie regionu      |
+| **GetYourGuide** | Bilety do atrakcji    | Link przy biletowanych przystankach      |
+| **Revolut**      | Karta wielowalutowa   | Alternatywa Zen                          |
+| **CampRest**     | Campingi              | PL rynek, link „Noclegi pod namiotem"    |
+
+### Zasady
+- Treści partnerskie TYLKO w widoku rodzica (nigdy w widoku dziecka)
+- Oznaczenie chipem „Partner" — transparentność
+- UTM tracking: `?utm_source=questini&utm_campaign={miasto}`
+- Sekcja „Przydatne w podróży" w footerze regionu
+- Zero pop-upów, auto-play, reklam w treści przystanków
+
+---
+
+## 13. DESIGN SYSTEM
+
+### Paleta
+| Token          | Hex       | Użycie                              |
+|----------------|-----------|-------------------------------------|
+| --parchment    | #FFFCF5   | tło kart                            |
+| --ink          | #383026   | tekst główny                        |
+| --ink2         | #6E6154   | tekst wtórny                        |
+| --label        | #8A7B68   | etykiety caps                       |
+| --line         | #E7DBC6   | separatory                          |
+| --terra        | #B4502E   | CTA / primary                       |
+| --olive        | #5F6637   | chipy logistyczne, boks dzieci      |
+| --sea          | #23677A   | akcent, boks foto, focus            |
+
+Tło: `#FFFFFF` + trzy radial-gradient mgły (terra, olive, sea).
+Font: **Figtree** 400–800. Bazowy: **19px, min 18px**.
+Cele dotykowe: **min 44×44px**.
+Logo: `questini` 800 + `.` terra + `com` 600 ink2.
+
+---
+
+## 14. ANATOMIA KARTY MIASTA
+
+### Hero
+Zdjęcie full-bleed → przycisk wstecz + lang switcher → H1 + lead + chipy
+
+### Przystanki (akordeony)
+**Przystanek 01 = ZAWSZE parking.**
+
+Nagłówek (widoczny bez rozwinięcia):
+1. `{num} · {time}` terra → nazwa 21px/600 → ▼
+2. Chipy: rok budowy (neutral) + cena (olive)
+3. Akcje: Nawiguj (terra filled) / Napisz (outline) / WWW (outline)
+
+Wnętrze:
+- Zdjęcie Wikimedia
+- Opis dorosły (2–3 akapity z datami)
+- Boks „Dla dzieci" (olive-bg)
+- Boks „Zadanie foto" (sea-bg)
+- Album zdjęć
+- Przycisk „Zgłoś uwagę" (tylko rodzic)
+
+### Stopka miasta
+- Plan dnia
+- Punkty awaryjne
+- Rozmówki
+- Telefony
+- Oceń wycieczkę
+- Buy Me a Coffee CTA
+
+---
+
+## 15. DODAWANIE NOWEGO MIEJSCA
+
+1. Wybierz kraj i region (utwórz katalog jeśli nowy)
+2. Skopiuj wzorcowy plik miasta
+3. Przystanek 01 = parking (Prowadź z lokalizacji)
+4. Każdy zabytek: chip roku + `data-wiki`
+5. Misje dla widoku dziecka
+6. Dodaj do `places.html` i regionu `index.html`
+7. Klucze tłumaczeń w `lang/*.json`
+8. Commit + push → live w minutę
+
+---
+
+## 16. CZEGO NIGDY NIE ROBIĆ
 
 - Tekst poniżej 18px
 - Cele dotykowe poniżej 44×44px
-- Ukrywanie przycisków akcji przystanku wewnątrz rozwiniętego akordeonu
-- Hardkodowanie bazy noclegowej (odległości dynamiczne z geolokalizacji)
-- Dodawanie elementów komercyjnych (koszyk, logowanie, cennik) bez jawnej decyzji
-- Wymyślanie dat budowy, cen biletów, numerów telefonów — jeśli brak źródła, napisz „sprawdź na miejscu"
-- Używanie `localStorage` do czegokolwiek poza albumem zdjęć i wyborem języka
-- Import frameworków JS / CSS (React, Tailwind, Bootstrap) — projekt jest celowo zero-dependency
+- Ukrywanie przycisków akcji wewnątrz akordeonu
+- Wymyślanie dat, cen, telefonów
+- Treści partnerskie w widoku dziecka
+- Import frameworków (zero dependencies)
+- Łączenie regionów (Marche ≠ Umbria)
+- Pop-upy, auto-play, overlay reklamy
+- Tracking użytkowników (zero GA, zero pixeli)
+- Używanie `localStorage` poza zdefiniowanymi kluczami
 
-## Git workflow
+---
 
-- Branch: `main` (jedyny, bezpośredni push)
-- Commit message: po polsku, opisowy, z zakresem zmian
-- Push wymaga PAT (Personal Access Token) — token jednorazowy, usuwany z remote URL po pushu
-- GitHub Pages buduje automatycznie po każdym pushu (1–2 min)
+## 17. STATUS WDROŻENIA
 
-## Kontakt z API
-
-- Wikimedia REST API: `it.wikipedia.org/api/rest_v1/page/summary/{tytuł}` — publiczne, bez klucza
-- Google Maps linki: `maps.google.com/?q=` (nawiguj) lub `maps/dir/?api=1&destination=` (prowadź) — bez API key
-- WhatsApp: `wa.me/{numer}` — bez API
-
-## Status wdrożenia
-
-| Element                    | Status        |
-|---------------------------|---------------|
-| Design tokens w CSS        | ✅ gotowe     |
-| Strona główna (index)      | ✅ gotowe     |
-| Perugia (wzorzec)          | ✅ pełna wg handoffu |
-| Asyż, Frasassi, Urbino     | ⚠️ treść pełna, format do migracji na nowy szablon |
-| Rimini, Ancona, Rawenna    | ⚠️ treść pełna, format do migracji na nowy szablon |
-| i18n runtime               | 🔲 do zbudowania |
-| Tłumaczenia EN/IT/DE       | 🔲 do zbudowania |
-| Zdjęcia miast na kartach   | 🔲 sloty gotowe, brak plików |
-| Struktura wieloregionowa   | 🔲 architektura opisana, do wdrożenia |
+| Element                              | Status |
+|--------------------------------------|--------|
+| Design tokens v2 (CSS)               | ✅     |
+| Landing page questini.com            | ✅     |
+| Perugia (wzorzec karty miasta)       | ✅     |
+| 6 miast (treść pełna, format stary)  | ⚠️     |
+| Podział Marche / Umbria              | 🔲     |
+| Widok dziecka                        | 🔲     |
+| i18n runtime + PL/EN/IT/DE           | 🔲     |
+| i18n: FR/ES/CS/SK/RO/AT/HR/EL/NO    | 🔲     |
+| Polityka cookies                     | 🔲     |
+| Cookie consent baner                 | 🔲     |
+| Menu / indeks miejsc                 | 🔲     |
+| System ocen (localStorage)           | 🔲     |
+| Zgłaszanie uwag (mailto)             | 🔲     |
+| Buy Me a Coffee widget               | 🔲     |
+| Mapa Europy (SVG/Leaflet)            | 🔲     |
+| System ocen (backend)                | 🔲     |
+| Agent AI do uwag                     | 🔲     |
+| Partnerstwa B2B                      | 🔲     |
+| Program influencerów                 | 🔲     |
