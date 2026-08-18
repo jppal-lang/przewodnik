@@ -39,8 +39,8 @@
     });
   }
 
-  document.querySelectorAll('details.stop').forEach(function(stop, idx){
-    var inner = stop.querySelector('.inner');
+  document.querySelectorAll('.stop').forEach(function(stop, idx){
+    var inner = stop.querySelector('.stop-body');
     if(!inner) return;
     var key = NS + ':' + idx;
 
@@ -82,10 +82,10 @@
 
 /* Zdjęcia z wolnych źródeł: miniatury z Wikipedii (Wikimedia Commons) */
 (function(){
-  document.querySelectorAll('details.stop[data-wiki]').forEach(function(stop){
+  document.querySelectorAll('.stop[data-wiki]').forEach(function(stop){
     var title = stop.getAttribute('data-wiki');
-    var inner = stop.querySelector('.inner');
-    if(!inner) return;
+    var slot = stop.querySelector('.stop-photo');
+    if(!slot) return;
     var url = 'https://it.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title.replace(/ /g,'_'));
     fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
       if(!d) return;
@@ -95,18 +95,17 @@
       if(d.thumbnail && d.thumbnail.source){
         img = d.thumbnail.source.replace(/\/(\d+)px-/, '/900px-');
       }
-      var fig = document.createElement('figure');
-      fig.className = 'wikiimg';
       var im = document.createElement('img');
       im.src = img; im.alt = title; im.loading = 'lazy';
-      var cap = document.createElement('figcaption');
-      var a = document.createElement('a');
-      a.href = (d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page) || '#';
-      a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = 'Foto: Wikimedia Commons / Wikipedia';
-      cap.appendChild(a);
-      fig.appendChild(im); fig.appendChild(cap);
-      inner.insertBefore(fig, inner.firstChild);
+      im.style.width = '100%'; im.style.height = '100%'; im.style.objectFit = 'cover'; im.style.borderRadius = '14px';
+      slot.innerHTML = '';
+      slot.appendChild(im);
+      var cap = document.createElement('a');
+      cap.href = (d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page) || '#';
+      cap.target = '_blank'; cap.rel = 'noopener';
+      cap.textContent = 'Foto: Wikimedia Commons / Wikipedia';
+      cap.style.cssText = 'display:block;margin-top:6px;font-size:12px;color:var(--label);border-bottom:1px dashed var(--line);width:fit-content';
+      slot.insertAdjacentElement('afterend', cap);
     }).catch(function(){ /* offline lub brak artykułu — po prostu bez zdjęcia */ });
   });
 })();
