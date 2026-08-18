@@ -221,9 +221,16 @@
       }
       try { sessionStorage.setItem('questini_kidmode', isKid ? '1' : '0'); } catch(e){}
     };
-    // restore per-tab preference within the session (not persisted long-term on purpose)
+    // ?view=kid (np. z zeskanowanego kodu QR) zawsze wygrywa i włącza widok dziecka od razu.
+    // W innym wypadku: przywróć wybór z tej samej karty w tej samej sesji (sessionStorage —
+    // celowo NIE trwałe między wizytami, żeby rodzic nie utknął w widoku dziecka następnym razem).
     try {
-      if(sessionStorage.getItem('questini_kidmode') === '1') window.toggleKidView();
+      var params = new URLSearchParams(location.search);
+      if(params.get('view') === 'kid'){
+        window.toggleKidView();
+      } else if(sessionStorage.getItem('questini_kidmode') === '1'){
+        window.toggleKidView();
+      }
     } catch(e){}
   }
 
