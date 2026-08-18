@@ -3,11 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Questini — rodzinne przewodniki wypadowe</title>
+<title>Questini — rodzinne przewodniki po miastach Europy | gra terenowa dla dzieci</title>
+<meta name="description" content="Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje i zagadki dla dzieci, kolacja na koniec. Marche, Umbria, Toskania, Kraków.">
+<meta name="keywords" content="przewodnik rodzinny, zwiedzanie z dziećmi, gra terenowa dzieci, wycieczki jednodniowe Europa, Włochy z dziećmi, Marche Umbria przewodnik, city quest kids, family travel guide Europe">
+<link rel="canonical" href="https://questini.com/">
+<meta property="og:title" content="Questini — zwiedzanie z dziećmi, które dzieci naprawdę lubią">
+<meta property="og:description" content="Gotowe plany wycieczek po miastach Europy: parking, trasa, misje dla dzieci, kolacja na koniec. Otwórz na telefonie i ruszaj.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://questini.com/">
+<meta property="og:image" content="https://questini.com/og-image.jpg">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:locale:alternate" content="en_GB">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:locale:alternate" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Questini — rodzinne przewodniki po miastach Europy">
+<meta name="twitter:description" content="Parking, trasa, misje dla dzieci, kolacja. Gotowe plany wycieczek jednodniowych.">
+<meta name="robots" content="index, follow">
+<link rel="alternate" hreflang="pl" href="https://questini.com/">
+<link rel="alternate" hreflang="en" href="https://questini.com/?lang=en">
+<link rel="alternate" hreflang="it" href="https://questini.com/?lang=it">
+<link rel="alternate" hreflang="de" href="https://questini.com/?lang=de">
+<link rel="alternate" hreflang="x-default" href="https://questini.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Questini","alternateName":"Questini.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Questini","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/logo.png"}},"potentialAction":{"@type":"SearchAction","target":"https://questini.com/wlochy/umbria/index.html","query-input":"required name=search_term_string"}}
+</script>
 <style>
 .landing-section{padding:48px 0 0}
 .landing-section .caps{margin-bottom:16px}
@@ -40,6 +64,17 @@
 .how-step strong{font-weight:700}
 .how-step p{font-size:17px;color:var(--ink2);margin-top:4px;line-height:1.5}
 
+.about-grid{display:grid;grid-template-columns:1fr;gap:24px;align-items:start;margin-top:20px}
+.about-text p{font-size:18px;line-height:1.6;color:var(--ink);margin-top:14px}
+.about-text p:first-child{margin-top:0}
+.about-boxes{display:flex;flex-direction:column;gap:20px}
+.about-box{border-radius:20px;padding:24px}
+.about-box.sea{background:var(--sea-bg)}
+.about-box.sea h2{color:var(--sea)}
+.about-box.parchment{background:var(--parchment);border:1px solid var(--line)}
+.about-box h2{margin:0 0 12px;font-size:22px;font-weight:800;letter-spacing:-.015em}
+.about-box ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.5}
+
 .cta-box{
   background:var(--parchment);border-radius:20px;padding:32px;margin-top:48px;
   box-shadow:var(--sh2);text-align:center;
@@ -60,6 +95,9 @@
   .usp-grid{grid-template-columns:repeat(3,1fr)}
   .how-grid{grid-template-columns:repeat(2,1fr)}
 }
+@media (min-width:900px){
+  .about-grid{grid-template-columns:1.2fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -78,12 +116,18 @@
 </header>
 
 <div class="landing-hero">
+  <div class="chip-soon" style="background:var(--olive-bg);color:var(--olive);display:inline-block;margin-bottom:4px">Gra terenowa w prawdziwym mieście</div>
   <h1>Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
-  <p class="subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy. Każde miasto: trasa z parkingu, przystanki z godzinami, misje i zagadki dla dzieci, kolacja na koniec. Drukujesz albo otwierasz na telefonie — i ruszasz.</p>
+  <p class="subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
 </div>
 
 <div class="hero-photo">
-  <div class="hero-badge">7 miast · Marche & Umbria</div>
+  <div class="hero-badge">7 miast · Marche &amp; Umbria</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px">
+  <a class="cta-btn" href="#regiony">Otwórz przewodnik →</a>
+  <a href="#jak" style="min-height:56px;display:inline-flex;align-items:center;background:var(--parchment);color:var(--terra-h);border:1.5px solid var(--btn2-border);border-radius:999px;padding:16px 28px;font-size:18px;font-weight:700">Jak to działa</a>
 </div>
 
 <!-- USP -->
@@ -94,54 +138,93 @@
       <div class="usp-icon terra">🎯</div>
       <div>
         <div class="usp-title">Dzieci grają, nie marudzą</div>
-        <div class="usp-text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie staje się grą terenową, a nie obowiązkiem.</div>
+        <div class="usp-text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie zamienia się w quest.</div>
       </div>
     </div>
     <div class="usp">
       <div class="usp-icon olive">☀️</div>
       <div>
         <div class="usp-title">Godziny pod klimat</div>
-        <div class="usp-text">W ciepłych krajach trasa omija największe słońce — zwiedzanie zaczyna się pod wieczór, kończy kolacją przy zachodzie. Zero bitew z upałem.</div>
+        <div class="usp-text">Trasa omija południowy upał. Start późnym popołudniem, finał kolacją przy zachodzie słońca.</div>
       </div>
     </div>
     <div class="usp">
       <div class="usp-icon sea">🅿️</div>
       <div>
         <div class="usp-title">Zaczynasz od parkingu</div>
-        <div class="usp-text">Każde miasto: najpierw gdzie zostawić auto (z ceną i linkiem nawigacyjnym), potem dopiero zabytki. Koniec z krążeniem po strefach ZTL.</div>
+        <div class="usp-text">Przystanek nr 1 to zawsze parking — cena, nawigacja i ostrzeżenie o strefie ZTL. Bez krążenia i mandatów.</div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- How it works -->
-<div class="landing-section">
+<div class="landing-section" id="jak">
   <p class="caps">Jak to działa</p>
   <div class="how-grid">
     <div class="how-step">
       <strong>Wybierz region i miasto</strong>
-      <p>Lista miast posortowana od najbliższego twojej bazy. Jedno kliknięcie i masz cały dzień zaplanowany.</p>
+      <p>Lista miast z odległością i czasem dojazdu od waszej bazy.</p>
     </div>
     <div class="how-step">
       <strong>Jedź — nawigacja z telefonu</strong>
-      <p>Przycisk „Prowadź" ustawia trasę do parkingu prosto z twojej lokalizacji. Bez wpisywania adresów.</p>
+      <p>Jeden przycisk prowadzi do parkingu w Google Maps.</p>
     </div>
     <div class="how-step">
       <strong>Zwiedzaj przystanek po przystanku</strong>
-      <p>Godziny, ceny biletów, opisy, ciekawostki dla dorosłych i osobne misje dla dzieci. Wszystko w jednym widoku.</p>
+      <p>Godziny, opisy, misje dla dzieci i zadania foto w kolejności trasy.</p>
     </div>
     <div class="how-step">
       <strong>Zakończ kolacją</strong>
-      <p>Ostatni przystanek to zawsze restauracja z linkiem do WhatsAppa — rezerwujesz stolik, zanim usiądziesz w auto.</p>
+      <p>Ostatni przystanek to restauracja — rezerwacja przez WhatsApp.</p>
+    </div>
+  </div>
+</div>
+
+<!-- O Questini -->
+<div class="landing-section">
+  <div class="about-grid">
+    <div class="about-text">
+      <h2 style="margin:0 0 4px;font-size:28px;font-weight:800;letter-spacing:-.015em;line-height:1.15">Rodzinne przewodniki po miastach Europy — od parkingu do kolacji</h2>
+      <p>Questini to gotowe plany wycieczek jednodniowych dla rodzin z dziećmi, podróżujących autem po Europie. Każde miasto rozpisane godzina po godzinie: gdzie zaparkować, co zobaczyć, ile kosztują bilety i gdzie zjeść kolację.</p>
+      <p>Ale Questini to nie kolejny przewodnik z listą zabytków. To <strong>gra terenowa w prawdziwym mieście</strong>: każdy przystanek ma misję dla dzieci — znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
+      <p><strong>Godziny dostosowane do klimatu.</strong> W ciepłych krajach trasa omija południowy upał — zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
+      <p><strong>Zaczynasz od parkingu.</strong> Każde miasto otwiera się informacją, gdzie zostawić auto — z ceną, linkiem do nawigacji i ostrzeżeniem o strefie ZTL. Koniec z krążeniem po zakazanych strefach i mandatami z kamer.</p>
+      <p>Aktualnie dostępny region: <strong>Marche i Umbria</strong> (Włochy) — 7 miast, 46 przystanków, kompletne plany na 7 dni. W przygotowaniu: Toskania, Kraków i okolice.</p>
+    </div>
+    <div class="about-boxes">
+      <div class="about-box sea">
+        <h2>Dla kogo jest Questini</h2>
+        <ul>
+          <li><strong>Rodziny z dziećmi 5–15 lat</strong> podróżujące autem po Europie</li>
+          <li><strong>Rodzice, którzy nie chcą planować</strong> — gotowy plan, otwierasz i jedziesz</li>
+          <li><strong>Rodziny szukające czegoś więcej niż plaża</strong> — kultura i zabawa zamiast leżaka</li>
+          <li><strong>Polscy turyści we Włoszech</strong> — przewodniki po polsku, z rozmówkami i WhatsAppem do restauracji</li>
+        </ul>
+      </div>
+      <div class="about-box parchment">
+        <h2>Co jest w każdym przewodniku</h2>
+        <ul>
+          <li>Parking jako przystanek nr 1 — z ceną, nawigacją i informacją o ZTL</li>
+          <li>5–9 przystanków z godzinami, cenami biletów i opisami</li>
+          <li>Misje i zagadki dla dzieci przy każdym przystanku</li>
+          <li>Zadania fotograficzne — album ze wspólnych zdjęć z podróży</li>
+          <li>Ciekawostki historyczne dla dorosłych — daty, kontekst, anegdoty</li>
+          <li>Kolacja jako ostatni przystanek — z linkiem do WhatsApp restauracji</li>
+          <li>Plan awaryjny: apteka, toalety, plac zabaw, szpital</li>
+          <li>Rozmówki w języku lokalnym</li>
+          <li>Zdjęcia zabytków z Wikimedia Commons</li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- Regions -->
-<div class="landing-section">
+<div class="landing-section" id="regiony">
   <p class="caps">Wybierz region</p>
 
-  <a class="region-card" href="marche-umbria.html">
+  <a class="region-card" href="wlochy/umbria/index.html">
     <div>
       <p class="caps">Włochy</p>
       <p class="region-name">Marche & Umbria</p>
@@ -170,8 +253,8 @@
 <!-- CTA -->
 <div class="cta-box">
   <h2>Pierwszy region jest za darmo</h2>
-  <p>Marche & Umbria — 7 miast, 46 przystanków, misje dla dzieci, zadania foto i album wspólnych zdjęć. Otwórz i jedź.</p>
-  <a class="cta-btn" href="marche-umbria.html">Otwórz przewodnik →</a>
+  <p>Otwórz Marche &amp; Umbria na telefonie, wybierz miasto na dziś i ruszaj — nic nie trzeba pobierać ani zakładać.</p>
+  <a class="cta-btn" href="wlochy/umbria/index.html">Otwórz przewodnik →</a>
 </div>
 
 <div class="footer">
