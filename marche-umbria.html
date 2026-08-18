@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marche & Umbria — Questini</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap-wide">
+
+<header>
+  <div style="display:flex;align-items:center;gap:14px">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div class="logo"><span class="logo-name">questini</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
+  </div>
+  <div class="lang-sw" role="radiogroup" aria-label="Język">
+    <button class="active" aria-pressed="true"><span class="flag flag-pl"></span>PL</button>
+    <button aria-pressed="false"><span class="flag flag-en"></span>EN</button>
+    <button aria-pressed="false"><span class="flag flag-it"></span>IT</button>
+    <button aria-pressed="false"><span class="flag flag-de"></span>DE</button>
+  </div>
+</header>
+
+<div class="hdr-left" style="padding:24px 0 0">
+  <p class="caps">Wypady z bazy</p>
+  <h1>Marche & Umbria</h1>
+  <p class="subtitle">7 miast · sortowane od najbliższego</p>
+</div>
+
+<div class="filters">
+  <div class="filt"><span class="caps">Państwo</span><span class="filt-val">Włochy ▾</span></div>
+  <div class="filt"><span class="caps">Region</span><span class="filt-val">Marche & Umbria ▾</span></div>
+  <div class="filt"><span class="caps">Miasto</span><span class="filt-val">Wszystkie ▾</span></div>
+</div>
+
+<div class="loc-bar" id="locBar">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+  <span class="loc-text" id="locText">Udostępnij lokalizację, aby posortować od najbliższego</span>
+  <button class="loc-btn" id="locBtn" onclick="getLocation()">Zlokalizuj mnie</button>
+</div>
+
+<div class="city-list" id="cityList">
+  <a class="city-card today" href="perugia.html" data-lat="43.1107" data-lng="12.3908">
+    <div class="thumb"><div class="badge-today">DZIŚ</div></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Perugia</span><span class="chip chip-olive">100 km · 1h45</span></div>
+      <p class="city-lead">Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.</p>
+    </div>
+  </a>
+  <a class="city-card" href="asyz.html" data-lat="43.0707" data-lng="12.6196">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Asyż</span><span class="chip chip-olive">110 km · 1h50</span></div>
+      <p class="city-lead">Bazylika św. Franciszka i uliczki z różowego kamienia.</p>
+    </div>
+  </a>
+  <a class="city-card" href="frasassi.html" data-lat="43.4012" data-lng="12.9636">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Jaskinie Frasassi</span><span class="chip chip-olive">55 km · 1h00</span></div>
+      <p class="city-lead">Podziemna katedra wielkości katedry — odkryta w 1971.</p>
+    </div>
+  </a>
+  <a class="city-card" href="urbino.html" data-lat="43.7262" data-lng="12.6366">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Urbino</span><span class="chip chip-olive">25 km · 0h35</span></div>
+      <p class="city-lead">Renesansowe miasto idealne, dom Rafaela.</p>
+    </div>
+  </a>
+  <a class="city-card" href="rimini.html" data-lat="44.0598" data-lng="12.5684">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Rimini</span><span class="chip chip-olive">70 km · 1h05</span></div>
+      <p class="city-lead">Fellini i rzymski most, po którym wciąż jeżdżą auta.</p>
+    </div>
+  </a>
+  <a class="city-card" href="ancona.html" data-lat="43.6158" data-lng="13.5189">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Ancona</span><span class="chip chip-olive">65 km · 1h00</span></div>
+      <p class="city-lead">Port, łuk Trajana i najlepsze ryby regionu.</p>
+    </div>
+  </a>
+  <a class="city-card" href="rawenna.html" data-lat="44.4184" data-lng="12.2035">
+    <div class="thumb"></div>
+    <div class="city-body">
+      <div class="city-top"><span class="city-name">Rawenna</span><span class="chip chip-olive">120 km · 1h30</span></div>
+      <p class="city-lead">Bizantyjskie mozaiki i grób Dantego.</p>
+    </div>
+  </a>
+</div>
+
+</div>
+<script>
+function haversine(a,b,c,d){var R=6371,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180,z=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(y/2)*Math.sin(y/2);return R*2*Math.atan2(Math.sqrt(z),Math.sqrt(1-z))}
+function getLocation(){var b=document.getElementById('locBtn'),t=document.getElementById('locText');b.textContent='Szukam…';b.disabled=true;if(!navigator.geolocation){t.textContent='Przeglądarka nie obsługuje lokalizacji';b.textContent='Niedostępne';return}navigator.geolocation.getCurrentPosition(function(p){var la=p.coords.latitude,lo=p.coords.longitude;t.textContent='Pozycja: '+la.toFixed(4)+'°N, '+lo.toFixed(4)+'°E';b.textContent='Odśwież';b.disabled=false;var l=document.getElementById('cityList'),cs=Array.prototype.slice.call(l.querySelectorAll('.city-card'));cs.forEach(function(c){var d=haversine(la,lo,parseFloat(c.dataset.lat),parseFloat(c.dataset.lng));c._dist=d;var el=c.querySelector('.chip-olive');if(el)el.textContent=Math.round(d)+' km';});cs.sort(function(a,b){return a._dist-b._dist});cs.forEach(function(c){l.appendChild(c)})},function(){t.textContent='Nie udało się — sprawdź uprawnienia';b.textContent='Spróbuj ponownie';b.disabled=false},{enableHighAccuracy:true,timeout:10000})}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+</script>
+</body>
+</html>
