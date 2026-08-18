@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rawenna — przewodnik rodzinny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero-img">
+  <div class="hero-over">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 Widok dziecka</button>
+      <div class="lang-sw" role="radiogroup" aria-label="Język">
+        <button class="active" aria-pressed="true">PL</button>
+        <button aria-pressed="false">EN</button>
+        <button aria-pressed="false">IT</button>
+        <button aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="city-hero-body">
+  <p class="caps">Emilia-Romania · cały dzień · miasto płaskie!</p>
+  <h1>Rawenna</h1>
+  <p class="subtitle">Gdy Rzym upadał, stolicę zachodniego cesarstwa przeniesiono tutaj, między bagna i laguny — i przez półtora wieku Rawenna była centrum świata. Zostały po tym sufity ze złota i szkła, przy których gasną fotografie. Osiem zabytków na liście UNESCO w mieście wielkości powiatu.</p>
+  <p class="stop-note" style="margin-top:4px">bilet łączony na 5 zabytków — kupcie online</p>
+  <div class="hero-chips">
+    <span class="chip chip-neutral">120 km</span>
+    <span class="chip chip-neutral">ok. 1h30</span>
+    <span class="chip chip-sea">powrót ok. 17:45</span>
+  </div>
+</div>
+
+<div class="stops" id="stops">
+
+  <div class="stop open" data-id="01">
+    <button class="stop-header" onclick="toggleStop('01')">
+      <div class="stop-row1"><span class="stop-num">01 · 9:15</span><span class="stop-name">Parking Largo Giustiniano</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">płatny/h</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=Largo+Giustiniano+Ravenna&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Parking dwieście metrów od San Vitale i mauzoleum Galli Placydii — czyli od dwóch punktów, które bezwzględnie trzeba zaliczyć rano, zanim zjadą autokary. Reszta zabytków leży w promieniu kwadransa pieszo, a Rawenna jest idealnie płaska: jedyne miasto z całej listy, w którym nogi mają urlop. Miejscowi jeżdżą rowerami jak Holendrzy.</p><p class="stop-desc">Centrum to ZTL; parkingi na obrzeżach strefy są liczne i dobrze oznaczone. Bilet łączony na pięć zabytków wczesnochrześcijańskich (San Vitale, Galla Placidia, Sant'Apollinare Nuovo, baptysterium Neona, kaplica arcybiskupia) najlepiej kupić online z wyprzedzeniem — w sierpniu wejście do Galli Placydii ma limity czasowe i sloty potrafią się kończyć.</p>
+      <p class="stop-note">Płatny za godzinę · bilet łączony na 5 zabytków — sprawdźcie cenę i sloty na oficjalnej stronie diecezjalnej przed wyjazdem</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Rawenna to jedyne nasze miasto bez ani jednej górki. Dziś zero wspinaczki — obiecane.</li><li>Parkujemy 200 metrów od sufitu z 900 złotych gwiazd. Serio. Zaraz je policzycie.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Najbardziej włoski rower dnia — miasto jeździ na dwóch kółkach, wybór jest ogromny.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="02" data-wiki="Basilica di San Vitale">
+    <button class="stop-header" onclick="toggleStop('02')">
+      <div class="stop-row1"><span class="stop-num">02 · 9:30</span><span class="stop-name">Bazylika San Vitale</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">526–547</span><span class="chip-sm chip-olive">bilet łączony</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Basilica+di+San+Vitale+Ravenna" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Ośmiobok z cegły, z zewnątrz skromny jak spichlerz — a w środku prezbiterium, które wygląda, jakby ktoś otworzył szkatułkę z klejnotami i zapomniał zamknąć. Konsekrowana w 547 roku bazylika to szczyt sztuki, w której antyk przechodzi w Bizancjum: każda powierzchnia prezbiterium pokryta jest mozaiką ze szkła, złota i masy perłowej, a zielenie i błękity mają intensywność, której nie oddaje żaden ekran.</p><p class="stop-desc">Najsłynniejsze są dwa panele naprzeciw siebie: cesarz Justynian ze świtą i cesarzowa Teodora z dworem — para, która patrzy stąd od blisko piętnastu wieków, choć żadne z nich nigdy w Rawennie nie postawiło stopy. Portrety były polityką: miasto właśnie wróciło pod władzę Konstantynopola i mozaika była komunikatem, kto tu teraz rządzi. Teodora to osobna legenda — córka treserki niedźwiedzi z cyrku, aktorka, a więc kobieta z samego dna ówczesnej drabiny społecznej, która została najpotężniejszą cesarzową w dziejach Bizancjum i współautorką praw poprawiających los kobiet.</p><p class="stop-desc">Architektura ma też swoją sztafetę: San Vitale zachwycił Karola Wielkiego tak bardzo, że swoją kaplicę pałacową w Akwizgranie — tę z koronacjami cesarzy — kazał wznieść na jej wzór, a kolumny i marmury po prostu stąd wywiózł, za zgodą papieża.</p>
+      <p class="stop-note">Bilet łączony · rano najmniejsze tłumy · 40–50 min</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Mozaika to miliony kamyczków wielkości paznokcia. Podejdźcie na wyciągnięcie ręki: widać każdy. Odejdźcie dziesięć kroków: obraz. Magia skali.</li><li>Znajdźcie cesarzową Teodorę — była córką treserki niedźwiedzi i została najpotężniejszą kobietą świata.</li><li>Złote kostki to prawdziwe złoto: cieniutki listek zatopiony w szkle. Dlatego świecą od 1500 lat i nie ściemniały ani trochę.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Ten sam fragment mozaiki dwa razy: z odległości dłoni (kamyczki) i z dziesięciu metrów (obraz). Para zdjęć do albumu.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="03" data-wiki="Mausoleo di Galla Placidia">
+    <button class="stop-header" onclick="toggleStop('03')">
+      <div class="stop-row1"><span class="stop-num">03 · 10:30</span><span class="stop-name">Mauzoleum Galli Placydii</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">ok. 425–450</span><span class="chip-sm chip-olive">łączony + dopłata</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Mausoleo+di+Galla+Placidia+Ravenna" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Mały ceglany budynek na trawniku za San Vitale, z zewnątrz nieobiecujący niczego — w środku najsłynniejsze nocne niebo starożytności: sklepienie usiane setkami złotych gwiazd na granatowym tle, ze złotym krzyżem w zenicie. Do tego jelenie u źródła, gołębie przy misie, Dobry Pasterz wśród owiec — wszystko w kolorystyce tak głębokiej, że wnętrze porównywano do wnętrza szafiru. To najstarsze mozaiki Rawenny, z pierwszej połowy V wieku.</p><p class="stop-desc">Fundatorka, Galla Placydia, miała życiorys na serial: córka cesarza Teodozjusza Wielkiego, porwana przez Wizygotów podczas złupienia Rzymu w 410 roku, została żoną ich króla, po jego śmierci wróciła, poślubiona kolejnemu cesarzowi, a po jego zgonie przez ćwierć wieku faktycznie rządziła zachodnim imperium jako regentka syna. Ironia: w swoim mauzoleum najprawdopodobniej nigdy nie spoczęła — zmarła w Rzymie i tam ją zapewne pochowano. Budynek nosi jej imię trochę na wyrost, i słusznie: na taki sufit zasłużyła.</p><p class="stop-desc">Wejścia są limitowane czasowo — w środku spędza się kilka minut, w sezonie z dopłatą rezerwacyjną. Kilka minut wystarczy pod jednym warunkiem: w ciszy i z zadartą głową.</p>
+      <p class="stop-note">Bilet łączony + drobna dopłata za slot w sezonie · limit czasu w środku · rezerwujcie razem z biletem</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Policzcie gwiazdy... albo chociaż spróbujcie. Jest ich ponad dziewięćset.</li><li>Pani, dla której zbudowano ten grobowiec, została porwana przez barbarzyńców, wyszła za ich króla, a potem rządziła cesarstwem. I prawdopodobnie wcale tu nie leży.</li><li>Okna nie mają szyb ze szkła, tylko cienkie płytki alabastru — kamienia, który przepuszcza miodowe światło.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Sklepienie z gwiazdami: telefon płasko nad głową, ekranem w dół, chwila na ostrość — i bez flesza, bezwzględnie.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="04" data-wiki="Battistero Neoniano">
+    <button class="stop-header" onclick="toggleStop('04')">
+      <div class="stop-row1"><span class="stop-num">04 · 11:30</span><span class="stop-name">Baptysterium Neona</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">V w.</span><span class="chip-sm chip-olive">bilet łączony</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Battistero+Neoniano+Ravenna" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Ośmioboczne baptysterium z V wieku, przebudowane z rzymskiej łaźni — praktyczny recykling, skoro i tu, i tu chodziło o wodę. W kopule mozaika chrztu Chrystusa w Jordanie, otoczona procesją dwunastu apostołów krążących wokół sceny jak wskazówki zegara; sam Jordan występuje osobiście, jako antyczny bóg rzeczny z trzciną — pogańska personifikacja w samym środku chrześcijańskiej sceny, bo w V wieku te światy jeszcze się przenikały.</p><p class="stop-desc">Ciekawostka inżynierska: budynek przez wieki zapadał się w grząski grunt dawnej laguny i dziś tkwi w ziemi kilka metrów głębiej, niż go zbudowano — podłoga, po której chodzicie, leży wysoko nad oryginalną. Cała Rawenna powoli tonie we własnej historii, dosłownie.</p>
+      <p class="stop-note">Bilet łączony · 15–20 minut · obok katedra i muzeum arcybiskupie z kaplicą (też w bilecie)</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>W scenie chrztu jest bóg rzeki we własnej osobie — starszy pan z trzciną. Znajdźcie go.</li><li>Budynek przez wieki zapadł się w miękki grunt o kilka metrów. Stoicie wyżej, niż chodzili jego budowniczowie.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Kopuła z apostołami — kadr centralny, spod środka, z medalionem chrztu w osi.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="05" data-wiki="Basilica di Sant'Apollinare Nuovo">
+    <button class="stop-header" onclick="toggleStop('05')">
+      <div class="stop-row1"><span class="stop-num">05 · 12:30</span><span class="stop-name">Obiad, potem Sant'Apollinare Nuovo</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">ok. 505</span><span class="chip-sm chip-olive">bilet łączony</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Basilica+di+Sant+Apollinare+Nuovo+Ravenna" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Najpierw obiad — Rawenna to Romania, więc obowiązuje piadina (kilka dobrych piadinerii w rejonie Piazza del Popolo) albo cappelletti w rosole dla odważniejszych. Potem ostatnia wielka bazylika dnia.</p><p class="stop-desc">Sant'Apollinare Nuovo zbudował około 500 roku Teodoryk Wielki — król Ostrogotów, który rządził Italią z Rawenny, formalnie w imieniu Konstantynopola, faktycznie po swojemu — jako kościół ariański przy swoim pałacu. Nad nawami ciągną się dwie najdłuższe „procesje" w sztuce: dwadzieścia dwie dziewice-męczennice po jednej stronie i dwudziestu sześciu męczenników po drugiej, krok za krokiem zmierzający ku ołtarzowi na tle złota i palm. Czyta się to idąc — najdłuższy komiks starożytności.</p><p class="stop-desc">Jest tu też lekcja historii zapisana w retuszu: gdy po upadku Gotów kościół przejęli katolicy, wizerunki Teodoryka i jego dworu usunięto z mozaik pałacu — ale niedokładnie. Na kolumnach portyku zostały samotne dłonie, których nie dało się wymazać, bo zachodziły na tło. Duchy dworu Teodoryka machają z kolumn do dziś: znajdźcie je, to najlepszy detal dnia.</p>
+      <p class="stop-note">Bilet łączony · piadina obok: 5–8 € · 40 min na bazylikę</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Na kolumnach namalowanego pałacu zostały... same dłonie ludzi, których wymazano z mozaiki 1400 lat temu. Znajdźcie duchy.</li><li>Wszyscy święci idą w tę samą stronę, jak najdłuższa kolejka świata. Policzcie korony niesione przez dziewice.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Procesja w perspektywie — stanąć na osi nawy i złapać rytm powtarzających się postaci.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="06" data-wiki="Tomba di Dante">
+    <button class="stop-header" onclick="toggleStop('06')">
+      <div class="stop-row1"><span class="stop-num">06 · 14:30</span><span class="stop-name">Grób Dantego</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">kaplica 1780</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Tomba+di+Dante+Ravenna" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Dante Alighieri, wygnany z Florencji pod groźbą stosu, ostatnie lata spędził na dworze w Rawennie — tu dokończył „Boską komedię" i tu zmarł na malarię we wrześniu 1321 roku, wracając z misji dyplomatycznej do Wenecji. Florencja, która skazała go za życia, po śmierci zaczęła się o niego upominać — i robi to nieprzerwanie od siedmiuset lat. Rawenna odpowiada niezmiennie: nie. Florencji zostało symboliczne zadośćuczynienie: co roku funduje oliwę do wiecznej lampki płonącej nad grobem. Ciało zostaje, oliwa przyjeżdża.</p><p class="stop-desc">Historia kości to osobny kryminał: gdy w XVI wieku po prochy sięgnąć chciał (z papieskim błogosławieństwem, dla Florencji) sam Michał Anioł ze swoim projektem nagrobka, raweńscy franciszkanie wywiercili dziurę w sarkofagu i wynieśli szczątki bocznym wyjściem. Odnaleziono je przypadkiem w 1865 roku, zamurowane w skrzynce z karteczką. Podczas II wojny zakopano je znów, w ogrodzie obok, dla bezpieczeństwa przed bombami — miejsce znaczy dziś płyta i kopczyk. Wokół grobowca (obecna klasycystyczna kaplica: 1780, projekt Camilla Morigii) obowiązuje „zona dantesca" — strefa ciszy ogłoszona przez miasto.</p>
+      <p class="stop-note">Wstęp wolny · strefa ciszy · obok muzeum Dantego i krużganki franciszkańskie</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Florencja wyrzuciła Dantego, a od 700 lat błaga o zwrot jego kości. Rawenna co roku odpowiada: nie. Ale oliwę do lampki bierze.</li><li>Mnisi ukradli kości z własnego grobowca, żeby ich nie oddać — i schowali tak dobrze, że odnaleziono je po 350 latach, z karteczką.</li><li>W czasie wojny kości zakopano w ogrodzie obok. Znajdźcie kopczyk z tablicą.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Wieczna lampka nad sarkofagiem — symbol siedmiusetletniej kłótni dwóch miast — i kopczyk w ogrodzie.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="07" data-wiki="Mausoleo di Teodorico">
+    <button class="stop-header" onclick="toggleStop('07')">
+      <div class="stop-row1"><span class="stop-num">07 · 15:30</span><span class="stop-name">Opcja: Mauzoleum Teodoryka</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">ok. 520</span><span class="chip-sm chip-olive">osobny bilet</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Mausoleo+di+Teodorico+Ravenna" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Na obrzeżach miasta, dziesięć minut autem w stronę wyjazdu na powrót, stoi grobowiec, jakiego nie zbudował nikt inny: Teodoryk kazał nakryć swoje dziesięcioboczne mauzoleum JEDNYM kamieniem. Monolityczna kopuła z istryjskiego wapienia ma ponad dziesięć metrów średnicy i wagę szacowaną na około 230 ton — i do dziś nikt nie jest pewien, jak w VI wieku przetransportowano ją morzem i wciągnięto na miejsce. Dwanaście kamiennych uchwytów na obwodzie sugeruje liny i rampy ziemne; reszta to hipotezy.</p><p class="stop-desc">Gotycki król, który podziwiał rzymską cywilizację i chciał być pochowany trwalej niż cesarze, osiągnął cel połowicznie: budynek stoi nienaruszony, ale jego szczątki usunięto z mauzoleum, gdy po rekonkwiście bizantyjskiej potępiono ariańskiego władcę. Pusta kamienna wanna z porfiru, służąca za sarkofag, stoi w środku do dziś.</p>
+      <p class="stop-note">Osobny bilet, kilka € — poza biletem łączonym · 30 minut · po drodze na wyjazd z miasta</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Dach to JEDEN kamień ważący tyle, co 150 samochodów. Jak go podnieśli bez dźwigu 1500 lat temu? Nikt nie wie na pewno. Wymyślcie własną teorię.</li><li>Wanna w środku to sarkofag króla — z fioletowego kamienia cesarzy. Jest pusta: króla wyproszono z własnego grobu.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Cała bryła z człowiekiem dla skali — inaczej nikt nie uwierzy w rozmiar kopuły.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot-section">
+  <p class="caps">Plan dnia</p>
+  <div class="plan-card">
+    <div class="plan-row"><span class="plan-time">7:45</span><span>Wyjazd z Montefelcino</span></div><div class="plan-row"><span class="plan-time">9:15</span><span>Parking Largo Giustiniano</span></div><div class="plan-row"><span class="plan-time">9:30</span><span>San Vitale</span></div><div class="plan-row"><span class="plan-time">10:30</span><span>Galla Placidia (slot z biletu!)</span></div><div class="plan-row"><span class="plan-time">11:30</span><span>Baptysterium Neona + kaplica arcybiskupia</span></div><div class="plan-row"><span class="plan-time">12:30</span><span>Piadina w centrum</span></div><div class="plan-row"><span class="plan-time">13:30</span><span>Sant'Apollinare Nuovo</span></div><div class="plan-row"><span class="plan-time">14:30</span><span>Grób Dantego, strefa ciszy</span></div><div class="plan-row"><span class="plan-time">15:30</span><span>Opcja: mauzoleum Teodoryka (po drodze)</span></div><div class="plan-row"><span class="plan-time">16:15</span><span>Wyjazd</span></div><div class="plan-row"><span class="plan-time">~17:45</span><span>Montefelcino</span></div>
+  </div>
+</div>
+
+<div class="foot-section">
+  <p class="caps">Warto wiedzieć</p>
+  <p class="note" style="margin-top:0">Kolejność ma znaczenie: San Vitale i Galla Placidia rano, przed autokarami — reszta zniesie tłumy lepiej. Slot do Galli Placydii rezerwujcie przy zakupie biletu łączonego. Rawenna jest płaska i rowerowa: przy dłuższym pobycie wypożyczalnia rowerów zamienia logistykę w przyjemność.</p>
+</div>
+
+<div class="pager">
+  <a href="ancona.html">← Ancona</a>
+  <a href="index.html">Wszystkie miasta ↑</a>
+</div>
+
+</div>
+<script>
+function toggleStop(id){
+  document.querySelectorAll('.stop').forEach(function(s){
+    if(s.dataset.id===id){s.classList.toggle('open')}
+    else{s.classList.remove('open')}
+  });
+}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+</script>
+<script src="../../app.js"></script>
+<script src="../../kids-view.js"></script>
+</body>
+</html>

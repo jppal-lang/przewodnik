@@ -150,6 +150,7 @@ questini.com/
 ├── places.html                    # indeks: kraj → region → miejsca
 ├── styles.css                     # design system — jedno źródło prawdy
 ├── app.js                         # album zdjęć, Wikimedia, interakcje
+├── kids-view.js                   # widok dziecka — czyta box-kids/box-foto z DOM widoku rodzica
 ├── i18n.js                        # runtime tłumaczeń
 ├── supabase-client.js             # wrapper Supabase (faza 2)
 ├── lang/
@@ -172,7 +173,8 @@ questini.com/
 │   │   ├── ancona.html
 │   │   ├── frasassi.html
 │   │   ├── urbino.html
-│   │   └── rimini.html
+│   │   ├── rimini.html
+│   │   └── rawenna.html           # geogr. Emilia-Romania, ale bez własnego regionu — patrz niżej
 │   ├── umbria/
 │   │   ├── index.html             # lista miast regionu Umbria
 │   │   ├── perugia.html
@@ -191,6 +193,15 @@ questini.com/
 Marche i Umbria to OSOBNE regiony, NIE łączone. Każdy region ma własny
 katalog, stronę z listą miast, własne plany dnia. Ścieżka:
 Włochy → Marche → Ancona, ALBO Włochy → Umbria → Perugia.
+
+Rawenna leży geograficznie w Emilia-Romania, nie w Marche — ale jedno miasto
+nie uzasadnia osobnego regionu/zakładki. Decyzja robocza: Rawenna zostaje
+wypisana pod zakładką „Marche" (jako piąte miasto, `wlochy/marche/rawenna.html`)
+do czasu, aż region Emilia-Romania będzie miał więcej niż jedno miasto —
+wtedy przenieść do własnego katalogu `wlochy/emilia-romania/`.
+
+`marche-umbria.html` w katalogu głównym to teraz tylko przekierowanie
+(meta refresh) do `wlochy/umbria/index.html`, zachowane dla starych linków.
 
 ---
 
@@ -557,9 +568,9 @@ Wnętrze:
 - [x] Design system v2
 - [x] Landing page questini.com
 - [x] Perugia (wzorzec karty miasta)
-- [ ] Rozdzielenie Marche / Umbria do osobnych katalogów
-- [ ] Migracja 6 miast na nowy szablon (format Perugii)
-- [ ] Widok dziecka (misje, checkboxy, progress)
+- [x] Rozdzielenie Marche / Umbria do osobnych katalogów (`/wlochy/marche/`, `/wlochy/umbria/`)
+- [x] Migracja 6 miast na nowy szablon (format Perugii)
+- [x] Widok dziecka (misje, checkboxy, progress, ranking rodzinny)
 - [ ] i18n runtime + PL/EN/IT/DE
 - [ ] Cookie policy + consent baner
 - [ ] Menu / indeks miejsc (places.html)

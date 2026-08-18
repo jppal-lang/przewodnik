@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asyż — przewodnik rodzinny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero-img">
+  <div class="hero-over">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 Widok dziecka</button>
+      <div class="lang-sw" role="radiogroup" aria-label="Język">
+        <button class="active" aria-pressed="true">PL</button>
+        <button aria-pressed="false">EN</button>
+        <button aria-pressed="false">IT</button>
+        <button aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="city-hero-body">
+  <p class="caps">Umbria · cały dzień</p>
+  <h1>Asyż</h1>
+  <p class="subtitle">Białe miasto na zboczu Monte Subasio, w którym syn bogatego kupca oddał wszystko — łącznie z ubraniem, publicznie, na rynku — i został najsłynniejszym świętym Europy. A Giotto namalował tu narodziny nowoczesnego malarstwa.</p>
+  <p class="stop-note" style="margin-top:4px">miasto zwiedza się Z GÓRKI</p>
+  <div class="hero-chips">
+    <span class="chip chip-neutral">115 km</span>
+    <span class="chip chip-neutral">ok. 1h50</span>
+    <span class="chip chip-sea">powrót ok. 19:15</span>
+  </div>
+</div>
+
+<div class="stops" id="stops">
+
+  <div class="stop open" data-id="01">
+    <button class="stop-header" onclick="toggleStop('01')">
+      <div class="stop-row1"><span class="stop-num">01 · 9:30</span><span class="stop-name">Parking Piazza Matteotti</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">płatny/h</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=Parcheggio+Piazza+Matteotti+Assisi&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Asyż to jedno wielkie zbocze, a wybór parkingu decyduje, czy zwiedzacie schodząc, czy się wspinając. Piazza Matteotti — parking podziemny na górnym krańcu miasta — ustawia cały dzień z górki: zaczynacie od katedry, schodzicie przez place do bazyliki Franciszka na samym dole, a na koniec wjeżdżacie z powrotem autobusem linii C albo wracacie spacerem trawersem. Z dziećmi w sierpniowym upale ta strategia to nie luksus, lecz warunek przetrwania.</p><p class="stop-desc">Strefa ZTL obejmuje całe stare miasto i jest pilnowana kamerami — pod bramy nie podjeżdżać. Przyjazd przed 10:00 ma znaczenie podwójne: o tej porze parking ma jeszcze miejsca, a autokary pielgrzymkowe dopiero dojeżdżają.</p><p class="stop-desc">Bonus na start, dosłownie przy parkingu: pozostałości rzymskiego amfiteatru z I wieku. Sam amfiteatr rozebrano dawno temu, ale średniowieczne domy stanęły dokładnie na jego obrysie — z góry ulica rysuje idealny owal areny. To pierwsza lekcja dnia: tu nic nie znika, wszystko zostaje wbudowane w następną warstwę.</p>
+      <p class="stop-note">Parking płatny za godzinę — stawkę sprawdźcie na tablicy · autobus C wraca z dołu na górę, bilety w tabaccheria</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Domy przy parkingu stoją w owalu — bo zbudowano je na rzymskim stadionie. Znajdźcie zakrzywioną uliczkę.</li><li>Dziś cały dzień idziemy w dół — to nie lenistwo, to strategia. Policzcie na koniec, ile schodów NIE musieliśmy pokonać pod górę.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Zakrzywiona linia domów na owalu amfiteatru — najlepiej z odrobiną wysokości.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="02" data-wiki="Cattedrale di San Rufino">
+    <button class="stop-header" onclick="toggleStop('02')">
+      <div class="stop-row1"><span class="stop-num">02 · 10:00</span><span class="stop-name">Katedra San Rufino</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">XII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Cattedrale+San+Rufino+Assisi" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Wbrew intuicji to nie bazylika Franciszka jest katedrą Asyżu, tylko San Rufino — i to tu wszystko się zaczęło. W romańskiej chrzcielnicy, która stoi w kościele do dziś, ochrzczono około 1181 roku syna kupca Pietra Bernardone. Chłopiec dostał imię Giovanni, ale ojciec, zakochany we Francji, gdzie robił interesy, przezwał go Francesco — „Francuzik". Kilkanaście lat później w tej samej chrzcielnicy ochrzczono Klarę, przyszłą świętą i pierwszą naśladowczynię Franciszka. Dwoje ludzi, którzy zmienili Kościół, zaczynało od tej samej misy z kamienia.</p><p class="stop-desc">Romańska fasada z trzema rozetami i portalem pełnym dziwnych bestii to jedna z najpiękniejszych w Umbrii — zatrzymajcie się przy niej dłużej niż we wnętrzu, które po przebudowach jest skromniejsze. Centralna rozeta uchodzi za wzorcowy przykład gatunku: kamienna koronka obliczona bez kalkulatora.</p>
+      <p class="stop-note">Wstęp wolny · muzeum i krypta rzymska płatne osobno — opcja, jeśli czas pozwoli</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>W tej kamiennej misie ochrzczono i Franciszka, i Klarę — dwoje najsłynniejszych ludzi tego miasta, zanim ktokolwiek wiedział, kim będą.</li><li>Na portalu wyrzeźbiono zwierzęta-potwory. Policzcie je i nadajcie każdemu imię.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Centralna rozeta z zoomem — tak, żeby wypełniła kadr jak kamienna koronka.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="03" data-wiki="Basilica di Santa Chiara">
+    <button class="stop-header" onclick="toggleStop('03')">
+      <div class="stop-row1"><span class="stop-num">03 · 10:45</span><span class="stop-name">Bazylika św. Klary</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1257–1265</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Basilica+di+Santa+Chiara+Assisi" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Różowo-biały gotyk w paski — kamień z Monte Subasio ma naturalnie dwa kolory i budowniczowie ułożyli z nich pasy jak z materiału. Charakterystyczne łuki-przypory po bokach dobudowano później, gdy okazało się, że smukłe ściany potrzebują podparcia; z wady konstrukcyjnej zrobił się znak rozpoznawczy.</p><p class="stop-desc">W kaplicy bocznej wisi krucyfiks z San Damiano — ten, który według tradycji przemówił do młodego Franciszka słowami „idź i odbuduj mój dom". Franciszek zrozumiał dosłownie i zaczął dźwigać kamienie na remont kościółka; dopiero potem pojął, że chodziło o coś większego. W krypcie spoczywa Klara — dziewczyna z arystokratycznej rodziny, która w wieku osiemnastu lat uciekła nocą z domu, by pójść drogą Franciszka, i założyła zakon klarysek.</p><p class="stop-desc">Taras przed bazyliką to pierwszy wielki widok dnia: dolina Spoleto po horyzont. Zapamiętajcie go — pod koniec dnia zobaczycie tę samą dolinę z twierdzy, sto metrów wyżej.</p>
+      <p class="stop-note">Wstęp wolny · zakryte ramiona i kolana — także u dzieci · w krypcie zakaz fotografowania</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Kościół jest w paski jak zebra — i to nie farba, tylko dwa naturalne kolory kamienia z tej góry nad miastem.</li><li>Klara uciekła z bogatego domu nocą, przez furtkę dla zmarłych, żeby nikt jej nie zatrzymał. Miała 18 lat.</li><li>W środku wisi krzyż, który — jak głosi opowieść — przemówił. Posłuchajcie ciszy przed nim.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Paski fasady pod ostrym kątem + panorama doliny z tarasu przed kościołem.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="04" data-wiki="Tempio di Minerva (Assisi)">
+    <button class="stop-header" onclick="toggleStop('04')">
+      <div class="stop-row1"><span class="stop-num">04 · 11:30</span><span class="stop-name">Piazza del Comune i świątynia Minerwy</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">I w. p.n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Piazza+del+Comune+Assisi" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Główny plac miasta stoi na rzymskim forum — a rzymska świątynia z I wieku p.n.e. stoi na nim do dziś, z kompletną kolumnadą korynckich kolumn, wchłonięta przez barokowy kościół Santa Maria sopra Minerva (przebudowa wnętrza: XVII wiek). To jeden z najlepiej zachowanych frontów świątynnych starożytności we Włoszech: sześć kolumn, które przetrwały, bo nikt ich nie zburzył — po prostu dobudowywano kolejne funkcje.</p><p class="stop-desc">Goethe, który przyjechał do Asyżu w 1786 roku podczas włoskiej podróży, zignorował bazylikę Franciszka całkowicie i poszedł prosto tutaj — zachwyt nad Minerwą opisał jako pierwsze spotkanie z prawdziwym antykiem w życiu. Wnętrze jest barokowe (XVII w.) i przesłodzone; cała siła tego miejsca stoi na zewnątrz, w kolumnach.</p><p class="stop-desc">Plac wokół to dobre miejsce na przerwę: fontanna z trzema lwami (obecny kształt z XVIII wieku), wieża Torre del Popolo (ukończona w 1305 roku), kawiarnie w podcieniach. Stąd też odchodzi zejście ku bazylice — ale najpierw obiad, bo po bazylice będzie za późno na spokojne jedzenie.</p>
+      <p class="stop-note">Plac i świątynia za darmo · rzymskie forum pod placem — bilet kilka €, wejście z Via Portica</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Te kolumny stoją nieruchomo od ponad 2000 lat — dokładnie tam, gdzie postawili je Rzymianie. Policzcie żłobienia na jednej.</li><li>Pod płytą placu jest drugie, rzymskie piętro miasta — całe forum. Chodzicie po suficie starożytności.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Kolumnada Minerwy sfotografowana tak, żeby nie było widać, że za nią stoi kościół — czysty antyk.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="05">
+    <button class="stop-header" onclick="toggleStop('05')">
+      <div class="stop-row1"><span class="stop-num">05 · 12:30</span><span class="stop-name">Obiad: torta al testo</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">~8–12 €/os.</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=torta+al+testo+Assisi+centro" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Umbryjska odpowiedź na piadinę: torta al testo, płaski chleb pieczony na rozgrzanej płycie (testo), rozcinany i wypełniany na gorąco — kiełbasą z rusztu, szynką, gotowaną cykorią, serem. Sycące, szybkie, tanie i lokalne do szpiku: w Umbrii jedzą to od wieków, a spór z Romanią o wyższość torty nad piadiną trwa i trwać będzie.</p><p class="stop-desc">W okolicach Piazza del Comune i przy zejściu ku bazylice jest kilka miejsc z tortą wprost z płyty — wybierajcie te, gdzie widać, jak ją pieką. Dla dzieci wersja z samym serem albo prosciutto cotto; dla dorosłych klasyk: salsiccia e cicoria.</p>
+      <p class="stop-note">Torta z nadzieniem 5–8 € · napój 2–3 € · szybciej i taniej niż restauracja, a bardziej „stąd"</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><p>Konkurs regionów: w Rimini jedliście (albo zjecie) piadinę, tu jest torta al testo. Które lepsze? Głosowanie przy stole.</p></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Torta przecięta na pół, z parującym nadzieniem — zdjęcie do rodzinnej księgi kulinarnej wyjazdu.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="06" data-wiki="Basilica di San Francesco d'Assisi">
+    <button class="stop-header" onclick="toggleStop('06')">
+      <div class="stop-row1"><span class="stop-num">06 · 13:30</span><span class="stop-name">Bazylika św. Franciszka</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1228–1253</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Basilica+di+San+Francesco+Assisi" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a><a class="act act-sec act-www" href="https://www.sanfrancescoassisi.org" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>WWW</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Paradoks fundamentalny: człowiekowi, który ślubował skrajne ubóstwo i umierał na gołej ziemi, wystawiono jeden z najbogatszych kościołów świata — i zaczęto budować już dwa lata po jego śmierci w 1226 roku, równolegle z kanonizacją, przeprowadzoną w tempie rekordowym w dziejach Kościoła. Franciszek prosił, by pochować go na Wzgórzu Piekielnym, gdzie grzebano skazańców. Prośbę spełniono — a potem wzgórze przemianowano na Rajskie i postawiono na nim to.</p><p class="stop-desc">Bazyliki są dwie, jedna na drugiej. Dolna: mroczna, romańska, z niskim sklepieniem jak krypta — tu freski Cimabuego, Lorenzettiego i Simone Martiniego, tu też zejście do grobu świętego. Grób odnaleziono dopiero w 1818 roku: sarkofag ukryto tak głęboko w litej skale w obawie przed złodziejami relikwii, że szukano go przez blisko sześćset lat. Górna: gotycka, wysoka, zalana światłem — i opasana cyklem dwudziestu ośmiu fresków o życiu Franciszka, przypisywanych Giottowi i jego warsztatowi. To malarstwo, w którym po raz pierwszy od antyku ludzie mają ciężar, emocje i cień; historycy sztuki umownie zaczynają tu nowożytne malowanie. Scena kazania do ptaków — ta, którą znacie z każdego podręcznika — jest przy wejściu, po prawej.</p><p class="stop-desc">Trzęsienie ziemi z 1997 roku zawaliło fragment sklepienia górnej bazyliki, obracając część fresków w pył; rekonstrukcja z trzystu tysięcy odłamków trwała latami i jest osobną legendą konserwacji. W bazylice obowiązuje cisza — pilnowana przez głośnik, który co kilka minut mówi „silenzio" na cały kościół — oraz zakaz fotografowania wnętrz i zakryte ramiona i kolana, również u dzieci.</p>
+      <p class="stop-note">Wstęp wolny · 1,5–2 h na obie bazyliki i grób · dress code egzekwowany przy wejściu</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Znajdźcie fresk, na którym Franciszek przemawia do ptaków — a ptaki słuchają, przekrzywiając głowy.</li><li>Grób świętego ukryto w skale tak dobrze, że szukano go 600 lat. Dłużej, niż istnieje większość państw.</li><li>Co kilka minut głośnik mówi „silenzio" — cisza. Zabawa: kto wytrzyma całą bazylikę bez jednego słowa?</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Fasada górnej bazyliki z trawnika z napisem PAX. W środku zdjęć robić nie wolno — oczy muszą wystarczyć, i to też jest ćwiczenie.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="07" data-wiki="Rocca Maggiore">
+    <button class="stop-header" onclick="toggleStop('07')">
+      <div class="stop-row1"><span class="stop-num">07 · 15:45</span><span class="stop-name">Rocca Maggiore</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1367</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Rocca+Maggiore+Assisi" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Twierdza nad miastem — kwadrans stromego podejścia, które w upale bywa wyzwaniem, ale nagroda jest bezdyskusyjna: najlepsza panorama Asyżu i doliny Spoleto, z bazyliką Franciszka w dole jak makieta. Zamek w obecnym kształcie postawił w 1367 roku kardynał Albornoz, twardy porządkowacz państwa papieskiego; wcześniej, w dziecięcych latach, mieszkał tu przyszły cesarz Fryderyk II — jako mały zakładnik polityki, zanim został „zdumieniem świata".</p><p class="stop-desc">Dla dzieci to najlepszy punkt dnia po jaskini Giotta: baszty, przejście w murze kurtynowym, wieża do zdobycia. Dla dorosłych — moment, w którym cała topografia dnia składa się w całość: widać katedrę, plac z Minerwą, San Chiarę i bazylikę, czyli całą przebytą trasę, z góry i naraz.</p><p class="stop-desc">Powrót: zejście do Piazza Matteotti trawersem zajmuje kwadrans — kończycie dokładnie tam, gdzie stoi auto. Pętla się domyka.</p>
+      <p class="stop-note">Bilet płatny — cenę sprawdźcie w kasie · podejście 15 min pod górę · zabierzcie wodę</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Prawdziwy zamek z basztami i ciemnym przejściem w murze — można przejść je całe.</li><li>Mieszkał tu jako dziecko przyszły cesarz Fryderyk II — człowiek, którego później nazywano „zdumieniem świata".</li><li>Z góry znajdźcie wszystkie miejsca, w których dziś byliśmy. Po kolei.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Panorama z bazyliką Franciszka na pierwszym planie i doliną za nią — zdjęcie zamykające dzień.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot-section">
+  <p class="caps">Plan dnia</p>
+  <div class="plan-card">
+    <div class="plan-row"><span class="plan-time">7:40</span><span>Wyjazd z Montefelcino</span></div><div class="plan-row"><span class="plan-time">9:30</span><span>Parking Piazza Matteotti + amfiteatr</span></div><div class="plan-row"><span class="plan-time">10:00</span><span>Katedra San Rufino</span></div><div class="plan-row"><span class="plan-time">10:45</span><span>Bazylika św. Klary</span></div><div class="plan-row"><span class="plan-time">11:30</span><span>Piazza del Comune, Minerwa</span></div><div class="plan-row"><span class="plan-time">12:30</span><span>Obiad: torta al testo</span></div><div class="plan-row"><span class="plan-time">13:30</span><span>Bazylika św. Franciszka (dolna + górna + grób)</span></div><div class="plan-row"><span class="plan-time">15:45</span><span>Rocca Maggiore</span></div><div class="plan-row"><span class="plan-time">17:00</span><span>Zejście do auta, gelato na drogę</span></div><div class="plan-row"><span class="plan-time">~19:15</span><span>Montefelcino</span></div>
+  </div>
+</div>
+
+<div class="foot-section">
+  <p class="caps">Warto wiedzieć</p>
+  <p class="note" style="margin-top:0">Opcja dla wytrwałych: Eremo delle Carceri — pustelnia Franciszka w lesie na zboczu Subasio, 10 minut autem z Piazza Matteotti, wstęp wolny. Cień, cisza i chłód lasu — dobre domknięcie, jeśli zostały siły. W sierpniu Asyż pęka od pielgrzymów: wszystko, co przed 10:00, jest podwójnie warte wstawania.</p>
+</div>
+
+<div class="pager">
+  <a href="perugia.html">← Perugia</a>
+  <a href="../marche/frasassi.html">Frasassi →</a>
+</div>
+
+</div>
+<script>
+function toggleStop(id){
+  document.querySelectorAll('.stop').forEach(function(s){
+    if(s.dataset.id===id){s.classList.toggle('open')}
+    else{s.classList.remove('open')}
+  });
+}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+</script>
+<script src="../../app.js"></script>
+<script src="../../kids-view.js"></script>
+</body>
+</html>

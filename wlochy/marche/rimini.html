@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rimini — przewodnik rodzinny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero-img">
+  <div class="hero-over">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 Widok dziecka</button>
+      <div class="lang-sw" role="radiogroup" aria-label="Język">
+        <button class="active" aria-pressed="true">PL</button>
+        <button aria-pressed="false">EN</button>
+        <button aria-pressed="false">IT</button>
+        <button aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="city-hero-body">
+  <p class="caps">Emilia-Romania · popołudnie i wieczór</p>
+  <h1>Rimini</h1>
+  <p class="subtitle">Dla Polaków kurort, dla Włochów rodzinne miasto Felliniego z rzymskim mostem, który przetrwał nawet niemieckie ładunki wybuchowe. Zwiedzacie miasto, którego turyści z plaży nigdy nie widzą.</p>
+  <p class="stop-note" style="margin-top:4px">starówka pieszo od mostu do łuku</p>
+  <div class="hero-chips">
+    <span class="chip chip-neutral">70 km</span>
+    <span class="chip chip-neutral">ok. 1h05</span>
+    <span class="chip chip-sea">powrót do 21:30</span>
+  </div>
+</div>
+
+<div class="stops" id="stops">
+
+  <div class="stop open" data-id="01">
+    <button class="stop-header" onclick="toggleStop('01')">
+      <div class="stop-row1"><span class="stop-num">01 · 15:45</span><span class="stop-name">Parking przy Ponte di Tiberio</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">~2,50 €/dzień</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=Parcheggio+Ponte+di+Tiberio+Rimini&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Parcheggio Tiberio, tuż przy moście — według relacji kierowców około 2,50 € za cały dzień, w niedziele bezpłatny, czynny całą dobę. To najlepsza baza wypadowa w mieście: cała trasa zwiedzania układa się stąd w jedną pieszą linię, a wieczorem wracacie do auta przez podświetlony most.</p><p class="stop-desc">Ścisła starówka to ZTL z kamerami na wjazdach — nie próbujcie podjeżdżać bliżej. Jeśli parking przy moście będzie pełny (środek dnia w sierpniu), alternatywą jest parking przy dworcu, dziesięć minut pieszo od centrum, albo niebieskie linie wzdłuż Via Bastioni Settentrionali (automat lub aplikacja EasyPark — sprawdźcie godziny obowiązywania opłat).</p>
+      <p class="stop-note">~2,50 €/dzień, niedziele gratis · całodobowy · ZTL zaczyna się za mostem — auto zostaje tutaj</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Cała dzisiejsza trasa to jedna prosta ulica między mostem a łukiem — Corso d'Augusto, rzymski deptak. Nie da się zgubić.</li><li>Parkujemy przy moście, który ma 2000 lat. Ile lat ma najstarszy most, po którym jechaliście w Polsce?</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Pierwsze zdjęcie dnia: most Tyberiusza z parku, zanim wypełni się ludźmi.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="02" data-wiki="Ponte di Tiberio (Rimini)">
+    <button class="stop-header" onclick="toggleStop('02')">
+      <div class="stop-row1"><span class="stop-num">02 · 16:00</span><span class="stop-name">Most Tyberiusza</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">14–21 n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=44.0637212,12.5637827&query_place_id=ChIJ4yEE85fDLBMRXA79vSdFBd8" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Rozpoczęty za Augusta, ukończony w 21 roku naszej ery za Tyberiusza. Pięć przęseł z istryjskiego wapienia, wzniesionych bez zaprawy — bloki trzymają się własnym ciężarem, metalowymi klamrami i precyzją cięcia. Rzymianie doskonale znali cement; tutaj postawili na czystą geometrię, i to ona wygrała z czasem.</p><p class="stop-desc">To nie był zwykły most, tylko węzeł imperium: tu kończyła się via Flaminia z Rzymu — ta sama, którą przyjechaliście z Montefelcino — a zaczynała via Emilia, biegnąca na północny zachód ku Piacenzy i dająca nazwę całemu regionowi. Stanąć na tym moście to stanąć w punkcie, w którym rzymska sieć drogowa zmieniała kierunek.</p><p class="stop-desc">Rzecz, która robi największe wrażenie: przez dwadzieścia stuleci przetrwał powodzie, trzęsienia ziemi i próbę wysadzenia przez wycofujące się wojska niemieckie w 1944 roku — konstrukcja wytrzymała. Do niedawna jeździły po nim samochody; dziś jest deptakiem, a wokół rozlewa się rozlewisko, w którym odbija się cała piątka przęseł.</p>
+      <p class="stop-note">Za darmo · najlepsze światło na odbicie: wieczorem, gdy zapalą podświetlenie</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Przyjrzyjcie się blokom: nie ma między nimi zaprawy. Tylko metalowe klamry i idealnie dopasowane powierzchnie.</li><li>W 1944 roku saperzy podłożyli pod most ładunki. Most stoi. Policzcie przęsła — wszystkie pięć oryginalnych.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Most odbity w wodzie od strony parku — spróbujcie złapać wszystkie pięć przęseł w jednym kadrze.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="03" data-wiki="Borgo San Giuliano">
+    <button class="stop-header" onclick="toggleStop('03')">
+      <div class="stop-row1"><span class="stop-num">03 · 16:30</span><span class="stop-name">Borgo San Giuliano</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">spacer</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Borgo+San+Giuliano+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Dzielnica rybacka za mostem — jeszcze pół wieku temu najbiedniejszy adres w mieście, dziś najbardziej fotogeniczny. Przemianę zawdzięcza festiwalowi Festa de' Borg, podczas którego od lat 80. ściany domków pokrywane są muralami: sceny z filmów Felliniego, portrety rybaków, statki, morze. Co edycja dochodzą nowe, więc dzielnica jest żywym, rosnącym albumem.</p><p class="stop-desc">Uliczki są wąskie, domki niskie i kolorowe jak skrzynki z farbami, a między nimi rozciągnięte sznury z praniem — nie na pokaz, po prostu tu się mieszka. Fellini kochał to miejsce; jego pogrzeb w 1993 roku zgromadził w Rimini dziesiątki tysięcy ludzi.</p><p class="stop-desc">Zajrzyjcie w boczne zaułki — najlepsze murale nie stoją przy głównej trasie. To też dobry moment, żeby zaplanować powrót: wieczorem wrócicie tu na piadinę, bo Borgo to gastronomiczne serce miasta.</p>
+      <p class="stop-note">Za darmo · 30–40 minut spaceru bez pośpiechu</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Polowanie na murale: kto znajdzie najwięcej ścian z obrazkami? Liczymy, fotografujemy, wieczorem werdykt.</li><li>Na muralach powtarza się twarz pana w kapeluszu i szaliku — to Fellini. Policzcie, ile razy go namalowano.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Każdy wybiera jeden mural i pozuje jak postać z niego. Cztery zdjęcia do albumu.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="04" data-wiki="Castel Sismondo">
+    <button class="stop-header" onclick="toggleStop('04')">
+      <div class="stop-row1"><span class="stop-num">04 · 17:15</span><span class="stop-name">Muzeum Felliniego w zamku Malatestów</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">zamek 1437</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Fellini+Museum+Castel+Sismondo+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a><a class="act act-sec act-www" href="https://fellinimuseum.it" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>WWW</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Castel Sismondo — twierdza Sigismonda Malatesty z XV wieku — mieści dziś Fellini Museum, otwarte w 2021 roku. I to nie jest muzeum „o filmach": to muzeum do wejścia w środek. Huśtawka naprzeciw ogromnej Anity Ekberg z „Dolce vita", korytarze pełne projekcji, kostiumy, maszyna do wiatru. Dziewięciolatek nie zdąży się zanudzić, bo prawie wszystko tu się rusza, świeci albo gra.</p><p class="stop-desc">Fellini urodził się w Rimini w 1920 roku i całe życie kręcił o nim filmy — tyle że nakręcone w studiach Cinecittà, bo prawdziwe Rimini było dla niego zbyt prawdziwe. „Amarcord", jego najczulszy film o mieście, to w dialekcie romagnolskim „a m'arcôrd" — „pamiętam". Za filmy dostał cztery Oscary i piątego, honorowego, za całokształt.</p><p class="stop-desc">Część muzeum działa też w Palazzo del Fulgor przy Piazza Malatesta — w budynku, gdzie mieściło się kino Fulgor, w którym mały Federico oglądał pierwsze filmy. Jeśli czas pozwoli tylko na jedno, wybierzcie zamek.</p>
+      <p class="stop-note">Bilet płatny — cenę i godziny sprawdźcie na fellinimuseum.it · zwiedzanie ~1h</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>W muzeum można usiąść na huśtawce naprzeciw ogromnej aktorki z fontanny — to scena z najsłynniejszego włoskiego filmu.</li><li>Fellini jako dziecko podobno uciekł z domu, żeby przyłączyć się do cyrku. Potem całe życie robił filmy, które wyglądają jak cyrk.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Zamek Malatestów z zewnątrz + jedno zdjęcie z wnętrza muzeum, które wygląda jak sen.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="05" data-wiki="Piazza Cavour (Rimini)">
+    <button class="stop-header" onclick="toggleStop('05')">
+      <div class="stop-row1"><span class="stop-num">05 · 18:15</span><span class="stop-name">Piazza Cavour i stary targ rybny</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">XIII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Piazza+Cavour+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Salon miasta: Palazzo dell'Arengo (1204), Teatro Galli (otwarty w 1857, zniszczony w czasie wojny, ponownie otwarty w 2018) i Fontana della Pigna (obecna forma z 1543 roku) — fontanna z szyszką, o której zachował się pochwalny zapisek Leonarda da Vinci z 1502 roku, gdy przejeżdżał tędy na służbie u Cezara Borgii. Pomnik na środku to papież Paweł V — jeden z nielicznych papieskich pomników, które przetrwały wszystkie rewolucje.</p><p class="stop-desc">Tuż obok Vecchia Pescheria (1747) — targ rybny z kamiennymi ladami, na których przez dwieście lat sprzedawano połów, z rynienkami na wodę po bokach. Dziś lady służą wieczorem jako stoliki barowe: to tu zaczyna się riminijska movida. O 18:15 jest jeszcze spokojnie — za trzy godziny nie będzie gdzie stanąć.</p>
+      <p class="stop-note">Za darmo · teatr i wnętrza — tylko przy spektaklach lub zwiedzaniu z przewodnikiem</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Znajdźcie kamienne lady starego targu — sprzedawano na nich ryby przez 200 lat. Rynienki po bokach to odpływ na wodę z lodu.</li><li>Fontannę na placu pochwalił sam Leonardo da Vinci. Przejeżdżał tędy 500 lat temu i zapisał to w notesie.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Fontana della Pigna z teatrem w tle + detal kamiennej lady targu rybnego.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="06" data-wiki="Domus del chirurgo">
+    <button class="stop-header" onclick="toggleStop('06')">
+      <div class="stop-row1"><span class="stop-num">06 · 18:45</span><span class="stop-name">Domus del Chirurgo</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">II w.</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Domus+del+Chirurgo+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">W 1989 roku, podczas prac na skwerze Piazza Ferrari, łopata trafiła w rzymski dom. Wykopaliska odsłoniły rezydencję lekarza z II–III wieku — i największy zestaw narzędzi chirurgicznych, jaki przetrwał ze starożytności: około stu pięćdziesięciu skalpeli, sond, haczyków i kleszczy, przechowywanych dziś w pobliskim Museo della Città. Właściciel, wojskowy chirurg, przyjmował tu pacjentów, a jego gabinet — taberna medica — jest czytelny do dziś.</p><p class="stop-desc">Dom spłonął podczas najazdu w III wieku i właśnie pożar go uratował: zawalony dach zakonserwował mozaiki, freski i wyposażenie jak wieczko puszki. Nad wykopaliskami stoi szklany pawilon z kładkami — chodzicie nad rzymskimi podłogami, patrząc w dół na pokoje.</p>
+      <p class="stop-note">Bilet łączony z Museo della Città — cenę i letnie godziny sprawdźcie na miejscu · pawilon częściowo widoczny z zewnątrz przez szybę, gdyby było zamknięte</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>To gabinet lekarski sprzed 1800 lat — z narzędziami, które wyglądają prawie jak dzisiejsze. Prawie.</li><li>Dom uratował... pożar. Zawalony dach przykrył wszystko jak pokrywka i zakonserwował na wieki.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Mozaika z kładki, pionowo w dół — kadr jak z drona, tyle że sprzed 18 stuleci.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="07" data-wiki="Tempio Malatestiano">
+    <button class="stop-header" onclick="toggleStop('07')">
+      <div class="stop-row1"><span class="stop-num">07 · 19:15</span><span class="stop-name">Tempio Malatestiano</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">1447–1460</span><span class="chip-sm chip-olive">sprawdź godziny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Tempio+Malatestiano+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Katedra Rimini i jednocześnie pierwsza renesansowa fasada kościelna w dziejach — Leon Battista Alberti wzorował ją wprost na rzymskim łuku, który zobaczycie za pół godziny. Sigismondo Malatesta, kondotier i pan miasta, przebudował gotycki kościół na świątynię-pomnik własnej chwały i miłości do Isotty degli Atti; ich splecione inicjały i herbowe słonie Malatestów powtarzają się w środku dziesiątki razy.</p><p class="stop-desc">Sigismondo był postacią tak barwną, że papież Pius II dokonał na nim jedynej w historii „kanonizacji do piekła" — uroczyście ogłosił go potępionym za życia i spalił jego kukłę w Rzymie. Fasada została nieukończona, bo fortuna kondotiera załamała się szybciej niż budowa; górna część urywa się w pół gestu i tak już zostało, jak niedokończone zdanie.</p><p class="stop-desc">W środku dwa skarby: krucyfiks Giotta z około 1300 roku i fresk Piera della Francesca z klęczącym Sigismondem. Wieczorem kościół bywa zamknięty lub dostępny tylko podczas mszy — jeśli traficie na zamknięte drzwi, sama fasada jest warta przystanku, a wnętrze zostawcie na następny raz.</p>
+      <p class="stop-note">Wstęp wolny lub drobna opłata · uwaga na godziny: wieczorem często tylko msze — sprawdźcie przy drzwiach</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Policzcie słonie w środku — to herb rodziny Malatesta. Jest ich więcej, niż myślicie.</li><li>Właściciela tego kościoła papież oficjalnie „kanonizował do piekła" — jedyny taki przypadek w historii.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Fasada z profilu, tak żeby było widać, gdzie urywa się nieukończona góra.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="08" data-wiki="Arco d'Augusto (Rimini)">
+    <button class="stop-header" onclick="toggleStop('08')">
+      <div class="stop-row1"><span class="stop-num">08 · 19:45</span><span class="stop-name">Łuk Augusta i Piazza Tre Martiri</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">27 p.n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Arco+di+Augusto+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Rok 27 przed naszą erą — najstarszy zachowany łuk rzymski w Italii. Postawiono go tam, gdzie via Flaminia z Rzymu dochodziła do miasta, jako bramę bez wrót: prześwit jest zbyt szeroki, by dały się w nim zamontować skrzydła, i to celowy komunikat Augusta — imperium jest bezpieczne, bramy zbędne. Zębate blanki na szczycie to średniowieczna dobudówka, z czasów, gdy pokój się skończył i brama jednak się przydała.</p><p class="stop-desc">W drodze do łuku przejdziecie przez Piazza Tre Martiri — dawne rzymskie forum. Tradycja głosi, że w 49 roku p.n.e. właśnie tu Juliusz Cezar przemówił do XIII legionu po przekroczeniu Rubikonu, rzuciwszy swoje „kości zostały rzucone"; miejsce mowy znaczy kolumna z XVI wieku i XX-wieczny pomnik Cezara. Rubikon płynie kilkanaście kilometrów na północ stąd.</p><p class="stop-desc">Klamra dnia: zaczęliście przy moście, gdzie Flaminia się kończy, a kończycie przy łuku, gdzie wchodziła do miasta. Cała starówka Rimini to po prostu odcinek rzymskiej drogi z dwiema bramami — i przeszliście go dziś w całości.</p>
+      <p class="stop-note">Za darmo · łuk podświetlony po zmroku — o tej porze będzie już w światłach</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Brama nie ma wrót — specjalnie. Cesarz August chciał pokazać: jest tak bezpiecznie, że bramy są niepotrzebne.</li><li>Na tym placu Cezar podobno wygłosił mowę do legionu po przekroczeniu Rubikonu. „Alea iacta est" — kości zostały rzucone.</li><li>Droga spod naszego domu i ta brama to ta sama via Flaminia. Rzymianie zbudowali ją 2200 lat temu.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Cała rodzina pod łukiem, na osi dawnej via Flaminia — dokładnie tam, gdzie wchodziło się do miasta od strony Rzymu.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="09" data-wiki="Piadina">
+    <button class="stop-header" onclick="toggleStop('09')">
+      <div class="stop-row1"><span class="stop-num">09 · 20:15</span><span class="stop-name">Piadina w Borgo</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">~6–9 €/os.</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=piadineria+Borgo+San+Giuliano+Rimini" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Nie pizza. W Romanii je się piadinę i dziś jecie ją tam, gdzie się ją wymyślono — cienki placek z patelni, składany na gorąco z tym, co kto lubi: squacquerone (miejscowy kremowy ser), prosciutto, rukola; dla dzieci wersja z nutellą na deser. Piadina ma unijny certyfikat IGP i status religii regionalnej: Romagnolczycy potrafią się pokłócić o właściwą grubość placka.</p><p class="stop-desc">Wracacie przez Corso d'Augusto do Borgo San Giuliano — wieczorem dzielnica wygląda zupełnie inaczej niż po południu: murale w ciepłym świetle, stoliki na bruku, gwar. Piadinerie są tu na każdym rogu; wybierzcie tę z kolejką miejscowych, nie z menu w pięciu językach. Po kolacji jeszcze raz most Tyberiusza — podświetlony, z odbiciem w czarnej wodzie — i auto stoi trzy minuty dalej.</p>
+      <p class="stop-note">Piadina 6–9 € · gelato 2,50–3,50 € · powrót: 1h05, w Montefelcino ok. 22:30</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Piadina z nutellą istnieje i jest legalna. To wasz deser.</li><li>Ostatni rzut oka na most w światłach — porównajcie ze zdjęciem z początku dnia. To samo miejsce, inny świat.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Most Tyberiusza nocą, z odbiciem w wodzie — zdjęcie zamykające album. Telefon oprzeć o barierkę, bez flesza.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot-section">
+  <p class="caps">Plan dnia</p>
+  <div class="plan-card">
+    <div class="plan-row"><span class="plan-time">14:30</span><span>Wyjazd z Montefelcino</span></div><div class="plan-row"><span class="plan-time">15:45</span><span>Parking Tiberio</span></div><div class="plan-row"><span class="plan-time">16:00</span><span>Most Tyberiusza</span></div><div class="plan-row"><span class="plan-time">16:30</span><span>Borgo San Giuliano — murale</span></div><div class="plan-row"><span class="plan-time">17:15</span><span>Muzeum Felliniego (Castel Sismondo)</span></div><div class="plan-row"><span class="plan-time">18:15</span><span>Piazza Cavour + stary targ rybny</span></div><div class="plan-row"><span class="plan-time">18:45</span><span>Domus del Chirurgo</span></div><div class="plan-row"><span class="plan-time">19:15</span><span>Tempio Malatestiano</span></div><div class="plan-row"><span class="plan-time">19:45</span><span>Łuk Augusta + Piazza Tre Martiri</span></div><div class="plan-row"><span class="plan-time">20:15</span><span>Piadina w Borgo, most nocą</span></div><div class="plan-row"><span class="plan-time">21:30</span><span>Wyjazd · Montefelcino ok. 22:30</span></div>
+  </div>
+</div>
+
+<div class="foot-section">
+  <p class="caps">Warto wiedzieć</p>
+  <p class="note" style="margin-top:0">Muzeum Felliniego i Domus to dwa punkty z biletami i godzinami — sprawdźcie je rano przed wyjazdem; reszta trasy jest pod gołym niebem i nie zamyka się nigdy. W sierpniu wieczorne Rimini żyje do późna, więc godzina opóźnienia niczego nie psuje.</p>
+</div>
+
+<div class="pager">
+  <a href="urbino.html">← Urbino</a>
+  <a href="ancona.html">Ancona →</a>
+</div>
+
+</div>
+<script>
+function toggleStop(id){
+  document.querySelectorAll('.stop').forEach(function(s){
+    if(s.dataset.id===id){s.classList.toggle('open')}
+    else{s.classList.remove('open')}
+  });
+}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+</script>
+<script src="../../app.js"></script>
+<script src="../../kids-view.js"></script>
+</body>
+</html>

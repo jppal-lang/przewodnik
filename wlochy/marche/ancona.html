@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ancona — przewodnik rodzinny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero-img">
+  <div class="hero-over">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 Widok dziecka</button>
+      <div class="lang-sw" role="radiogroup" aria-label="Język">
+        <button class="active" aria-pressed="true">PL</button>
+        <button aria-pressed="false">EN</button>
+        <button aria-pressed="false">IT</button>
+        <button aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="city-hero-body">
+  <p class="caps">Marche · pół dnia miasta + opcja Conero</p>
+  <h1>Ancona</h1>
+  <p class="subtitle">Założona przez Greków z Syrakuz na łokciu wybrzeża — stąd nazwa: ankon znaczy „łokieć". Przez ten zakręt lądu to jedyne miejsce na włoskim Adriatyku, gdzie słońce i wschodzi, i zachodzi nad morzem.</p>
+  <p class="stop-note" style="margin-top:4px">port, wzgórze katedralne, klify Passetto</p>
+  <div class="hero-chips">
+    <span class="chip chip-neutral">65 km</span>
+    <span class="chip chip-neutral">ok. 1h</span>
+    <span class="chip chip-sea">powrót ok. 17:30</span>
+  </div>
+</div>
+
+<div class="stops" id="stops">
+
+  <div class="stop open" data-id="01">
+    <button class="stop-header" onclick="toggleStop('01')">
+      <div class="stop-row1"><span class="stop-num">01 · 9:30</span><span class="stop-name">Parking port, rejon Traiano</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">płatny/h</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=Parcheggio+Traiano+Ancona&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Pod zwiedzanie najlepiej stanąć przy porcie, w rejonie Via XXIX Settembre — parking Traiano i sąsiednie place leżą u samego początku trasy: stąd nabrzeżem pieszo do łuku Trajana, potem pod górę na wzgórze katedralne, a po południu krótkim przejazdem na Passetto.</p><p class="stop-desc">Jedna rzecz wymaga uwagi: Ancona to czynny port promowy i wjazdy bywają zdradliwe — pas oznaczony „porto/traghetti" wciąga jak lej prosto do terminalu odpraw. Trzymajcie się znaków „centro". Jeśli traficie w korek promowy w sierpniową sobotę, to nie wasza wina, tylko Chorwacji i Grecji.</p>
+      <p class="stop-note">Płatny za godzinę — automat/aplikacja · trzymać się znaków „centro", nie „traghetti"</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Z parkingu widać wielkie promy — niektóre płyną całą noc do Grecji. Statek to pływający hotel: policzcie pokłady.</li><li>Hasło dnia: „centro" znaczy centrum, „traghetti" — promy. My jedziemy za pierwszym. Kto pierwszy wypatrzy znak?</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Dźwigi portowe o poranku — industrialny kadr na otwarcie dnia.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="02" data-wiki="Arco di Traiano (Ancona)">
+    <button class="stop-header" onclick="toggleStop('02')">
+      <div class="stop-row1"><span class="stop-num">02 · 9:45</span><span class="stop-name">Łuk Trajana i spacer nabrzeżem</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">115 n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Arco+di+Traiano+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Cesarz Trajan rozbudował port Ankony około 115 roku naszej ery z własnej kieszeni — pecunia sua, jak skrupulatnie odnotowano w inskrypcji — bo stąd wyprawiał legiony na wojnę z Dakami, tę samą, którą opowiada kolumna Trajana w Rzymie. Wdzięczne miasto postawiło mu na falochronie łuk: smuklejszy i wyższy w proporcjach niż rzymskie łuki triumfalne, obliczony na to, by widzieć go z daleka, z pokładu wchodzącego do portu statku. Brązowe posągi cesarza, żony i siostry z attyki zniknęły dawno temu — prawdopodobnie w średniowiecznych przetopach — ale marmur z Marmary stoi, jak stał.</p><p class="stop-desc">Najlepsze w tym miejscu jest zderzenie: antyczny łuk nie w muzealnym parku, tylko w środku pracującego portu, między kontenerami, dźwigami i promami. Historia bez gabloty. Spacer nabrzeżem od Mole Vanvitelliana (budowana od 1733) — pięciobocznej wyspy-lazaretu, dziś centrum kultury — do łuku zajmuje kwadrans i jest najprzyjemniejszym płaskim odcinkiem dnia. Potem zaczyna się góra.</p>
+      <p class="stop-note">Za darmo · z łuku podejście schodami na wzgórze katedralne — ok. 15–20 min pod górę</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Cesarz zapłacił za port z własnej kieszeni — i napisano to na łuku, żeby nikt nie zapomniał. Starożytny paragon.</li><li>Na górze łuku stały kiedyś posągi z brązu. Zgadnijcie, co się z nimi stało — podpowiedź: brąz da się przetopić.</li><li>Policzcie promy w porcie. Dokąd popłynęlibyście, gdyby można było wybrać jeden?</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Łuk Trajana z promem albo kontenerowcem w tle — 1900 lat różnicy w jednym kadrze.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="03" data-wiki="Cattedrale di San Ciriaco">
+    <button class="stop-header" onclick="toggleStop('03')">
+      <div class="stop-row1"><span class="stop-num">03 · 10:30</span><span class="stop-name">Katedra San Ciriaco</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">XI–XIII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Cattedrale+di+San+Ciriaco+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Na szczycie wzgórza Guasco, w miejscu, które ludzie uznają za święte od dwóch i pół tysiąca lat: katedra stoi na fundamentach greckiej świątyni Afrodyty — patronki żeglarzy, co w mieście portowym miało sens doskonały — a kawałki antycznej przeszłości widać przez szklane wzierniki w posadzce. Sama katedra to rzadka hybryda romanizmu z Bizancjum: plan krzyża greckiego, dwunastoboczna kopuła — jedna z najstarszych we Włoszech — i portal z różowego kamienia z Conero, strzeżony przez dwa lwy, z których jeden trzyma w łapach swoją zdobycz.</p><p class="stop-desc">Plac przed katedrą to najlepszy darmowy punkt widokowy miasta: cały port jak na dłoni, łuk Trajana w dole, zatoka aż po Monte Conero. Widać stąd też logikę „łokcia" — ląd naprawdę zagina się jak ramię, osłaniając port od północy. Grecy z Syrakuz, którzy przypłynęli tu w IV wieku p.n.e., wiedzieli, co robią.</p>
+      <p class="stop-note">Wstęp wolny · podjazd autem pod samą katedrę możliwy, ale schodami ładniej · 30–40 min z placem</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Pod podłogą katedry leży grecka świątynia bogini morza — zajrzyjcie przez szklane okienka w posadzce.</li><li>Portalu pilnują dwa kamienne lwy. Przyjrzyjcie się: jeden coś trzyma w łapach. Co?</li><li>Z placu widać „łokieć" — zgięcie lądu, od którego miasto wzięło nazwę 2400 lat temu. Wyciągnijcie własne ramię i porównajcie.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Panorama portu z placu + portret lwa z portalu, z bliska, z jego zdobyczą.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="04" data-wiki="Piazza del Plebiscito (Ancona)">
+    <button class="stop-header" onclick="toggleStop('04')">
+      <div class="stop-row1"><span class="stop-num">04 · 11:45</span><span class="stop-name">Piazza del Papa i starówka</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">XV w.</span><span class="chip-sm chip-olive">spacer</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Piazza+del+Plebiscito+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Schodząc z katedralnego wzgórza traficie na Piazza del Plebiscito, którą całe miasto nazywa po prostu Piazza del Papa — od pomnika Klemensa XII (1738), który patrzy na plac z wysokości schodów. Podłużny, pochyły plac wciśnięty między kościół San Domenico (XVIII w.) a stare pałace to salon Ankony: bary, stoliki na bruku, wieczorem centrum życia. W San Domenico wisi „Ukrzyżowanie" Tycjana — tak, Tycjana, w kościele parafialnym, bez kolejki — i to jest bardzo ankońska cecha: miasto nie robi szumu wokół swoich skarbów.</p><p class="stop-desc">Przy spacerze starówką warto wiedzieć, skąd blizny: Ancona była ciężko bombardowana w 1943–44 jako port strategiczny, a wyzwalał ją — rzecz bliska polskiemu sercu — II Korpus generała Andersa; bitwa o Ankonę w lipcu 1944 to jedna z głównych polskich operacji we Włoszech, a polski cmentarz wojenny w pobliskim Loreto pamięta jej cenę. Miasto odbudowano bez kosmetyki, dlatego obok renesansowych portali stoją bloki z lat 50. — mniej pocztówkowo niż w Urbino, za to prawdziwie.</p>
+      <p class="stop-note">Za darmo · San Domenico z Tycjanem — wstęp wolny, godziny kościelne z przerwą obiadową</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Miasto zdobyli w 1944 roku polscy żołnierze generała Andersa — Ancona ma polski rozdział w życiorysie.</li><li>Papież z pomnika patrzy na plac od prawie 300 lat. Stańcie tam, gdzie pada jego wzrok.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Pochyłość placu uchwycona wzdłuż — z pomnikiem papieża na szczycie kadru.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="05" data-wiki="Passetto">
+    <button class="stop-header" onclick="toggleStop('05')">
+      <div class="stop-row1"><span class="stop-num">05 · 13:00</span><span class="stop-name">Obiad, potem Passetto i groty w klifie</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-neutral">pomnik 1930</span><span class="chip-sm chip-olive">winda drobne</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Passetto+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Obiad na starówce — jeśli traficie na trattorię z brodetto all'anconetana, to jest właśnie tutejsza religia: gęsta zupa rybna z trzynastu gatunków ryb, przepis pilnowany zazdrośnie. Z dziećmi bezpieczniejsza frittura mista albo zwykły makaron; Ancona to miasto rybne, więc nawet proste rzeczy są tu świeże.</p><p class="stop-desc">Po obiedzie krótki przejazd (albo kwadrans spaceru) na Passetto: monumentalne białe schody i pomnik poległych nad krawędzią klifu, a pod nim kamienista plaża z osobliwością, jakiej nie ma nigdzie indziej — grotte del Passetto, jaskiniami wykutymi w skale przez rybaków na łodzie i sprzęt, z kolorowymi drzwiami, każde w innym kolorze. Groty przechodzą z pokolenia na pokolenie i mają status lokalnej instytucji. Na dół zjeżdża się windą (sezonowo, drobna opłata) albo schodami; woda przy grotach jest przejrzysta, ale dno kamieniste — buty do wody dla dzieci robią różnicę.</p>
+      <p class="stop-note">Winda sezonowa — drobna opłata, sprawdźcie godziny · plaża kamienista: buty do wody · prysznic i bar na dole</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Groty w klifie to garaże na łódki, wykute rękami rybaków — każdy z drzwiami w innym kolorze. Wybierzcie najładniejsze.</li><li>Konkurs puszczania kaczek: kamienista plaża to nieograniczona amunicja.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Rząd kolorowych drzwi grot wzdłuż klifu + biały pomnik Passetto z dołu, od strony wody.</p></div>
+    </div>
+  </div>
+
+  <div class="stop" data-id="06" data-wiki="Portonovo">
+    <button class="stop-header" onclick="toggleStop('06')">
+      <div class="stop-row1"><span class="stop-num">06 · 15:30</span><span class="stop-name">Opcja: Riviera del Conero</span><span class="stop-chev">▼</span></div>
+      <div class="stop-chips"><span class="chip-sm chip-olive">plaże 0–35 €</span></div>
+      <div class="stop-actions">
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Spiaggia+di+Portonovo" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+      </div>
+    </button>
+    <div class="stop-body">
+      <div class="stop-photo"></div>
+      <p class="stop-desc">Kwadrans za miastem góra Conero — jedyny wysoki masyw na całym płaskim wybrzeżu od Triestu po Gargano — opada białymi wapiennymi klifami do wody w kolorze, którego nie trzeba filtrować: turkus bierze się z białego kamienia na dnie, nie z Instagrama. Zatoka Portonovo, z plażami z białych otoczaków, romańskim kościółkiem Santa Maria (XI w.) przy samej wodzie, wieżą strażniczą z 1716 roku i fortem napoleońskim (1808–1813), to najpiękniejszy kawałek wybrzeża Marche.</p><p class="stop-desc">Sierpniowy realizm: parkingi w Portonovo zapełniają się rano, więc popołudniowa wizyta wymaga cierpliwości albo szczęścia — działa też sezonowy bus z góry. Jeśli po Passetto dzieci mają dość, potraktujcie Conero jako osobną, poranną wyprawę innego dnia; jeśli sił starcza — nagroda jest na miarę wysiłku.</p>
+      <p class="stop-note">Spiaggia libera za darmo, bagni płatne · parking Portonovo pełny wcześnie — plan i cierpliwość</p>
+      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Woda jest turkusowa jak na Karaibach — przez biały kamień na dnie. Nabierzcie wody w dłonie: przezroczysta. Cały kolor robi dno.</li><li>Plaża z białych otoczaków: znajdźcie kamień idealnie okrągły. Morze szlifowało go setki lat.</li></ul></div>
+      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Turkus na tle białego klifu, bez żadnego filtra — o to chodzi w tym zadaniu.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot-section">
+  <p class="caps">Plan dnia</p>
+  <div class="plan-card">
+    <div class="plan-row"><span class="plan-time">8:30</span><span>Wyjazd z Montefelcino</span></div><div class="plan-row"><span class="plan-time">9:30</span><span>Parking przy porcie</span></div><div class="plan-row"><span class="plan-time">9:45</span><span>Mole Vanvitelliana → nabrzeże → łuk Trajana</span></div><div class="plan-row"><span class="plan-time">10:30</span><span>Katedra San Ciriaco + panorama</span></div><div class="plan-row"><span class="plan-time">11:45</span><span>Piazza del Papa, San Domenico (Tycjan)</span></div><div class="plan-row"><span class="plan-time">13:00</span><span>Obiad na starówce</span></div><div class="plan-row"><span class="plan-time">14:15</span><span>Passetto: winda, groty, kąpiel</span></div><div class="plan-row"><span class="plan-time">15:30</span><span>Opcja Conero albo powrót</span></div><div class="plan-row"><span class="plan-time">~17:30</span><span>Montefelcino (bez Conero)</span></div>
+  </div>
+</div>
+
+<div class="foot-section">
+  <p class="caps">Warto wiedzieć</p>
+  <p class="note" style="margin-top:0">Ancona to miasto z charakterem, nie pocztówka — najlepiej smakuje właśnie w tym duecie: rano antyk i port, po południu klify. Polski akcent do rozważenia: cmentarz wojenny II Korpusu w Loreto jest 25 minut drogi i łączy się z ewentualną wizytą w tamtejszym sanktuarium.</p>
+</div>
+
+<div class="pager">
+  <a href="rimini.html">← Rimini</a>
+  <a href="rawenna.html">Rawenna →</a>
+</div>
+
+</div>
+<script>
+function toggleStop(id){
+  document.querySelectorAll('.stop').forEach(function(s){
+    if(s.dataset.id===id){s.classList.toggle('open')}
+    else{s.classList.remove('open')}
+  });
+}
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+</script>
+<script src="../../app.js"></script>
+<script src="../../kids-view.js"></script>
+</body>
+</html>
