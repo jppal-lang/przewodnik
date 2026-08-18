@@ -8,15 +8,140 @@ Questini zamienia zwiedzanie miast i atrakcji Europy w grę terenową dla rodzin
 z dziećmi. Rodzic dostaje plan dnia (od parkingu po kolację), dziecko dostaje
 misje i zagadki do wykonania na miejscu. Dwa widoki, jedno zwiedzanie.
 
-**Slogan:** Let's Explore!
-**Model:** wszystko za darmo, wsparcie przez Buy Me a Coffee.
-**BMC:** https://buymeacoffee.com/questini
-**Hosting:** GitHub Pages, repo `jppal-lang/przewodnik`, branch `main`.
-**Stack:** statyczny HTML + CSS + vanilla JS. Zero backendu, zero frameworków.
+- **Slogan:** Let's Explore!
+- **Model:** wszystko za darmo, wsparcie przez Buy Me a Coffee
+- **BMC:** https://buymeacoffee.com/questini
+- **Domena:** questini.com (OVH, DNS → GitHub Pages)
+- **Repo:** github.com/jppal-lang/przewodnik, branch `main`
+- **Hosting treści:** GitHub Pages (statyczny HTML/CSS/JS, zero opłat)
+- **Hosting interakcji:** Supabase (darmowy tier, PostgreSQL + REST API)
 
 ---
 
-## 2. STRUKTURA SERWISU
+## 2. ARCHITEKTURA — HYBRYDA
+
+### Zasada
+Treść przewodników = statyczne pliki HTML na GitHub Pages (szybkie, darmowe, zero serwera).
+Interakcje użytkowników = Supabase API odpytywane z frontendu przez `fetch()`.
+
+```
+questini.com (GitHub Pages)
+│
+├── WARSTWA STATYCZNA (pliki HTML/CSS/JS — bez zmian, bez backendu)
+│   ├── treść przewodników (opisy, godziny, ceny, misje)
+│   ├── tłumaczenia (lang/*.json + i18n.js)
+│   ├── widok rodzica / dziecko (przełącznik CSS/JS)
+│   ├── album zdjęć (localStorage)
+│   ├── zdjęcia zabytków (Wikimedia API)
+│   ├── geolokalizacja i sortowanie (browser API)
+│   ├── cookie consent (localStorage)
+│   ├── mapa Europy (SVG statyczny)
+│   └── Buy Me a Coffee (zewnętrzny widget)
+│
+└── WARSTWA INTERAKCJI (Supabase — darmowy tier)
+    ├── oceny (stars, comment, fingerprint, city, stop, timestamp)
+    ├── uwagi / zgłoszenia (stop_id, type, message, email, status)
+    ├── średnie ocen (widok materializowany lub obliczany na froncie)
+    └── (przyszłość) analytics, konta użytkowników
+```
+
+### Dlaczego nie PHP + MySQL
+- GitHub Pages = zero kosztów hostingu, zero administracji serwera
+- Supabase darmowy tier: 500 MB bazy, 50k requestów/mies., auth, realtime
+- PHP na OVH = 8–30 zł/mies., wymaga utrzymania, wolniejszy od CDN GitHub
+- Treść przewodników to pliki — nie potrzebują bazy danych
+- Backend potrzebny WYŁĄCZNIE do interakcji między użytkownikami
+
+### Supabase — konfiguracja
+
+**Tabele:**
+
+```sql
+-- Oceny
+CREATE TABLE ratings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  city TEXT NOT NULL,              -- np. 'perugia'
+  stop_id TEXT,                    -- np. '03' (opcjonalne, ocena może być na miasto)
+  stars SMALLINT CHECK (stars BETWEEN 1 AND 5),
+  comment TEXT CHECK (char_length(comment) <= 500),
+  fingerprint TEXT NOT NULL,       -- hash: userAgent + resolution + timezone
+  lang TEXT DEFAULT 'pl',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(city, stop_id, fingerprint)  -- jedna ocena per fingerprint per miejsce
+);
+
+-- Uwagi / zgłoszenia
+CREATE TABLE reports (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  city TEXT NOT NULL,
+  stop_id TEXT NOT NULL,
+  type TEXT NOT NULL,              -- 'wrong_price' | 'closed' | 'wrong_hours' | 'wrong_address' | 'other'
+  message TEXT CHECK (char_length(message) <= 1000),
+  email TEXT,                      -- opcjonalny, do odpowiedzi
+  lang TEXT DEFAULT 'pl',
+  status TEXT DEFAULT 'new',       -- 'new' | 'reviewed' | 'fixed' | 'rejected'
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Widok: średnie ocen per miasto
+CREATE VIEW city_ratings AS
+SELECT city,
+       ROUND(AVG(stars)::numeric, 1) AS avg_stars,
+       COUNT(*) AS total_ratings
+FROM ratings
+WHERE stop_id IS NULL
+GROUP BY city;
+```
+
+**Row Level Security (RLS):**
+- ratings: INSERT dozwolony dla anonimowych, SELECT dozwolony dla wszystkich
+- reports: INSERT dozwolony dla anonimowych, SELECT tylko dla admina
+- Brak UPDATE/DELETE dla anonimowych — ocena jest finalna (edycja = nowy INSERT z UPSERT)
+
+**Frontend integration:**
+```javascript
+// supabase-client.js — cienki wrapper
+const SUPABASE_URL = 'https://xxx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbG...';  // klucz publiczny, bezpieczny w froncie
+
+async function submitRating(city, stars, comment) {
+  const fp = await getFingerprint();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify({ city, stars, comment, fingerprint: fp })
+  });
+  return res.ok;
+}
+
+async function getCityRatings(city) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/city_ratings?city=eq.${city}`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY } }
+  );
+  return res.ok ? (await res.json())[0] : null;
+}
+
+function getFingerprint() {
+  const raw = navigator.userAgent + screen.width + screen.height
+    + Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
+    .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join(''));
+}
+```
+
+### Kiedy wdrożyć Supabase
+NIE na starcie. Priorytet fazy 1: treść (Marche/Umbria split, widok dziecka,
+tłumaczenia). Supabase wchodzi w fazie 2, gdy są użytkownicy, którzy chcą oceniać.
+Do tego czasu formularz uwag działa przez `mailto:kontakt@questini.com`.
+
+---
+
+## 3. STRUKTURA PLIKÓW
 
 ```
 questini.com/
@@ -26,6 +151,7 @@ questini.com/
 ├── styles.css                     # design system — jedno źródło prawdy
 ├── app.js                         # album zdjęć, Wikimedia, interakcje
 ├── i18n.js                        # runtime tłumaczeń
+├── supabase-client.js             # wrapper Supabase (faza 2)
 ├── lang/
 │   ├── pl.json                    # polski (domyślny)
 │   ├── en.json                    # angielski
@@ -51,66 +177,67 @@ questini.com/
 │   │   ├── index.html             # lista miast regionu Umbria
 │   │   ├── perugia.html
 │   │   └── asyz.html
-│   ├── toskania/                  # przyszły region
-│   │   └── index.html
-│   └── ...
+│   └── toskania/                  # przyszły
+│       └── index.html
 ├── polska/
 │   └── malopolska/
 │       └── index.html
-├── chorwacja/                     # przyszły kraj
-│   └── ...
-├── CLAUDE.md                      # ten plik
+├── chorwacja/                     # przyszły
+├── CLAUDE.md
 └── README.md
 ```
 
 ### Zasada podziału regionów
 Marche i Umbria to OSOBNE regiony, NIE łączone. Każdy region ma własny
-katalog, własną stronę z listą miast, własne plany dnia. Użytkownik wybiera:
+katalog, stronę z listą miast, własne plany dnia. Ścieżka:
 Włochy → Marche → Ancona, ALBO Włochy → Umbria → Perugia.
 
 ---
 
-## 3. DWA WIDOKI: RODZIC i DZIECKO
+## 4. DWA WIDOKI: RODZIC i DZIECKO
 
 ### Widok rodzica (domyślny)
-Pełna strona z:
-- Opisami zabytków (2–3 akapity, historia, kontekst, daty)
-- Cenami biletów, godzinami, ostrzeżeniami
-- Przyciskami nawigacji (Nawiguj / Napisz WhatsApp / WWW)
-- Rozmówkami, telefonami awaryjnymi, planem dnia
-- Sekcją „Dla dzieci" (widoczna, ale nie dominująca)
-- Zadaniami foto
-- Albumem zdjęć
-- **Oceną miejsca** (1–5 gwiazdek + opcjonalny komentarz)
-- **Przyciskiem „Zgłoś uwagę"** (do konkretnego przystanku)
-- **Przyciskiem „Postaw kawę"** (Buy Me a Coffee)
+- Opisy zabytków (2–3 akapity, historia, kontekst, daty budowy)
+- Ceny biletów, godziny, ostrzeżenia ZTL
+- Przyciski: Nawiguj / Napisz WhatsApp / WWW
+- Rozmówki, telefony awaryjne, plan dnia
+- Sekcja „Dla dzieci" (widoczna, ale nie dominująca)
+- Zadania foto + album zdjęć
+- **Oceń miejsce** (1–5 gwiazdek + komentarz) → Supabase
+- **Zgłoś uwagę** (per przystanek) → mailto faza 1, Supabase faza 2
+- **Postaw kawę** → Buy Me a Coffee
+- Treści partnerskie (oznaczone chipem „Partner")
 
 ### Widok dziecka
-Rodzic generuje link lub przełącza widok — dziecko widzi:
-- **Mapę przystanków** wizualną (nie listę tekstu)
-- **Kartę misji** przy każdym przystanku: co znaleźć, policzyć, sfotografować
-- **Odznaki / checkboxy** — ukończone misje się zaznaczają
-- **Ranking rodzinny** — kto wykonał więcej misji
-- **Galerię zdjęć** — dziecko dodaje zdjęcia jako dowody wykonania misji
-- **BRAK:** cen, godzin, historii, telefonów awaryjnych, ocen
+Przełącznik: toggle w nagłówku lub `?view=kid`.
+Stan: `localStorage('questini_view')`.
 
-Przełącznik widoku: toggle w nagłówku lub parametr URL `?view=kid`.
-Stan zapisywany w `localStorage('questini_view')`.
+Dziecko widzi:
+- Mapę przystanków (wizualną, nie listę tekstu)
+- Kartę misji: co znaleźć, policzyć, sfotografować
+- Odznaki / checkboxy — ukończone misje zaznaczają się
+- Ranking rodzinny — kto wykonał więcej misji
+- Galerię zdjęć — dowody wykonania misji
+- Progress bar: ile misji ukończono / ile jest
+
+Dziecko NIE widzi:
+- Cen, godzin otwarcia, historii
+- Telefonów awaryjnych, rozmówek
+- Ocen, komentarzy, zgłoszeń
+- Treści partnerskich, BMC
 
 ### Wizualnie
-Widok rodzica: ciepły, piaskowy, elegancki (obecny design).
-Widok dziecka: ten sam design system, ale:
-- Większe ikony misji, wyraźniejsze kolory
-- Czcionka taka sama (Figtree), ale tytuły mogą być większe
-- Progress bar: ile misji ukończono / ile jest w mieście
-- Gratulacja po ukończeniu wszystkich misji przystanku
-- Spójność z widokiem rodzica — to ta sama marka, nie oddzielna apka
+Ten sam design system (Figtree, ta sama paleta), ale w widoku dziecka:
+- Większe ikony misji, wyraźniejsze kolory akcentowe
+- Tytuły mogą być większe
+- Gratulacja po ukończeniu misji
+- Spójność marki — to ten sam serwis, nie oddzielna apka
 
 ---
 
-## 4. WIELOJĘZYCZNOŚĆ (i18n)
+## 5. WIELOJĘZYCZNOŚĆ (i18n)
 
-### Obsługiwane języki
+### 13 języków
 | Kod  | Język       | Flaga CSS                | Priorytet |
 |------|-------------|--------------------------|-----------|
 | `pl` | polski      | biało-czerwona           | P0 — domyślny |
@@ -128,53 +255,45 @@ Widok dziecka: ten sam design system, ale:
 | `no` | norweski    | czerwono-biało-niebieska | P2 |
 
 ### Mechanizm
-1. Pierwsze wejście: przeglądarka sugeruje język na podstawie `navigator.language`
-2. Użytkownik może zmienić ręcznie (przełącznik z flagami w nagłówku)
-3. Wybór zapisywany w `localStorage('questini_lang')`
-4. Przy kolejnych wizytach: automatycznie ładuje zapamiętany język
-5. Plik `i18n.js` ładuje `/lang/{kod}.json` i podmienia `data-i18n` atrybuty
-6. Zmiana języka: bez przeładowania strony (podmiana DOM)
-7. URL: `?lang=it` jako override (linkowanie do konkretnej wersji)
+1. Pierwsze wejście: autodetekcja z `navigator.language`
+2. Ręczna zmiana: przełącznik z flagami w nagłówku
+3. Zapis: `localStorage('questini_lang')`
+4. Runtime: `i18n.js` ładuje `/lang/{kod}.json`, podmienia `data-i18n` atrybuty
+5. Zmiana: bez przeładowania strony (DOM swap)
+6. Override URL: `?lang=it`
 
-### Reguły tłumaczeniowe
-- Nazwy własne zabytków: oryginał włoski/lokalny (np. „Fontana Maggiore")
-- Opis zabytku: tłumaczony w całości
-- Ceny, godziny, telefony, linki Maps/WhatsApp: NIE tłumaczone
-- Rozmówki: para język_użytkownika ↔ język_lokalny (np. FR ↔ IT)
-- Tekst DE/NO/EL bywa +30% dłuższy — layout MUSI to znosić
-
----
-
-## 5. POLITYKA COOKIES (cookie-policy.html)
-
-### Co zapisujemy
-| Klucz localStorage                  | Cel                   | Czas życia   |
-|--------------------------------------|-----------------------|--------------|
-| `questini_lang`                      | wybrany język         | bezterminowo |
-| `questini_view`                      | widok rodzic/dziecko  | bezterminowo |
-| `questini_cookie_consent`            | zgoda na localStorage | bezterminowo |
-| `album:{strona}:{przystanek}`        | zdjęcia użytkownika   | bezterminowo |
-| `questini_rating:{miasto}:{stop}`    | ocena przystanku      | bezterminowo |
-| `questini_missions:{miasto}`         | ukończone misje       | bezterminowo |
-
-### Treść polityki
-- Strona cookie-policy.html w pełni wielojęzyczna (data-i18n)
-- Informacja: „Questini nie używa ciasteczek śledzących, reklamowych ani
-  analitycznych. Zapisujemy wyłącznie twoje preferencje (język, widok) i zdjęcia
-  z albumu w pamięci przeglądarki (localStorage). Dane nie opuszczają twojego
-  urządzenia."
-- Prosty baner przy pierwszym wejściu: „Zapisujemy twoje preferencje lokalnie.
-  Żadnych trackerów." + przycisk OK
-- Baner znika po kliknięciu OK → `questini_cookie_consent` = true
-- Link do pełnej polityki w footerze każdej strony
+### Reguły
+- Nazwy własne zabytków: oryginał lokalny (np. „Fontana Maggiore")
+- Opisy: tłumaczone w całości
+- Ceny, godziny, telefony, linki: NIE tłumaczone
+- Rozmówki: para język_użytkownika ↔ język_lokalny
+- Layout musi znosić +30% dłuższy tekst (DE, EL, NO)
 
 ---
 
-## 6. MENU I INDEKS MIEJSC (places.html)
+## 6. POLITYKA COOKIES
 
-### Struktura menu
-Hierarchiczne rozwijane menu w nawigacji:
+### Zapisywane dane (tylko localStorage)
+| Klucz                               | Cel                   |
+|--------------------------------------|-----------------------|
+| `questini_lang`                      | wybrany język         |
+| `questini_view`                      | rodzic / dziecko      |
+| `questini_cookie_consent`            | zgoda na localStorage |
+| `album:{strona}:{przystanek}`        | zdjęcia użytkownika   |
+| `questini_missions:{miasto}`         | ukończone misje       |
 
+### Strona cookie-policy.html
+- Wielojęzyczna (data-i18n)
+- Treść: „Zero trackerów, zero reklam śledzących. Zapisujemy preferencje
+  i zdjęcia lokalnie, w twojej przeglądarce. Dane nie opuszczają urządzenia."
+- Baner przy pierwszym wejściu: tekst + OK → consent = true
+- Link w footerze każdej strony
+
+---
+
+## 7. MENU I INDEKS MIEJSC
+
+### Nawigacja (hamburger mobile, rozwinięta desktop)
 ```
 🇮🇹 Włochy
   ├── Marche (4 miejsca)
@@ -191,159 +310,143 @@ Hierarchiczne rozwijane menu w nawigacji:
 🇭🇷 Chorwacja (wkrótce)
 ```
 
-### Strona indeksu (places.html)
-- Lista wszystkich krajów, regionów i miejsc
-- Każde miejsce: nazwa, krótki lead, średnia ocen, liczba przystanków
+### Strona places.html
+- Hierarchia: kraj → region → miejsce
+- Każde miejsce: nazwa, lead, średnia ocen, liczba przystanków
 - Filtrowanie: kraj, region
 - Przyszłość: wyszukiwarka tekstowa
 
 ---
 
-## 7. MAPA EUROPY (faza 2)
+## 8. MAPA EUROPY (faza 2)
 
 ### Koncept
-Interaktywna mapa Europy (SVG lub Leaflet):
-1. Widok kontynentu: kraje z liczbą regionów
-2. Klik na kraj → regiony z liczbą dostępnych atrakcji
-3. Klik na region → pinezki atrakcji na mapie + średnia ocen użytkowników
-4. Klik na pinezkę → otwiera kartę miasta
+1. SVG mapa kontynentu: klikalne kraje z liczbą regionów
+2. Klik na kraj → regiony z liczbą atrakcji
+3. Klik na region → Leaflet + OpenStreetMap z pinezkami + średnie ocen
+4. Klik na pinezkę → karta miasta
 
-### Wymagania techniczne
-- SVG mapa dla prostego widoku krajów (zero API key)
-- Leaflet + OpenStreetMap dla widoku pinezek (darmowe)
-- Dane o atrakcjach: statyczny JSON ładowany z repo
-- Oceny: agregowane z localStorage (faza MVP) lub z prostego API (faza 2+)
-
----
-
-## 8. SYSTEM OCEN I KOMENTARZY
-
-### Ocena miejsca (widok rodzica)
-- Na każdej karcie miasta, pod ostatnim przystankiem: „Oceń tę wycieczkę"
-- 5 gwiazdek (1–5), kliknięcie = ocena
-- Opcjonalny komentarz (textarea, max 500 znaków)
-- Jedno kliknięcie „Wyślij"
-
-### Zabezpieczenie przed wielokrotnymi ocenami
-**Faza 1 (localStorage, MVP):**
-- `questini_rating:{miasto}` = { stars: 4, comment: "...", ts: "..." }
-- Po wystawieniu oceny przycisk zmienia się na „Twoja ocena: ★★★★☆ [Edytuj]"
-- Jeden użytkownik = jedna ocena per urządzenie per przeglądarka
-
-**Faza 2 (backend):**
-- Fingerprint: hash z `navigator.userAgent` + rozdzielczość + strefa czasowa
-- Rate limiting: max 1 ocena z jednego fingerprinta na 24h
-- Alternatywa: logowanie przez Google/Apple (dopiero gdy skala uzasadni)
-
-### Wyświetlanie średniej
-- Na karcie regionu przy każdym mieście: „★ 4.3 (12 ocen)"
-- Na karcie miasta w hero: pełna średnia z liczbą głosów
-- Faza 1: dane lokalne, faza 2: API
+### Tech
+- SVG: statyczny plik, zero API key
+- Leaflet: darmowe, OpenStreetMap tiles
+- Dane: statyczny JSON z koordynatami i metadanymi
+- Oceny: z Supabase `city_ratings` view
 
 ---
 
-## 9. ZGŁASZANIE UWAG
+## 9. SYSTEM OCEN
 
-### Faza 1 — email
-- Przycisk „Zgłoś uwagę" przy KAŻDYM przystanku (widok rodzica)
-- Formularz: dropdown (typ: błędna cena / zamknięte / złe godziny /
-  zły adres / inne) + pole tekstowe + opcjonalne zdjęcie
-- Po wysłaniu: `mailto:kontakt@questini.com` z preformatowanym tematem:
+### UX (widok rodzica)
+- Pod ostatnim przystankiem: „Oceń tę wycieczkę"
+- 5 gwiazdek kliknięcie + textarea (max 500 znaków) + Wyślij
+
+### Faza 1 (localStorage, przed Supabase)
+- `localStorage` per urządzenie — jedno głosowanie
+- Średnie niewidoczne (brak źródła współdzielonych danych)
+
+### Faza 2 (Supabase)
+- Tabela `ratings` z fingerprint (SHA-256 z userAgent+resolution+timezone)
+- UNIQUE constraint: `(city, stop_id, fingerprint)` — jedna ocena per urządzenie
+- Widok `city_ratings`: średnia + count, ładowany przy otwarciu karty regionu
+- Po wystawieniu: przycisk → „Twoja ocena: ★★★★☆ [Edytuj]"
+
+### Wyświetlanie
+- Karta regionu: „★ 4.3 (12 ocen)" przy każdym mieście
+- Hero miasta: pełna średnia z liczbą głosów
+
+---
+
+## 10. ZGŁASZANIE UWAG
+
+### Faza 1 — mailto
+- Przycisk „Zgłoś uwagę" przy KAŻDYM przystanku (tylko rodzic)
+- Dropdown: błędna cena / zamknięte / złe godziny / zły adres / inne
+- Pole tekstowe + opcjonalne zdjęcie
+- `mailto:kontakt@questini.com` z tematem:
   `[Uwaga] Perugia > Przystanek 03 Fontana Maggiore`
-- Treść: typ uwagi + komentarz + data + język użytkownika
 
-### Faza 2 — agent AI
-- Uwagi wpadają do kolejki (Notion / Google Sheet / API)
-- Agent AI czyta uwagę, sprawdza fakty i:
-  - jednoznaczna zmiana → generuje PR na GitHubie
-  - niejasna → taguje do ręcznego sprawdzenia
-- Powiadomienie do użytkownika: „Dzięki! Sprawdzimy."
+### Faza 2 — Supabase + agent AI
+- Tabela `reports` z typem, statusem i miastem/przystankiem
+- Agent AI czyta, sprawdza fakty, generuje PR lub taguje do review
+- Powiadomienie: „Dzięki! Sprawdzimy."
 
 ---
 
-## 10. BUY ME A COFFEE
+## 11. BUY ME A COFFEE
 
-### Integracja
-**Floating widget (każda strona):**
 ```html
-<script data-name="BMC-Widget"
-  data-cfasync="false"
+<script data-name="BMC-Widget" data-cfasync="false"
   src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
   data-id="questini"
   data-description="Wspieraj rodzinne przewodniki po Europie"
   data-message="Questini jest za darmo. Jeśli pomogło — postaw nam kawę!"
   data-color="#B4502E"
   data-position="Right"
-  data-x_margin="18"
-  data-y_margin="18">
+  data-x_margin="18" data-y_margin="18">
 </script>
 ```
 
-**CTA na landingu:** „Questini jest za darmo. Jeśli pomogło wam na
-wakacjach — postaw nam kawę." Przycisk → buymeacoffee.com/questini
-
-**CTA po zwiedzaniu (widok rodzica):** „Spodobała się wycieczka?
-Pomóż nam opisać kolejne miasto." Link do BMC.
+Miejsca integracji:
+- Floating widget na każdej stronie
+- CTA na landingu (przed footerem)
+- CTA po sekcji oceny w widoku rodzica
 
 ---
 
-## 11. WSPÓŁPRACA Z INFLUENCERAMI
+## 12. INFLUENCERZY
 
-### Profil idealnego influencera
+### Profil
 - Rodzinny/travel, 5k–50k followersów (mikro/nano)
-- Treści: podróże autem po Europie z dziećmi, camping, city breaks
-- Platformy: Instagram, TikTok, YouTube
+- Podróże autem po Europie z dziećmi
+- Instagram, TikTok, YouTube
 - Języki: PL, EN, DE, CS
 
-### Model współpracy
-1. **Barter:** influencer testuje Questini, relacjonuje w stories/reels.
-   W zamian: dedykowany region/miasto opisane pod jego trasę.
-2. **Affiliate:** unikalny link `questini.com/?ref=nazwa` → tracking.
-3. **Co-creation:** influencer współtworzy przewodnik — kredytowany jako autor.
-4. **UGC:** influencer używa Questini, taguje @questini — repost.
+### Modele
+1. **Barter:** test Questini na wyjeździe, relacja w stories. Zwrot: dedykowany przewodnik.
+2. **Affiliate:** link `questini.com/?ref=nazwa` z trackingiem.
+3. **Co-creation:** influencer współtworzy przewodnik, kredytowany jako autor.
+4. **UGC:** tag @questini → repost.
 
-### Outreach — szablon
+### Szablon outreach
 ```
 Cześć [imię]!
 
-Śledzę wasz profil i widzę, że [konkret o ich treściach z dziećmi].
-Buduję Questini — darmowe przewodniki po miastach Europy, które zamieniają
-zwiedzanie z dziećmi w grę terenową (misje, zagadki, album zdjęć).
+Śledzę wasz profil i widzę, że [konkret]. Buduję Questini — darmowe
+przewodniki po miastach Europy, które zamieniają zwiedzanie z dziećmi
+w grę terenową.
 
-Chciałbym zaproponować: opiszę miasto/region pod waszą następną trasę
-— gotowy plan od parkingu po kolację. Wy testujecie, relacjonujecie.
-Żadnych opłat, żadnych zobowiązań.
+Propozycja: opiszę miasto pod waszą trasę — gotowy plan od parkingu po
+kolację. Wy testujecie, relacjonujecie. Zero opłat, zero zobowiązań.
 
-Rzuć okiem: questini.com
+questini.com
 
 [imię]
 ```
 
 ---
 
-## 12. PARTNERSTWA B2B
+## 13. PARTNERSTWA B2B
 
-### Potencjalni partnerzy
-| Partner          | Produkt               | Model współpracy                         |
+| Partner          | Produkt               | Integracja                               |
 |------------------|-----------------------|------------------------------------------|
-| **Zen.com**      | Karty wielowalutowe   | Banner „Płać w € bez prowizji" + affiliate |
+| **Zen.com**      | Karty wielowalutowe   | „Płać w € bez prowizji" + affiliate     |
 | **Sail / Airalo**| eSIM podróżne         | „Internet w Europie" + affiliate         |
-| **EasyPark**     | Aplikacja parkingowa  | Link przy przystanku 01 parkingowym      |
+| **EasyPark**     | Parking app           | Link przy przystanku 01                  |
 | **Booking.com**  | Noclegi               | „Szukaj noclegu" na stronie regionu      |
-| **GetYourGuide** | Bilety do atrakcji    | Link przy biletowanych przystankach      |
+| **GetYourGuide** | Bilety                | Link przy biletowanych przystankach      |
 | **Revolut**      | Karta wielowalutowa   | Alternatywa Zen                          |
-| **CampRest**     | Campingi              | PL rynek, link „Noclegi pod namiotem"    |
+| **CampRest**     | Campingi              | PL rynek                                 |
 
 ### Zasady
-- Treści partnerskie TYLKO w widoku rodzica (nigdy w widoku dziecka)
-- Oznaczenie chipem „Partner" — transparentność
-- UTM tracking: `?utm_source=questini&utm_campaign={miasto}`
+- TYLKO w widoku rodzica (nigdy w widoku dziecka)
+- Chip „Partner" przy każdym linku — transparentność
+- UTM: `?utm_source=questini&utm_campaign={miasto}`
 - Sekcja „Przydatne w podróży" w footerze regionu
 - Zero pop-upów, auto-play, reklam w treści przystanków
 
 ---
 
-## 13. DESIGN SYSTEM
+## 14. DESIGN SYSTEM
 
 ### Paleta
 | Token          | Hex       | Użycie                              |
@@ -357,92 +460,124 @@ Rzuć okiem: questini.com
 | --olive        | #5F6637   | chipy logistyczne, boks dzieci      |
 | --sea          | #23677A   | akcent, boks foto, focus            |
 
-Tło: `#FFFFFF` + trzy radial-gradient mgły (terra, olive, sea).
-Font: **Figtree** 400–800. Bazowy: **19px, min 18px**.
-Cele dotykowe: **min 44×44px**.
-Logo: `questini` 800 + `.` terra + `com` 600 ink2.
+- Tło: `#FFFFFF` + trzy radial-gradient mgły (terra, olive, sea)
+- Font: **Figtree** 400–800, bazowy **19px, min 18px**
+- Cele dotykowe: **min 44×44px**
+- Zaokrąglenia: 12 / 16 / 20 / 999
+- Cienie: sh1 (akordeon), sh2 (karta), sh-hover (karta:hover)
+- Logo: `questini` 800 + `.` terra + `com` 600 ink2
 
 ---
 
-## 14. ANATOMIA KARTY MIASTA
+## 15. ANATOMIA KARTY MIASTA
 
 ### Hero
-Zdjęcie full-bleed → przycisk wstecz + lang switcher → H1 + lead + chipy
+Zdjęcie full-bleed → ← wstecz + lang switcher → H1 + lead + chipy
 
-### Przystanki (akordeony)
+### Przystanki (akordeony, jeden otwarty naraz)
 **Przystanek 01 = ZAWSZE parking.**
 
-Nagłówek (widoczny bez rozwinięcia):
+Nagłówek (widoczny BEZ rozwinięcia):
 1. `{num} · {time}` terra → nazwa 21px/600 → ▼
 2. Chipy: rok budowy (neutral) + cena (olive)
-3. Akcje: Nawiguj (terra filled) / Napisz (outline) / WWW (outline)
+3. Akcje: Nawiguj (terra) / Napisz (outline) / WWW (outline)
 
 Wnętrze:
-- Zdjęcie Wikimedia
-- Opis dorosły (2–3 akapity z datami)
+- Zdjęcie Wikimedia (`data-wiki`)
+- Opis dorosły 2–3 akapity z datami
 - Boks „Dla dzieci" (olive-bg)
 - Boks „Zadanie foto" (sea-bg)
 - Album zdjęć
-- Przycisk „Zgłoś uwagę" (tylko rodzic)
+- Zgłoś uwagę (tylko rodzic)
 
 ### Stopka miasta
-- Plan dnia
+- Plan dnia (tabela godzinowa)
 - Punkty awaryjne
-- Rozmówki
-- Telefony
+- Rozmówki (język użytkownika ↔ język lokalny)
+- Telefony (klikalne)
 - Oceń wycieczkę
-- Buy Me a Coffee CTA
+- BMC CTA
 
 ---
 
-## 15. DODAWANIE NOWEGO MIEJSCA
+## 16. PROCEDURY
 
-1. Wybierz kraj i region (utwórz katalog jeśli nowy)
+### Dodawanie nowego miejsca
+1. Wybierz kraj/region (utwórz katalog jeśli nowy)
 2. Skopiuj wzorcowy plik miasta
-3. Przystanek 01 = parking (Prowadź z lokalizacji)
-4. Każdy zabytek: chip roku + `data-wiki`
+3. Przystanek 01 = parking (Prowadź z lokalizacji użytkownika)
+4. Każdy zabytek: chip roku + `data-wiki` do zdjęcia
 5. Misje dla widoku dziecka
 6. Dodaj do `places.html` i regionu `index.html`
 7. Klucze tłumaczeń w `lang/*.json`
 8. Commit + push → live w minutę
 
+### Dodawanie nowego regionu
+1. Utwórz katalog `/{kraj}/{region}/`
+2. Skopiuj wzorcowy `index.html` regionu
+3. Dodaj kartę regionu na stronie kraju / landingu
+4. Klucze `region.{slug}.*` w `lang/*.json`
+
+### Dodawanie nowego kraju
+1. Utwórz katalog `/{kraj}/`
+2. Dodaj do nawigacji i `places.html`
+3. Dodaj na mapę SVG Europy (faza 2)
+
 ---
 
-## 16. CZEGO NIGDY NIE ROBIĆ
+## 17. CZEGO NIGDY NIE ROBIĆ
 
 - Tekst poniżej 18px
 - Cele dotykowe poniżej 44×44px
-- Ukrywanie przycisków akcji wewnątrz akordeonu
-- Wymyślanie dat, cen, telefonów
+- Ukrywanie akcji wewnątrz akordeonu
+- Wymyślanie dat, cen, telefonów — brak źródła → „sprawdź na miejscu"
 - Treści partnerskie w widoku dziecka
-- Import frameworków (zero dependencies)
+- Import frameworków JS/CSS (zero dependencies)
 - Łączenie regionów (Marche ≠ Umbria)
 - Pop-upy, auto-play, overlay reklamy
-- Tracking użytkowników (zero GA, zero pixeli)
-- Używanie `localStorage` poza zdefiniowanymi kluczami
+- Tracking użytkowników (zero GA, zero pixeli, zero cookies śledzących)
+- `localStorage` poza zdefiniowanymi kluczami
+- PHP/server-side rendering (treść = pliki statyczne, interakcje = Supabase API)
 
 ---
 
-## 17. STATUS WDROŻENIA
+## 18. GIT WORKFLOW
 
-| Element                              | Status |
-|--------------------------------------|--------|
-| Design tokens v2 (CSS)               | ✅     |
-| Landing page questini.com            | ✅     |
-| Perugia (wzorzec karty miasta)       | ✅     |
-| 6 miast (treść pełna, format stary)  | ⚠️     |
-| Podział Marche / Umbria              | 🔲     |
-| Widok dziecka                        | 🔲     |
-| i18n runtime + PL/EN/IT/DE           | 🔲     |
-| i18n: FR/ES/CS/SK/RO/AT/HR/EL/NO    | 🔲     |
-| Polityka cookies                     | 🔲     |
-| Cookie consent baner                 | 🔲     |
-| Menu / indeks miejsc                 | 🔲     |
-| System ocen (localStorage)           | 🔲     |
-| Zgłaszanie uwag (mailto)             | 🔲     |
-| Buy Me a Coffee widget               | 🔲     |
-| Mapa Europy (SVG/Leaflet)            | 🔲     |
-| System ocen (backend)                | 🔲     |
-| Agent AI do uwag                     | 🔲     |
-| Partnerstwa B2B                      | 🔲     |
-| Program influencerów                 | 🔲     |
+- Branch: `main` (jedyny, bezpośredni push)
+- Commit: po polsku, opisowy, z zakresem zmian
+- Push: wymaga PAT, token jednorazowy, usuwany z remote URL po pushu
+- Deploy: automatyczny przez GitHub Pages (1–2 min po pushu)
+- CNAME: `questini.com` (plik w repo root)
+
+---
+
+## 19. FAZY WDROŻENIA
+
+### Faza 1 — MVP (obecna)
+- [x] Design system v2
+- [x] Landing page questini.com
+- [x] Perugia (wzorzec karty miasta)
+- [ ] Rozdzielenie Marche / Umbria do osobnych katalogów
+- [ ] Migracja 6 miast na nowy szablon (format Perugii)
+- [ ] Widok dziecka (misje, checkboxy, progress)
+- [ ] i18n runtime + PL/EN/IT/DE
+- [ ] Cookie policy + consent baner
+- [ ] Menu / indeks miejsc (places.html)
+- [ ] Zgłoszenia uwag (mailto)
+- [ ] Buy Me a Coffee widget
+
+### Faza 2 — interakcje
+- [ ] Supabase: tabele ratings + reports
+- [ ] System ocen (gwiazdki + komentarz + fingerprint)
+- [ ] Średnie ocen na kartach regionów
+- [ ] Zgłoszenia uwag przez formularz (Supabase)
+- [ ] i18n: FR/ES/CS/SK/RO/AT/HR/EL/NO
+- [ ] Mapa Europy (SVG + Leaflet)
+
+### Faza 3 — wzrost
+- [ ] Agent AI do moderacji uwag
+- [ ] Partnerstwa B2B (Zen, Sail, EasyPark, Booking)
+- [ ] Program influencerów
+- [ ] Kolejne regiony (Toskania, Kraków, Chorwacja)
+- [ ] PWA (offline, install prompt)
+- [ ] System ocen z auth (Google/Apple sign-in)
