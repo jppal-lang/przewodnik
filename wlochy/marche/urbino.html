@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Palazzo Ducale (Urbino)">
+  <div class="stop open" data-id="02" data-wiki="Palazzo Ducale (Urbino)">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 9:30</span><span class="stop-name">Palazzo Ducale i Galleria Nazionale delle Marche</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">od 1454 r.</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03" data-wiki="Casa natale di Raffaello">
+  <div class="stop open" data-id="03" data-wiki="Casa natale di Raffaello">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 11:30</span><span class="stop-name">Dom Rafaela</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XV w.</span><span class="chip-sm chip-olive">bilet kilka €</span></div>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Oratorio di San Giovanni Battista (Urbino)">
+  <div class="stop open" data-id="04" data-wiki="Oratorio di San Giovanni Battista (Urbino)">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 12:15</span><span class="stop-name">Oratorio di San Giovanni</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">freski 1416 r.</span><span class="chip-sm chip-olive">bilet kilka €</span></div>
@@ -116,7 +116,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="05">
+  <div class="stop open" data-id="05">
     <button class="stop-header" onclick="toggleStop('05')">
       <div class="stop-row1"><span class="stop-num">05 · 13:00</span><span class="stop-name">Obiad: crescia sfogliata</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">~5–8 €/os.</span></div>
@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="06" data-wiki="Fortezza Albornoz (Urbino)">
+  <div class="stop open" data-id="06" data-wiki="Fortezza Albornoz (Urbino)">
     <button class="stop-header" onclick="toggleStop('06')">
       <div class="stop-row1"><span class="stop-num">06 · 14:00</span><span class="stop-name">Fortezza Albornoz i park</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XIV w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -227,6 +227,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>

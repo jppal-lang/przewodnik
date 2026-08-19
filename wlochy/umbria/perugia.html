@@ -66,7 +66,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Rocca Paolina">
+  <div class="stop open" data-id="02" data-wiki="Rocca Paolina">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 16:30</span><span class="stop-name">Rocca Paolina</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1540 r.</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
@@ -84,7 +84,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03" data-wiki="Fontana Maggiore">
+  <div class="stop open" data-id="03" data-wiki="Fontana Maggiore">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 17:10</span><span class="stop-name">Fontana Maggiore</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1278 r.</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
@@ -101,7 +101,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Cattedrale di San Lorenzo (Perugia)">
+  <div class="stop open" data-id="04" data-wiki="Cattedrale di San Lorenzo (Perugia)">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 17:30</span><span class="stop-name">Katedra San Lorenzo</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1345 r.</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
@@ -119,7 +119,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="05" data-wiki="Palazzo dei Priori (Perugia)">
+  <div class="stop open" data-id="05" data-wiki="Palazzo dei Priori (Perugia)">
     <button class="stop-header" onclick="toggleStop('05')">
       <div class="stop-row1"><span class="stop-num">05 · 18:00</span><span class="stop-name">Palazzo dei Priori</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1293 r.</span><span class="chip-sm chip-olive">8 € / dorosły</span></div>
@@ -138,7 +138,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="06">
+  <div class="stop open" data-id="06">
     <button class="stop-header" onclick="toggleStop('06')">
       <div class="stop-row1"><span class="stop-num">06 · 18:50</span><span class="stop-name">Via dell'Acquedotto</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XIII w.</span><span class="chip-sm chip-olive">bezpłatnie</span></div>
@@ -155,7 +155,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="07">
+  <div class="stop open" data-id="07">
     <button class="stop-header" onclick="toggleStop('07')">
       <div class="stop-row1"><span class="stop-num">07 · 19:30</span><span class="stop-name">Kolacja przy Corso Vannucci</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">~15 €/os.</span></div>
@@ -247,6 +247,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>

@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Basilica di San Vitale">
+  <div class="stop open" data-id="02" data-wiki="Basilica di San Vitale">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 9:30</span><span class="stop-name">Bazylika San Vitale</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">526–547 r.</span><span class="chip-sm chip-olive">bilet łączony</span></div>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03" data-wiki="Mausoleo di Galla Placidia">
+  <div class="stop open" data-id="03" data-wiki="Mausoleo di Galla Placidia">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 10:30</span><span class="stop-name">Mauzoleum Galli Placydii</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">ok. 425–450 r.</span><span class="chip-sm chip-olive">łączony + dopłata</span></div>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Battistero Neoniano">
+  <div class="stop open" data-id="04" data-wiki="Battistero Neoniano">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 11:30</span><span class="stop-name">Baptysterium Neona</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">V w.</span><span class="chip-sm chip-olive">bilet łączony</span></div>
@@ -116,7 +116,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="05" data-wiki="Basilica di Sant'Apollinare Nuovo">
+  <div class="stop open" data-id="05" data-wiki="Basilica di Sant'Apollinare Nuovo">
     <button class="stop-header" onclick="toggleStop('05')">
       <div class="stop-row1"><span class="stop-num">05 · 12:30</span><span class="stop-name">Obiad, potem Sant'Apollinare Nuovo</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">ok. 505 r.</span><span class="chip-sm chip-olive">bilet łączony</span></div>
@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="06" data-wiki="Tomba di Dante">
+  <div class="stop open" data-id="06" data-wiki="Tomba di Dante">
     <button class="stop-header" onclick="toggleStop('06')">
       <div class="stop-row1"><span class="stop-num">06 · 14:30</span><span class="stop-name">Grób Dantego</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">kaplica 1780 r.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -150,7 +150,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="07" data-wiki="Mausoleo di Teodorico">
+  <div class="stop open" data-id="07" data-wiki="Mausoleo di Teodorico">
     <button class="stop-header" onclick="toggleStop('07')">
       <div class="stop-row1"><span class="stop-num">07 · 15:30</span><span class="stop-name">Opcja: Mauzoleum Teodoryka</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">ok. 520</span><span class="chip-sm chip-olive">osobny bilet</span></div>
@@ -244,6 +244,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>

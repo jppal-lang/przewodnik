@@ -1,6 +1,6 @@
 /* Album zdjęć per przystanek — localStorage, bez serwera */
 (function(){
-  var NS = 'album:' + (location.pathname.split('/').pop() || 'index').replace('.html','');
+  var NS = 'quolino_album:' + (location.pathname.split('/').pop() || 'index').replace('.html','');
   var ICON_ADD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.4"/><path d="M8 5l1.2-2h5.6L16 5"/></svg>';
 
   function load(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } }
@@ -43,20 +43,14 @@
     var inner = stop.querySelector('.stop-body');
     if(!inner) return;
     var key = NS + ':' + idx;
-
-    var wrap = document.createElement('div');
-    wrap.className = 'album';
-    var box = document.createElement('div');
-    box.className = 'thumbs';
-    var row = document.createElement('div');
-    row.className = 'albumrow';
+    var wrap = document.createElement('div'); wrap.className = 'album';
+    var box = document.createElement('div'); box.className = 'thumbs';
+    var row = document.createElement('div'); row.className = 'albumrow';
     var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'addphoto';
+    btn.type = 'button'; btn.className = 'addphoto';
     btn.innerHTML = ICON_ADD + '<span>Dodaj zdjęcie z galerii</span>';
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*'; input.multiple = true; input.hidden = true;
-
     btn.addEventListener('click', function(){ input.click(); });
     input.addEventListener('change', function(){
       var files = Array.prototype.slice.call(input.files || []);
@@ -70,11 +64,8 @@
         });
       })();
     });
-
     row.appendChild(btn);
-    wrap.appendChild(box);
-    wrap.appendChild(row);
-    wrap.appendChild(input);
+    wrap.appendChild(box); wrap.appendChild(row); wrap.appendChild(input);
     inner.appendChild(wrap);
     render(box, key);
   });
@@ -91,21 +82,17 @@
       if(!d) return;
       var img = (d.originalimage && d.originalimage.source) || (d.thumbnail && d.thumbnail.source);
       if(!img) return;
-      // wolimy rozsądny rozmiar: thumbnail w wyższej rozdzielczości
-      if(d.thumbnail && d.thumbnail.source){
-        img = d.thumbnail.source.replace(/\/(\d+)px-/, '/900px-');
-      }
+      if(d.thumbnail && d.thumbnail.source) img = d.thumbnail.source.replace(/\/(\d+)px-/, '/900px-');
       var im = document.createElement('img');
       im.src = img; im.alt = title; im.loading = 'lazy';
-      im.style.width = '100%'; im.style.height = '100%'; im.style.objectFit = 'cover'; im.style.borderRadius = '14px';
-      slot.innerHTML = '';
-      slot.appendChild(im);
+      im.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:14px';
+      slot.innerHTML = ''; slot.appendChild(im);
       var cap = document.createElement('a');
       cap.href = (d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page) || '#';
       cap.target = '_blank'; cap.rel = 'noopener';
       cap.textContent = 'Foto: Wikimedia Commons / Wikipedia';
       cap.style.cssText = 'display:block;margin-top:6px;font-size:12px;color:var(--label);border-bottom:1px dashed var(--line);width:fit-content';
       slot.insertAdjacentElement('afterend', cap);
-    }).catch(function(){ /* offline lub brak artykułu — po prostu bez zdjęcia */ });
+    }).catch(function(){});
   });
 })();

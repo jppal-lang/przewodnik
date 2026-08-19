@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Cattedrale di San Rufino">
+  <div class="stop open" data-id="02" data-wiki="Cattedrale di San Rufino">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 10:00</span><span class="stop-name">Katedra San Rufino</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03" data-wiki="Basilica di Santa Chiara">
+  <div class="stop open" data-id="03" data-wiki="Basilica di Santa Chiara">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 10:45</span><span class="stop-name">Bazylika św. Klary</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1257–1265 r.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Tempio di Minerva (Assisi)">
+  <div class="stop open" data-id="04" data-wiki="Tempio di Minerva (Assisi)">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 11:30</span><span class="stop-name">Piazza del Comune i świątynia Minerwy</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">I w. p.n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -116,7 +116,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="05">
+  <div class="stop open" data-id="05">
     <button class="stop-header" onclick="toggleStop('05')">
       <div class="stop-row1"><span class="stop-num">05 · 12:30</span><span class="stop-name">Obiad: torta al testo</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">~8–12 €/os.</span></div>
@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="06" data-wiki="Basilica di San Francesco d'Assisi">
+  <div class="stop open" data-id="06" data-wiki="Basilica di San Francesco d'Assisi">
     <button class="stop-header" onclick="toggleStop('06')">
       <div class="stop-row1"><span class="stop-num">06 · 13:30</span><span class="stop-name">Bazylika św. Franciszka</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1228–1253 r.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -150,7 +150,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="07" data-wiki="Rocca Maggiore">
+  <div class="stop open" data-id="07" data-wiki="Rocca Maggiore">
     <button class="stop-header" onclick="toggleStop('07')">
       <div class="stop-row1"><span class="stop-num">07 · 15:45</span><span class="stop-name">Rocca Maggiore</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1356 r.</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
@@ -240,6 +240,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>

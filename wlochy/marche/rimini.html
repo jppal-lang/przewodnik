@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Ponte di Tiberio (Rimini)">
+  <div class="stop open" data-id="02" data-wiki="Ponte di Tiberio (Rimini)">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 16:00</span><span class="stop-name">Most Tyberiusza</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">14–21 n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03" data-wiki="Borgo San Giuliano">
+  <div class="stop open" data-id="03" data-wiki="Borgo San Giuliano">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 16:30</span><span class="stop-name">Borgo San Giuliano</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">spacer</span></div>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Castel Sismondo">
+  <div class="stop open" data-id="04" data-wiki="Castel Sismondo">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 17:15</span><span class="stop-name">Muzeum Felliniego w zamku Malatestów</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">zamek 1437 r.</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
@@ -116,7 +116,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="05" data-wiki="Piazza Cavour (Rimini)">
+  <div class="stop open" data-id="05" data-wiki="Piazza Cavour (Rimini)">
     <button class="stop-header" onclick="toggleStop('05')">
       <div class="stop-row1"><span class="stop-num">05 · 18:15</span><span class="stop-name">Piazza Cavour i stary targ rybny</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XIII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="06" data-wiki="Domus del chirurgo">
+  <div class="stop open" data-id="06" data-wiki="Domus del chirurgo">
     <button class="stop-header" onclick="toggleStop('06')">
       <div class="stop-row1"><span class="stop-num">06 · 18:45</span><span class="stop-name">Domus del Chirurgo</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">II w.</span><span class="chip-sm chip-olive">bilet — sprawdź</span></div>
@@ -150,7 +150,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="07" data-wiki="Tempio Malatestiano">
+  <div class="stop open" data-id="07" data-wiki="Tempio Malatestiano">
     <button class="stop-header" onclick="toggleStop('07')">
       <div class="stop-row1"><span class="stop-num">07 · 19:15</span><span class="stop-name">Tempio Malatestiano</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1447–1460 r.</span><span class="chip-sm chip-olive">sprawdź godziny</span></div>
@@ -167,7 +167,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="08" data-wiki="Arco d'Augusto (Rimini)">
+  <div class="stop open" data-id="08" data-wiki="Arco d'Augusto (Rimini)">
     <button class="stop-header" onclick="toggleStop('08')">
       <div class="stop-row1"><span class="stop-num">08 · 19:45</span><span class="stop-name">Łuk Augusta i Piazza Tre Martiri</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">27 p.n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -184,7 +184,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="09" data-wiki="Piadina">
+  <div class="stop open" data-id="09" data-wiki="Piadina">
     <button class="stop-header" onclick="toggleStop('09')">
       <div class="stop-row1"><span class="stop-num">09 · 20:15</span><span class="stop-name">Piadina w Borgo</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">~6–9 €/os.</span></div>
@@ -278,6 +278,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>

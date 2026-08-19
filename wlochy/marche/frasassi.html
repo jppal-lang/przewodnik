@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Grotte di Frasassi">
+  <div class="stop open" data-id="02" data-wiki="Grotte di Frasassi">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 10:00</span><span class="stop-name">Trasa turystyczna jaskiń</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">odkryte 1971 r.</span><span class="chip-sm chip-olive">bilet online</span></div>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03">
+  <div class="stop open" data-id="03">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 12:00</span><span class="stop-name">San Vittore alle Chiuse i mostek na Sentino</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Tempio del Valadier">
+  <div class="stop open" data-id="04" data-wiki="Tempio del Valadier">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 13:00</span><span class="stop-name">Świątynia Valadiera w skalnej paszczy</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">1828 r.</span><span class="chip-sm chip-olive">spacer pod górę</span></div>
@@ -193,6 +193,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>

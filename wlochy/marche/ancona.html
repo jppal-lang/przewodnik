@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="02" data-wiki="Arco di Traiano (Ancona)">
+  <div class="stop open" data-id="02" data-wiki="Arco di Traiano (Ancona)">
     <button class="stop-header" onclick="toggleStop('02')">
       <div class="stop-row1"><span class="stop-num">02 · 9:45</span><span class="stop-name">Łuk Trajana i spacer nabrzeżem</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">115 n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="03" data-wiki="Cattedrale di San Ciriaco">
+  <div class="stop open" data-id="03" data-wiki="Cattedrale di San Ciriaco">
     <button class="stop-header" onclick="toggleStop('03')">
       <div class="stop-row1"><span class="stop-num">03 · 10:30</span><span class="stop-name">Katedra San Ciriaco</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XI–XIII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="04" data-wiki="Piazza del Plebiscito (Ancona)">
+  <div class="stop open" data-id="04" data-wiki="Piazza del Plebiscito (Ancona)">
     <button class="stop-header" onclick="toggleStop('04')">
       <div class="stop-row1"><span class="stop-num">04 · 11:45</span><span class="stop-name">Piazza del Papa i starówka</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XV w.</span><span class="chip-sm chip-olive">spacer</span></div>
@@ -116,7 +116,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="05" data-wiki="Passetto">
+  <div class="stop open" data-id="05" data-wiki="Passetto">
     <button class="stop-header" onclick="toggleStop('05')">
       <div class="stop-row1"><span class="stop-num">05 · 13:00</span><span class="stop-name">Obiad, potem Passetto i groty w klifie</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">pomnik 1930 r.</span><span class="chip-sm chip-olive">winda drobne</span></div>
@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <div class="stop" data-id="06" data-wiki="Portonovo">
+  <div class="stop open" data-id="06" data-wiki="Portonovo">
     <button class="stop-header" onclick="toggleStop('06')">
       <div class="stop-row1"><span class="stop-num">06 · 15:30</span><span class="stop-name">Opcja: Riviera del Conero</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">plaże 0–35 €</span></div>
@@ -223,6 +223,8 @@ function toggleStop(id){
 }
 document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../migrate-storage.js"></script>
+<script src="../../stop-toc.js"></script>
 <script src="../../app.js"></script>
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>
