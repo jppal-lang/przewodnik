@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- tło: krążek parchment z obwódką terra -->
+  <circle cx="128" cy="128" r="124" fill="#FFFCF5" stroke="#B4502E" stroke-width="8"/>
+
+  <!-- uszy -->
+  <circle cx="58" cy="62" r="36" fill="#8A7B68"/>
+  <circle cx="58" cy="62" r="20" fill="#D9BFA8"/>
+  <circle cx="198" cy="62" r="36" fill="#8A7B68"/>
+  <circle cx="198" cy="62" r="20" fill="#D9BFA8"/>
+
+  <!-- głowa -->
+  <ellipse cx="128" cy="140" rx="88" ry="82" fill="#8A7B68"/>
+  <!-- jaśniejszy pyszczek -->
+  <ellipse cx="128" cy="168" rx="58" ry="46" fill="#EDE0CE"/>
+
+  <!-- ciemna maska wokół oczu (znak popielicy) -->
+  <ellipse cx="88" cy="118" rx="30" ry="26" fill="#5A4D3F"/>
+  <ellipse cx="168" cy="118" rx="30" ry="26" fill="#5A4D3F"/>
+
+  <!-- oczy: duże, błyszczące -->
+  <circle cx="88" cy="118" r="19" fill="#2B241C"/>
+  <circle cx="168" cy="118" r="19" fill="#2B241C"/>
+  <circle cx="94" cy="111" r="7" fill="#FFFFFF"/>
+  <circle cx="174" cy="111" r="7" fill="#FFFFFF"/>
+  <circle cx="83" cy="124" r="3" fill="#FFFFFF" opacity="0.7"/>
+  <circle cx="163" cy="124" r="3" fill="#FFFFFF" opacity="0.7"/>
+
+  <!-- nosek terra -->
+  <ellipse cx="128" cy="152" rx="12" ry="9" fill="#B4502E"/>
+
+  <!-- uśmiech -->
+  <path d="M108 172 Q128 190 148 172" fill="none" stroke="#5A4D3F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M128 161 L128 170" stroke="#5A4D3F" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- wąsiki -->
+  <path d="M62 150 Q84 154 100 156" fill="none" stroke="#5A4D3F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M64 168 Q86 166 100 164" fill="none" stroke="#5A4D3F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M194 150 Q172 154 156 156" fill="none" stroke="#5A4D3F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M192 168 Q170 166 156 164" fill="none" stroke="#5A4D3F" stroke-width="4" stroke-linecap="round"/>
+</svg>
