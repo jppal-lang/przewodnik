@@ -18,5 +18,22 @@
   "filter.all": "Alle",
   "filter.half_day": "Halber Tag",
   "filter.full_day": "Ganzer Tag",
-  "label.duration_h": "~{n}h"
+  "label.duration_h": "~{n}h",
+  "label.country_italy": "Italien",
+  "label.cities_suffix": "Städte · nach Entfernung sortiert",
+  "loc.share": "Standort teilen, um nach Entfernung zu sortieren",
+  "loc.find_me": "Finde mich",
+  "label.other_regions_italy": "Andere Regionen in Italien",
+  "label.coming_soon": "In Vorbereitung",
+  "chip.soon": "Bald",
+  "region.toskania": "Toskana",
+  "city.frasassi.name": "Frasassi-Höhlen",
+  "city.frasassi.lead": "Eine unterirdische Kathedrale so groß wie eine echte — entdeckt 1971.",
+  "city.rawenna.name": "Ravenna",
+  "city.rawenna.lead": "Byzantinische Mosaike und Dantes Grab.",
+  "city.asyz.name": "Assisi",
+  "city.asyz.lead": "Die Basilika des Hl. Franziskus und Gassen aus rosa Stein.",
+  "city.ancona.lead": "Hafen, Trajansbogen und der beste Fisch der Region.",
+  "city.rimini.lead": "Fellini und eine römische Brücke, über die noch Autos fahren.",
+  "city.perugia.lead": "Unterirdische Stadt, Rolltreppen und die beste Schokolade Umbriens."
 }

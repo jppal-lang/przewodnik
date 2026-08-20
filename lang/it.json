@@ -18,5 +18,22 @@
   "filter.all": "Tutti",
   "filter.half_day": "Mezza giornata",
   "filter.full_day": "Giornata intera",
-  "label.duration_h": "~{n}h"
+  "label.duration_h": "~{n}h",
+  "label.country_italy": "Italia",
+  "label.cities_suffix": "città · ordinate per vicinanza",
+  "loc.share": "Condividi la posizione per ordinare per distanza",
+  "loc.find_me": "Localizzami",
+  "label.other_regions_italy": "Altre regioni in Italia",
+  "label.coming_soon": "In preparazione",
+  "chip.soon": "Presto",
+  "region.toskania": "Toscana",
+  "city.frasassi.name": "Grotte di Frasassi",
+  "city.frasassi.lead": "Una cattedrale sotterranea grande quanto una vera cattedrale — scoperta nel 1971.",
+  "city.rawenna.name": "Ravenna",
+  "city.rawenna.lead": "Mosaici bizantini e la tomba di Dante.",
+  "city.asyz.name": "Assisi",
+  "city.asyz.lead": "La Basilica di San Francesco e vicoli di pietra rosa.",
+  "city.ancona.lead": "Porto, Arco di Traiano e il miglior pesce della regione.",
+  "city.rimini.lead": "Fellini e un ponte romano su cui passano ancora le auto.",
+  "city.perugia.lead": "Città sotterranea, scale mobili e il miglior cioccolato dell'Umbria."
 }

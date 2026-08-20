@@ -18,5 +18,22 @@
   "filter.all": "All",
   "filter.half_day": "Half day",
   "filter.full_day": "Full day",
-  "label.duration_h": "~{n}h"
+  "label.duration_h": "~{n}h",
+  "label.country_italy": "Italy",
+  "label.cities_suffix": "cities · sorted by nearest",
+  "loc.share": "Share your location to sort by distance",
+  "loc.find_me": "Find me",
+  "label.other_regions_italy": "Other regions in Italy",
+  "label.coming_soon": "Coming soon",
+  "chip.soon": "Soon",
+  "region.toskania": "Tuscany",
+  "city.frasassi.name": "Frasassi Caves",
+  "city.frasassi.lead": "An underground cathedral the size of a cathedral — discovered in 1971.",
+  "city.rawenna.name": "Ravenna",
+  "city.rawenna.lead": "Byzantine mosaics and Dante's tomb.",
+  "city.asyz.name": "Assisi",
+  "city.asyz.lead": "St. Francis' Basilica and pink-stone alleyways.",
+  "city.ancona.lead": "A port, Trajan's Arch, and the region's best seafood.",
+  "city.rimini.lead": "Fellini and a Roman bridge still carrying cars.",
+  "city.perugia.lead": "Underground city, escalators, and the best chocolate in Umbria."
 }

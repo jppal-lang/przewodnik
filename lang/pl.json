@@ -18,5 +18,22 @@
   "filter.all": "Wszystkie",
   "filter.half_day": "Popołudnie",
   "filter.full_day": "Pełny dzień",
-  "label.duration_h": "~{n}h"
+  "label.duration_h": "~{n}h",
+  "label.country_italy": "Włochy",
+  "label.cities_suffix": "miast · sortowane od najbliższego",
+  "loc.share": "Udostępnij lokalizację, aby posortować od najbliższego",
+  "loc.find_me": "Zlokalizuj mnie",
+  "label.other_regions_italy": "Inne regiony we Włoszech",
+  "label.coming_soon": "W przygotowaniu",
+  "chip.soon": "Wkrótce",
+  "region.toskania": "Toskania",
+  "city.frasassi.name": "Jaskinie Frasassi",
+  "city.frasassi.lead": "Podziemna katedra wielkości katedry — odkryta w 1971.",
+  "city.rawenna.name": "Rawenna",
+  "city.rawenna.lead": "Bizantyjskie mozaiki i grób Dantego.",
+  "city.asyz.name": "Asyż",
+  "city.asyz.lead": "Bazylika św. Franciszka i uliczki z różowego kamienia.",
+  "city.ancona.lead": "Port, łuk Trajana i najlepsze ryby regionu.",
+  "city.rimini.lead": "Fellini i rzymski most, po którym wciąż jeżdżą auta.",
+  "city.perugia.lead": "Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii."
 }

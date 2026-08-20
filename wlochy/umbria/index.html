@@ -27,20 +27,20 @@
 
 <nav class="breadcrumb">
   <a href="../../index.html">Quolino</a><span>/</span>
-  <a href="../../index.html#regiony">Włochy</a><span>/</span>
+  <a href="../../index.html#regiony" data-i18n="label.country_italy">Włochy</a><span>/</span>
   <span class="current">Umbria</span>
 </nav>
 
 <div class="hdr-left" style="padding:16px 0 0">
-  <p class="caps">Włochy</p>
+  <p class="caps" data-i18n="label.country_italy">Włochy</p>
   <h1>Umbria</h1>
-  <p class="subtitle"><span id="cityCount">2</span> miasta · sortowane od najbliższego</p>
+  <p class="subtitle"><span id="cityCount">2</span> <span data-i18n="label.cities_suffix">miasta · sortowane od najbliższego</span></p>
 </div>
 
 <div class="duration-filters" id="durFilters">
-  <button class="dur-chip active" data-filter="all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Wszystkie</button>
-  <button class="dur-chip" data-filter="half_day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M16.5 17.5L19 20" opacity=".4"/></svg>Popołudnie</button>
-  <button class="dur-chip" data-filter="full_day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Pełny dzień</button>
+  <button class="dur-chip active" data-filter="all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="filter.all">Wszystkie</span></button>
+  <button class="dur-chip" data-filter="half_day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M16.5 17.5L19 20" opacity=".4"/></svg><span data-i18n="filter.half_day">Popołudnie</span></button>
+  <button class="dur-chip" data-filter="full_day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><span data-i18n="filter.full_day">Pełny dzień</span></button>
 </div>
 
 <div class="region-tabs">
@@ -50,8 +50,8 @@
 
 <div class="loc-bar" id="locBar">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
-  <span class="loc-text" id="locText">Udostępnij lokalizację, aby posortować od najbliższego</span>
-  <button class="loc-btn" id="locBtn" onclick="getLocation()">Zlokalizuj mnie</button>
+  <span class="loc-text" id="locText" data-i18n="loc.share">Udostępnij lokalizację, aby posortować od najbliższego</span>
+  <button class="loc-btn" id="locBtn" onclick="getLocation()" data-i18n="loc.find_me">Zlokalizuj mnie</button>
 </div>
 
 <div class="city-list" id="cityList">
@@ -59,20 +59,20 @@
     <div class="thumb"><div class="badge-today">DZIŚ</div></div>
     <div class="city-body">
       <div class="city-top"><span class="city-name">Perugia</span><span class="dur-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>~5h</span></div>
-      <p class="city-lead">Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.</p>
+      <p class="city-lead" data-i18n="city.perugia.lead">Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.</p>
     </div>
   </a>
   <a class="city-card" href="asyz.html" data-lat="43.0707" data-lng="12.6196" data-duration="half_day" data-hours="4">
     <div class="thumb"></div>
     <div class="city-body">
-      <div class="city-top"><span class="city-name">Asyż</span><span class="dur-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>~4h</span></div>
-      <p class="city-lead">Bazylika św. Franciszka i uliczki z różowego kamienia.</p>
+      <div class="city-top"><span class="city-name" data-i18n="city.asyz.name">Asyż</span><span class="dur-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>~4h</span></div>
+      <p class="city-lead" data-i18n="city.asyz.lead">Bazylika św. Franciszka i uliczki z różowego kamienia.</p>
     </div>
   </a>
 </div>
 
 <div class="other-regions">
-  <p class="caps">Inne regiony we Włoszech</p>
+  <p class="caps" data-i18n="label.other_regions_italy">Inne regiony we Włoszech</p>
   <div class="other-region-row">
     <div>
       <div class="other-region-name">Marche</div>
@@ -82,10 +82,10 @@
   </div>
   <div class="other-region-row soon">
     <div>
-      <div class="other-region-name">Toskania</div>
-      <div class="other-region-note">W przygotowaniu</div>
+      <div class="other-region-name" data-i18n="region.toskania">Toskania</div>
+      <div class="other-region-note" data-i18n="label.coming_soon">W przygotowaniu</div>
     </div>
-    <span class="chip-soon">Wkrótce</span>
+    <span class="chip-soon" data-i18n="chip.soon">Wkrótce</span>
   </div>
 </div>
 
@@ -93,8 +93,8 @@
 <script>
 function haversine(a,b,c,d){var R=6371,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180,z=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(y/2)*Math.sin(y/2);return R*2*Math.atan2(Math.sqrt(z),Math.sqrt(1-z))}
 function getLocation(){var b=document.getElementById('locBtn'),t=document.getElementById('locText');b.textContent='Szukam…';b.disabled=true;if(!navigator.geolocation){t.textContent='Przeglądarka nie obsługuje lokalizacji';b.textContent='Niedostępne';return}navigator.geolocation.getCurrentPosition(function(p){var la=p.coords.latitude,lo=p.coords.longitude;t.textContent='Pozycja: '+la.toFixed(4)+'°N, '+lo.toFixed(4)+'°E';b.textContent='Odśwież';b.disabled=false;var l=document.getElementById('cityList'),cs=Array.prototype.slice.call(l.querySelectorAll('.city-card'));cs.forEach(function(c){var d=haversine(la,lo,parseFloat(c.dataset.lat),parseFloat(c.dataset.lng));c._dist=d;var el=c.querySelector('.chip-olive');if(el)el.textContent='↑ '+Math.round(d)+' km';});cs.sort(function(a,b){return a._dist-b._dist});cs.forEach(function(c){l.appendChild(c)})},function(){t.textContent='Nie udało się — sprawdź uprawnienia';b.textContent='Spróbuj ponownie';b.disabled=false},{enableHighAccuracy:true,timeout:10000})}
-document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
 </script>
+<script src="../../i18n.js"></script>
 <script src="../../city-filter.js"></script>
 <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="questini" data-color="#FFDD00" data-emoji="" data-font="Poppins" data-text="Postaw mi kawę" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff"></script>
 </body>
