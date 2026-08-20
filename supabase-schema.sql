@@ -118,17 +118,20 @@ CREATE TABLE cities (
   lat NUMERIC(8,5),
   lon NUMERIC(8,5),
   bandana_color TEXT,               -- '#B7282E' (kolor heraldyczny)
-  created_at TIMESTAMPTZ DEFAULT now()
+  duration_type TEXT NOT NULL DEFAULT 'half_day',  -- 'full_day' | 'half_day'
+  duration_hours SMALLINT,          -- szacowany czas wycieczki (np. 3, 4, 6, 8)
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT valid_duration CHECK (duration_type IN ('full_day', 'half_day'))
 );
 
-INSERT INTO cities (slug, country, region, lat, lon, bandana_color) VALUES
-  ('perugia',  'it', 'umbria', 43.11030, 12.38960, '#B7282E'),
-  ('asyz',     'it', 'umbria', 43.07090, 12.61670, NULL),
-  ('urbino',   'it', 'marche', 43.72260, 12.63570, '#FFD700'),
-  ('ancona',   'it', 'marche', 43.61580, 13.51840, NULL),
-  ('frasassi', 'it', 'marche', 43.40090, 12.96540, NULL),
-  ('rimini',   'it', 'marche', 44.05940, 12.56570, NULL),
-  ('rawenna',  'it', 'marche', 44.41840, 12.20350, NULL);
+INSERT INTO cities (slug, country, region, lat, lon, bandana_color, duration_type, duration_hours) VALUES
+  ('perugia',  'it', 'umbria', 43.11030, 12.38960, '#B7282E', 'half_day', 5),
+  ('asyz',     'it', 'umbria', 43.07090, 12.61670, NULL,      'half_day', 4),
+  ('urbino',   'it', 'marche', 43.72260, 12.63570, '#FFD700', 'half_day', 4),
+  ('ancona',   'it', 'marche', 43.61580, 13.51840, NULL,      'half_day', 4),
+  ('frasassi', 'it', 'marche', 43.40090, 12.96540, NULL,      'half_day', 3),
+  ('rimini',   'it', 'marche', 44.05940, 12.56570, NULL,      'full_day', 7),
+  ('rawenna',  'it', 'marche', 44.41840, 12.20350, NULL,      'half_day', 5);
 
 
 -- 4. TŁUMACZENIA MIAST (hero, lead, plan dnia)
@@ -309,6 +312,8 @@ SELECT
   c.slug,
   c.country,
   c.region,
+  c.duration_type,
+  c.duration_hours,
   ct.lang,
   ct.title,
   ct.region_label,

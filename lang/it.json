@@ -14,5 +14,9 @@
   "btn.kid_view": "Vista bambino",
   "btn.add_photo": "Aggiungi foto dalla galleria",
   "nav.back": "Indietro",
-  "qr.scan_text": "Scansiona con il telefono del bambino — si apre la stessa guida in vista bambino: missioni, checkbox, senza prezzi e storia."
+  "qr.scan_text": "Scansiona con il telefono del bambino — si apre la stessa guida in vista bambino: missioni, checkbox, senza prezzi e storia.",
+  "filter.all": "Tutti",
+  "filter.half_day": "Mezza giornata",
+  "filter.full_day": "Giornata intera",
+  "label.duration_h": "~{n}h"
 }

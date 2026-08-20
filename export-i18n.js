@@ -106,7 +106,7 @@ async function exportCity(citySlug) {
 
   // Faza 1: miasto meta + przystanki (potrzebujemy stop_id do fazy 2)
   const [cityMeta, cityRows, stopRows, dayRows, emergRows] = await Promise.all([
-    query('cities', { slug: 'eq.' + citySlug, select: 'slug,country' }),
+    query('cities', { slug: 'eq.' + citySlug, select: 'slug,country,duration_type,duration_hours' }),
     query('city_translations', { city_slug: 'eq.' + citySlug, select: '*' }),
     query('stops', { city_slug: 'eq.' + citySlug, select: '*', order: 'stop_number.asc' }),
     query('day_plan', { city_slug: 'eq.' + citySlug, select: '*', order: 'sort_order.asc' }),
@@ -142,6 +142,8 @@ async function exportCity(citySlug) {
     const json = {
       city: citySlug,
       lang: lang,
+      duration_type: cityMeta[0].duration_type,
+      duration_hours: cityMeta[0].duration_hours,
       title: cityTrans.title,
       region_label: cityTrans.region_label,
       subtitle: cityTrans.subtitle,

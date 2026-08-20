@@ -14,5 +14,9 @@
   "btn.kid_view": "Kid view",
   "btn.add_photo": "Add photo from gallery",
   "nav.back": "Back",
-  "qr.scan_text": "Scan with your kid's phone — it opens the same guide in kid view: missions, checkboxes, no prices or history."
+  "qr.scan_text": "Scan with your kid's phone — it opens the same guide in kid view: missions, checkboxes, no prices or history.",
+  "filter.all": "All",
+  "filter.half_day": "Half day",
+  "filter.full_day": "Full day",
+  "label.duration_h": "~{n}h"
 }

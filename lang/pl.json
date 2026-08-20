@@ -14,5 +14,9 @@
   "btn.kid_view": "Widok dziecka",
   "btn.add_photo": "Dodaj zdjęcie z galerii",
   "nav.back": "Wróć",
-  "qr.scan_text": "Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik od razu w widoku dziecka: misje, checkboxy, bez cen i historii."
+  "qr.scan_text": "Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik od razu w widoku dziecka: misje, checkboxy, bez cen i historii.",
+  "filter.all": "Wszystkie",
+  "filter.half_day": "Popołudnie",
+  "filter.full_day": "Pełny dzień",
+  "label.duration_h": "~{n}h"
 }

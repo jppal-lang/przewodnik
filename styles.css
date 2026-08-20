@@ -337,6 +337,33 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .other-region-go{width:44px;height:44px;flex-shrink:0;border-radius:999px;background:var(--terra);color:var(--parchment);display:grid;place-items:center;font-size:18px;font-weight:800;text-decoration:none}
 .other-region-go:hover{background:var(--terra-h)}
 
+/* ===== Filtry czasu trwania (region index pages) ===== */
+.duration-filters{display:flex;gap:8px;padding:10px 0 0;flex-wrap:wrap;align-items:center}
+.dur-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  min-height:40px;padding:6px 16px;border-radius:999px;cursor:pointer;
+  font-family:'Figtree',sans-serif;font-size:15px;font-weight:600;
+  background:var(--parchment);color:var(--ink2);
+  border:1.5px solid var(--line);transition:all .15s ease;
+  -webkit-user-select:none;user-select:none
+}
+.dur-chip:hover{border-color:var(--terra);color:var(--terra)}
+.dur-chip.active{background:var(--terra);color:var(--parchment);border-color:var(--terra)}
+.dur-chip svg{width:16px;height:16px;flex-shrink:0}
+.dur-chip.active svg{stroke:var(--parchment)}
+
+/* Badge czasu trwania na city-card */
+.dur-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:14px;font-weight:600;padding:3px 10px;border-radius:999px;
+  background:var(--sea-bg);color:var(--sea);white-space:nowrap;flex-shrink:0
+}
+.dur-badge svg{width:14px;height:14px;flex-shrink:0}
+.dur-badge--full{background:var(--olive-bg);color:var(--olive)}
+
+/* Animacja filtrowania */
+.city-card[data-dur-hidden]{display:none}
+
 /* ===== Widok dziecka (kid toggle + kid view) ===== */
 .kid-toggle{
   min-height:44px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;

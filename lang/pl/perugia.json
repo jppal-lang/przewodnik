@@ -1,6 +1,8 @@
 {
   "city": "perugia",
   "lang": "pl",
+  "duration_type": "half_day",
+  "duration_hours": 5,
   "title": "Perugia",
   "region_label": "Umbria · popołudnie i wieczór",
   "subtitle": "Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.",

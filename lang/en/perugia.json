@@ -1,6 +1,8 @@
 {
   "city": "perugia",
   "lang": "en",
+  "duration_type": "half_day",
+  "duration_hours": 5,
   "title": "Perugia",
   "region_label": "Umbria · afternoon & evening",
   "subtitle": "Underground city, escalators, and the best chocolate in Umbria.",
