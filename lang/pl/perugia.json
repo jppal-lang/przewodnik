@@ -1,0 +1,150 @@
+{
+  "city": "perugia",
+  "lang": "pl",
+  "title": "Perugia",
+  "region_label": "Umbria · popołudnie i wieczór",
+  "subtitle": "Podziemne miasto, ruchome schody i najlepsza czekolada Umbrii.",
+  "stops": [
+    {
+      "number": 1,
+      "time": "16:15",
+      "price": "~8 €/doba",
+      "year_built": null,
+      "wiki_article": "Perugia",
+      "maps_query": "Piazza+Partigiani,+Perugia",
+      "whatsapp": "+390755721010",
+      "website": "https://www.sipaonline.it",
+      "name": "Parking Piazza Partigiani",
+      "desc_paragraphs": [
+        "Wielopoziomowy parking wykuty w zboczu wzgórza, tuż pod południowymi murami starówki — stąd nie ma pieszo pod górę ani metra. Otwarto go w 1983 roku razem z całym systemem scale mobili (ruchomych schodów), które budowniczowie przeprowadzili prosto przez wnętrze XVI-wiecznej twierdzy Rocca Paolina: osiem odcinków, około ośmiu minut jazdy, po drodze mijacie sklepione korytarze i place dawnej fortecy, zanim wyjdziecie na dzienne światło przy Piazza Italia.",
+        "To nietypowe wejście do miasta — same schody są już pierwszą atrakcją dnia, coś jak metro przez ruiny. Warto zapamiętać poziom, na którym zostawiacie auto: wieczorem wraca się tą samą drogą, przez wnętrze twierdzy, a kolejne poziomy wyglądają bardzo podobnie."
+      ],
+      "kids_box": "Ruchome schody jadą przez prawdziwe podziemne miasto! Policzcie, ile odcinków schodów minie, zanim zobaczycie niebo.",
+      "photo_task": "Rodzinne zdjęcie przy wejściu do scale mobili — to start trasy."
+    },
+    {
+      "number": 2,
+      "time": "16:30",
+      "price": null,
+      "year_built": "1540 r.",
+      "wiki_article": "Rocca Paolina",
+      "maps_query": "Rocca+Paolina,+Perugia",
+      "whatsapp": null,
+      "website": "https://turismo.comune.perugia.it",
+      "name": "Rocca Paolina",
+      "desc_paragraphs": [
+        "Papież Paweł III kazał zbudować tę twierdzę w 1540 roku jako karę: Perugia właśnie przegrała „wojnę o sól” — bunt przeciwko podatkowi nałożonemu przez Watykan — a papież postanowił, że zbuntowane miasto dostanie na karku fortecę pilnującą posłuszeństwa. Architekt Antonio da Sangallo Młodszy nie budował od zera: pod nowymi bastionami pogrzebano żywcem całą dzielnicę Santa Giustina — ulice, domy, wieże i studnie zasypano ziemią i przykryto sklepieniami tak, jak stały, z garnkami w kuchniach.",
+        "Perugianie tego nie zapomnieli. Gdy w 1860 roku miasto przyłączyło się do zjednoczonych Włoch, mieszkańcy własnymi rękami rozebrali fortecę od góry, kawałek po kawałku, jako symbol zrzucenia papieskiej władzy — do dziś nad ziemią zostały tylko fragmenty murów i bram. Ale to, co zasypano w 1540 roku, przetrwało pod spodem nienaruszone: dziś idzie się dawnymi uliczkami zamrożonego w czasie miasta, chłodno i cicho, z podświetlonymi łukami nad głową. Latem, gdy na powierzchni jest 35 stopni, to najprzyjemniejsze miejsce w Perugii."
+      ],
+      "kids_box": "To miasto-duch pod miastem! Poszukajcie zamurowanych okien i drzwi domów, w których 500 lat temu mieszkali ludzie.",
+      "photo_task": "Sylwetka rodzica z dzieckiem pod wielkim ceglanym łukiem — pod światło."
+    },
+    {
+      "number": 3,
+      "time": "17:10",
+      "price": null,
+      "year_built": "1278 r.",
+      "wiki_article": "Fontana Maggiore",
+      "maps_query": "Fontana+Maggiore,+Perugia",
+      "whatsapp": null,
+      "website": null,
+      "name": "Fontana Maggiore",
+      "desc_paragraphs": [
+        "Fontannę wykuto w 1278 roku — i to nie lokalny rzemieślnik, tylko duet najlepszych rzeźbiarzy epoki: Nicola Pisano i jego syn Giovanni, ci sami, którzy rzeźbili ambony w katedrach Pizy i Sieny. Dolna, wielokątna czasza ma 25 płaskorzeźb: miesiące roku z pracami rolnymi, znaki zodiaku, sceny biblijne, bajki Ezopa i personifikacje sztuk wyzwolonych — średniowieczna encyklopedia w kamieniu, czytana wokół w kółko jak komiks.",
+        "Górna czasza, marmurowo-brązowa, to już ręka samego Giovanniego: święci, prorocy i — między nimi — gryf oraz lew, herbowe zwierzęta Perugii, pilnujące miasta z samego szczytu fontanny. Woda płynęła tu akweduktem z góry Monte Pacciano, około czterech kilometrów, budowanym równolegle z fontanną jako jeden wielki projekt inżynieryjny — nagroda i pokaz siły miasta, które właśnie dorobiło się własnej, niezależnej sieci wodociągowej."
+      ],
+      "kids_box": "Znajdźcie na fontannie: lwa, wilczycę i rolnika ścinającego zboże. Kto pierwszy?",
+      "photo_task": "Cała fontanna z katedrą w tle — najlepiej z klęczki, nisko."
+    },
+    {
+      "number": 4,
+      "time": "17:30",
+      "price": "8 € / dorosły",
+      "year_built": "1345 r.",
+      "wiki_article": "Cattedrale di San Lorenzo (Perugia)",
+      "maps_query": "Cattedrale+San+Lorenzo,+Perugia",
+      "whatsapp": null,
+      "website": "https://www.cattedrale.perugia.it",
+      "name": "Katedra San Lorenzo",
+      "desc_paragraphs": [
+        "Katedra jest dziwnie ustawiona: głównym wejściem stoi bokiem do placu, bo budowniczowie w XIV wieku musieli dopasować się do już istniejącej zabudowy — i tak zostało. Budowę zaczęto w 1345 roku, ale fasada nigdy nie została ukończona: dolna część ma różowo-białą szachownicę z kamienia, górna to goła cegła, bo pieniądze (i chyba też zapał) skończyły się gdzieś w XVI wieku.",
+        "W środku, w kaplicy zamkniętej na piętnaście kłódek — każdy klucz ma inna instytucja miasta, więc otworzyć ją można tylko wszystkim naraz — przechowywana jest relikwia zwana Świętym Pierścieniem: ślubna obrączka Marii, pokazywana publicznie raz do roku, 30 lipca. Na zewnątrz, na szerokich schodach przed katedrą, Perugianie siadują od wieków — to nieoficjalny salon miasta, coś jak Schody Hiszpańskie w Rzymie, tylko bez tłumu turystów. Usiądźcie i wy."
+      ],
+      "kids_box": "Ściana katedry ma tylko kawałek różowo-białej szachownicy. Budowniczym… skończyły się pieniądze 600 lat temu i tak zostało!",
+      "photo_task": "Nogi całej rodziny na schodach katedry — buty w rządku."
+    },
+    {
+      "number": 5,
+      "time": "18:00",
+      "price": "8 € / dorosły",
+      "year_built": "1293 r.",
+      "wiki_article": "Palazzo dei Priori (Perugia)",
+      "maps_query": "Palazzo+dei+Priori,+Perugia",
+      "whatsapp": "+390755721009",
+      "website": "https://gallerianazionaledellumbria.it",
+      "name": "Palazzo dei Priori",
+      "desc_paragraphs": [
+        "Budowę ratusza zaczęto w 1293 roku i ciągnięto ją przez cały wiek XIV, dobudowując skrzydło po skrzydle — dziś to jeden z największych i najlepiej zachowanych średniowiecznych pałaców miejskich we Włoszech, z fasadą długą na całą pierzeję placu. Przy wejściu, nad schodami, wiszą żelazne łańcuchy i sztaby: to trofea wojenne, podobno zdjęte z bram Sieny po zwycięstwie Perugii nad odwiecznym rywalem — przybite tu demonstracyjnie, żeby każdy widział, kto wygrał.",
+        "W środku mieści się Galleria Nazionale dell'Umbria — największa kolekcja malarstwa umbryjskiego na świecie, z pracami Pietra Vannucciego zwanego Peruginem (nauczycielem Rafaela), Piera della Francesca i Duccia di Buoninsegna. Z dziećmi wystarczy 40 minut i sale 22–26. Nad wejściem stoją brązowe kopie gryfa i lwa, herbowych zwierząt miasta — oryginały, żeby przetrwały kolejne stulecia, przeniesiono do środka, tuż przy kasach."
+      ],
+      "kids_box": "Gryf to pół orzeł, pół lew — symbol Perugii. Policzcie, ile gryfów znajdziecie na całym budynku (jest ich ponad 10!).",
+      "photo_task": "Dziecko naśladujące pozę gryfa przy wejściu."
+    },
+    {
+      "number": 6,
+      "time": "18:50",
+      "price": null,
+      "year_built": "XIII w.",
+      "wiki_article": null,
+      "maps_query": "Via+dell'Acquedotto,+Perugia",
+      "whatsapp": null,
+      "website": null,
+      "name": "Via dell'Acquedotto",
+      "desc_paragraphs": [
+        "To dosłownie ten sam akwedukt, który w XIII wieku doprowadził wodę do Fontana Maggiore, widzianej dwa przystanki temu — tylko że dziś chodzi się po jego grzbiecie, a nie pod nim. Rury przestały być potrzebne w XIX wieku, gdy miasto przełożyło wodociąg pod ziemię, a puste kamienne łuki zamieniono w wąską, podniesioną nad dachami uliczkę dla pieszych — jedną z najbardziej romantycznych w mieście.",
+        "Szerokość momentami nie przekracza metra, po obu stronach mieszkalne okna na wyciągnięcie ręki, a pod nogami przez całą trasę czuć, że idzie się po czymś, co nie zostało zaprojektowane jako ulica. Najładniejsze światło jest właśnie o zachodzie — cegła robi się pomarańczowa, a z dołu, z prawdziwych uliczek, dobiega gwar kolacji, których jeszcze nie widać. Trasa w dół i z powrotem: 25 minut."
+      ],
+      "kids_box": "Idziecie po moście, którym 700 lat temu płynęła woda do fontanny z przystanku 03. Cała trasa wody: góry → akwedukt → fontanna!",
+      "photo_task": "Perspektywa uliczki-akweduktu z linią dachów po obu stronach."
+    },
+    {
+      "number": 7,
+      "time": "19:30",
+      "price": "~15 €/os.",
+      "year_built": null,
+      "wiki_article": null,
+      "maps_query": "Corso+Vannucci,+Perugia",
+      "whatsapp": "+390755736161",
+      "website": null,
+      "name": "Kolacja przy Corso Vannucci",
+      "desc_paragraphs": [
+        "Corso Vannucci, główny deptak miasta, nosi imię Pietra Vannucciego — malarza znanego jako Perugino, który dał Perugii złoty wiek sztuki i nauczył malować samego Rafaela. Wieczorem cała ulica zamienia się w scenę spaceru: pasta, pizza al taglio z bocznej uliczki, aperitivo na tarasach, gwar — to tutejsza passeggiata, rytuał powtarzany od pokoleń.",
+        "Na deser obowiązkowo Baci Perugina — czekoladki wymyślone w tym mieście w 1907 roku przez Luisę Spagnoli, początkowo nazwane żartobliwie „Cazzotto” (pięść) ze względu na nieregularny kształt. To Giovanni Buitoni, syn założycieli firmy, przechrzcił je na „Bacio” (całus) i dodał do każdej czekoladki owinięty w sreberko liścik z cytatem miłosnym — pomysł, który w 1922 roku zamienił lokalny przysmak w jeden z najbardziej rozpoznawalnych włoskich prezentów na świecie. Trasę kończycie na tarasie Giardini Carducci, z widokiem na dolinę Umbrii pod zachodzącym słońcem."
+      ],
+      "kids_box": "Perugia to stolica czekolady. Bacio znaczy „całus” — w każdym czekoladowym całusie ukryta jest karteczka z sekretem.",
+      "photo_task": "Zachód słońca z tarasu Giardini Carducci — sylwetki na tle doliny."
+    }
+  ],
+  "day_plan": [
+    { "time": "16:15", "description": "Parking Piazza Partigiani → scale mobili" },
+    { "time": "16:30", "description": "Rocca Paolina — podziemne miasto" },
+    { "time": "17:10", "description": "Fontana Maggiore i katedra" },
+    { "time": "18:00", "description": "Palazzo dei Priori (galeria, 40 min)" },
+    { "time": "18:50", "description": "Spacer akweduktem" },
+    { "time": "19:30", "description": "Kolacja + gelato, zachód słońca" },
+    { "time": "21:30", "description": "Powrót do auta, wyjazd" },
+    { "time": "23:15", "description": "Powrót do bazy" }
+  ],
+  "emergency": [
+    { "type": "pharmacy", "label": "Apteka", "description": "Farmacia San Martino, Corso Vannucci 46 (do 20:00)", "maps_query": "Farmacia+San+Martino,+Corso+Vannucci+46,+Perugia" },
+    { "type": "toilet", "label": "Toalety", "description": "Mercato Coperto, Piazza Matteotti (bezpłatne)", "maps_query": "Mercato+Coperto,+Piazza+Matteotti,+Perugia" },
+    { "type": "playground", "label": "Plac zabaw", "description": "Giardini Carducci — na końcu Corso Vannucci", "maps_query": "Giardini+Carducci,+Perugia" },
+    { "type": "hospital", "label": "Szpital", "description": "Ospedale Santa Maria della Misericordia, 15 min autem", "maps_query": "Ospedale+Santa+Maria+della+Misericordia,+Perugia" }
+  ],
+  "phrases": [
+    { "local": "Buongiorno / arrivederci", "user": "Dzień dobry / do widzenia" },
+    { "local": "Dov'è il bagno?", "user": "Gdzie jest toaleta?" },
+    { "local": "Due gelati, per favore", "user": "Dwa gelato poproszę" },
+    { "local": "Il conto, per favore", "user": "Rachunek poproszę" }
+  ]
+}

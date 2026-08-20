@@ -1,0 +1,18 @@
+{
+  "btn.navigate": "Naviga",
+  "btn.drive": "Guida",
+  "btn.write": "Scrivi",
+  "btn.www": "Sito",
+  "label.for_kids": "Per bambini",
+  "label.photo_task": "Sfida foto",
+  "label.day_plan": "Piano del giorno",
+  "label.emergency": "Punti di emergenza",
+  "label.phrases": "Frasi utili",
+  "label.phones": "Numeri utili",
+  "label.qr_kid": "QR per bambino",
+  "label.free": "gratuito",
+  "btn.kid_view": "Vista bambino",
+  "btn.add_photo": "Aggiungi foto dalla galleria",
+  "nav.back": "Indietro",
+  "qr.scan_text": "Scansiona con il telefono del bambino — si apre la stessa guida in vista bambino: missioni, checkbox, senza prezzi e storia."
+}

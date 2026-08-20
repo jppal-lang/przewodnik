@@ -1,0 +1,150 @@
+{
+  "city": "perugia",
+  "lang": "en",
+  "title": "Perugia",
+  "region_label": "Umbria · afternoon & evening",
+  "subtitle": "Underground city, escalators, and the best chocolate in Umbria.",
+  "stops": [
+    {
+      "number": 1,
+      "time": "16:15",
+      "price": "~8 €/day",
+      "year_built": null,
+      "wiki_article": "Perugia",
+      "maps_query": "Piazza+Partigiani,+Perugia",
+      "whatsapp": "+390755721010",
+      "website": "https://www.sipaonline.it",
+      "name": "Piazza Partigiani Parking",
+      "desc_paragraphs": [
+        "A multi-level parking garage carved into the hillside, just below the southern walls of the old town — no walking uphill, no shuttle needed. It opened in 1983 together with the scale mobili (escalator) system, which the builders routed straight through the interior of a 16th-century fortress, Rocca Paolina: eight sections, about eight minutes of riding, passing through vaulted corridors and squares of the former citadel before emerging into daylight at Piazza Italia.",
+        "It's an unusual entrance to a city — the escalators themselves are the first attraction of the day, something like a metro through ruins. Remember which level you parked on: in the evening you'll return the same way, through the fortress interior, and each level looks very similar."
+      ],
+      "kids_box": "The escalators ride through a real underground city! Count how many escalator sections you pass before you see the sky.",
+      "photo_task": "Family photo at the entrance to the scale mobili — this is the starting point of your route."
+    },
+    {
+      "number": 2,
+      "time": "16:30",
+      "price": null,
+      "year_built": "1540",
+      "wiki_article": "Rocca Paolina",
+      "maps_query": "Rocca+Paolina,+Perugia",
+      "whatsapp": null,
+      "website": "https://turismo.comune.perugia.it",
+      "name": "Rocca Paolina",
+      "desc_paragraphs": [
+        "Pope Paul III ordered this fortress built in 1540 as punishment: Perugia had just lost the 'Salt War' — a rebellion against a Vatican tax — and the pope decided the defiant city would get a citadel planted on its back to enforce obedience. Architect Antonio da Sangallo the Younger didn't build from scratch: beneath the new bastions, an entire neighborhood — Santa Giustina — was buried alive, its streets, houses, towers and wells filled with earth and sealed under vaults just as they stood, pots still in the kitchens.",
+        "Perugians never forgot. When the city joined unified Italy in 1860, residents tore the fortress apart from the top with their own hands, stone by stone, as a symbol of shaking off papal rule — to this day, only fragments of walls and gates remain above ground. But what was buried in 1540 survived intact underground: today you walk along the alleyways of a city frozen in time, cool and quiet, with illuminated arches overhead. In summer, when it's 35°C on the surface, this is the most pleasant spot in Perugia."
+      ],
+      "kids_box": "It's a ghost town under a town! Look for bricked-up windows and doors of houses where people lived 500 years ago.",
+      "photo_task": "Silhouette of parent and child under a great brick arch — backlit."
+    },
+    {
+      "number": 3,
+      "time": "17:10",
+      "price": null,
+      "year_built": "1278",
+      "wiki_article": "Fontana Maggiore",
+      "maps_query": "Fontana+Maggiore,+Perugia",
+      "whatsapp": null,
+      "website": null,
+      "name": "Fontana Maggiore",
+      "desc_paragraphs": [
+        "The fountain was carved in 1278 — and not by a local craftsman, but by the era's finest sculptor duo: Nicola Pisano and his son Giovanni, the same pair who carved the pulpits in the cathedrals of Pisa and Siena. The lower, polygonal basin has 25 relief panels: months of the year with farm work, zodiac signs, biblical scenes, Aesop's fables, and personifications of the liberal arts — a medieval encyclopedia in stone, read round and round like a comic strip.",
+        "The upper basin, in marble and bronze, is Giovanni's own hand: saints, prophets, and — among them — a griffin and a lion, Perugia's heraldic animals, guarding the city from the very top of the fountain. Water arrived here via an aqueduct from Monte Pacciano, about four kilometers away, built in parallel with the fountain as one great engineering project — a prize and show of strength for a city that had just acquired its own independent water system."
+      ],
+      "kids_box": "Find on the fountain: a lion, a she-wolf, and a farmer cutting wheat. Who spots them first?",
+      "photo_task": "The whole fountain with the cathedral in the background — best shot from a low angle, kneeling."
+    },
+    {
+      "number": 4,
+      "time": "17:30",
+      "price": "8 € / adult",
+      "year_built": "1345",
+      "wiki_article": "Cattedrale di San Lorenzo (Perugia)",
+      "maps_query": "Cattedrale+San+Lorenzo,+Perugia",
+      "whatsapp": null,
+      "website": "https://www.cattedrale.perugia.it",
+      "name": "San Lorenzo Cathedral",
+      "desc_paragraphs": [
+        "The cathedral sits at an odd angle: its main entrance faces sideways to the square, because 14th-century builders had to fit around existing structures — and it stayed that way. Construction began in 1345, but the facade was never finished: the lower part has a pink-and-white stone checkerboard, while the upper part is bare brick, because the money (and probably the enthusiasm) ran out somewhere in the 16th century.",
+        "Inside, in a chapel locked with fifteen padlocks — each key held by a different city institution, so it can only be opened by all of them together — lies a relic called the Holy Ring: Mary's wedding band, displayed publicly once a year, on July 30. Outside, on the wide steps in front of the cathedral, Perugians have been sitting for centuries — it's the city's unofficial living room, something like Rome's Spanish Steps, only without the tourist crowds. Sit down and join them."
+      ],
+      "kids_box": "The cathedral wall has only a patch of pink-and-white checkerboard. The builders… ran out of money 600 years ago and it stayed that way!",
+      "photo_task": "The whole family's feet on the cathedral steps — shoes in a row."
+    },
+    {
+      "number": 5,
+      "time": "18:00",
+      "price": "8 € / adult",
+      "year_built": "1293",
+      "wiki_article": "Palazzo dei Priori (Perugia)",
+      "maps_query": "Palazzo+dei+Priori,+Perugia",
+      "whatsapp": "+390755721009",
+      "website": "https://gallerianazionaledellumbria.it",
+      "name": "Palazzo dei Priori",
+      "desc_paragraphs": [
+        "Construction of the town hall began in 1293 and went on through the entire 14th century, wing after wing — today it's one of the largest and best-preserved medieval civic palaces in Italy, its facade stretching the full length of the square. At the entrance, above the stairs, iron chains and bars hang from the wall: war trophies, supposedly taken from the gates of Siena after Perugia's victory over its eternal rival — nailed up for all to see who had won.",
+        "Inside is the Galleria Nazionale dell'Umbria — the world's largest collection of Umbrian painting, with works by Pietro Vannucci, known as Perugino (Raphael's teacher), Piero della Francesca, and Duccio di Buoninsegna. With kids, 40 minutes and rooms 22–26 are enough. Above the entrance stand bronze copies of the griffin and lion, the city's heraldic animals — the originals, to survive the coming centuries, were moved inside, just past the ticket desk."
+      ],
+      "kids_box": "A griffin is half eagle, half lion — Perugia's symbol. Count how many griffins you can find on the whole building (there are more than 10!).",
+      "photo_task": "Child striking the griffin's pose at the entrance."
+    },
+    {
+      "number": 6,
+      "time": "18:50",
+      "price": null,
+      "year_built": "13th c.",
+      "wiki_article": null,
+      "maps_query": "Via+dell'Acquedotto,+Perugia",
+      "whatsapp": null,
+      "website": null,
+      "name": "Via dell'Acquedotto",
+      "desc_paragraphs": [
+        "This is literally the same aqueduct that in the 13th century brought water to the Fontana Maggiore, seen two stops ago — except today you walk on top of it, not beneath. The pipes stopped being needed in the 19th century, when the city moved its water supply underground, and the empty stone arches were turned into a narrow, rooftop-level pedestrian lane — one of the most romantic in the city.",
+        "In places it's barely a meter wide, with residential windows within arm's reach on both sides, and underfoot for the entire walk you can feel you're on something that was never designed as a street. The best light comes right at sunset — the brick turns orange, and from below, from the real alleyways, comes the murmur of dinners you can't yet see. Out and back: 25 minutes."
+      ],
+      "kids_box": "You're walking on a bridge that carried water to the fountain at stop 03 seven hundred years ago. The full water trail: mountains → aqueduct → fountain!",
+      "photo_task": "The perspective of the aqueduct lane with rooflines on both sides."
+    },
+    {
+      "number": 7,
+      "time": "19:30",
+      "price": "~15 €/person",
+      "year_built": null,
+      "wiki_article": null,
+      "maps_query": "Corso+Vannucci,+Perugia",
+      "whatsapp": "+390755736161",
+      "website": null,
+      "name": "Dinner on Corso Vannucci",
+      "desc_paragraphs": [
+        "Corso Vannucci, the city's main promenade, is named after Pietro Vannucci — the painter known as Perugino, who gave Perugia its golden age of art and taught Raphael himself how to paint. In the evening, the whole street turns into a stage for the stroll: pasta, pizza al taglio from a side street, aperitivo on terraces, chatter — this is the local passeggiata, a ritual repeated for generations.",
+        "For dessert, Baci Perugina are a must — chocolates invented in this city in 1907 by Luisa Spagnoli, originally called 'Cazzotto' (fist) as a joke about their irregular shape. It was Giovanni Buitoni, son of the company's founders, who renamed them 'Bacio' (kiss) and slipped a tiny love-quote note wrapped in silver foil into each chocolate — an idea that in 1922 turned a local treat into one of the most recognizable Italian gifts in the world. End the route on the Giardini Carducci terrace, with a view over the Umbrian valley under the setting sun."
+      ],
+      "kids_box": "Perugia is the chocolate capital. Bacio means 'kiss' — inside every chocolate kiss there's a little note with a secret.",
+      "photo_task": "Sunset from the Giardini Carducci terrace — silhouettes against the valley."
+    }
+  ],
+  "day_plan": [
+    { "time": "16:15", "description": "Piazza Partigiani Parking → escalators" },
+    { "time": "16:30", "description": "Rocca Paolina — underground city" },
+    { "time": "17:10", "description": "Fontana Maggiore & Cathedral" },
+    { "time": "18:00", "description": "Palazzo dei Priori (gallery, 40 min)" },
+    { "time": "18:50", "description": "Aqueduct walk" },
+    { "time": "19:30", "description": "Dinner + gelato, sunset" },
+    { "time": "21:30", "description": "Walk back to the car, departure" },
+    { "time": "23:15", "description": "Return to base" }
+  ],
+  "emergency": [
+    { "type": "pharmacy", "label": "Pharmacy", "description": "Farmacia San Martino, Corso Vannucci 46 (until 8 pm)", "maps_query": "Farmacia+San+Martino,+Corso+Vannucci+46,+Perugia" },
+    { "type": "toilet", "label": "Toilets", "description": "Mercato Coperto, Piazza Matteotti (free)", "maps_query": "Mercato+Coperto,+Piazza+Matteotti,+Perugia" },
+    { "type": "playground", "label": "Playground", "description": "Giardini Carducci — at the end of Corso Vannucci", "maps_query": "Giardini+Carducci,+Perugia" },
+    { "type": "hospital", "label": "Hospital", "description": "Ospedale Santa Maria della Misericordia, 15 min by car", "maps_query": "Ospedale+Santa+Maria+della+Misericordia,+Perugia" }
+  ],
+  "phrases": [
+    { "local": "Buongiorno / arrivederci", "user": "Hello / goodbye" },
+    { "local": "Dov'è il bagno?", "user": "Where is the toilet?" },
+    { "local": "Due gelati, per favore", "user": "Two gelatos, please" },
+    { "local": "Il conto, per favore", "user": "The bill, please" }
+  ]
+}

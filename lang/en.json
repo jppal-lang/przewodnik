@@ -1,0 +1,18 @@
+{
+  "btn.navigate": "Navigate",
+  "btn.drive": "Drive",
+  "btn.write": "Message",
+  "btn.www": "Website",
+  "label.for_kids": "For kids",
+  "label.photo_task": "Photo challenge",
+  "label.day_plan": "Day plan",
+  "label.emergency": "Emergency points",
+  "label.phrases": "Useful phrases",
+  "label.phones": "Phone numbers",
+  "label.qr_kid": "QR for kid",
+  "label.free": "free",
+  "btn.kid_view": "Kid view",
+  "btn.add_photo": "Add photo from gallery",
+  "nav.back": "Back",
+  "qr.scan_text": "Scan with your kid's phone — it opens the same guide in kid view: missions, checkboxes, no prices or history."
+}

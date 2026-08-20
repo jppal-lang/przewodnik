@@ -1,0 +1,18 @@
+{
+  "btn.navigate": "Nawiguj",
+  "btn.drive": "Prowadź",
+  "btn.write": "Napisz",
+  "btn.www": "WWW",
+  "label.for_kids": "Dla dzieci",
+  "label.photo_task": "Zadanie foto",
+  "label.day_plan": "Plan dnia",
+  "label.emergency": "Punkty awaryjne",
+  "label.phrases": "Rozmówki",
+  "label.phones": "Telefony",
+  "label.qr_kid": "QR dla dziecka",
+  "label.free": "bezpłatnie",
+  "btn.kid_view": "Widok dziecka",
+  "btn.add_photo": "Dodaj zdjęcie z galerii",
+  "nav.back": "Wróć",
+  "qr.scan_text": "Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik od razu w widoku dziecka: misje, checkboxy, bez cen i historii."
+}
