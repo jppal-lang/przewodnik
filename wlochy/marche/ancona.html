@@ -8,22 +8,75 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../styles.css">
+<style>
+/* ===== Stop category icons ===== */
+.stop-cat{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;flex-shrink:0;margin-right:4px;vertical-align:middle}
+.stop-cat svg{width:16px;height:16px}
+.stop-cat--parking{background:var(--sea-bg);color:var(--sea)}
+.stop-cat--parking svg{stroke:var(--sea)}
+.stop-cat--museum{background:#F3E8F5;color:#7B4FA2}
+.stop-cat--museum svg{stroke:#7B4FA2}
+.stop-cat--house{background:var(--olive-bg);color:var(--olive)}
+.stop-cat--house svg{stroke:var(--olive)}
+.stop-cat--church{background:#FDE8E0;color:var(--terra)}
+.stop-cat--church svg{stroke:var(--terra)}
+.stop-cat--restaurant{background:#FFF3E0;color:#BF6C00}
+.stop-cat--restaurant svg{stroke:#BF6C00}
+.stop-cat--viewpoint{background:var(--sea-bg);color:var(--sea)}
+.stop-cat--viewpoint svg{stroke:var(--sea)}
+.stop-cat--monument{background:#E8EAF6;color:#3F51B5}
+.stop-cat--monument svg{stroke:#3F51B5}
+
+/* ===== City tabs ===== */
+.city-tabs{
+  display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;
+  padding:16px 0 4px;-webkit-overflow-scrolling:touch;
+}
+.city-tabs::-webkit-scrollbar{display:none}
+.city-tab{
+  flex-shrink:0;min-height:44px;padding:0 16px;border-radius:999px;
+  background:var(--parchment);border:1.5px solid var(--line);color:var(--ink2);
+  font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:6px;
+  cursor:pointer;transition:border-color .12s,color .12s,background .12s;
+}
+.city-tab:hover{border-color:var(--terra);color:var(--terra-h)}
+.city-tab.active{background:var(--terra);color:var(--parchment);border-color:var(--terra)}
+.city-tab:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+.city-tab svg{width:16px;height:16px;flex-shrink:0}
+.city-tab.active svg{stroke:var(--parchment)}
+body.kid-mode .city-tabs{display:none}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+</style>
 </head>
-<body>
+<body data-city="ancona" data-country="it">
 <div class="wrap">
+
+<header>
+  <div style="display:flex;align-items:center;gap:14px">
+    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
+    <div class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
+  </div>
+  <div class="lang-sw" role="radiogroup" aria-label="Język">
+    <button class="active" aria-pressed="true"><span class="flag flag-pl"></span>PL</button>
+    <button aria-pressed="false"><span class="flag flag-en"></span>EN</button>
+    <button aria-pressed="false"><span class="flag flag-it"></span>IT</button>
+    <button aria-pressed="false"><span class="flag flag-de"></span>DE</button>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <a href="../../index.html">Quolino</a><span>/</span>
+  <a href="../../index.html#regiony" data-i18n="label.country_italy">Włochy</a><span>/</span>
+  <a href="index.html">Marche</a><span>/</span>
+  <span class="current">Ancona</span>
+</nav>
 
 <div class="hero-img">
   <div class="hero-over">
-    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 Widok dziecka</button>
-      <div class="lang-sw" role="radiogroup" aria-label="Język">
-        <button class="active" aria-pressed="true">PL</button>
-        <button aria-pressed="false">EN</button>
-        <button aria-pressed="false">IT</button>
-        <button aria-pressed="false">DE</button>
-      </div>
-    </div>
+    <div></div>
+    <button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 <span data-i18n="btn.kid_view">Widok dziecka</span></button>
   </div>
 </div>
 
@@ -34,149 +87,177 @@
   <p class="stop-note" style="margin-top:4px">port, wzgórze katedralne, klify Passetto</p>
 </div>
 
-<nav class="city-menu" aria-label="Skróty do sekcji">
-  <a href="#punkty-awaryjne">Punkty awaryjne</a>
-  <a href="#rozmowki">Rozmówki</a>
-  <a href="#telefony">Telefony</a>
-  <a href="#qr-dziecka">QR dla dziecka</a>
+<nav class="city-tabs" id="cityTabs" aria-label="Sekcje" data-hide-kid>
+  <button class="city-tab active" data-tab="punkty-awaryjne">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><circle cx="12" cy="17" r=".5" fill="currentColor"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span data-i18n="label.emergency">Punkty awaryjne</span>
+  </button>
+  <button class="city-tab" data-tab="rozmowki" id="tabRozmowki">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span data-i18n="label.phrases">Rozmówki</span>
+  </button>
+  <button class="city-tab" data-tab="telefony">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.86 19.86 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.86 19.86 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    <span data-i18n="label.phones">Telefony</span>
+  </button>
+  <button class="city-tab" data-tab="qr-dziecka">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v3h-3M14 20h3M20 20h0"/></svg>
+    <span data-i18n="label.qr_kid">QR dla dziecka</span>
+  </button>
 </nav>
 
 <div class="stops" id="stops">
 
   <div class="stop open" data-id="01">
     <button class="stop-header" onclick="toggleStop('01')">
-      <div class="stop-row1"><span class="stop-num">01 · 9:30</span><span class="stop-name">Parking port, rejon Traiano</span><span class="stop-chev">▼</span></div>
+      <div class="stop-row1">
+        <span class="stop-cat stop-cat--parking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3.5 3.5 0 010 7H9"/></svg></span>
+        <span class="stop-num">01 · 9:30</span><span class="stop-name">Parking port, rejon Traiano</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">płatny/h</span></div>
       <div class="stop-actions">
-        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=Parcheggio+Traiano+Ancona&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Prowadź</span></a>
+        <a class="act act-pri" href="https://www.google.com/maps/dir/?api=1&destination=Parcheggio+Traiano+Ancona&travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.drive">Prowadź</span></a>
       </div>
     </button>
     <div class="stop-body">
       <div class="stop-photo"></div>
       <p class="stop-desc">Pod zwiedzanie najlepiej stanąć przy porcie, w rejonie Via XXIX Settembre — parking Traiano i sąsiednie place leżą u samego początku trasy: stąd nabrzeżem pieszo do łuku Trajana, potem pod górę na wzgórze katedralne, a po południu krótkim przejazdem na Passetto. To ten sam port, z którego co noc odpływają wielkie promy pasażerskie do chorwackiego Splitu i greckich Patras, Igumenicy i Korfu — Ancona jest głównym adriatyckim węzłem promowym między Włochami a Bałkanami, więc dźwigi, terminale i kolejki ciężarówek, które widać z parkingu, to nie przypadek, tylko codzienność portu pracującego na trzy zmiany.</p><p class="stop-desc">Jedna rzecz wymaga uwagi: wjazdy bywają zdradliwe — pas oznaczony „porto/traghetti" wciąga jak lej prosto do terminalu odpraw. Trzymajcie się znaków „centro". Jeśli traficie w korek promowy w sierpniową sobotę, to nie wasza wina, tylko Chorwacji i Grecji.</p>
       <p class="stop-note">Płatny za godzinę — automat/aplikacja · trzymać się znaków „centro", nie „traghetti"</p>
-      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Z parkingu widać wielkie promy — niektóre płyną całą noc do Grecji. Statek to pływający hotel: policzcie pokłady.</li><li>Hasło dnia: „centro" znaczy centrum, „traghetti" — promy. My jedziemy za pierwszym. Kto pierwszy wypatrzy znak?</li></ul></div>
-      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Dźwigi portowe o poranku — industrialny kadr na otwarcie dnia.</p></div>
+      <div class="box box-kids"><p class="caps" data-i18n="label.for_kids">Dla dzieci</p><ul><li>Z parkingu widać wielkie promy — niektóre płyną całą noc do Grecji. Statek to pływający hotel: policzcie pokłady.</li><li>Hasło dnia: „centro" znaczy centrum, „traghetti" — promy. My jedziemy za pierwszym. Kto pierwszy wypatrzy znak?</li></ul></div>
+      <div class="box box-foto"><p class="caps" data-i18n="label.photo_task">Zadanie foto</p><p>Dźwigi portowe o poranku — industrialny kadr na otwarcie dnia.</p></div>
     </div>
   </div>
 
   <div class="stop open" data-id="02" data-wiki="Arco di Traiano (Ancona)">
     <button class="stop-header" onclick="toggleStop('02')">
-      <div class="stop-row1"><span class="stop-num">02 · 9:45</span><span class="stop-name">Łuk Trajana i spacer nabrzeżem</span><span class="stop-chev">▼</span></div>
+      <div class="stop-row1">
+        <span class="stop-cat stop-cat--monument"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 20V9l7-5 7 5v11"/><line x1="9" y1="20" x2="9" y2="14"/><line x1="15" y1="20" x2="15" y2="14"/><line x1="9" y1="14" x2="15" y2="14"/></svg></span>
+        <span class="stop-num">02 · 9:45</span><span class="stop-name">Łuk Trajana i spacer nabrzeżem</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">115 n.e.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
       <div class="stop-actions">
-        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Arco+di+Traiano+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Arco+di+Traiano+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
       </div>
     </button>
     <div class="stop-body">
       <div class="stop-photo"></div>
       <p class="stop-desc">Cesarz Trajan rozbudował port Ankony około 115 roku naszej ery z własnej kieszeni — pecunia sua, jak skrupulatnie odnotowano w inskrypcji — bo stąd wyprawiał legiony na wojnę z Dakami, tę samą, którą opowiada kolumna Trajana w Rzymie. Projektował go Apollodor z Damaszku, ulubiony inżynier Trajana. Wdzięczne miasto postawiło mu na falochronie łuk: smuklejszy i wyższy w proporcjach niż rzymskie łuki triumfalne, obliczony na to, by widzieć go z daleka, z pokładu wchodzącego do portu statku. Na szczycie stały niegdyś brązowe posągi — od strony morza Neptun, Merkury i Portunus, bóg portów, od strony lądu Trajan z żoną Plotyną i siostrą Marcjaną — zerwane przez Saracenów podczas najazdu na wybrzeże w IX wieku; ocalał tylko marmur z Marmary, jak stał.</p><p class="stop-desc">Najlepsze w tym miejscu jest zderzenie: antyczny łuk nie w muzealnym parku, tylko w środku pracującego portu, między kontenerami, dźwigami i promami. Historia bez gabloty. Spacer nabrzeżem od Mole Vanvitelliana (budowana od 1733) — pięciobocznej wyspy-lazaretu, dziś centrum kultury — do łuku zajmuje kwadrans i jest najprzyjemniejszym płaskim odcinkiem dnia. Potem zaczyna się góra.</p>
       <p class="stop-note">Za darmo · z łuku podejście schodami na wzgórze katedralne — ok. 15–20 min pod górę</p>
-      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Cesarz zapłacił za port z własnej kieszeni — i napisano to na łuku, żeby nikt nie zapomniał. Starożytny paragon.</li><li>Na górze łuku stały kiedyś posągi z brązu. Zgadnijcie, co się z nimi stało — podpowiedź: brąz da się przetopić.</li><li>Policzcie promy w porcie. Dokąd popłynęlibyście, gdyby można było wybrać jeden?</li></ul></div>
-      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Łuk Trajana z promem albo kontenerowcem w tle — 1900 lat różnicy w jednym kadrze.</p></div>
+      <div class="box box-kids"><p class="caps" data-i18n="label.for_kids">Dla dzieci</p><ul><li>Cesarz zapłacił za port z własnej kieszeni — i napisano to na łuku, żeby nikt nie zapomniał. Starożytny paragon.</li><li>Na górze łuku stały kiedyś posągi z brązu. Zgadnijcie, co się z nimi stało — podpowiedź: brąz da się przetopić.</li><li>Policzcie promy w porcie. Dokąd popłynęlibyście, gdyby można było wybrać jeden?</li></ul></div>
+      <div class="box box-foto"><p class="caps" data-i18n="label.photo_task">Zadanie foto</p><p>Łuk Trajana z promem albo kontenerowcem w tle — 1900 lat różnicy w jednym kadrze.</p></div>
     </div>
   </div>
 
   <div class="stop open" data-id="03" data-wiki="Cattedrale di San Ciriaco">
     <button class="stop-header" onclick="toggleStop('03')">
-      <div class="stop-row1"><span class="stop-num">03 · 10:30</span><span class="stop-name">Katedra San Ciriaco</span><span class="stop-chev">▼</span></div>
+      <div class="stop-row1">
+        <span class="stop-cat stop-cat--church"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21H6V10l6-7 6 7z"/><path d="M12 3v4M9 21v-4a3 3 0 016 0v4"/><path d="M2 10h4M18 10h4"/></svg></span>
+        <span class="stop-num">03 · 10:30</span><span class="stop-name">Katedra San Ciriaco</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XI–XIII w.</span><span class="chip-sm chip-olive">wstęp wolny</span></div>
       <div class="stop-actions">
-        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Cattedrale+di+San+Ciriaco+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Cattedrale+di+San+Ciriaco+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
       </div>
     </button>
     <div class="stop-body">
       <div class="stop-photo"></div>
       <p class="stop-desc">Na szczycie wzgórza Guasco, w miejscu, które ludzie uznają za święte od dwóch i pół tysiąca lat: katedra stoi na fundamentach greckiej świątyni Afrodyty — patronki żeglarzy, co w mieście portowym miało sens doskonały — a kawałki antycznej przeszłości widać przez szklane wzierniki w posadzce. Sama katedra to rzadka hybryda romanizmu z Bizancjum: plan krzyża greckiego, dwunastoboczna kopuła — jedna z najstarszych we Włoszech — i portal z białego kamienia z Conero, wykuty około 1228 roku przez rzeźbiarza Giorgio da Como — pilnują go dwa lwy z czerwonego marmuru z Werony, z których jeden trzyma w łapach swoją zdobycz.</p><p class="stop-desc">Plac przed katedrą to najlepszy darmowy punkt widokowy miasta: cały port jak na dłoni, łuk Trajana w dole, zatoka aż po Monte Conero. Widać stąd też logikę „łokcia" — ląd naprawdę zagina się jak ramię, osłaniając port od północy. Grecy z Syrakuz, którzy przypłynęli tu w IV wieku p.n.e., wiedzieli, co robią.</p>
       <p class="stop-note">Wstęp wolny · podjazd autem pod samą katedrę możliwy, ale schodami ładniej · 30–40 min z placem</p>
-      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Pod podłogą katedry leży grecka świątynia bogini morza — zajrzyjcie przez szklane okienka w posadzce.</li><li>Portalu pilnują dwa kamienne lwy. Przyjrzyjcie się: jeden coś trzyma w łapach. Co?</li><li>Z placu widać „łokieć" — zgięcie lądu, od którego miasto wzięło nazwę 2400 lat temu. Wyciągnijcie własne ramię i porównajcie.</li></ul></div>
-      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Panorama portu z placu + portret lwa z portalu, z bliska, z jego zdobyczą.</p></div>
+      <div class="box box-kids"><p class="caps" data-i18n="label.for_kids">Dla dzieci</p><ul><li>Pod podłogą katedry leży grecka świątynia bogini morza — zajrzyjcie przez szklane okienka w posadzce.</li><li>Portalu pilnują dwa kamienne lwy. Przyjrzyjcie się: jeden coś trzyma w łapach. Co?</li><li>Z placu widać „łokieć" — zgięcie lądu, od którego miasto wzięło nazwę 2400 lat temu. Wyciągnijcie własne ramię i porównajcie.</li></ul></div>
+      <div class="box box-foto"><p class="caps" data-i18n="label.photo_task">Zadanie foto</p><p>Panorama portu z placu + portret lwa z portalu, z bliska, z jego zdobyczą.</p></div>
     </div>
   </div>
 
   <div class="stop open" data-id="04" data-wiki="Piazza del Plebiscito (Ancona)">
     <button class="stop-header" onclick="toggleStop('04')">
-      <div class="stop-row1"><span class="stop-num">04 · 11:45</span><span class="stop-name">Piazza del Papa i starówka</span><span class="stop-chev">▼</span></div>
+      <div class="stop-row1">
+        <span class="stop-cat stop-cat--viewpoint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span class="stop-num">04 · 11:45</span><span class="stop-name">Piazza del Papa i starówka</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">XV w.</span><span class="chip-sm chip-olive">spacer</span></div>
       <div class="stop-actions">
-        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Piazza+del+Plebiscito+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Piazza+del+Plebiscito+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
       </div>
     </button>
     <div class="stop-body">
       <div class="stop-photo"></div>
       <p class="stop-desc">Schodząc z katedralnego wzgórza traficie na Piazza del Plebiscito, którą całe miasto nazywa po prostu Piazza del Papa — od pomnika Klemensa XII (1738), który patrzy na plac z wysokości schodów. Podłużny, pochyły plac wciśnięty między kościół San Domenico (XVIII w.) a stare pałace to salon Ankony: bary, stoliki na bruku, wieczorem centrum życia. W San Domenico wisi „Ukrzyżowanie" Tycjana — tak, Tycjana, w kościele parafialnym, bez kolejki — i to jest bardzo ankońska cecha: miasto nie robi szumu wokół swoich skarbów.</p><p class="stop-desc">Przy spacerze starówką warto wiedzieć, skąd blizny: Ancona była ciężko bombardowana w 1943–44 jako port strategiczny, a wyzwalał ją — rzecz bliska polskiemu sercu — II Korpus generała Andersa; bitwa o Ankonę w lipcu 1944 to jedna z głównych polskich operacji we Włoszech, a polski cmentarz wojenny w pobliskim Loreto pamięta jej cenę. Miasto odbudowano bez kosmetyki, dlatego obok renesansowych portali stoją bloki z lat 50. — mniej pocztówkowo niż w Urbino, za to prawdziwie.</p>
       <p class="stop-note">Za darmo · San Domenico z Tycjanem — wstęp wolny, godziny kościelne z przerwą obiadową</p>
-      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Miasto zdobyli w 1944 roku polscy żołnierze generała Andersa — Ancona ma polski rozdział w życiorysie.</li><li>Papież z pomnika patrzy na plac od prawie 300 lat. Stańcie tam, gdzie pada jego wzrok.</li></ul></div>
-      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Pochyłość placu uchwycona wzdłuż — z pomnikiem papieża na szczycie kadru.</p></div>
+      <div class="box box-kids"><p class="caps" data-i18n="label.for_kids">Dla dzieci</p><ul><li>Miasto zdobyli w 1944 roku polscy żołnierze generała Andersa — Ancona ma polski rozdział w życiorysie.</li><li>Papież z pomnika patrzy na plac od prawie 300 lat. Stańcie tam, gdzie pada jego wzrok.</li></ul></div>
+      <div class="box box-foto"><p class="caps" data-i18n="label.photo_task">Zadanie foto</p><p>Pochyłość placu uchwycona wzdłuż — z pomnikiem papieża na szczycie kadru.</p></div>
     </div>
   </div>
 
   <div class="stop open" data-id="05" data-wiki="Passetto">
     <button class="stop-header" onclick="toggleStop('05')">
-      <div class="stop-row1"><span class="stop-num">05 · 13:00</span><span class="stop-name">Obiad, potem Passetto i groty w klifie</span><span class="stop-chev">▼</span></div>
+      <div class="stop-row1">
+        <span class="stop-cat stop-cat--restaurant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></span>
+        <span class="stop-num">05 · 13:00</span><span class="stop-name">Obiad, potem Passetto i groty w klifie</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-neutral">pomnik 1930 r.</span><span class="chip-sm chip-olive">winda drobne</span></div>
       <div class="stop-actions">
-        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Passetto+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Passetto+Ancona" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
       </div>
     </button>
     <div class="stop-body">
       <div class="stop-photo"></div>
       <p class="stop-desc">Obiad na starówce — jeśli traficie na trattorię z brodetto all'anconetana, to jest właśnie tutejsza religia: gęsta zupa rybna z trzynastu gatunków ryb, przepis pilnowany zazdrośnie. Z dziećmi bezpieczniejsza frittura mista albo zwykły makaron; Ancona to miasto rybne, więc nawet proste rzeczy są tu świeże.</p><p class="stop-desc">Po obiedzie krótki przejazd (albo kwadrans spaceru) na Passetto: monumentalne białe schody i pomnik poległych nad krawędzią klifu, a pod nim kamienista plaża z osobliwością, jakiej nie ma nigdzie indziej — grotte del Passetto, jaskiniami wykutymi w skale przez rybaków na łodzie i sprzęt, z kolorowymi drzwiami, każde w innym kolorze. Groty przechodzą z pokolenia na pokolenie i mają status lokalnej instytucji. Na dół zjeżdża się windą (sezonowo, drobna opłata) albo schodami; woda przy grotach jest przejrzysta, ale dno kamieniste — buty do wody dla dzieci robią różnicę.</p>
       <p class="stop-note">Winda sezonowa — drobna opłata, sprawdźcie godziny · plaża kamienista: buty do wody · prysznic i bar na dole</p>
-      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Groty w klifie to garaże na łódki, wykute rękami rybaków — każdy z drzwiami w innym kolorze. Wybierzcie najładniejsze.</li><li>Konkurs puszczania kaczek: kamienista plaża to nieograniczona amunicja.</li></ul></div>
-      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Rząd kolorowych drzwi grot wzdłuż klifu + biały pomnik Passetto z dołu, od strony wody.</p></div>
+      <div class="box box-kids"><p class="caps" data-i18n="label.for_kids">Dla dzieci</p><ul><li>Groty w klifie to garaże na łódki, wykute rękami rybaków — każdy z drzwiami w innym kolorze. Wybierzcie najładniejsze.</li><li>Konkurs puszczania kaczek: kamienista plaża to nieograniczona amunicja.</li></ul></div>
+      <div class="box box-foto"><p class="caps" data-i18n="label.photo_task">Zadanie foto</p><p>Rząd kolorowych drzwi grot wzdłuż klifu + biały pomnik Passetto z dołu, od strony wody.</p></div>
     </div>
   </div>
 
   <div class="stop open" data-id="06" data-wiki="Portonovo">
     <button class="stop-header" onclick="toggleStop('06')">
-      <div class="stop-row1"><span class="stop-num">06 · 15:30</span><span class="stop-name">Opcja: Riviera del Conero</span><span class="stop-chev">▼</span></div>
+      <div class="stop-row1">
+        <span class="stop-cat stop-cat--viewpoint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span class="stop-num">06 · 15:30</span><span class="stop-name">Opcja: Riviera del Conero</span><span class="stop-chev">▼</span></div>
       <div class="stop-chips"><span class="chip-sm chip-olive">plaże 0–35 €</span></div>
       <div class="stop-actions">
-        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Spiaggia+di+Portonovo" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+        <a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=Spiaggia+di+Portonovo" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
       </div>
     </button>
     <div class="stop-body">
       <div class="stop-photo"></div>
       <p class="stop-desc">Kwadrans za miastem góra Conero — jedyny wysoki masyw na całym płaskim wybrzeżu od Triestu po Gargano — opada białymi wapiennymi klifami do wody w kolorze, którego nie trzeba filtrować: turkus bierze się z białego kamienia na dnie, nie z Instagrama. Zatoka Portonovo, z plażami z białych otoczaków, romańskim kościółkiem Santa Maria (XI w.) przy samej wodzie, wieżą strażniczą z 1716 roku i fortem napoleońskim (1808–1813), to najpiękniejszy kawałek wybrzeża Marche.</p><p class="stop-desc">Sierpniowy realizm: parkingi w Portonovo zapełniają się rano, więc popołudniowa wizyta wymaga cierpliwości albo szczęścia — działa też sezonowy bus z góry. Jeśli po Passetto dzieci mają dość, potraktujcie Conero jako osobną, poranną wyprawę innego dnia; jeśli sił starcza — nagroda jest na miarę wysiłku.</p>
       <p class="stop-note">Spiaggia libera za darmo, bagni płatne · parking Portonovo pełny wcześnie — plan i cierpliwość</p>
-      <div class="box box-kids"><p class="caps">Dla dzieci</p><ul><li>Woda jest turkusowa jak na Karaibach — przez biały kamień na dnie. Nabierzcie wody w dłonie: przezroczysta. Cały kolor robi dno.</li><li>Plaża z białych otoczaków: znajdźcie kamień idealnie okrągły. Morze szlifowało go setki lat.</li></ul></div>
-      <div class="box box-foto"><p class="caps">Zadanie foto</p><p>Turkus na tle białego klifu, bez żadnego filtra — o to chodzi w tym zadaniu.</p></div>
+      <div class="box box-kids"><p class="caps" data-i18n="label.for_kids">Dla dzieci</p><ul><li>Woda jest turkusowa jak na Karaibach — przez biały kamień na dnie. Nabierzcie wody w dłonie: przezroczysta. Cały kolor robi dno.</li><li>Plaża z białych otoczaków: znajdźcie kamień idealnie okrągły. Morze szlifowało go setki lat.</li></ul></div>
+      <div class="box box-foto"><p class="caps" data-i18n="label.photo_task">Zadanie foto</p><p>Turkus na tle białego klifu, bez żadnego filtra — o to chodzi w tym zadaniu.</p></div>
     </div>
   </div>
 
 </div>
 
 <div class="foot-section">
-  <p class="caps">Plan dnia</p>
+  <p class="caps" data-i18n="label.day_plan">Plan dnia</p>
   <div class="plan-card">
     <div class="plan-row"><span class="plan-time">9:30</span><span>Parking przy porcie</span></div><div class="plan-row"><span class="plan-time">9:45</span><span>Mole Vanvitelliana → nabrzeże → łuk Trajana</span></div><div class="plan-row"><span class="plan-time">10:30</span><span>Katedra San Ciriaco + panorama</span></div><div class="plan-row"><span class="plan-time">11:45</span><span>Piazza del Papa, San Domenico (Tycjan)</span></div><div class="plan-row"><span class="plan-time">13:00</span><span>Obiad na starówce</span></div><div class="plan-row"><span class="plan-time">14:15</span><span>Passetto: winda, groty, kąpiel</span></div><div class="plan-row"><span class="plan-time">15:30</span><span>Opcja Conero albo powrót</span></div>
   </div>
 </div>
 
 <div class="foot-section">
-  <p class="caps">Warto wiedzieć</p>
+  <p class="caps" data-i18n="label.good_to_know">Warto wiedzieć</p>
   <p class="note" style="margin-top:0">Ancona to miasto z charakterem, nie pocztówka — najlepiej smakuje właśnie w tym duecie: rano antyk i port, po południu klify. Polski akcent do rozważenia: cmentarz wojenny II Korpusu w Loreto jest 25 minut drogi i łączy się z ewentualną wizytą w tamtejszym sanktuarium.</p>
 </div>
 
-<div class="foot-section" id="punkty-awaryjne">
-  <p class="caps">Punkty awaryjne</p>
+<div class="tab-panel active" id="punkty-awaryjne">
+<div class="foot-section" style="margin-top:0">
+  <p class="caps" data-i18n="label.emergency">Punkty awaryjne</p>
   <div class="info-row">
     <div class="info-row-text"><strong>Apteka</strong> Farmacia Dr. Max, Corso Giuseppe Garibaldi 116</div>
-    <a class="info-nav" href="https://maps.google.com/?q=Farmacia+Dr.+Max,+Corso+Giuseppe+Garibaldi+116,+Ancona" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+    <a class="info-nav" href="https://maps.google.com/?q=Farmacia+Dr.+Max,+Corso+Giuseppe+Garibaldi+116,+Ancona" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
   </div>
   <div class="info-row">
     <div class="info-row-text"><strong>Plac zabaw</strong> Pineta del Passetto — pinia nad klifem, przy schodach na plażę</div>
-    <a class="info-nav" href="https://maps.google.com/?q=Pineta+del+Passetto,+Ancona" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+    <a class="info-nav" href="https://maps.google.com/?q=Pineta+del+Passetto,+Ancona" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
   </div>
   <div class="info-row">
     <div class="info-row-text"><strong>Szpital</strong> Ospedali Riuniti — Presidio Umberto I, Via Conca 71</div>
-    <a class="info-nav" href="https://maps.google.com/?q=Ospedali+Riuniti+Ancona,+Via+Conca+71" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>Nawiguj</span></a>
+    <a class="info-nav" href="https://maps.google.com/?q=Ospedali+Riuniti+Ancona,+Via+Conca+71" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span data-i18n="btn.navigate">Nawiguj</span></a>
   </div>
 </div>
 
-<div class="foot-section" id="rozmowki">
-  <p class="caps">Rozmówki</p>
+</div>
+
+<div class="tab-panel" id="rozmowki">
+<div class="foot-section" style="margin-top:0">
+  <p class="caps" data-i18n="label.phrases">Rozmówki</p>
   <div class="phrase-card">
     <div class="phrase-pair"><div class="phrase-pl">Dzień dobry / do widzenia</div><div class="phrase-it">Buongiorno / arrivederci</div></div>
     <div class="phrase-pair"><div class="phrase-pl">Gdzie jest toaleta?</div><div class="phrase-it">Dov'è il bagno?</div></div>
@@ -185,23 +266,32 @@
   </div>
 </div>
 
-<div class="foot-section" id="telefony">
-  <p class="caps">Telefony</p>
+</div>
+
+<div class="tab-panel" id="telefony">
+<div class="foot-section" style="margin-top:0">
+  <p class="caps" data-i18n="label.phones">Telefony</p>
   <div class="tel-row"><span>Numer alarmowy (UE)</span><a href="tel:112">112</a></div>
   <div class="tel-row"><span>Ospedali Riuniti Ancona (centrala)</span><a href="tel:+390715961">+39 071 5961</a></div>
   <div class="tel-row"><span>Farmacia Dr. Max, Corso Garibaldi 116</span><a href="tel:+390712070220">+39 071 2070220</a></div>
 </div>
 
-<div class="foot-section" id="qr-dziecka">
-  <p class="caps">QR dla dziecka</p>
+</div>
+
+<div class="tab-panel" id="qr-dziecka">
+<div class="foot-section" style="margin-top:0">
+  <p class="caps" data-i18n="label.qr_kid">QR dla dziecka</p>
   <div class="qr-share">
     <div class="qr-share-code"></div>
     <div class="qr-share-text">
-      <p>Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik od razu w widoku dziecka: misje, checkboxy, bez cen i historii.</p>
+      <p data-i18n="qr.scan_text">Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik od razu w widoku dziecka: misje, checkboxy, bez cen i historii.</p>
       <a class="qr-share-link" href="#"></a>
     </div>
   </div>
 </div>
+
+</div>
+
 
 <div class="pager">
   <a href="rimini.html">← Rimini</a>
@@ -216,7 +306,57 @@ function toggleStop(id){
     else{s.classList.remove('open')}
   });
 }
-document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.lang-sw button').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true')})});
+
+/* ===== Tab switching ===== */
+(function(){
+  var tabs = document.querySelectorAll('.city-tab[data-tab]');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var target = tab.getAttribute('data-tab');
+      // Deactivate all tabs and panels
+      tabs.forEach(function(t){ t.classList.remove('active') });
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active') });
+      // Activate clicked
+      tab.classList.add('active');
+      var panel = document.getElementById(target);
+      if(panel) panel.classList.add('active');
+    });
+  });
+})();
+
+/* ===== Hide phrasebook when language matches country ===== */
+(function(){
+  var country = document.body.getAttribute('data-country') || '';
+  function checkPhrasebook(lang){
+    var tabRozmowki = document.getElementById('tabRozmowki');
+    var panelRozmowki = document.getElementById('rozmowki');
+    if(!tabRozmowki) return;
+    if(lang === country){
+      tabRozmowki.style.display = 'none';
+      if(tabRozmowki.classList.contains('active')){
+        tabRozmowki.classList.remove('active');
+        if(panelRozmowki) panelRozmowki.classList.remove('active');
+        var first = document.querySelector('.city-tab[data-tab]');
+        if(first){
+          first.classList.add('active');
+          var fp = document.getElementById(first.getAttribute('data-tab'));
+          if(fp) fp.classList.add('active');
+        }
+      }
+    } else {
+      tabRozmowki.style.display = '';
+    }
+  }
+  var saved = 'pl';
+  try { saved = localStorage.getItem('quolino_lang') || 'pl'; } catch(e){}
+  checkPhrasebook(saved);
+  document.querySelectorAll('.lang-sw button').forEach(function(b){
+    b.addEventListener('click', function(){
+      var lang = b.textContent.trim().toLowerCase();
+      setTimeout(function(){ checkPhrasebook(lang); }, 50);
+    });
+  });
+})();
 </script>
 <script src="../../migrate-storage.js"></script>
 <script src="../../stop-toc.js"></script>
@@ -224,6 +364,7 @@ document.querySelectorAll('.lang-sw button').forEach(function(b){b.addEventListe
 <script src="../../kids-view.js"></script>
 <script src="../../qrcode.js"></script>
 <script src="../../qr-share.js"></script>
+<script src="../../i18n.js"></script>
 <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="questini" data-color="#FFDD00" data-emoji="" data-font="Poppins" data-text="Postaw mi kawę" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff"></script>
 </body>
 </html>
