@@ -1,0 +1,165 @@
+{
+  "lang": "pl",
+  "city": {
+    "title": "Spello",
+    "region_label": "Umbria · pół dnia",
+    "subtitle": "Umbryjskie miasteczko, w którym rzymskie mozaiki, średniowieczne uliczki i panorama Umbrii układają się w jedną rodzinną wyprawę.",
+    "lead": "Spello najlepiej poznaje się, idąc własnym rytmem: można zatrzymać się przy mozaikach, wejść do kościoła, zjeść lody po drodze albo pominąć punkt i wrócić później.",
+    "good_to_know": "Trasa jest elastyczna. Punkt widokowy jest szczególnie atrakcyjny przy zachodzie słońca. Przed wizytą sprawdź aktualne godziny i ceny.",
+    "hero_note": null,
+    "local_food": "Zwróć uwagę na lokalne produkty Umbrii, zwłaszcza oliwę z oliwek i proste dania oparte na lokalnych składnikach. Jeśli mijasz lodziarnię, potraktuj ją jako opcjonalny przystanek, a nie obowiązek."
+  },
+  "stops": {
+    "parking-mosaici": {
+      "name": "Parcheggio Villa Dei Mosaici Di Spello",
+      "desc_paragraphs": [
+        null,
+        null
+      ],
+      "kids_box": null,
+      "hint": null,
+      "local_flavor": null,
+      "practical_note": null,
+      "dress_code": null,
+      "photo_task": null
+    },
+    "villa-mosaici": {
+      "name": "Villa dei Mosaici di Spello",
+      "desc_paragraphs": [
+        "Villa dei Mosaici to stanowisko archeologiczne prezentujące pozostałości rzymskiej willi i jej dekoracje mozaikowe. To dobry pierwszy przystanek, bo pozwala zobaczyć rzymskie życie nie jako abstrakcyjną datę, lecz jako dom z konkretnymi pomieszczeniami i podłogami, które przetrwały wieki.",
+        "Warto zwrócić uwagę na triclinium. To rzymska sala ucztowania; nazwa wiąże się z trzema miejscami do leżenia wokół stołu. Takie pomieszczenie pokazuje, że dom był nie tylko miejscem mieszkania, ale także organizowania spotkań i uczt."
+      ],
+      "kids_box": "Znajdź na mozaikach detal, który najbardziej przypomina współczesną dekorację. Potem wybierzcie wspólnie miejsce, w którym urządzilibyście dziś podobną salę.",
+      "hint": "Szukaj przede wszystkim podłóg i układu pomieszczeń, nie tylko pojedynczych ozdobnych fragmentów.",
+      "local_flavor": null,
+      "practical_note": null,
+      "dress_code": null,
+      "photo_task": "Zrób jedno zdjęcie mozaiki tak, aby było widać jej układ jako całość, a nie tylko pojedynczy fragment."
+    },
+    "santa-maria-maggiore": {
+      "name": "Santa Maria Maggiore",
+      "desc_paragraphs": [
+        "Santa Maria Maggiore należy do najważniejszych zabytków sakralnych Spello. Wnętrze łączy średniowieczną historię miasta z późniejszymi przekształceniami i dziełami sztuki, dlatego warto patrzeć nie tylko na wiek budynku, ale również na to, jak zmieniała się jego dekoracja.",
+        "Szczególną uwagę zwróć na Cappella Baglioni i sceny przedstawione w jej dekoracji. Przy kościołach warto zawsze sprawdzić, co przedstawia główne dzieło przy ołtarzu i jakie historie opowiadają obrazy oraz freski."
+      ],
+      "kids_box": "Znajdź w Cappella Baglioni scenę, która najbardziej przypomina opowieść z filmu. Powiedzcie sobie, co dzieje się na obrazie i po czym można to rozpoznać.",
+      "hint": "Najpierw obejrzyj całą scenę, a dopiero potem szukaj pojedynczych postaci i szczegółów.",
+      "local_flavor": "W kościołach Umbrii sztuka często opowiada historię obrazami. Spróbuj odczytać jedną scenę bez korzystania z opisu.",
+      "practical_note": null,
+      "dress_code": "Wymagany stosowny strój; ramiona i kolana powinny być zakryte.",
+      "photo_task": "Zrób zdjęcie wybranego detalu dekoracji Cappella Baglioni, jeśli regulamin miejsca na to pozwala."
+    },
+    "sant-andrea": {
+      "name": "Chiesa di Sant’Andrea",
+      "desc_paragraphs": [
+        "Chiesa di Sant’Andrea leży przy Via Cavour, więc naturalnie wpisuje się w przejście przez historyczne centrum Spello. To przykład miejsca, w którym warto zatrzymać się na chwilę i odczytać jego dekorację zamiast traktować kościół jako kolejny punkt do odhaczenia.",
+        "Przy opisie dzieł we wnętrzu trzeba rozróżniać to, co potwierdzone w źródłach, od lokalnych opowieści. Jeśli konkretne dzieło lub autor nie jest potwierdzony, nie dopisujemy go jako faktu."
+      ],
+      "kids_box": "Znajdź jeden detal, który powtarza się w dekoracji wnętrza. Wymyśl, dlaczego artysta mógł użyć go więcej niż raz.",
+      "hint": "Spójrz najpierw wysoko — sklepienie i górne partie wnętrza często opowiadają inną historię niż dolne ściany.",
+      "local_flavor": null,
+      "practical_note": null,
+      "dress_code": "Wymagany stosowny strój.",
+      "photo_task": "Zrób zdjęcie jednego powtarzającego się motywu, jeśli fotografowanie jest dozwolone."
+    },
+    "gelateria-la-paola": {
+      "name": "Gelateria La Paola",
+      "desc_paragraphs": [
+        "To opcjonalny przystanek na lody przy Via Cavour. Umieszczamy go jako osobny punkt, ponieważ rodzic widzi go na trasie i może zdecydować, czy rodzina chce zatrzymać się właśnie tutaj.",
+        "Lody są celowo przed końcowym etapem zwiedzania i kolacją. Jeśli rodzina nie ma ochoty na deser albo jadła lody wcześniej, punkt można po prostu pominąć."
+      ],
+      "kids_box": "Wybierzcie smak, którego wcześniej nie próbowaliście. Każdy z rodziny daje mu ocenę i uzasadnia ją jednym zdaniem.",
+      "hint": null,
+      "local_flavor": "Zwróć uwagę, czy w ofercie pojawiają się smaki lub składniki charakterystyczne dla Umbrii.",
+      "practical_note": "Punkt opcjonalny — można go pominąć.",
+      "dress_code": null,
+      "photo_task": null
+    },
+    "piazza-repubblica": {
+      "name": "Piazza della Repubblica + Palazzo Comunale",
+      "desc_paragraphs": [
+        "Piazza della Repubblica to ważny punkt orientacyjny Spello. Przy placu znajduje się Palazzo Comunale; najstarsza część budynku wiązana jest z XIII wiekiem, a na fasadzie widnieje data 1270. Późniejsze przebudowy zmieniły jego wygląd i funkcję.",
+        "Warto zwrócić uwagę na dwa elementy fontannowe. Oficjalny opis Palazzo Comunale potwierdza XVI-wieczną fontannę powstałą w miejscu dawnej rampowej klatki schodowej, z reliefami i herbem papieża Juliusza III z lat 1550–1555. Drugi element fontannowy traktujemy jako detal placu bez przypisywania mu daty, jeśli nie ma na to potwierdzenia."
+      ],
+      "kids_box": "Znajdź oba elementy fontannowe. Potem odszukaj herb Juliusza III przy Palazzo Comunale i zastanów się, dlaczego herb papieża mógł znaleźć się na budynku miejskim.",
+      "hint": "Nie szukaj tylko dużego napisu z nazwą placu — rozejrzyj się za detalami na budynku i przy fontannach.",
+      "local_flavor": null,
+      "practical_note": null,
+      "dress_code": null,
+      "photo_task": "Zrób jedno zdjęcie placu, na którym jednocześnie widać Palazzo Comunale i jeden z elementów fontannowych."
+    },
+    "porta-venere": {
+      "name": "Porta Venere + Torri di Properzio",
+      "desc_paragraphs": [
+        "Porta Venere i Torri di Properzio należą do najbardziej charakterystycznych pozostałości dawnych umocnień Spello. Brama pozwala wyobrazić sobie, jak mury kontrolowały wejście do miasta, a sąsiednie wieże wzmacniają monumentalny charakter całego założenia.",
+        "To dobry punkt do rozmowy o tym, dlaczego miasta otaczano murami. Brama nie była tylko dekoracją: wyznaczała kontrolowane wejście i była częścią systemu obronnego oraz organizacji ruchu w mieście."
+      ],
+      "kids_box": "Spójrz na bramę jak na dawny punkt kontroli. Wymyśl dwa sposoby, w jakie strażnicy mogli sprawdzać osoby wchodzące do miasta.",
+      "hint": "Zwróć uwagę na grubość murów, kształt otworów i położenie bramy względem miasta.",
+      "local_flavor": null,
+      "practical_note": null,
+      "dress_code": null,
+      "photo_task": "Zrób zdjęcie, na którym widać jednocześnie bramę i wieże."
+    },
+    "belvedere": {
+      "name": "Belvedere",
+      "desc_paragraphs": [
+        "Belvedere daje inną perspektywę na Spello i umbryjski krajobraz. Po kilku punktach w zwartej zabudowie warto zatrzymać się tutaj i zobaczyć, jak miasto wygląda z góry oraz jak jego położenie wpływa na panoramę.",
+        "To miejsce może być szczególnie atrakcyjne przy zachodzie słońca. Nie ustawiamy jednak całej wycieczki sztywno pod zachód — rodzic może dopasować kolejność do własnego dnia."
+      ],
+      "kids_box": "Znajdź na panoramie trzy różne elementy krajobrazu: zabudowę, pola lub drzewa i odległe wzgórza. Który z nich najbardziej zmienia się, gdy patrzysz z innego miejsca?",
+      "hint": "Najpierw zobacz panoramę bez robienia zdjęcia. Dopiero potem wybierz kadr.",
+      "local_flavor": null,
+      "practical_note": null,
+      "dress_code": null,
+      "photo_task": "Zrób rodzinne zdjęcie z panoramą Umbrii w tle."
+    },
+    "osteria-del-buchetto": {
+      "name": "Osteria del Buchetto",
+      "desc_paragraphs": [
+        "To finał trasy przeznaczony na spokojną kolację. W danych pozostawiamy ceny i godziny jako wymagające potwierdzenia, dopóki nie zostaną sprawdzone w aktualnym źródle.",
+        "Przy wyborze końcowego lokalu liczy się nie tylko ocena, ale również możliwość kolacji o planowanej porze i poziom formalności odpowiedni dla rodziny po kilku godzinach zwiedzania."
+      ],
+      "kids_box": null,
+      "hint": null,
+      "local_flavor": "Przed zamówieniem zapytajcie, które danie lub składnik jest najbardziej lokalny.",
+      "practical_note": null,
+      "dress_code": null,
+      "photo_task": null
+    }
+  },
+  "day_plan": {
+    "parking-mosaici": "parking-mosaici",
+    "villa-mosaici": "villa-mosaici",
+    "santa-maria-maggiore": "santa-maria-maggiore",
+    "sant-andrea": "sant-andrea",
+    "gelateria-la-paola": "gelateria-la-paola",
+    "piazza-repubblica": "piazza-repubblica",
+    "porta-venere": "porta-venere",
+    "belvedere": "belvedere",
+    "osteria-del-buchetto": "osteria-del-buchetto"
+  },
+  "emergency": {},
+  "_notes": [
+    {
+      "stop_key": "piazza-repubblica",
+      "field": "a",
+      "note": "Do ponownej weryfikacji na miejscu: drugi element fontannowy oraz jego nazwa/data."
+    },
+    {
+      "stop_key": "santa-maria-maggiore",
+      "field": "f",
+      "note": "Zweryfikować dokładne dane godzin, cen i fotografowania przed publikacją."
+    },
+    {
+      "stop_key": "gelateria-la-paola",
+      "field": "f",
+      "note": "Zweryfikować aktualną ocenę, liczbę opinii, godziny i ceny przed publikacją."
+    },
+    {
+      "stop_key": "osteria-del-buchetto",
+      "field": "f",
+      "note": "Zweryfikować aktualną ocenę, liczbę opinii, godziny, ceny i możliwość kolacji przed publikacją."
+    }
+  ]
+}

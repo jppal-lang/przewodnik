@@ -1,0 +1,318 @@
+{
+  "doc": {
+    "version": "v1",
+    "generated_at": "2026-08-22T21:17:22+02:00"
+  },
+  "city": {
+    "slug": "spello",
+    "country": "it",
+    "region_slug": "umbria",
+    "lat": 42.9917,
+    "lon": 12.6706,
+    "duration_type": "half_day",
+    "duration_hours": 5,
+    "bandana_color": "#7A9A3F",
+    "wiki_article": "Spello",
+    "wiki_lang": "it",
+    "sort_order": 4,
+    "status": "draft"
+  },
+  "route": {
+    "url": "https://www.google.com/maps/dir/Parcheggio+Villa+Dei+Mosaici+Di+Spello,+06038+Spello+PG,+W%C5%82ochy/Villa+dei+Mosaici+di+Spello,+Via+Paolina+Schicchi+Fagotti,+7,+06038+Spello+PG,+W%C5%82ochy/Santa+Maria+Maggiore+in+Spello,+Piazza+Giacomo+Matteotti,+18,+06038+Spello+PG,+W%C5%82ochy/Church+of+Saint+Andrew,+Via+Camillo+Benso+Conte+di+Cavour,+23,+06038+Spello+PG,+W%C5%82ochy/Gelateria+La+Paola,+Via+Camillo+Benso+Conte+di+Cavour,+14,+06038+Spello+PG,+W%C5%82ochy/Piazza+della+Repubblica,+06038+Spello+PG,+W%C5%82ochy/Venus'+Gate,+Via+Torri+di+Properzio,+37,+06038+Spello+PG,+W%C5%82ochy/Belvedere,+06038+Spello+PG,+W%C5%82ochy/Osteria+del+Buchetto,+06038,+Via+Cappuccini,+19,+06038+Spello+PG,+W%C5%82ochy/@42.9899336,12.672742,16.25z/data=!4m56!4m55!1m5!1m1!1s0x132e858d7e387fb5:0xbd77971af22cc14b!2m2!1d12.6749396!2d42.9890037!1m5!1m1!1s0x132e845dc15af2df:0x98da2bb98dc9a6ac!2m2!1d12.6742205!2d42.9881346!1m5!1m1!1s0x132e85dade7a2885:0xc86506717128601f!2m2!1d12.6719364!2d42.9898141!1m5!1m1!1s0x132e8460ec621469:0x267fe68a5313ffa!2m2!1d12.6715998!2d42.9905884!1m5!1m1!1s0x132e854edc9f964d:0x2939e8611e3dcaef!2m2!1d12.6714823!2d42.9910541!1m5!1m1!1s0x132e8460ef328417:0x950c5c9acdd22f54!2m2!1d12.6717187!2d42.9915843!1m5!1m1!1s0x132e84605b764c17:0xcc8a0ef8307aa685!2m2!1d12.6699145!2d42.9915941!1m5!1m1!1s0x132e856eec6324d3:0xea96fc808ea98e9f!2m2!1d12.6700953!2d42.9945535!1m5!1m1!1s0x132e8463d5aada71:0x8ab4705d0a235fd9!2m2!1d12.670769!2d42.994921!3e2?entry=ttu&g_ep=EgoyMDI2MDgxOS4wIKXMDSoASAFQAw%3D%3D",
+    "source": "maps",
+    "verified_at": "2026-08-22T21:17:22+02:00"
+  },
+  "stops": [
+    {
+      "stop_key": "parking-mosaici",
+      "stop_number": 1,
+      "category": "parking",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.9890037,
+      "lon": 12.6749396,
+      "time_label": null,
+      "visit_duration": "10 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": "Sprawdzić oznakowanie ZTL na miejscu.",
+      "year_built": null,
+      "wiki_article": null,
+      "maps_query": "Parcheggio Villa Dei Mosaici Di Spello, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "villa-mosaici",
+      "stop_number": 2,
+      "category": "museum",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.9881346,
+      "lon": 12.6742205,
+      "time_label": null,
+      "visit_duration": "45 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": "Villa dei Mosaici di Spello",
+      "maps_query": "Villa dei Mosaici di Spello, Via Paolina Schicchi Fagotti 7, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "santa-maria-maggiore",
+      "stop_number": 3,
+      "category": "church",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.9898141,
+      "lon": 12.6719364,
+      "time_label": null,
+      "visit_duration": "40 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": "Santa Maria Maggiore (Spello)",
+      "maps_query": "Santa Maria Maggiore in Spello, Piazza Giacomo Matteotti 18, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "sant-andrea",
+      "stop_number": 4,
+      "category": "church",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.9905884,
+      "lon": 12.6715998,
+      "time_label": null,
+      "visit_duration": "25 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": "Sant'Andrea (Spello)",
+      "maps_query": "Church of Saint Andrew, Via Camillo Benso Conte di Cavour 23, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "gelateria-la-paola",
+      "stop_number": 5,
+      "category": "icecream",
+      "optional": true,
+      "sunset_spot": false,
+      "lat": 42.9910541,
+      "lon": 12.6714823,
+      "time_label": null,
+      "visit_duration": "15 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": null,
+      "maps_query": "Gelateria La Paola, Via Camillo Benso Conte di Cavour 14, Spello PG, Italy",
+      "verify_url": "https://www.google.com/maps/search/?api=1&query=Gelateria+La+Paola+Spello",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.google.com/maps/search/?api=1&query=Gelateria+La+Paola+Spello"
+      ]
+    },
+    {
+      "stop_key": "piazza-repubblica",
+      "stop_number": 6,
+      "category": "monument",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.9915843,
+      "lon": 12.6717187,
+      "time_label": null,
+      "visit_duration": "30 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": 1270,
+      "wiki_article": null,
+      "maps_query": "Piazza della Repubblica, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "porta-venere",
+      "stop_number": 7,
+      "category": "monument",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.9915941,
+      "lon": 12.6699145,
+      "time_label": null,
+      "visit_duration": "25 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": "Porta Venere (Spello)",
+      "maps_query": "Venus' Gate, Via Torri di Properzio 37, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "belvedere",
+      "stop_number": 8,
+      "category": "viewpoint",
+      "optional": true,
+      "sunset_spot": true,
+      "lat": 42.9945535,
+      "lon": 12.6700953,
+      "time_label": null,
+      "visit_duration": "20 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": null,
+      "maps_query": "Belvedere, Spello PG, Italy",
+      "verify_url": "https://www.comune.spello.pg.it/",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.comune.spello.pg.it/"
+      ]
+    },
+    {
+      "stop_key": "osteria-del-buchetto",
+      "stop_number": 9,
+      "category": "restaurant",
+      "optional": false,
+      "sunset_spot": false,
+      "lat": 42.994921,
+      "lon": 12.670769,
+      "time_label": null,
+      "visit_duration": "90 min",
+      "price": null,
+      "price_status": "unverified",
+      "opening_hours": null,
+      "hours_status": "unverified",
+      "ztl": null,
+      "year_built": null,
+      "wiki_article": null,
+      "maps_query": "Osteria del Buchetto, Via Cappuccini 19, Spello PG, Italy",
+      "verify_url": "https://www.google.com/maps/search/?api=1&query=Osteria+del+Buchetto+Spello",
+      "whatsapp": null,
+      "website": null,
+      "rating": null,
+      "reviews_count": null,
+      "reservation": null,
+      "sources": [
+        "https://www.google.com/maps/search/?api=1&query=Osteria+del+Buchetto+Spello"
+      ]
+    }
+  ],
+  "day_plan": [
+    {
+      "stop_key": "parking-mosaici",
+      "time_label": null
+    },
+    {
+      "stop_key": "villa-mosaici",
+      "time_label": null
+    },
+    {
+      "stop_key": "santa-maria-maggiore",
+      "time_label": null
+    },
+    {
+      "stop_key": "sant-andrea",
+      "time_label": null
+    },
+    {
+      "stop_key": "gelateria-la-paola",
+      "time_label": null
+    },
+    {
+      "stop_key": "piazza-repubblica",
+      "time_label": null
+    },
+    {
+      "stop_key": "porta-venere",
+      "time_label": null
+    },
+    {
+      "stop_key": "belvedere",
+      "time_label": null
+    },
+    {
+      "stop_key": "osteria-del-buchetto",
+      "time_label": null
+    }
+  ],
+  "emergency": []
+}

@@ -19,6 +19,10 @@ Bez HTML, bez markdownu, bez komentarzy.
 **Struktura pliku jest nietykalna.** Te same klucze, ta sama kolejność, ta sama liczba
 akapitów w `desc_paragraphs`. Zmienia się wyłącznie treść tekstowa.
 
+Przystanki są kluczowane po **`stop_key`** (np. `porta-consolare`), nie po numerze.
+`stop_key` jest identyfikatorem technicznym — **nigdy go nie tłumacz i nie zmieniaj**,
+nawet jeśli wygląda jak słowo.
+
 Jeżeli w źródle pole ma `null` → w tłumaczeniu też `null`. Nie wypełniaj pustych pól.
 Nie dodawaj kluczy, nie usuwaj kluczy.
 
@@ -57,6 +61,15 @@ i wszystkich miastach**, bo są etykietami interfejsu.
 | Pełny dzień | Full day | Ganzer Tag | Giornata intera |
 | sprawdź na miejscu | check on site | vor Ort prüfen | verificare sul posto |
 | strefa ZTL | ZTL zone | ZTL-Zone | zona ZTL |
+| do potwierdzenia | to be confirmed | noch zu bestätigen | da confermare |
+| wymaga weryfikacji | needs verification | überprüfungsbedürftig | da verificare |
+| Zwróć uwagę na… | Look out for… | Achte auf… | Fai attenzione a… |
+| punkt opcjonalny | optional stop | optionaler Halt | tappa facoltativa |
+| punkt widokowy | viewpoint | Aussichtspunkt | punto panoramico |
+| Legenda głosi, że… | Legend has it that… | Der Legende nach… | La leggenda narra che… |
+
+Zwroty „do potwierdzenia" i „wymaga weryfikacji" muszą być tłumaczone **konsekwentnie** —
+rodzic po nich poznaje, że danej informacji nie sprawdziliśmy.
 
 Dla pozostałych języków trzymaj się tego samego rejestru — jedno tłumaczenie na termin,
 konsekwentnie w całym pliku.
@@ -84,7 +97,8 @@ która wersja jest prawdziwa.
 Dla każdego pliku sprawdź:
 
 - [ ] `"lang"` ustawiony na właściwy kod
-- [ ] identyczny zestaw kluczy jak w `pl` (te same numery przystanków)
+- [ ] identyczny zestaw kluczy jak w `pl` (te same `stop_key`, nieprzetłumaczone)
+- [ ] pola `practical_note`, `dress_code` i `city.local_food` przetłumaczone lub `null`
 - [ ] `desc_paragraphs` ma tyle samo elementów co w źródle
 - [ ] `null` tam, gdzie w źródle był `null`
 - [ ] nazwy własne zabytków nietknięte

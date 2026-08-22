@@ -11,8 +11,8 @@ Pliki siedzą w repo i są wersjonowane, ale nie trafiają na questini.com.
 
 ```
 _content/
-├── PROMPT-nowe-miasto.md      ← prompt 1: treść po polsku
-├── PROMPT-tlumaczenia.md      ← prompt 2: tłumaczenia (+ glosariusz)
+├── CHATGPT-PROJEKT.md         ← instrukcje projektu ChatGPT (wklej w całości)
+├── IMPORT.md                  ← kontrakt importu: co dostaję i co z tym robię
 ├── validate.py                ← walidator, uruchom przed importem
 └── cities/<region>/<slug>/
     ├── <slug>.meta.json       ← dane maszynowe, bez języka
@@ -20,6 +20,15 @@ _content/
     ├── <slug>.en.json
     └── <slug>.de.json …
 ```
+
+Obowiązujący standard treści: **WYTYCZNE_WYCIECZEK.md** (sygnatura 2026-08-22 21:49 CEST)
++ **REDAKCJA.md v4**. Oba prompty są z nimi zgodne.
+
+## `stop_key` — numer nie jest tożsamością punktu
+
+Zgodnie z WYTYCZNE §1 punkt ma stabilny klucz (`porta-consolare`), a `stop_number` to tylko
+pozycja na trasie. Dzięki temu można przestawiać, dodawać i usuwać punkty bez utraty
+tłumaczeń, komentarzy i ocen. Pliki językowe kluczują przystanki po `stop_key`.
 
 ## Dlaczego meta osobno
 
@@ -33,10 +42,11 @@ Ten numer jest jedynym łącznikiem — dzięki niemu plik niemiecki i polski za
 
 ## Workflow
 
-1. **Treść** — ChatGPT dostaje `PROMPT-nowe-miasto.md`, oddaje `.meta.json` + `.pl.json`, pushuje.
+0. **Raz** — wklej `CHATGPT-PROJEKT.md` jako instrukcje projektu ChatGPT.
+   Potem wystarczają krótkie polecenia: „Zrób Spello, region Umbria".
+1. **Treść** — ChatGPT oddaje `.meta.json` + `.pl.json`, pushuje.
 2. **Weryfikacja** — redaktor sprawdza polską wersję. Uwagi lądują w bloku `_notes`.
-3. **Tłumaczenia** — dopiero po zatwierdzeniu polskiego. ChatGPT dostaje `PROMPT-tlumaczenia.md`
-   i zatwierdzony `.pl.json`, oddaje pliki `.en.json`, `.de.json`, `.it.json`.
+3. **Tłumaczenia** — dopiero po zatwierdzeniu polskiego: „Przetłumacz Spello na en, de, it".
 4. **Walidacja** — `python3 validate.py` w katalogu `_content/`. Kod wyjścia 1 = nie importować.
 5. **Import** — JP mówi Claude'owi „zaimportuj Spello".
 6. Poprawki robi się **w plikach**, potem re-import. Nigdy bezpośrednio w bazie.
@@ -53,11 +63,15 @@ python3 validate.py                        # wszystkie miasta
 python3 validate.py cities/umbria/spello   # jedno
 ```
 
-Sprawdza: poprawność JSON-a, zgodność slugów z nazwą katalogu, dozwolone kategorie i typy,
-ciągłość numeracji przystanków, parking na pozycji 01, komplet kluczy w każdym języku,
-zgodność liczby akapitów z wersją polską, brak `_notes` w tłumaczeniach oraz zakazane
-przez REDAKCJA.md wzorce — kilometry, czasy dojazdu i zdania typu „nie udało się ustalić"
-w treści dla turysty.
+Sprawdza: poprawność JSON-a, zgodność slugów z katalogiem, unikalność i format `stop_key`,
+dozwolone kategorie i ikony, ciągłość numeracji, parking na pozycji 01, obecność `verify_url`
+przy każdym punkcie, cenę i godziny bez statusu weryfikacji, próg 4,1 / 100 opinii dla
+restauracji, parę `rating` + `reviews_count`, komplet kluczy w każdym języku, zgodność liczby
+akapitów z wersją polską, brak `_notes` w tłumaczeniach oraz zakazane wzorce — kilometry,
+czasy dojazdu i zdania typu „nie udało się ustalić" w treści dla turysty.
+
+Ostrzega (nie blokuje), gdy: brak punktu opcjonalnego, brak punktu widokowego,
+puste `city.local_food` — czyli gdy wytyczne §12–§15 mogły zostać pominięte.
 
 ## Co gdzie ląduje w bazie
 

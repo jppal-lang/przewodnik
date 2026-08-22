@@ -1,0 +1,86 @@
+{
+  "doc": {
+    "version": "update-002",
+    "generated_at": "2026-08-22T21:32:50+02:00"
+  },
+  "city_slug": "spello",
+  "update_stops": {
+    "parking-mosaici": {
+      "pl": {
+        "name": "Parcheggio Villa Dei Mosaici Di Spello",
+        "desc_paragraphs": [
+          "To praktyczny punkt startowy zwiedzania Spello. Zostawiamy tu samochód i dalej poruszamy się pieszo, dzięki czemu można wejść w historyczne centrum bez dokładania samochodu do trasy.",
+          "Przed zaparkowaniem sprawdź oznakowanie dotyczące ZTL, opłat i ewentualnych ograniczeń. Jeśli warunki na miejscu różnią się od informacji w przewodniku, pierwszeństwo ma aktualne oznakowanie."
+        ],
+        "practical_note": "Sprawdź na miejscu aktualne oznakowanie parkingu i ZTL."
+      }
+    },
+    "osteria-del-buchetto": {
+      "rating": 4.7,
+      "reviews_count": 453,
+      "website": "http://www.osteriadelbuchetto.it/",
+      "reservation": "recommended",
+      "opening_hours": "19:30–22:30; środa zamknięte (sprawdź przed wizytą)",
+      "hours_status": "confirmed",
+      "pl": {
+        "practical_note": "Rezerwacja jest zalecana; lokal ma ograniczoną liczbę miejsc. Godziny sprawdź przed wizytą.",
+        "local_flavor": "W menu pojawiają się lokalne smaki Umbrii, m.in. dania z truflami, soczewicą z okolic Lago Trasimeno i mięsem dzika. Warto zapytać obsługę o danie najbardziej związane z regionem."
+      }
+    }
+  },
+  "update_day_plan": [
+    {
+      "stop_key": "parking-mosaici",
+      "time_label": "start"
+    },
+    {
+      "stop_key": "villa-mosaici",
+      "time_label": "następnie"
+    },
+    {
+      "stop_key": "santa-maria-maggiore",
+      "time_label": "następnie"
+    },
+    {
+      "stop_key": "sant-andrea",
+      "time_label": "następnie"
+    },
+    {
+      "stop_key": "gelateria-la-paola",
+      "time_label": "opcjonalnie"
+    },
+    {
+      "stop_key": "piazza-repubblica",
+      "time_label": "następnie"
+    },
+    {
+      "stop_key": "porta-venere",
+      "time_label": "następnie"
+    },
+    {
+      "stop_key": "belvedere",
+      "time_label": "opcjonalnie / zachód słońca"
+    },
+    {
+      "stop_key": "osteria-del-buchetto",
+      "time_label": "kolacja"
+    }
+  ],
+  "update_emergency": [
+    {
+      "sort_order": 1,
+      "type": "pharmacy",
+      "maps_query": "Farmacia Bartoli, Via Cavour 63, Spello PG, Italy"
+    },
+    {
+      "sort_order": 2,
+      "type": "pharmacy",
+      "maps_query": "Farmacia Buattini Sozi, Via Pinturicchio 6, Spello PG, Italy"
+    },
+    {
+      "sort_order": 3,
+      "type": "toilet",
+      "maps_query": "Bagni pubblici, Spello PG, Italy"
+    }
+  ]
+}
