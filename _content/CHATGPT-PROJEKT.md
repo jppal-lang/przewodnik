@@ -94,9 +94,11 @@ Pliki językowe kluczują przystanki **po `stop_key`**. `stop_key` nie jest tłu
       "optional": false,
       "sunset_spot": false,
       "lat": 42.9901, "lon": 12.6698,
+      "location": "Via Paolina Schicchi Fagotti / okolice Villa dei Mosaici",
       "time_label": "15:45",
       "visit_duration": "10 min",
-      "price": "1,20 €/godz.",
+      "price": null,
+      "parking_cost": "1,20 €/godz.",
       "price_status": "unverified",
       "opening_hours": "24 h",
       "hours_status": "confirmed",
@@ -120,6 +122,62 @@ Wartości dozwolone: `price_status` / `hours_status` = `confirmed` | `unverified
 `duration_type` = `half_day` | `full_day` · `status` = zawsze `draft`.
 
 **Nie podawaj `sort_order` przy punktach** — kolejność wynika z pozycji w tablicy `stops[]`.
+
+---
+
+# 4a. POLE A — ROZBIJASZ NA KLUCZE, NIE ZOSTAWIASZ BLOKU
+
+W dokumencie HTML pole A jest jednym blokiem tekstu z emoji jako etykietami.
+**W JSON każde podpole ma własny klucz.** Nie przenosisz emoji do JSON-a i nie sklejasz
+kilku informacji w jedno pole.
+
+| W HTML | Klucz w JSON | Uwaga |
+|---|---|---|
+| 📅 data / okres | `year_built` | tekst, nie liczba — może być „I w. p.n.e." albo kilka faz |
+| 📍 lokalizacja | `location` | adres lub opis położenia |
+| 🅿️ koszt | `parking_cost` | **tylko parking** |
+| 💶 cena | `price` | wstęp; parking tu NIE trafia |
+| 🕐 godziny | `opening_hours` | + `hours_status` |
+| 🕐 dotarcie | `time_label` | + w `day_plan` |
+| ⏱️ czas | `visit_duration` | |
+| 👕 strój | `dress_code` | w pliku językowym, bo to proza |
+| ⭐ ocena | `rating` + `reviews_count` | liczby, nie tekst |
+| 🌅 zachód słońca | `sunset_spot: true` | |
+| „opcjonalny — można pominąć" | `optional: true` | |
+| 🗺️ link | `maps_query` | sama fraza, bez URL-a |
+| 🔎 źródła (pole F) | `sources[]` + `verify_url` | |
+
+## Trzy pułapki, na które trzeba uważać
+
+**🕐 znaczy dwie różne rzeczy.** Raz godziny otwarcia, raz godzinę dotarcia. To osobne klucze:
+`opening_hours` i `time_label`. Nie wolno ich mylić — inaczej w planie dnia zamiast „18:20"
+pojawia się „z zewnątrz bez ograniczeń".
+
+**🅿️ to nie 💶.** Koszt parkingu i cena wstępu to dwa różne pola. Parking ma `parking_cost`
+i `price: null`. Zabytek ma `price` i `parking_cost: null`.
+
+**⭐ ma dwa znaczenia.** Przy lokalu to prawdziwa ocena → `rating` i `reviews_count`.
+Ale zapis w rodzaju „filtr redakcyjny: Google ≥ 4,1 + 100+ opinii" **nie jest oceną lokalu**,
+tylko kryterium wyboru — idzie do `_notes`, nigdy do `rating`.
+
+---
+
+# 4b. NIE SKRACASZ I NIE PRZEPISUJESZ
+
+Jeśli treść powstała najpierw w dokumencie HTML, **JSON musi się z nim zgadzać co do znaku**.
+JSON nie jest okazją do ulepszania tekstu.
+
+**Pola wieloakapitowe zostają wieloakapitowe.**
+`desc_paragraphs` to tablica — jeden element na akapit, wszystkie akapity.
+`kids_box`, `hint` i `local_flavor` mogą mieć kilka akapitów — wtedy łączysz je znakiem `\n\n`
+w jednym stringu. **Nie oddajesz pierwszego akapitu i nie urywasz reszty.**
+
+Przykład: legenda o Orlandzie przy Porta Venere ma **cztery akapity** — kim był Orlando,
+pierwsza wersja legendy, druga wersja, oraz zastrzeżenie, czego w przekazach nie ma.
+Oddanie samego pierwszego akapitu to utrata trzech czwartych treści.
+
+Kontrola przed oddaniem: dla każdego punktu policz akapity w HTML i w JSON. Liczby muszą
+się zgadzać w `desc_paragraphs`, `kids_box`, `hint` i `local_flavor`.
 
 ---
 
@@ -454,9 +512,15 @@ Wszystkie sekcje opcjonalne.
 
 # 21. CHECKLISTA PRZED ODDANIEM
 
-**Każdy punkt:** `stop_key` · kategoria z listy · dane praktyczne · godziny + status ·
-cena + status · `verify_url` · `maps_query` · dress code jeśli występuje · czas pobytu ·
-bogaty opis rodzica · daty i kontekst · quest · wskazówka · lokalny smak jeśli istnieje · źródła
+**Każdy punkt:** `stop_key` · kategoria z listy · `location` · godziny + status ·
+cena + status (`price` albo `parking_cost`) · `verify_url` · `maps_query` · dress code jeśli
+występuje · czas pobytu · bogaty opis rodzica · daty i kontekst · quest · wskazówka ·
+lokalny smak jeśli istnieje · źródła
+
+**Zgodność ze źródłem:** liczba akapitów w `desc_paragraphs`, `kids_box`, `hint`
+i `local_flavor` zgadza się z dokumentem HTML · żaden tekst nie został skrócony ani przepisany ·
+`opening_hours` i `time_label` nie są zamienione miejscami · `parking_cost` nie wylądował
+w `price` · w `rating` nie ma kryterium redakcyjnego
 
 **Cała trasa:** punkt 01 = parking · kolejność zgodna z trasą · punkty widokowe rozważone ·
 lokalne jedzenie rozważone · dobre lokale po drodze rozważone · punkty opcjonalne oznaczone ·

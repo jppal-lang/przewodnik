@@ -47,11 +47,59 @@ Potem, osobnym krokiem, tłumaczenia: `<slug>.en.json`, `<slug>.de.json`, `<slug
 | `meta.city` | `cities` | `slug` = nazwa katalogu |
 | `meta.stops[]` | `stops` | łączenie po `stop_key` |
 | `meta.stops[].sources` | `stops.sources` | tylko redakcja, nie na stronie |
+| `meta.stops[].location` | `stops.location` | **kolumna do dodania** |
+| `meta.stops[].parking_cost` | `stops.parking_cost` | **kolumna do dodania** |
 | `<lang>.city` | `city_translations` | |
 | `<lang>.stops{stop_key}` | `stop_translations` | klucz = `stop_key`, nie numer |
 | `<lang>.day_plan{stop_key}` | `day_plan` | |
 | `<lang>.emergency{n}` + `meta.emergency[]` | `emergency_points` | |
 | `pl._notes[]` | `editorial_notes` | **nigdy publicznie, nie tłumaczone** |
+
+---
+
+## 2·0. Pole A z dokumentu → kolumny
+
+Blok A w HTML jest jednym tekstem z emoji. W JSON każde podpole ma własny klucz,
+a w bazie własną kolumnę:
+
+| HTML | JSON | Kolumna |
+|---|---|---|
+| 📅 data / okres | `year_built` | `stops.year_built` |
+| 📍 lokalizacja | `location` | `stops.location` ← **brakuje** |
+| 🅿️ koszt | `parking_cost` | `stops.parking_cost` ← **brakuje** |
+| 💶 cena | `price` | `stops.price` |
+| 🕐 godziny | `opening_hours` | `stops.opening_hours` |
+| 🕐 dotarcie | `time_label` | `stops.time_label` |
+| ⏱️ czas | `visit_duration` | `stops.visit_duration` |
+| 👕 strój | `dress_code` | `stop_translations.dress_code` |
+| ⭐ ocena | `rating`, `reviews_count` | `stops.rating`, `stops.reviews_count` |
+| 🌅 zachód | `sunset_spot` | `stops.sunset_spot` |
+| „opcjonalny" | `optional` | `stops.optional` |
+| 🗺️ | `maps_query` | `stops.maps_query` |
+
+Migracja domykająca komplet:
+
+```sql
+ALTER TABLE stops ADD COLUMN IF NOT EXISTS location     text;  -- 📍
+ALTER TABLE stops ADD COLUMN IF NOT EXISTS parking_cost text;  -- 🅿️
+```
+
+**Pułapki parsera** — sprawdzone na Spello v31:
+
+`🕐` występuje **dwa razy** w tym samym bloku, raz jako godziny otwarcia, raz jako godzina
+dotarcia. Parser biorący pierwsze trafienie wpisze „z zewnątrz bez ograniczeń" jako godzinę
+dotarcia i rozwali plan dnia.
+
+`🅿️` i `💶` to **różne pola**. Zlanie ich w `price` gubi rozróżnienie między kosztem parkingu
+a ceną wstępu.
+
+`⭐` ma **dwa znaczenia**: prawdziwa ocena lokalu (`4,6 / 239 opinii`) oraz kryterium redakcyjne
+(`filtr redakcyjny: Google ≥ 4,1 + 100+ opinii`). Drugie nigdy nie trafia do `rating` —
+to notatka do `editorial_notes`.
+
+Sekcje `C`, `D` i `E` bywają **wieloakapitowe**. Import musi brać wszystkie akapity
+i łączyć je `\n\n`, nie pierwszy z brzegu. Legenda o Orlandzie przy Porta Venere ma
+cztery akapity.
 
 ---
 
@@ -193,6 +241,21 @@ Jeśli nie — policzę z kolejności.
 **Pole nieużywane → `null`.** Nie pomijaj klucza — walidator to sprawdza.
 
 **`_notes` wyłącznie w `.pl.json`.** W tłumaczeniach nie może się pojawić.
+
+---
+
+## 4a. Gdy treść powstała najpierw w HTML
+
+Dokument HTML jest wtedy **źródłem prawdy**, a JSON jego wiernym odwzorowaniem.
+Import ma prawo odrzucić plik, w którym:
+
+- liczba akapitów w `desc_paragraphs` nie zgadza się z sekcją B dokumentu,
+- `kids_box`, `hint` albo `local_flavor` są krótsze niż w sekcji C, D, E,
+- brakuje punktu, który w HTML ma własny `<article class="stop">`,
+- kolejność `stop_number` nie odpowiada kolejności artykułów.
+
+Przy Spello v31 JSON od ChatGPT różnił się od HTML-a **w ośmiu punktach na osiem** i pomijał
+dwa całe przystanki. Dlatego ta reguła jest tu wpisana, a nie domyślna.
 
 ---
 

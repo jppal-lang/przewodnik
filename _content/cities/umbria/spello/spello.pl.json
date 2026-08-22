@@ -1,165 +1,199 @@
 {
-  "lang": "pl",
-  "city": {
-    "title": "Spello",
-    "region_label": "Umbria · pół dnia",
-    "subtitle": "Umbryjskie miasteczko, w którym rzymskie mozaiki, średniowieczne uliczki i panorama Umbrii układają się w jedną rodzinną wyprawę.",
-    "lead": "Spello najlepiej poznaje się, idąc własnym rytmem: można zatrzymać się przy mozaikach, wejść do kościoła, zjeść lody po drodze albo pominąć punkt i wrócić później.",
-    "good_to_know": "Trasa jest elastyczna. Punkt widokowy jest szczególnie atrakcyjny przy zachodzie słońca. Przed wizytą sprawdź aktualne godziny i ceny.",
-    "hero_note": null,
-    "local_food": "Zwróć uwagę na lokalne produkty Umbrii, zwłaszcza oliwę z oliwek i proste dania oparte na lokalnych składnikach. Jeśli mijasz lodziarnię, potraktuj ją jako opcjonalny przystanek, a nie obowiązek."
+ "lang": "pl",
+ "city": {
+  "title": "Spello",
+  "region_label": "Umbria · pół dnia",
+  "subtitle": "Umbryjskie miasteczko, w którym rzymskie mozaiki, średniowieczne uliczki i panorama Umbrii układają się w jedną rodzinną wyprawę.",
+  "lead": "Spello najlepiej poznaje się, idąc własnym rytmem: można zatrzymać się przy mozaikach, wejść do kościoła, zjeść lody po drodze albo pominąć punkt i wrócić później.",
+  "good_to_know": "Trasa jest elastyczna. Punkt widokowy jest szczególnie atrakcyjny przy zachodzie słońca. Przed wizytą sprawdź aktualne godziny i ceny.",
+  "hero_note": null,
+  "local_food": "Zwróć uwagę na lokalne produkty Umbrii, zwłaszcza oliwę z oliwek i proste dania oparte na lokalnych składnikach. Jeśli mijasz lodziarnię, potraktuj ją jako opcjonalny przystanek, a nie obowiązek."
+ },
+ "stops": {
+  "parking-mosaici": {
+   "name": "PARKING VILLA DEI MOSAICI",
+   "desc_paragraphs": [
+    "Ten punkt zaczyna historię Spello od bardzo dobrego pytania: czy wielkie odkrycia archeologiczne zawsze są planowane? W przypadku Villa dei Mosaici odpowiedź brzmi: nie. W lipcu 2005 roku, w miejscowości Sant’Anna, podczas prac związanych z budową publicznego parkingu, z ziemi zaczęły wychodzić pozostałości starożytnej mozaiki. Zamiast zakończenia prac budowlanych rozpoczęły się badania archeologiczne, które odsłoniły rozległą rzymską rezydencję. To dobry początek rodzinnej trasy, bo dziecko dostaje prawdziwą historię detektywistyczną: ludzie kopali pod parking, a znaleźli rzymską willę."
+   ],
+   "kids_box": "Czy wiecie, że największe odkrycia są czasem dziełem przypadku? Zanim wejdziemy do willi, spróbujcie przewidzieć: co archeolog mógł zobaczyć jako pierwsze, kiedy z ziemi zaczęła wychodzić rzymska willa?",
+   "hint": "Nie chodzi o zgadywanie konkretnego przedmiotu. Pierwszym wyraźnym sygnałem były pozostałości starożytnej mozaiki.",
+   "local_flavor": "W lipcu 2005 roku podczas prac przy budowie parkingu odkryto pozostałości rzymskiej willi — współczesna inwestycja odsłoniła fragment miasta sprzed prawie dwóch tysięcy lat.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
   },
-  "stops": {
-    "parking-mosaici": {
-      "name": "Parcheggio Villa Dei Mosaici Di Spello",
-      "desc_paragraphs": [
-        null,
-        null
-      ],
-      "kids_box": null,
-      "hint": null,
-      "local_flavor": null,
-      "practical_note": null,
-      "dress_code": null,
-      "photo_task": null
-    },
-    "villa-mosaici": {
-      "name": "Villa dei Mosaici di Spello",
-      "desc_paragraphs": [
-        "Villa dei Mosaici to stanowisko archeologiczne prezentujące pozostałości rzymskiej willi i jej dekoracje mozaikowe. To dobry pierwszy przystanek, bo pozwala zobaczyć rzymskie życie nie jako abstrakcyjną datę, lecz jako dom z konkretnymi pomieszczeniami i podłogami, które przetrwały wieki.",
-        "Warto zwrócić uwagę na triclinium. To rzymska sala ucztowania; nazwa wiąże się z trzema miejscami do leżenia wokół stołu. Takie pomieszczenie pokazuje, że dom był nie tylko miejscem mieszkania, ale także organizowania spotkań i uczt."
-      ],
-      "kids_box": "Znajdź na mozaikach detal, który najbardziej przypomina współczesną dekorację. Potem wybierzcie wspólnie miejsce, w którym urządzilibyście dziś podobną salę.",
-      "hint": "Szukaj przede wszystkim podłóg i układu pomieszczeń, nie tylko pojedynczych ozdobnych fragmentów.",
-      "local_flavor": null,
-      "practical_note": null,
-      "dress_code": null,
-      "photo_task": "Zrób jedno zdjęcie mozaiki tak, aby było widać jej układ jako całość, a nie tylko pojedynczy fragment."
-    },
-    "santa-maria-maggiore": {
-      "name": "Santa Maria Maggiore",
-      "desc_paragraphs": [
-        "Santa Maria Maggiore należy do najważniejszych zabytków sakralnych Spello. Wnętrze łączy średniowieczną historię miasta z późniejszymi przekształceniami i dziełami sztuki, dlatego warto patrzeć nie tylko na wiek budynku, ale również na to, jak zmieniała się jego dekoracja.",
-        "Szczególną uwagę zwróć na Cappella Baglioni i sceny przedstawione w jej dekoracji. Przy kościołach warto zawsze sprawdzić, co przedstawia główne dzieło przy ołtarzu i jakie historie opowiadają obrazy oraz freski."
-      ],
-      "kids_box": "Znajdź w Cappella Baglioni scenę, która najbardziej przypomina opowieść z filmu. Powiedzcie sobie, co dzieje się na obrazie i po czym można to rozpoznać.",
-      "hint": "Najpierw obejrzyj całą scenę, a dopiero potem szukaj pojedynczych postaci i szczegółów.",
-      "local_flavor": "W kościołach Umbrii sztuka często opowiada historię obrazami. Spróbuj odczytać jedną scenę bez korzystania z opisu.",
-      "practical_note": null,
-      "dress_code": "Wymagany stosowny strój; ramiona i kolana powinny być zakryte.",
-      "photo_task": "Zrób zdjęcie wybranego detalu dekoracji Cappella Baglioni, jeśli regulamin miejsca na to pozwala."
-    },
-    "sant-andrea": {
-      "name": "Chiesa di Sant’Andrea",
-      "desc_paragraphs": [
-        "Chiesa di Sant’Andrea leży przy Via Cavour, więc naturalnie wpisuje się w przejście przez historyczne centrum Spello. To przykład miejsca, w którym warto zatrzymać się na chwilę i odczytać jego dekorację zamiast traktować kościół jako kolejny punkt do odhaczenia.",
-        "Przy opisie dzieł we wnętrzu trzeba rozróżniać to, co potwierdzone w źródłach, od lokalnych opowieści. Jeśli konkretne dzieło lub autor nie jest potwierdzony, nie dopisujemy go jako faktu."
-      ],
-      "kids_box": "Znajdź jeden detal, który powtarza się w dekoracji wnętrza. Wymyśl, dlaczego artysta mógł użyć go więcej niż raz.",
-      "hint": "Spójrz najpierw wysoko — sklepienie i górne partie wnętrza często opowiadają inną historię niż dolne ściany.",
-      "local_flavor": null,
-      "practical_note": null,
-      "dress_code": "Wymagany stosowny strój.",
-      "photo_task": "Zrób zdjęcie jednego powtarzającego się motywu, jeśli fotografowanie jest dozwolone."
-    },
-    "gelateria-la-paola": {
-      "name": "Gelateria La Paola",
-      "desc_paragraphs": [
-        "To opcjonalny przystanek na lody przy Via Cavour. Umieszczamy go jako osobny punkt, ponieważ rodzic widzi go na trasie i może zdecydować, czy rodzina chce zatrzymać się właśnie tutaj.",
-        "Lody są celowo przed końcowym etapem zwiedzania i kolacją. Jeśli rodzina nie ma ochoty na deser albo jadła lody wcześniej, punkt można po prostu pominąć."
-      ],
-      "kids_box": "Wybierzcie smak, którego wcześniej nie próbowaliście. Każdy z rodziny daje mu ocenę i uzasadnia ją jednym zdaniem.",
-      "hint": null,
-      "local_flavor": "Zwróć uwagę, czy w ofercie pojawiają się smaki lub składniki charakterystyczne dla Umbrii.",
-      "practical_note": "Punkt opcjonalny — można go pominąć.",
-      "dress_code": null,
-      "photo_task": null
-    },
-    "piazza-repubblica": {
-      "name": "Piazza della Repubblica + Palazzo Comunale",
-      "desc_paragraphs": [
-        "Piazza della Repubblica to ważny punkt orientacyjny Spello. Przy placu znajduje się Palazzo Comunale; najstarsza część budynku wiązana jest z XIII wiekiem, a na fasadzie widnieje data 1270. Późniejsze przebudowy zmieniły jego wygląd i funkcję.",
-        "Warto zwrócić uwagę na dwa elementy fontannowe. Oficjalny opis Palazzo Comunale potwierdza XVI-wieczną fontannę powstałą w miejscu dawnej rampowej klatki schodowej, z reliefami i herbem papieża Juliusza III z lat 1550–1555. Drugi element fontannowy traktujemy jako detal placu bez przypisywania mu daty, jeśli nie ma na to potwierdzenia."
-      ],
-      "kids_box": "Znajdź oba elementy fontannowe. Potem odszukaj herb Juliusza III przy Palazzo Comunale i zastanów się, dlaczego herb papieża mógł znaleźć się na budynku miejskim.",
-      "hint": "Nie szukaj tylko dużego napisu z nazwą placu — rozejrzyj się za detalami na budynku i przy fontannach.",
-      "local_flavor": null,
-      "practical_note": null,
-      "dress_code": null,
-      "photo_task": "Zrób jedno zdjęcie placu, na którym jednocześnie widać Palazzo Comunale i jeden z elementów fontannowych."
-    },
-    "porta-venere": {
-      "name": "Porta Venere + Torri di Properzio",
-      "desc_paragraphs": [
-        "Porta Venere i Torri di Properzio należą do najbardziej charakterystycznych pozostałości dawnych umocnień Spello. Brama pozwala wyobrazić sobie, jak mury kontrolowały wejście do miasta, a sąsiednie wieże wzmacniają monumentalny charakter całego założenia.",
-        "To dobry punkt do rozmowy o tym, dlaczego miasta otaczano murami. Brama nie była tylko dekoracją: wyznaczała kontrolowane wejście i była częścią systemu obronnego oraz organizacji ruchu w mieście."
-      ],
-      "kids_box": "Spójrz na bramę jak na dawny punkt kontroli. Wymyśl dwa sposoby, w jakie strażnicy mogli sprawdzać osoby wchodzące do miasta.",
-      "hint": "Zwróć uwagę na grubość murów, kształt otworów i położenie bramy względem miasta.",
-      "local_flavor": null,
-      "practical_note": null,
-      "dress_code": null,
-      "photo_task": "Zrób zdjęcie, na którym widać jednocześnie bramę i wieże."
-    },
-    "belvedere": {
-      "name": "Belvedere",
-      "desc_paragraphs": [
-        "Belvedere daje inną perspektywę na Spello i umbryjski krajobraz. Po kilku punktach w zwartej zabudowie warto zatrzymać się tutaj i zobaczyć, jak miasto wygląda z góry oraz jak jego położenie wpływa na panoramę.",
-        "To miejsce może być szczególnie atrakcyjne przy zachodzie słońca. Nie ustawiamy jednak całej wycieczki sztywno pod zachód — rodzic może dopasować kolejność do własnego dnia."
-      ],
-      "kids_box": "Znajdź na panoramie trzy różne elementy krajobrazu: zabudowę, pola lub drzewa i odległe wzgórza. Który z nich najbardziej zmienia się, gdy patrzysz z innego miejsca?",
-      "hint": "Najpierw zobacz panoramę bez robienia zdjęcia. Dopiero potem wybierz kadr.",
-      "local_flavor": null,
-      "practical_note": null,
-      "dress_code": null,
-      "photo_task": "Zrób rodzinne zdjęcie z panoramą Umbrii w tle."
-    },
-    "osteria-del-buchetto": {
-      "name": "Osteria del Buchetto",
-      "desc_paragraphs": [
-        "To finał trasy przeznaczony na spokojną kolację. W danych pozostawiamy ceny i godziny jako wymagające potwierdzenia, dopóki nie zostaną sprawdzone w aktualnym źródle.",
-        "Przy wyborze końcowego lokalu liczy się nie tylko ocena, ale również możliwość kolacji o planowanej porze i poziom formalności odpowiedni dla rodziny po kilku godzinach zwiedzania."
-      ],
-      "kids_box": null,
-      "hint": null,
-      "local_flavor": "Przed zamówieniem zapytajcie, które danie lub składnik jest najbardziej lokalny.",
-      "practical_note": null,
-      "dress_code": null,
-      "photo_task": null
-    }
+  "villa-mosaici": {
+   "name": "VILLA DEI MOSAICI",
+   "desc_paragraphs": [
+    "💥 BOMBA NA START: zaraz po wyjściu z auta nie wchodzicie po prostu do „starego muzeum”. Stoicie przy miejscu, które pokazuje, jak ogromna jest skala historii. Tradycyjna data założenia Rzymu to 753 r. p.n.e.. Pierwsza faza budowy tej willi przypada dopiero na epokę Augusta, 27 r. p.n.e.–14 r. n.e. — czyli około 726 lat po tradycyjnej dacie założenia Rzymu. A historia samego Hispellum i okolicy jest jeszcze starsza.",
+    "Villa dei Mosaici była zamożną rzymską rezydencją. Oficjalne materiały Comune di Spello podają około 500 m² odsłoniętej powierzchni i 20 pomieszczeń, z których dziesięć zachowało wielobarwne mozaiki. Willa miała dwie wyraźne fazy budowy: augustowską oraz późniejszą, przypadającą na II i początek III wieku n.e. Jej właściciela nie znamy — nie zachowała się inskrypcja z jego imieniem. Skala domu i jakość dekoracji wskazują jednak na osobę bardzo zamożną i wpływową.",
+    "A teraz triclinium. To nie jest po prostu „sala bankietowa”. Nazwa pochodzi od trzech łóżek ustawionych w kształt litery U wokół centralnego stołu. Podczas rzymskiej uczty dorośli mężczyźni zwykle jedli, leżąc na boku i opierając się na lewym łokciu. W tej willi triclinium było najważniejszym pomieszczeniem reprezentacyjnym. Na środku mozaiki widzimy scenę nalewania wina, a wokół niej pojawiają się postacie związane z porami roku, roślinnością oraz zwierzętami — m.in. panterą, jeleniem, dzikiem i kaczką.",
+    "Co ciekawe, właśnie przez tę salę można wyobrazić sobie prawdziwy wieczór sprzed około dwóch tysięcy lat: goście nie siedzieli przy stole jak podczas współczesnej kolacji. Leżeli na specjalnych miejscach do ucztowania, jedli, pili wino i rozmawiali, a gospodarze urządzali bankiet w najbardziej reprezentacyjnym pomieszczeniu domu.",
+    "💰 Ciekawostka ekonomiczna: zachowanie takiego miejsca również kosztuje. Oficjalne materiały dotyczące projektu muzealizacji wskazują na wieloetapowe zaangażowanie Ministerstwa, Regionu Umbrii i Gminy Spello. W opisie projektu pojawia się pierwszy etap inwestycji o wartości około 2 mln euro. To dobry moment, żeby powiedzieć dziecku: „Dzisiaj oglądamy mozaikę za darmo tylko dlatego, że ktoś wcześniej wydał ogromne pieniądze, żeby ją odkopać, zabezpieczyć i pokazać nam”."
+   ],
+   "kids_box": "Misja „Dwa zegary”: znajdź na ekspozycji informację o 753 r. p.n.e. i sprawdź, ile lat później zaczęła powstawać Villa dei Mosaici. Potem odnajdź triclinium — salę bankietową — i zrób jej zdjęcie. Bonus: pokaż rodzicowi, gdzie na mozaice widzisz scenę nalewania wina.",
+   "hint": "Triclinium była rzymską salą przeznaczoną do uczt. Szukaj pomieszczenia z bogatą, wielobarwną mozaiką; szczególnie charakterystyczne są motywy związane z winem, porami roku, roślinnością i zwierzętami.",
+   "local_flavor": "Właściciel willi pozostaje anonimowy, ale sama rezydencja pokazuje skalę prywatnego bogactwa w rzymskim Spello: około 500 m² odsłoniętej części i dziesięć pomieszczeń z zachowanymi polichromowanymi mozaikami.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
   },
-  "day_plan": {
-    "parking-mosaici": "parking-mosaici",
-    "villa-mosaici": "villa-mosaici",
-    "santa-maria-maggiore": "santa-maria-maggiore",
-    "sant-andrea": "sant-andrea",
-    "gelateria-la-paola": "gelateria-la-paola",
-    "piazza-repubblica": "piazza-repubblica",
-    "porta-venere": "porta-venere",
-    "belvedere": "belvedere",
-    "osteria-del-buchetto": "osteria-del-buchetto"
+  "porta-consolare": {
+   "name": "PORTA CONSOLARE",
+   "desc_paragraphs": [
+    "Piazza della Repubblica to jeden z kluczowych punktów orientacyjnych Spello. Przy placu stoi Palazzo Comunale, którego pierwotna część pochodzi z XIII wieku; na fasadzie widnieje data 1270. Budynek był później rozbudowywany i podwyższany.",
+    "W tym punkcie trzeba zwrócić uwagę na dwa elementy fontannowe. Oficjalny opis Palazzo Comunale potwierdza XVI-wieczną fontannę powstałą po rozebraniu dawnej rampowej klatki schodowej; zachowała reliefy i herb papieża Juliusza III z lat 1550–1555. Drugi element fontannowy traktujemy jako osobny detal placu i nie przypisujemy mu daty bez potwierdzenia na miejscu.",
+    "W Palazzo Comunale znajdują się m.in. biblioteka, archiwum notarialne z dokumentami od 1370 r. i archiwum miejskie z dokumentami od 1236 r.. W atrium znajduje się również kolekcja materiałów archeologicznych. To dobry moment, by pokazać dziecku, że jeden budynek może być jednocześnie ratuszem, archiwum i miejscem przechowywania historii miasta."
+   ],
+   "kids_box": "Zagrajcie w archeologów. Znajdź na Porta Consolare trzy elementy pochodzące z różnych momentów historii bramy. Wybierz jeden i zrób zdjęcie. Następnie zdecyduj: co jest rzymskie, co zostało dodane później?",
+   "hint": "Brama była przebudowywana w renesansie, a trzy marmurowe posągi pochodzą z końca I wieku p.n.e. i zostały tu umieszczone później.",
+   "local_flavor": "Trzy marmurowe posągi na bramie pochodzą z końca I wieku p.n.e. i zostały tu wykorzystane ponownie. Warto spojrzeć na nie jak na „drugie życie” rzymskich zabytków.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
   },
-  "emergency": {},
-  "_notes": [
-    {
-      "stop_key": "piazza-repubblica",
-      "field": "a",
-      "note": "Do ponownej weryfikacji na miejscu: drugi element fontannowy oraz jego nazwa/data."
-    },
-    {
-      "stop_key": "santa-maria-maggiore",
-      "field": "f",
-      "note": "Zweryfikować dokładne dane godzin, cen i fotografowania przed publikacją."
-    },
-    {
-      "stop_key": "gelateria-la-paola",
-      "field": "f",
-      "note": "Zweryfikować aktualną ocenę, liczbę opinii, godziny i ceny przed publikacją."
-    },
-    {
-      "stop_key": "osteria-del-buchetto",
-      "field": "f",
-      "note": "Zweryfikować aktualną ocenę, liczbę opinii, godziny, ceny i możliwość kolacji przed publikacją."
-    }
-  ]
+  "sant-andrea": {
+   "name": "CHIESA DI SANT’ANDREA",
+   "desc_paragraphs": [
+    "Pierwsza znana wzmianka o Sant’Andrea pochodzi z 1025 roku, kiedy kościół należał do dóbr mnichów kamedulskich z San Silvestro na Monte Subasio. W 1253 roku biskup Spoleto przekazał kościół wraz z domami, ogrodem i przyległymi gruntami franciszkanom. W kolejnych latach papieże potwierdzali darowiznę i przyznawali odpusty związane z kościołem. To sprawia, że kościół można czytać jako historię zmian właścicieli i funkcji: kameduli, biskupstwo, franciszkanie.\n\nWe wnętrzu warto najpierw spojrzeć na jego układ i warstwy, a dopiero potem na pojedyncze dzieła. Świątynia nie jest „zamrożonym” wnętrzem z jednej epoki: przez stulecia była przekształcana, a wyposażenie i dekoracja narastały wraz ze zmianami funkcji i patronatu. Dla rodziny ciekawsze jest więc pytanie „co tu wygląda na starsze, a co na późniejsze?” niż próba zapamiętania listy nazwisk. Zwróćcie uwagę na różnice między architekturą, ołtarzami, malarstwem i detalem dekoracyjnym. W kontekście całej trasy Sant’Andrea jest przejściem od rzymskiego Spello do średniowiecznego i późniejszego miasta.\n\nWe wnętrzu warto najpierw spojrzeć na układ i warstwy dekoracji, a dopiero potem na pojedyncze dzieła. Architektura, ołtarze, malarstwo i detal dekoracyjny pokazują, że świątynia była zmieniana przez kolejne pokolenia. Najstarszy etap jej udokumentowanej historii sięga 1025 roku, a w 1253 roku kościół przekazano franciszkanom."
+   ],
+   "kids_box": "Kościół pamięta ponad 1000 lat. Znajdź ślad, który wygląda na najstarszy. Nie podawaj roku — wskaż konkretny detal i wyjaśnij, dlaczego uważasz go za starszy od reszty.",
+   "hint": "Odpowiedź: dziecko powinno wskazać konkretny detal, który jego zdaniem jest najstarszy, i podać widoczne uzasadnienie — np. starszy materiał, sposób wykonania, ślady przebudowy albo archaiczniejszą formę. Nie ma jednej poprawnej odpowiedzi bez wskazania konkretnego detalu; poprawna odpowiedź musi zawierać **element + argument**, np. „ten fragment wygląda na starszy, bo…”.",
+   "local_flavor": "Historia przekazania świątyni franciszkanom w 1253 roku i późniejsze papieskie potwierdzenia pokazują, że mały kościół w Spello był częścią większej sieci franciszkańskiej i papieskiej.",
+   "practical_note": null,
+   "dress_code": "kościół — stosowny strój; ramiona i kolana zakryte",
+   "photo_task": null
+  },
+  "santa-maria-maggiore": {
+   "name": "SANTA MARIA MAGGIORE / CAPPELLA BAGLIONI",
+   "desc_paragraphs": [
+    "Cappella Baglioni, nazywana również Cappella Bella, jest jednym z najważniejszych dzieł renesansowych w Spello. Pinturicchio został sprowadzony tutaj w 1500 roku przez Troilo Baglioniego, przeora kolegiaty Santa Maria Maggiore. Prace trwały od końca lata 1500 do wiosny 1501 roku. Na trzech ścianach artysta przedstawił Zwiastowanie, Narodzenie oraz Dysputę Jezusa z uczonymi w Piśmie. Na sklepieniu znajdują się cztery Sybille. Największą siłą kaplicy są drobne szczegóły: ubrania, fryzury, rośliny, dekoracje i sceny codzienności. To renesansowy świat, który można oglądać jak zatrzymany film. Co ważne dla rodzinnej gry, Pinturicchio zostawił tu również własną twarz."
+   ],
+   "kids_box": "Pinturicchio zostawił tu swoją twarz. Odnajdź jego autoportret. Zrób zdjęcie i porównaj jego twarz z innymi osobami przedstawionymi we freskach.",
+   "hint": "Nie szukaj podpisu „Pinturicchio”. Szukaj postaci, która nie należy do głównej historii przedstawionej na fresku, ale jest portretem samego artysty.",
+   "local_flavor": "Pinturicchio umieścił w kaplicy własny wizerunek. Poszukaj go pośród pozostałych postaci — to jeden z tych drobnych szczegółów, które sprawiają, że renesansowy fresk można oglądać jak scenę pełną ukrytych historii.",
+   "practical_note": null,
+   "dress_code": "kościół — stosowny strój",
+   "photo_task": null
+  },
+  "via-giulia": {
+   "name": "VIA GIULIA — ŚLAD RZYMSKI",
+   "desc_paragraphs": [
+    "Ten punkt uczy czytania miasta zamiast zaliczania kolejnej dużej atrakcji. Miejski szlak archeologiczny P.A.U. prowadzi przez nakładające się warstwy Spello: rzymską, średniowieczną, renesansową, papieską i współczesną. W rzymskiej warstwie miasta zachowały się mury, bramy, forum, domy, termy, amfiteatr i inne pozostałości. Niewielki fragment może więc być równie ważny dla zrozumienia miasta jak duża, efektowna budowla."
+   ],
+   "kids_box": "Znajdź detal, który większość turystów może minąć bez zauważenia. Zrób zdjęcie i odpowiedz: co mówi Ci, że pochodzi ze starożytnego miasta?",
+   "hint": "Szukaj cechy, która pozwala rozpoznać rzymskie pochodzenie: sposób ułożenia kamieni, materiał, kształt albo element konstrukcyjny. Nie musisz znać jego nazwy — wystarczy, że potrafisz wskazać, co zauważyłeś.",
+   "local_flavor": "Spello można czytać jak pięć miast nałożonych jedno na drugie. To właśnie daje sens szukaniu małych śladów wśród współczesnej zabudowy.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
+  },
+  "porta-venere": {
+   "name": "PORTA VENERE + TORRI DI PROPERZIO",
+   "desc_paragraphs": [
+    "Porta Venere została zbudowana w epoce Augusta jako monumentalne wejście do miasta. Jest trójłukowa i wykonana z białego trawertynu; pomiędzy łukami zastosowano pilastry porządku doryckiego. Dwie charakterystyczne wieże po bokach bramy należą do zupełnie innej warstwy historii. Mają plan dwunastoboczny i są zwykle datowane na XII wiek. To jeden z najlepszych punktów trasy, żeby pokazać dziecku, że elementy stojące obok siebie nie muszą pochodzić z tego samego okresu. Z miejscem związana jest również lokalna opowieść o Orlando, według której jedna z wież miała być miejscem jego więzienia. Źródło miejskie wyraźnie traktuje tę identyfikację jako legendarną."
+   ],
+   "kids_box": "Znajdź trzy różne epoki w jednym miejscu. Wskaż element rzymski, element średniowieczny i element będący wynikiem późniejszych zmian. Zrób jedno zdjęcie, na którym widać co najmniej dwa z nich.",
+   "hint": "Orlando to nie przypadkowe imię: to włoski bohater opowieści o rycerzach Karola Wielkiego. Jeśli widzisz dwie wysokie wieże przy rzymskiej bramie, pomyśl, która z nich mogła stać się bohaterką lokalnej legendy. Zwróć też uwagę na różnicę między rzymską bramą a średniowiecznymi wieżami.",
+   "local_flavor": "Orlando, czyli Roland, to legendarny rycerz Karola Wielkiego, jeden z najsłynniejszych bohaterów średniowiecznych opowieści rycerskich. Jego historia pojawia się w „Pieśni o Rolandzie”, a później została rozbudowana w wielkim włoskim poemacie Ludovica Ariosta Orlando furioso („Orlando szalony”) z 1516 roku. Dlatego dla włoskiej kultury samo imię Orlando oznacza postać znacznie bardziej znaną niż zwykły bohater lokalnej opowieści.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
+  },
+  "vicoli-belvedere": {
+   "name": "VICOLI / BELVEDERE — FINAŁ SPACERU",
+   "desc_paragraphs": [
+    "Po kilku godzinach zwiedzania nie dokładamy kolejnego obowiązkowego zabytku. Spello najlepiej działa również jako miasto, po którym się idzie i patrzy. Współczesne Spello jest szczególnie mocno związane z kwiatami. Najbardziej spektakularnym przykładem są Infiorate del Corpus Domini. Tradycja jest udokumentowana w archiwum miejskim już w 1831 roku, kiedy mieszkańców poproszono o oczyszczenie ulic i udekorowanie ich kwiatami lub zielenią na trasie procesji. Z czasem zwyczaj przekształcił się w wielką sztukę kwiatowych dywanów. Współcześnie w przygotowanie wydarzenia angażują się tysiące mieszkańców, w tym dzieci i młodzież."
+   ],
+   "kids_box": "Policz, ile różnych rodzajów kwiatów znajdziesz podczas spaceru. Sfotografuj najpiękniejszy. A potem czas na rodzinne selfie!",
+   "hint": "Podpowiedź: nie ograniczajcie się do jednego koloru. Zwróćcie uwagę na kształt płatków, wielkość kwiatów i rośliny w donicach oraz na balkonach.",
+   "local_flavor": "Spello jest słynne z Infiorate del Corpus Domini — tradycji tworzenia wielkich kompozycji z kwiatów. Jej początki są udokumentowane w archiwum miejskim od 1831 roku, a współcześnie w przygotowanie wydarzenia angażują się także dzieci i młodzież.",
+   "practical_note": null,
+   "dress_code": "wygodne buty",
+   "photo_task": null
+  },
+  "gelateria-la-paola": {
+   "name": "GELATERIA LA PAOLA",
+   "desc_paragraphs": [
+    "To pełnoprawny, ale opcjonalny punkt trasy. Gelateria La Paola mieści się w historycznym centrum Spello. Aktualne zestawienia pokazują 4,6/5 przy 239 ocenach Google. Wśród wymienianych smaków pojawia się Sagrantino, a także nietypowe połączenie „Pane Burro & Marmellata”. To dobry przykład miejsca, którego nie trzeba planować jako obowiązkowego przystanku: rodzina może zatrzymać się na lody, jeśli ma ochotę, albo po prostu przejść dalej."
+   ],
+   "kids_box": "🍦 Wybierz smak, którego normalnie nie zamówiłbyś w domu. Jeśli jest dostępny Sagrantino albo inny nietypowy smak, spróbujcie go i całą rodziną oceńcie go w skali 1–5. Jeśli nie macie ochoty na lody, pomińcie ten punkt i przejdźcie dalej.",
+   "hint": "Nie trzeba wybierać lodów właśnie tutaj. Punkt ma pokazać rodzicowi możliwość. Jeżeli dzieci jadły lody wcześniej, punkt można bez żalu pominąć.",
+   "local_flavor": "Sagrantino jest regionalnym tropem smakowym Umbrii. Jeżeli smak jest dostępny tego dnia, warto zapytać dziecko, jak wyobrażało sobie smak lodów nazwanych od lokalnego produktu.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
+  },
+  "belvedere": {
+   "name": "BELVEDERE PANORAMICO — PUNKT WIDOKOWY",
+   "desc_paragraphs": [
+    "Spello leży na zboczu i właśnie dlatego spacer po jego górnej części daje coś, czego nie da pojedynczy zabytek: panoramę Umbrii. Oficjalny opis miasta wskazuje belvedere panoramico osiągany w rejonie Arco Romano; trasa prowadzi także przez najwyżej położoną część miasta, nazywaną Belvedere. To miejsce warto traktować jako oddech po zwiedzaniu — nie trzeba tu niczego „zaliczać”. Wystarczy zatrzymać się, popatrzeć na dolinę i pozwolić dzieciom samodzielnie znaleźć na horyzoncie charakterystyczne punkty.",
+    "🌅 Smaczek: miejsce jest szczególnie atrakcyjne podczas zachodu słońca. Nie ustawiamy jednak całej trasy pod konkretną godzinę — rodzic może pominąć wcześniejszy punkt, zmienić kolejność albo zostać tu dłużej."
+   ],
+   "kids_box": "👁️ Rodzinna lornetka bez lornetki. Każdy wybiera jeden szczegół na panoramie: wzgórze, wieżę, kościół, drogę albo miejscowość. Powiedzcie sobie nawzajem, co wybraliście i dlaczego. Na koniec zróbcie jedno wspólne zdjęcie widoku.",
+   "hint": "Nie ma jednej poprawnej odpowiedzi. Zadanie ma skłonić rodzinę do naprawdę uważnego patrzenia, a nie tylko do zrobienia zdjęcia panoramy.",
+   "local_flavor": "Najciekawszy „smak” tego punktu to właśnie panorama: Spello pokazuje tu swój charakter miasta zbudowanego na zboczu. Jeżeli rodzina trafi tu przy zachodzie słońca, warto zostać kilka minut dłużej.",
+   "practical_note": null,
+   "dress_code": "brak szczególnych wymogów",
+   "photo_task": null
+  },
+  "osteria-del-buchetto": {
+   "name": "KOLACJA — FINAŁ DNIA",
+   "desc_paragraphs": [
+    "Kolacja ma być nagrodą po całym dniu, a nie kolejnym „obowiązkowym” punktem. Dlatego wybieramy miejsce z lokalnym charakterem, wygodną atmosferą i możliwością spokojnego zakończenia dnia. Najlepszy kandydat na finał to Osteria del Buchetto — restauracja przy Via Cappuccini, obok Arco Romano i blisko naturalnego belvedere. Opisy lokalu podkreślają taras z panoramą doliny Umbry, Monte Subasio, Bettony i Asyżu oraz kuchnię opartą na lokalnych produktach.",
+    "⭐ 4,7 / 5 · 454 opinie Google · 💶 30–40 € / osoba · 🕐 kolacja obecnie wykazywana około 20:00–23:00 (źródła różnią się co do poszczególnych dni — sprawdzić przed rezerwacją). Największy plus: panorama doliny i letni taras. Lokal podaje kuchnię włoską/umbryjską, sezonowe produkty i przyjmuje rezerwacje.",
+    "👕 Dress code: nie znaleziono informacji o formalnym wymaganiu; przed publikacją potwierdzić telefonicznie. Po 6 godzinach zwiedzania preferujemy wygodny, schludny strój.",
+    "🗺️ Google Maps · 🌐 strona lokalu",
+    "⭐ 4,5 / 5 · 344 opinie Google · 💶 40–50 € / osoba · 🕐 kolacja 19:00–22:00 według aktualnie dostępnych danych. Restauracja działa w centrum Spello, oferuje kuchnię sezonową i możliwość siedzenia na zewnątrz. To wybór dla rodziny, która chce zakończyć dzień trochę bardziej elegancką kolacją.",
+    "👕 Dress code: nie znaleziono formalnego wymogu w dostępnych materiałach; sprawdzić przy rezerwacji.",
+    "🗺️ Google Maps · 🌐 strona lokalu",
+    "⭐ 4,4 / 5 · 1870 opinii Google · 💶 30–40 € / osoba · 🕐 kolacja zwykle 19:30/20:00–22:30 zależnie od dnia. Lokal znajduje się w centro storico, ma kuchnię tradycyjną i korzysta z produktów własnego gospodarstwa/produkcji. Dostępne są krzesełka dla dzieci i rezerwacje.",
+    "👕 Dress code: brak znalezionej informacji o formalnym wymaganiu; sprawdzić przed publikacją.",
+    "🗺️ Google Maps · 🌐 strona lokalu",
+    "Wybór do trasy: Osteria del Buchetto jest pierwszym wyborem ze względu na widok i atmosferę. Jeżeli godzina zamknięcia lub dzień wizyty nie pasują, wybieramy Il Molino albo La Cantina. Przed publikacją należy jeszcze potwierdzić telefonicznie aktualne godziny i dress code."
+   ],
+   "kids_box": "Brak osobnego questu. To punkt dla rodzica i rodzinny finał dnia. Nie tworzymy sztucznego zadania przy kolacji.",
+   "hint": "Jeżeli rodzina chce widoku, wybierzcie stolik na tarasie Osteria del Buchetto i sprawdźcie przy rezerwacji, czy taras będzie dostępny. Po całym dniu chodzenia wybieramy wygodny, schludny strój — bez restauracji wymagających garnituru.",
+   "local_flavor": "Wybierając kolację, szukamy konkretnego umbryjskiego produktu lub dania z aktualnego menu — np. trufli, oliwy ze Spello, domowego makaronu czy sezonowych produktów. Nazwę dania wpisujemy dopiero po sprawdzeniu aktualnego menu.",
+   "practical_note": null,
+   "dress_code": "bez formalnego dress code’u — potwierdzić przy rezerwacji",
+   "photo_task": null
+  }
+ },
+ "day_plan": {
+  "parking-mosaici": "PARKING VILLA DEI MOSAICI",
+  "villa-mosaici": "VILLA DEI MOSAICI",
+  "porta-consolare": "PORTA CONSOLARE",
+  "sant-andrea": "CHIESA DI SANT’ANDREA",
+  "santa-maria-maggiore": "SANTA MARIA MAGGIORE / CAPPELLA BAGLIONI",
+  "via-giulia": "VIA GIULIA — ŚLAD RZYMSKI",
+  "porta-venere": "PORTA VENERE + TORRI DI PROPERZIO",
+  "vicoli-belvedere": "VICOLI / BELVEDERE — FINAŁ SPACERU",
+  "gelateria-la-paola": "GELATERIA LA PAOLA",
+  "belvedere": "BELVEDERE PANORAMICO — PUNKT WIDOKOWY",
+  "osteria-del-buchetto": "KOLACJA — FINAŁ DNIA"
+ },
+ "emergency": {},
+ "_notes": [
+  {
+   "stop_key": "piazza-repubblica",
+   "field": "a",
+   "note": "Do ponownej weryfikacji na miejscu: drugi element fontannowy oraz jego nazwa/data."
+  },
+  {
+   "stop_key": "santa-maria-maggiore",
+   "field": "f",
+   "note": "Zweryfikować dokładne dane godzin, cen i fotografowania przed publikacją."
+  },
+  {
+   "stop_key": "gelateria-la-paola",
+   "field": "f",
+   "note": "Zweryfikować aktualną ocenę, liczbę opinii, godziny i ceny przed publikacją."
+  },
+  {
+   "stop_key": "osteria-del-buchetto",
+   "field": "f",
+   "note": "Zweryfikować aktualną ocenę, liczbę opinii, godziny, ceny i możliwość kolacji przed publikacją."
+  }
+ ]
 }
