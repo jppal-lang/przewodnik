@@ -282,7 +282,7 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var FALLBACK = 'pl';
 
 // ══════ STATE ══════
-var currentLang = readPref() || new URLSearchParams(location.search).get('lang') || FALLBACK;
+var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
 var langList = [];
 var uiStrings = {};
 

@@ -124,7 +124,7 @@ var FALLBACK = 'pl';
 
 // ── State ──────────────────────────────────────────────
 var citySlug = new URLSearchParams(location.search).get('c');
-var currentLang = readPref() || FALLBACK;
+var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
 var cityData = null;   // raw city row
 var langList = [];     // enabled languages
 var uiStrings = {};    // ui_translations for currentLang
