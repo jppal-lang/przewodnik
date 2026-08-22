@@ -49,20 +49,65 @@ body.kid-mode .city-tabs{display:none}
 </style>
 </head>
 <body data-city="urbino" data-country="it">
+<!-- Sticky nav -->
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <a href="../../" class="logo">
+      <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
+    </a>
+    <div class="nav-right">
+      <div class="nav-desktop" style="display:flex;align-items:center;gap:12px">
+        <a href="../../#regiony" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1.5px solid var(--line);border-radius:999px;font-size:15px;font-weight:700;color:var(--ink)">Wybierz region</a>
+        <button class="nav-lang-btn" onclick="document.getElementById('langPopup').classList.add('open')" aria-label="Zmień język">
+          <img src="https://flagcdn.com/w40/pl.png" alt="" id="activeFlagImg">
+          <span id="activeLangCode">PL</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <a class="bmc-link" href="https://buymeacoffee.com/questini" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 6h14v2H3zm0 4h14v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm14-4h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 2v4M11 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Wesprzyj
+        </a>
+      </div>
+      <button class="nav-mobile" onclick="document.getElementById('mobileDrawer').style.display='flex'" aria-label="Menu" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile drawer -->
+<div id="mobileDrawer" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(56,48,38,.4)" onclick="this.style.display='none'">
+  <div style="position:absolute;top:0;left:0;right:0;background:var(--parchment);border-radius:0 0 20px 20px;box-shadow:0 8px 32px rgba(60,42,20,.18);padding:0 20px 28px" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px">
+      <div class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
+      <button onclick="document.getElementById('mobileDrawer').style.display='none'" aria-label="Zamknij" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+      </button>
+    </div>
+    <a href="../../#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px">Wybierz region</a>
+    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px">Język</div>
+    <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
+      <img src="https://flagcdn.com/w40/pl.png" alt="" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> Zmień język
+    </button>
+    <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="height:52px;display:flex;align-items:center;justify-content:center;gap:10px;background:#FFDD00;color:var(--ink);border-radius:14px;font-size:18px;font-weight:700">☕ Wesprzyj projekt</a>
+  </div>
+</div>
+
+<!-- Language popup -->
+<div class="lang-overlay" id="langPopup" onclick="this.classList.remove('open')">
+  <div class="lang-popup" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.015em">Wybierz język</div>
+      <button onclick="document.getElementById('langPopup').classList.remove('open')" aria-label="Zamknij" style="width:44px;height:44px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="lang-grid" id="langGrid"></div>
+  </div>
+</div>
+
 <div class="wrap">
 
-<header>
-  <div style="display:flex;align-items:center;gap:14px">
-    <a href="index.html" class="btn-back" aria-label="Wróć">←</a>
-    <div class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
-  </div>
-  <div class="lang-sw" role="radiogroup" aria-label="Język">
-    <button class="active" aria-pressed="true"><span class="flag flag-pl"></span>PL</button>
-    <button aria-pressed="false"><span class="flag flag-en"></span>EN</button>
-    <button aria-pressed="false"><span class="flag flag-it"></span>IT</button>
-    <button aria-pressed="false"><span class="flag flag-de"></span>DE</button>
-  </div>
-</header>
+
 
 <nav class="breadcrumb">
   <a href="../../index.html">Quolino</a><span>/</span>
@@ -327,43 +372,7 @@ function toggleStop(id){
   });
 })();
 
-/* ===== Hide phrasebook when language matches country ===== */
-(function(){
-  var country = document.body.getAttribute('data-country') || '';
-  function checkPhrasebook(lang){
-    var tabRozmowki = document.getElementById('tabRozmowki');
-    var panelRozmowki = document.getElementById('rozmowki');
-    if(!tabRozmowki) return;
-    // If user's chosen language matches the country language, hide phrasebook
-    if(lang === country){
-      tabRozmowki.style.display = 'none';
-      // If phrasebook was the active tab, switch to first tab
-      if(tabRozmowki.classList.contains('active')){
-        tabRozmowki.classList.remove('active');
-        if(panelRozmowki) panelRozmowki.classList.remove('active');
-        var first = document.querySelector('.city-tab[data-tab]');
-        if(first){
-          first.classList.add('active');
-          var fp = document.getElementById(first.getAttribute('data-tab'));
-          if(fp) fp.classList.add('active');
-        }
-      }
-    } else {
-      tabRozmowki.style.display = '';
-    }
-  }
-  // Check on load
-  var saved = 'pl';
-  try { saved = localStorage.getItem('quolino_lang') || 'pl'; } catch(e){}
-  checkPhrasebook(saved);
-  // Listen for language changes (i18n.js fires click on lang-sw buttons)
-  document.querySelectorAll('.lang-sw button').forEach(function(b){
-    b.addEventListener('click', function(){
-      var lang = b.textContent.trim().toLowerCase();
-      setTimeout(function(){ checkPhrasebook(lang); }, 50);
-    });
-  });
-})();
+
 </script>
 <script src="../../migrate-storage.js"></script>
 <script src="../../stop-toc.js"></script>
