@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/quolino-logo.svg"}}}
 </script>
@@ -76,15 +76,40 @@
 .about-box.parchment{background:var(--parchment);border:1px solid var(--line)}
 .about-box h2{margin:0 0 12px;font-size:22px;font-weight:800;letter-spacing:-.015em}
 .about-box ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.5}
-.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:20px}
-.region-tile{background:var(--parchment);border-radius:20px;padding:20px;box-shadow:var(--sh2);border:2px solid transparent;display:flex;align-items:center;gap:16px;transition:border-color .15s,box-shadow .15s,transform .15s;color:var(--ink)}
-.region-tile:hover{border-color:var(--terra);box-shadow:var(--sh-hover);transform:translateY(-3px)}
-.region-tile.soon{opacity:.65;pointer-events:none}
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px 22px;margin-top:24px}
+.region-tile{display:block;color:var(--ink);border-radius:18px}
+.region-tile:focus-visible{outline:3px solid var(--terra);outline-offset:4px}
+.rt-img-wrap{position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
+.rt-img-wrap::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(56,48,38,.07);pointer-events:none}
+.rt-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.02);transition:opacity .45s ease,transform .5s ease}
+.rt-img.loaded{opacity:1;transform:scale(1)}
+.region-tile:hover .rt-img.loaded{transform:scale(1.06)}
+.rt-img-wrap.loading::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(0,0,0,0) 20%,rgba(255,255,255,.55) 50%,rgba(0,0,0,0) 80%);background-size:220% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}
+.rt-fallback{position:absolute;inset:0;display:grid;place-items:center;font-size:52px;font-weight:800;color:rgba(255,255,255,.92);text-shadow:0 2px 12px rgba(0,0,0,.18)}
+.rt-flag{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:7px;background:rgba(255,252,245,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink);font-size:13px;font-weight:700;padding:7px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(60,42,20,.14)}
+.rt-flag img{width:18px;height:13px;border-radius:2px;object-fit:cover}
+.rt-body{padding:14px 2px 0}
+.rt-name{font-size:20px;font-weight:700;letter-spacing:-.015em;line-height:1.25}
+.rt-meta{font-size:15px;color:var(--label);margin-top:4px}
+.rt-go{margin-top:10px;display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--terra)}
+.rt-go .arrow{transition:transform .2s ease}
+.region-tile:hover .rt-go .arrow{transform:translateX(4px)}
+.region-tile.soon{pointer-events:none}
+.region-tile.soon .rt-img-wrap{background:var(--chip-bg,#F2EADC)}
+.region-tile.soon .rt-name{color:var(--ink2)}
+@media(prefers-reduced-motion:reduce){
+  .rt-img,.region-tile:hover .rt-img.loaded,.rt-go .arrow{transition:none;transform:none}
+  .rt-img-wrap.loading::before{animation:none}
+}
 .cta-box{background:var(--parchment);border-radius:20px;padding:32px;margin-top:48px;box-shadow:var(--sh2);text-align:center}
 .cta-box h2{font-size:28px;font-weight:800;letter-spacing:-.015em}
 .cta-box p{font-size:18px;color:var(--ink2);margin:12px 0 20px;line-height:1.5}
 .cta-btn{display:inline-flex;align-items:center;gap:10px;background:var(--terra);color:var(--parchment);font-size:18px;font-weight:700;padding:16px 32px;border-radius:999px;transition:background .15s}
 .cta-btn:hover{background:var(--terra-h)}
+.cta-arrow{transition:transform .2s ease}
+.cta-btn:hover .cta-arrow{transform:translateX(4px)}
+@media(prefers-reduced-motion:reduce){.cta-arrow{transition:none}.cta-btn:hover .cta-arrow{transform:none}}
 .footer{margin-top:56px;padding:24px 0;border-top:1px solid var(--line);text-align:center;font-size:18px;color:var(--label)}
 @media(min-width:680px){.usp-grid{grid-template-columns:repeat(3,1fr)}.how-grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:900px){.about-grid{grid-template-columns:1.2fr 1fr}}
@@ -158,7 +183,7 @@
     <h1 data-ui="home.h1">Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
     <p class="subtitle" data-ui="home.subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px">
-      <a class="cta-btn" href="#regiony" data-ui="home.cta_open">Otwórz przewodnik →</a>
+      <a class="cta-btn" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><span class="cta-arrow" aria-hidden="true">→</span></a>
       <a href="#jak" style="min-height:56px;display:inline-flex;align-items:center;gap:8px;background:var(--parchment);color:var(--terra);border:2px solid var(--terra);border-radius:999px;padding:16px 28px;font-size:18px;font-weight:700">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg><span data-ui="home.cta_how">Jak to działa</span>
       </a>
@@ -262,7 +287,7 @@
 <div class="cta-box">
   <h2 data-ui="home.all_free_h2">Wszystkie przewodniki za darmo</h2>
   <p data-ui="home.all_free_text">Otwórz region na telefonie, wybierz miasto na dziś i ruszaj. Nic nie trzeba pobierać ani zakładać.</p>
-  <a class="cta-btn" href="#regiony" data-ui="home.cta_open">Otwórz przewodnik →</a>
+  <a class="cta-btn" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><span class="cta-arrow" aria-hidden="true">→</span></a>
   <p style="margin-top:16px;font-size:18px;color:var(--ink2)" data-ui="home.coffee_text">Podoba Ci się Quolino? Postaw nam kawę ☕</p>
 </div>
 
@@ -314,7 +339,7 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,region_slug,sort_order&order=sort_order'),
+    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,hero_image,wiki_article,wiki_lang,sort_order&order=sort_order'),
   ]).then(function(results) {
     langList        = results[0];
     var uiRows      = results[1];
@@ -352,64 +377,147 @@ function loadPage(lang) {
   });
 }
 
+// ══════ COVER PHOTOS (Wikipedia, cached in localStorage) ══════
+var IMG_TTL = 7 * 24 * 3600 * 1000;
+var IMG_WIDTH = 800;
+function bumpWidth(url) { return url.replace(/\/(\d+)px-/, '/' + IMG_WIDTH + 'px-'); }
+function cachedImg(slug) {
+  try {
+    var raw = localStorage.getItem('quolino_img_' + slug);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
+    return o.url;
+  } catch(e) { return null; }
+}
+function cacheImg(slug, url) {
+  try { localStorage.setItem('quolino_img_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
+}
+function wikiThumb(city) {
+  var lang = city.wiki_lang || 'it';
+  var title = encodeURIComponent(String(city.wiki_article).replace(/ /g, '_'));
+  return fetch('https://' + lang + '.wikipedia.org/api/rest_v1/page/summary/' + title)
+    .then(function(r) { if (!r.ok) throw new Error('wiki ' + r.status); return r.json(); })
+    .then(function(j) {
+      var src = (j.thumbnail && j.thumbnail.source) || (j.originalimage && j.originalimage.source);
+      return src ? bumpWidth(src) : '';
+    });
+}
+function tileFallback(wrap, color, letter) {
+  wrap.classList.remove('loading');
+  if (wrap.querySelector('.rt-fallback')) return;
+  wrap.style.background = 'linear-gradient(135deg,' + (color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)';
+  var d = document.createElement('div');
+  d.className = 'rt-fallback';
+  d.textContent = (letter || '?').charAt(0).toUpperCase();
+  wrap.appendChild(d);
+}
+function tilePaint(wrap, url, color, letter) {
+  if (!url) { tileFallback(wrap, color, letter); return; }
+  var img = document.createElement('img');
+  img.className = 'rt-img'; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+  img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
+  img.onerror = function() { img.remove(); tileFallback(wrap, color, letter); };
+  img.src = url;
+  wrap.appendChild(img);
+}
+function loadCover(wrap, city, letter) {
+  if (!city) { tileFallback(wrap, null, letter); return; }
+  var color = city.bandana_color;
+  if (city.hero_image) { tilePaint(wrap, city.hero_image, color, letter); return; }
+  var c = cachedImg(city.slug);
+  if (c !== null) { tilePaint(wrap, c, color, letter); return; }
+  if (!city.wiki_article) { tileFallback(wrap, color, letter); return; }
+  wikiThumb(city)
+    .then(function(url) { cacheImg(city.slug, url); tilePaint(wrap, url, color, letter); })
+    .catch(function() { tileFallback(wrap, color, letter); });
+}
+
 // ══════ REGION GRID ══════
 function buildRegionGrid(regions, regionTrs, countries, countryTrs, cities) {
   var grid = document.getElementById('regionGrid');
   if (!grid) return;
   grid.innerHTML = '';
 
-  // Published regions (those with cities)
-  var publishedSlugs = {};
-  cities.forEach(function(c) { publishedSlugs[c.region_slug] = (publishedSlugs[c.region_slug] || 0) + 1; });
+  // Cities grouped per region (already ordered by sort_order)
+  var byRegion = {};
+  cities.forEach(function(c) {
+    if (!byRegion[c.region_slug]) byRegion[c.region_slug] = [];
+    byRegion[c.region_slug].push(c);
+  });
 
-  // Render published regions first
+  // ── Published regions ──
   regions.forEach(function(reg) {
-    var cityCount = publishedSlugs[reg.slug];
-    if (!cityCount) return;
+    var regCities = byRegion[reg.slug];
+    if (!regCities || !regCities.length) return;
 
-    var rTr = regionTrs.find(function(t) { return t.region_slug === reg.slug; });
+    var rTr = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
     var regionName = rTr ? rTr.name : reg.slug;
 
-    var country = countries.find(function(c) { return c.slug === reg.country_slug; });
-    var cTr = countryTrs.find(function(t) { return t.country_slug === reg.country_slug; });
+    var country = countries.filter(function(c) { return c.slug === reg.country_slug; })[0];
+    var cTr = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
     var countryName = cTr ? cTr.name : (reg.country_slug || '');
     var flagCode = country ? country.flag_code : reg.country_slug;
 
     var tile = document.createElement('a');
     tile.className = 'region-tile';
-    tile.href = 'region.html?r=' + reg.slug;
-    tile.style.borderColor = 'var(--terra)';
-    tile.innerHTML =
-      '<div style="flex:1">' +
-        '<div class="caps" style="font-size:14px">' + esc(countryName) +
-          (flagCode ? ' <img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="" style="width:18px;height:13px;border-radius:2px;vertical-align:middle;margin-left:4px">' : '') +
-        '</div>' +
-        '<div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">' + esc(regionName) + '</div>' +
-        '<div style="font-size:18px;color:var(--ink2);margin-top:4px">' + cityCount + ' ' + ui('home.region_ready', 'gotowe plany') + '</div>' +
-      '</div>' +
-      '<div class="region-arrow">→</div>';
+    tile.href = 'region.html?r=' + encodeURIComponent(reg.slug);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'rt-img-wrap loading';
+    if (countryName) {
+      var badge = document.createElement('div');
+      badge.className = 'rt-flag';
+      badge.innerHTML = (flagCode ? '<img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="">' : '') + esc(countryName);
+      wrap.appendChild(badge);
+    }
+    tile.appendChild(wrap);
+
+    var body = document.createElement('div');
+    body.className = 'rt-body';
+    body.innerHTML =
+      '<div class="rt-name">' + esc(regionName) + '</div>' +
+      '<div class="rt-meta">' + regCities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div>' +
+      '<div class="rt-go"><span>' + esc(ui('home.cta_open', 'Zaczynamy!')) + '</span><span class="arrow" aria-hidden="true">&rarr;</span></div>';
+    tile.appendChild(body);
+
     grid.appendChild(tile);
+    loadCover(wrap, regCities[0], regionName);
   });
 
-  // "Coming soon" regions from ui_translations
+  // ── "Coming soon" regions ──
   var soonRegions = [
-    { key: 'region.toskania', country: 'label.country_italy' },
-    { key: 'region.krakow',   country: 'label.country_poland' },
-    { key: 'region.warszawa', country: 'label.country_poland' },
-    { key: 'region.gdansk',   country: 'label.country_poland' },
+    { key: 'region.toskania', country: 'label.country_italy',  flag: 'it' },
+    { key: 'region.krakow',   country: 'label.country_poland', flag: 'pl' },
+    { key: 'region.warszawa', country: 'label.country_poland', flag: 'pl' },
+    { key: 'region.gdansk',   country: 'label.country_poland', flag: 'pl' }
   ];
 
   soonRegions.forEach(function(sr) {
     var name = ui(sr.key, sr.key.split('.')[1]);
     var countryName = ui(sr.country, '');
+
     var tile = document.createElement('div');
     tile.className = 'region-tile soon';
-    tile.innerHTML =
-      '<div style="flex:1">' +
-        '<div class="caps" style="font-size:14px">' + esc(countryName) + '</div>' +
-        '<div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">' + esc(name) + '</div>' +
-      '</div>' +
-      '<span class="chip-soon">' + ui('chip.soon', 'Wkrótce') + '</span>';
+
+    var wrap = document.createElement('div');
+    wrap.className = 'rt-img-wrap';
+    if (countryName) {
+      var badge = document.createElement('div');
+      badge.className = 'rt-flag';
+      badge.innerHTML = '<img src="https://flagcdn.com/w40/' + sr.flag + '.png" alt="">' + esc(countryName);
+      wrap.appendChild(badge);
+    }
+    tileFallback(wrap, '#8A8377', name);
+    tile.appendChild(wrap);
+
+    var body = document.createElement('div');
+    body.className = 'rt-body';
+    body.innerHTML =
+      '<div class="rt-name">' + esc(name) + '</div>' +
+      '<div class="rt-meta"><span class="chip-soon">' + esc(ui('chip.soon', 'Wkrótce')) + '</span></div>';
+    tile.appendChild(body);
+
     grid.appendChild(tile);
   });
 }

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=5">
 <style>
 /* ===== Stop category icons ===== */
 .stop-cat{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;flex-shrink:0;margin-right:4px;vertical-align:middle}
@@ -198,6 +198,7 @@ function loadPage(lang) {
     sb('country_translations', 'lang=eq.' + lang),
     sb('phrases', 'lang=eq.' + lang + '&order=sort_order'),
     sb('phone_numbers', 'order=sort_order'),
+    sb('countries', 'select=*'),
   ]).then(function(results) {
     var city       = results[0][0];
     var cityTr     = results[1][0] || {};
@@ -211,6 +212,7 @@ function loadPage(lang) {
     var countryTrs = results[9];
     var allPhrases = results[10];
     var phones     = results[11];
+    var countries  = results[12];
 
     if (!city) { showError('Nie znaleziono wycieczki: ' + esc(citySlug)); return; }
     cityData = city;
@@ -228,6 +230,9 @@ function loadPage(lang) {
     var countryName = '';
     var countryTr = countryTrs.find(function(r) { return r.country_slug === city.country; });
     if (countryTr) countryName = countryTr.name;
+
+    var countryRow = countries.find(function(c) { return c.slug === city.country; }) || {};
+    var continent  = countryRow.continent || 'europe';
 
     // Process stops: pick translation for current lang, fallback to pl
     var processedStops = stops.map(function(s) {
@@ -263,6 +268,7 @@ function loadPage(lang) {
       phones: cityPhones,
       regionName: regionName,
       countryName: countryName,
+      continent: continent,
     });
 
     // Build language popup
@@ -281,12 +287,26 @@ function render(d) {
   var num = function(n) { return String(n).padStart(2, '0'); };
   var html = '';
 
-  // Breadcrumb
-  html += '<nav class="breadcrumb">';
-  html += '<a href="./index.html">Quolino</a><span>/</span>';
-  if (d.countryName) html += '<a href="./index.html#regiony">' + esc(d.countryName) + '</a><span>/</span>';
-  if (d.regionName) html += '<a href="region.html?r=' + esc(city.region_slug) + '">' + esc(d.regionName) + '</a><span>/</span>';
-  html += '<span class="current">' + esc(tr.title || city.slug) + '</span>';
+  // Breadcrumb: 🏠 › Europa › Włochy › Marche › Urbino
+  var homeLabel = ui('nav.home', 'Strona główna');
+  html += '<nav class="crumbs" aria-label="Breadcrumb">';
+  html += '<a class="crumb-home" href="./" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg></a>';
+
+  var levels = [
+    { label: ui('continent.' + (d.continent || 'europe'), 'Europa'), href: './#regiony' },
+    { label: d.countryName, href: './#regiony' },
+    { label: d.regionName,  href: city.region_slug ? 'region.html?r=' + encodeURIComponent(city.region_slug) : null },
+    { label: tr.title || city.slug, href: null }
+  ];
+  levels.forEach(function(l) {
+    if (!l.label) return;
+    html += '<span class="crumb-sep" aria-hidden="true">&rsaquo;</span>';
+    html += l.href
+      ? '<a href="' + l.href + '">' + esc(l.label) + '</a>'
+      : '<span class="crumb-current" aria-current="page">' + esc(l.label) + '</span>';
+  });
   html += '</nav>';
 
   // Hero image

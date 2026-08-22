@@ -7,50 +7,97 @@
 <meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://upload.wikimedia.org">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <style>
-/* Sticky nav */
+/* ── Sticky nav ─────────────────────────────────────── */
 .sticky-nav{position:sticky;top:0;z-index:100;background:rgba(255,252,245,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(231,219,198,.6);box-shadow:var(--sh1);padding:0 20px}
 .sticky-nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px}
 .nav-right{display:flex;align-items:center;gap:12px}
-.nav-lang-btn{height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:transparent;font-size:15px;font-weight:700;color:var(--ink)}
+.nav-lang-btn{height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:transparent;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer}
 .nav-lang-btn:hover{border-color:var(--terra)}
 .nav-lang-btn img{width:20px;height:14px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover}
 .bmc-link{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;background:#FFDD00;color:var(--ink);border-radius:999px;font-size:15px;font-weight:700;box-shadow:var(--sh1)}
 .bmc-link:hover{background:#F5D000}
-/* Lang popup */
+
+/* ── Lang popup ─────────────────────────────────────── */
 .lang-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(56,48,38,.4);place-items:center;padding:20px}
 .lang-overlay.open{display:grid}
 .lang-popup{background:var(--parchment);border-radius:24px;padding:28px;box-shadow:0 8px 48px rgba(60,42,20,.2);max-width:560px;width:100%;max-height:80vh;overflow-y:auto}
 .lang-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.lang-grid button{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;border:2px solid transparent;border-radius:14px;background:transparent;font-size:16px;font-weight:500;color:var(--ink)}
+.lang-grid button{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;border:2px solid transparent;border-radius:14px;background:transparent;font-size:16px;font-weight:500;color:var(--ink);cursor:pointer}
 .lang-grid button:hover{border-color:var(--terra);background:rgba(180,80,46,.04)}
 .lang-grid button.active{border-color:var(--terra);background:rgba(180,80,46,.06);font-weight:700;color:var(--terra)}
 .lang-grid button img{width:24px;height:17px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover}
-/* Region page */
-.region-hero{padding:32px 0 0}
-.region-hero .caps{font-size:15px}
-.region-name{font-size:36px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:4px 0 8px}
-.region-desc{font-size:18px;color:var(--ink2);line-height:1.6;max-width:720px}
-.city-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:24px}
-.city-card{background:var(--parchment);border-radius:20px;padding:24px;box-shadow:var(--sh2);border:2px solid transparent;display:block;color:var(--ink);transition:border-color .15s,box-shadow .15s,transform .15s}
-.city-card:hover{border-color:var(--terra);box-shadow:var(--sh-hover);transform:translateY(-3px)}
-.city-card-top{display:flex;align-items:center;gap:14px}
-.city-bandana{width:8px;height:48px;border-radius:4px;flex-shrink:0}
-.city-card-title{font-size:24px;font-weight:800;letter-spacing:-.015em}
-.city-card-meta{font-size:14px;color:var(--label);margin-top:2px}
-.city-card-subtitle{font-size:18px;color:var(--ink2);line-height:1.55;margin-top:12px}
-.city-card-arrow{display:flex;align-items:center;justify-content:flex-end;margin-top:16px;font-size:16px;font-weight:700;color:var(--terra);gap:6px}
-.back-link{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--terra);margin-bottom:8px}
-.back-link:hover{text-decoration:underline}
-.other-regions{margin-top:48px;padding-top:32px;border-top:1px solid var(--line)}
-.other-region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:16px}
-.other-region-tile{background:var(--parchment);border-radius:16px;padding:18px;box-shadow:var(--sh1);border:2px solid transparent;display:flex;align-items:center;gap:14px;color:var(--ink);transition:border-color .15s}
-.other-region-tile:hover{border-color:var(--terra)}
-@media(min-width:680px){.city-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Breadcrumbs ────────────────────────────────────── */
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:2px;padding:20px 0 4px;font-size:15px;line-height:1.4}
+.crumbs a,.crumbs span.crumb-current{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:9px;color:var(--ink2);white-space:nowrap;transition:background .15s,color .15s}
+.crumbs a:hover{background:rgba(180,80,46,.08);color:var(--terra)}
+.crumbs a.crumb-home{padding:5px 8px}
+.crumbs a.crumb-home svg{display:block}
+.crumbs span.crumb-current{color:var(--ink);font-weight:700;cursor:default}
+.crumb-sep{color:var(--line);flex-shrink:0;user-select:none;font-size:16px}
+@media(max-width:520px){
+  .crumbs{font-size:14px;gap:0}
+  .crumbs a,.crumbs span.crumb-current{padding:4px 6px}
+}
+
+/* ── Region hero ────────────────────────────────────── */
+.region-hero{padding:8px 0 0}
+.region-name{font-size:40px;font-weight:800;letter-spacing:-.025em;line-height:1.1;margin:6px 0 10px}
+.region-desc{font-size:18px;color:var(--ink2);line-height:1.6;max-width:680px}
+.region-meta{display:flex;align-items:center;gap:8px;font-size:16px;color:var(--label);margin-top:12px}
+.region-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--line)}
+
+/* ── Airbnb-style city tiles ────────────────────────── */
+.city-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px 22px;margin-top:32px}
+.city-card{display:block;color:var(--ink);border-radius:18px}
+.city-card:focus-visible{outline:3px solid var(--terra);outline-offset:4px}
+
+.city-img-wrap{position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
+.city-img-wrap::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(56,48,38,.07);pointer-events:none}
+.city-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.02);transition:opacity .45s ease,transform .5s ease}
+.city-img.loaded{opacity:1;transform:scale(1)}
+.city-card:hover .city-img.loaded{transform:scale(1.06)}
+
+/* skeleton shimmer while the photo loads */
+.city-img-wrap.loading::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(0,0,0,0) 20%,rgba(255,255,255,.55) 50%,rgba(0,0,0,0) 80%);background-size:220% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}
+
+/* fallback when no photo is available */
+.city-fallback{position:absolute;inset:0;display:grid;place-items:center;font-size:52px;font-weight:800;color:rgba(255,255,255,.92);letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.18)}
+
+.city-badge{position:absolute;top:12px;left:12px;background:rgba(255,252,245,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink);font-size:13px;font-weight:700;padding:7px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(60,42,20,.14)}
+
+.city-body{padding:14px 2px 0}
+.city-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.city-name{font-size:19px;font-weight:700;letter-spacing:-.012em;line-height:1.25}
+.city-dur{display:inline-flex;align-items:center;gap:5px;font-size:15px;font-weight:600;color:var(--ink2);white-space:nowrap;flex-shrink:0;padding-top:1px}
+.city-sub{font-size:15px;color:var(--ink2);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.city-foot{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:15px;color:var(--label)}
+.city-accent{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.city-go{margin-top:11px;display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--terra)}
+.city-go .arrow{transition:transform .2s ease}
+.city-card:hover .city-go .arrow{transform:translateX(4px)}
+
+/* ── Other regions ──────────────────────────────────── */
+.other-regions{margin-top:64px;padding-top:32px;border-top:1px solid var(--line)}
+.other-region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
+.other-region-tile{background:var(--parchment);border-radius:16px;padding:18px;box-shadow:var(--sh1);border:2px solid transparent;display:flex;align-items:center;gap:12px;color:var(--ink);transition:border-color .15s,transform .15s}
+.other-region-tile:hover{border-color:var(--terra);transform:translateY(-2px)}
+
+.state-msg{text-align:center;padding:80px 20px;font-size:19px;color:var(--ink2);line-height:1.6}
+.state-msg a{color:var(--terra);font-weight:700;text-decoration:underline}
+
 @media(max-width:799px){.nav-desktop{display:none!important}}
 @media(min-width:800px){.nav-mobile{display:none!important}}
+@media(max-width:560px){.region-name{font-size:32px}.city-grid{gap:28px 16px}}
+@media(prefers-reduced-motion:reduce){
+  .city-img,.city-card:hover .city-img.loaded,.city-go .arrow{transition:none;transform:none}
+  .city-img-wrap.loading::before{animation:none}
+}
 </style>
 </head>
 <body>
@@ -63,8 +110,7 @@
     </a>
     <div class="nav-right">
       <div class="nav-desktop" style="display:flex;align-items:center;gap:12px">
-        <a href="./" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1.5px solid var(--line);border-radius:999px;font-size:15px;font-weight:700;color:var(--ink)" data-ui="nav.back">Powrót</a>
-        <button class="nav-lang-btn" onclick="document.getElementById('langPopup').classList.add('open')" aria-label="Zmien jezyk">
+        <button class="nav-lang-btn" onclick="document.getElementById('langPopup').classList.add('open')" aria-label="Language">
           <img src="https://flagcdn.com/w40/pl.png" alt="" id="activeFlagImg">
           <span id="activeLangCode">PL</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -85,14 +131,14 @@
   <div style="position:absolute;top:0;left:0;right:0;background:var(--parchment);border-radius:0 0 20px 20px;box-shadow:0 8px 32px rgba(60,42,20,.18);padding:0 20px 28px" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px">
       <div class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
-      <button onclick="document.getElementById('mobileDrawer').style.display='none'" aria-label="Zamknij" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
+      <button onclick="document.getElementById('mobileDrawer').style.display='none'" aria-label="Close" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
-    <a href="./" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.back">Powrót</a>
-    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Jezyk</div>
+    <a href="./" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
+    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
-      <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmien jezyk</span>
+      <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
     </button>
     <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="height:52px;display:flex;align-items:center;justify-content:center;gap:10px;background:#FFDD00;color:var(--ink);border-radius:14px;font-size:18px;font-weight:700">&#9749; <span data-ui="nav.support_project">Wesprzyj projekt</span></a>
   </div>
@@ -102,8 +148,8 @@
 <div class="lang-overlay" id="langPopup" onclick="this.classList.remove('open')">
   <div class="lang-popup" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.015em" data-ui="nav.select_lang">Wybierz jezyk</div>
-      <button onclick="document.getElementById('langPopup').classList.remove('open')" aria-label="Zamknij" style="width:44px;height:44px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.015em" data-ui="nav.select_lang">Wybierz język</div>
+      <button onclick="document.getElementById('langPopup').classList.remove('open')" aria-label="Close" style="width:44px;height:44px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
@@ -113,64 +159,129 @@
 
 <div class="wrap-wide">
 
-<!-- Region content — filled by JS -->
-<div id="regionContent">
-  <div style="text-align:center;padding:80px 0;color:var(--label);font-size:18px">&#8230;</div>
-</div>
+  <!-- Breadcrumbs -->
+  <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
 
-<div class="footer">
-  <div class="logo" style="justify-content:center;margin-bottom:8px">
-    <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
+  <!-- Region content -->
+  <div id="regionContent">
+    <div class="state-msg">&#8230;</div>
   </div>
-  <span data-ui="home.footer">&copy; 2026 &middot; Rodzinne przewodniki wypadowe</span>
-</div>
+
+  <div class="footer">
+    <div class="logo" style="justify-content:center;margin-bottom:8px">
+      <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
+    </div>
+    <span data-ui="home.footer">&copy; 2026 &middot; Rodzinne przewodniki wypadowe</span>
+  </div>
 
 </div>
 
 <script>
-// ══════ CONFIG ══════
+// ══════════════ CONFIG ══════════════
 var SB_URL = 'https://ntwpjcupffdozstbijhh.supabase.co/rest/v1';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
 var FALLBACK = 'pl';
+var IMG_TTL = 7 * 24 * 3600 * 1000;   // photo URL cache: 7 days
+var IMG_WIDTH = 800;
 
-// ══════ STATE ══════
-var regionSlug = new URLSearchParams(location.search).get('r');
+// ══════════════ STATE ══════════════
+var regionSlug  = new URLSearchParams(location.search).get('r');
 var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
 var langList = [];
 var uiStrings = {};
 
-// ══════ HELPERS ══════
+// ══════════════ HELPERS ══════════════
 function sb(table, params) {
-  var url = SB_URL + '/' + table;
-  if (params) url += '?' + params;
-  return fetch(url, {
-    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-  }).then(function(r) {
-    if (!r.ok) throw new Error(r.status + ' ' + table);
-    return r.json();
-  });
+  var url = SB_URL + '/' + table + (params ? '?' + params : '');
+  return fetch(url, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } })
+    .then(function(r) { if (!r.ok) throw new Error(r.status + ' ' + table); return r.json(); });
 }
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
-function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-function ui(key, fallback) { return uiStrings[key] || fallback || key; }
+function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function ui(key, fb) { return uiStrings[key] || fb || key; }
 
-// ══════ DURATION LABEL ══════
-function durationLabel(hours) {
-  var tpl = ui('label.duration_h', '~{n}h');
-  return tpl.replace('{n}', hours);
+// "~{n}h" → "~4h"
+function durationLabel(h) { return ui('label.duration_h', '~{n}h').replace('{n}', h); }
+
+// Slavic plural handling for the stop counter
+function stopsLabel(n) {
+  var slavic = { pl:1, cs:1, sk:1, uk:1, hr:1 };
+  var key = 'label.stops_count';
+  if (slavic[currentLang]) {
+    var m = n % 10, h = n % 100;
+    if (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) key = 'label.stops_count_few';
+  }
+  return ui(key, '{n} stops').replace('{n}', n);
 }
 
-// ══════ LOAD PAGE ══════
+// ══════════════ CITY PHOTOS (Wikipedia) ══════════════
+// hero_image in the DB wins; otherwise we look the photo up once from
+// Wikipedia via the city's wiki_article and cache the URL in localStorage.
+function bumpWidth(url) {
+  return url.replace(/\/(\d+)px-/, '/' + IMG_WIDTH + 'px-');
+}
+function cachedImg(slug) {
+  try {
+    var raw = localStorage.getItem('quolino_img_' + slug);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
+    return o.url;               // may be '' meaning "known: no photo"
+  } catch(e) { return null; }
+}
+function cacheImg(slug, url) {
+  try { localStorage.setItem('quolino_img_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
+}
+function wikiThumb(city) {
+  var lang = city.wiki_lang || 'it';
+  var title = encodeURIComponent(String(city.wiki_article).replace(/ /g, '_'));
+  return fetch('https://' + lang + '.wikipedia.org/api/rest_v1/page/summary/' + title)
+    .then(function(r) { if (!r.ok) throw new Error('wiki ' + r.status); return r.json(); })
+    .then(function(j) {
+      var src = (j.thumbnail && j.thumbnail.source) || (j.originalimage && j.originalimage.source);
+      return src ? bumpWidth(src) : '';
+    });
+}
+function paintImage(wrap, url, city) {
+  if (!url) { showFallback(wrap, city); return; }
+  var img = document.createElement('img');
+  img.className = 'city-img';
+  img.alt = '';
+  img.loading = 'lazy';
+  img.decoding = 'async';
+  img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
+  img.onerror = function() { img.remove(); showFallback(wrap, city); };
+  img.src = url;
+  wrap.appendChild(img);
+}
+function showFallback(wrap, city) {
+  wrap.classList.remove('loading');
+  if (wrap.querySelector('.city-fallback')) return;
+  var c = city.bandana_color || '#B4502E';
+  wrap.style.background = 'linear-gradient(135deg,' + c + ' 0%, rgba(56,48,38,.55) 100%)';
+  var d = document.createElement('div');
+  d.className = 'city-fallback';
+  d.textContent = (city._title || city.slug || '?').charAt(0).toUpperCase();
+  wrap.appendChild(d);
+}
+function loadCityImage(wrap, city) {
+  if (city.hero_image) { paintImage(wrap, city.hero_image, city); return; }
+  var cached = cachedImg(city.slug);
+  if (cached !== null) { paintImage(wrap, cached, city); return; }
+  if (!city.wiki_article) { showFallback(wrap, city); return; }
+  wikiThumb(city)
+    .then(function(url) { cacheImg(city.slug, url); paintImage(wrap, url, city); })
+    .catch(function() { showFallback(wrap, city); });
+}
+
+// ══════════════ LOAD PAGE ══════════════
 function loadPage(lang) {
   currentLang = lang;
   savePref(lang);
+  document.documentElement.lang = lang;
 
-  if (!regionSlug) {
-    document.getElementById('regionContent').innerHTML =
-      '<div style="text-align:center;padding:80px 0;font-size:20px;color:var(--terra)">Brak parametru regionu. <a href="./" style="color:var(--terra);text-decoration:underline">Wróć na stronę główną</a></div>';
-    return;
-  }
+  if (!regionSlug) { fail('Brak parametru regionu.'); return; }
 
   Promise.all([
     sb('languages', 'enabled=eq.true&order=priority'),
@@ -179,190 +290,209 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,duration_type,duration_hours,hero_image,sort_order&order=sort_order'),
+    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,duration_type,duration_hours,hero_image,wiki_article,wiki_lang,sort_order&order=sort_order'),
     sb('city_translations', 'lang=eq.' + lang),
-  ]).then(function(results) {
-    langList        = results[0];
-    var uiRows      = results[1];
-    var allRegions  = results[2];
-    var regionTrs   = results[3];
-    var countries   = results[4];
-    var countryTrs  = results[5];
-    var allCities   = results[6];
-    var cityTrs     = results[7];
+    sb('stops', 'select=city_slug')
+  ]).then(function(res) {
+    langList        = res[0];
+    var uiRows      = res[1];
+    var allRegions  = res[2];
+    var regionTrs   = res[3];
+    var countries   = res[4];
+    var countryTrs  = res[5];
+    var allCities   = res[6];
+    var cityTrs     = res[7];
+    var allStops    = res[8];
 
-    // Build UI strings map
     uiStrings = {};
     uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });
 
-    // Find current region
-    var region = allRegions.find(function(r) { return r.slug === regionSlug; });
-    if (!region) {
-      document.getElementById('regionContent').innerHTML =
-        '<div style="text-align:center;padding:80px 0;font-size:20px;color:var(--terra)">Region nie znaleziony. <a href="./" style="color:var(--terra);text-decoration:underline">Wróć na stronę główną</a></div>';
-      buildLangPopup();
-      updateActiveLang();
-      return;
-    }
-
-    var rTr = regionTrs.find(function(t) { return t.region_slug === regionSlug; });
-    var regionName = rTr ? rTr.name : regionSlug;
-
-    var country = countries.find(function(c) { return c.slug === region.country_slug; });
-    var cTr = countryTrs.find(function(t) { return t.country_slug === region.country_slug; });
-    var countryName = cTr ? cTr.name : (region.country_slug || '');
-    var flagCode = country ? country.flag_code : region.country_slug;
-
-    // Cities in this region
-    var regionCities = allCities.filter(function(c) { return c.region_slug === regionSlug; });
-
-    // Update page title
-    document.title = regionName + ' — Quolino';
-
-    // Apply all data-ui elements
+    buildLangPopup();
+    updateActiveLang();
     document.querySelectorAll('[data-ui]').forEach(function(el) {
-      var key = el.getAttribute('data-ui');
-      var val = uiStrings[key];
-      if (val) el.textContent = val;
+      var v = uiStrings[el.getAttribute('data-ui')];
+      if (v) el.textContent = v;
     });
 
-    // Build region content
-    buildRegionContent(region, regionName, countryName, flagCode, rTr, regionCities, cityTrs, allRegions, regionTrs, allCities, countries, countryTrs);
+    var region = allRegions.filter(function(r) { return r.slug === regionSlug; })[0];
+    if (!region) { fail(ui('error.region_not_found', 'Nie znaleźliśmy tego regionu.')); return; }
 
-    // Build language popup
-    buildLangPopup();
+    var rTr        = regionTrs.filter(function(t) { return t.region_slug === regionSlug; })[0];
+    var regionName = rTr ? rTr.name : regionSlug;
+    var country    = countries.filter(function(c) { return c.slug === region.country_slug; })[0];
+    var cTr        = countryTrs.filter(function(t) { return t.country_slug === region.country_slug; })[0];
+    var countryName = cTr ? cTr.name : (region.country_slug || '');
+    var continent   = (country && country.continent) || 'europe';
 
-    // Update active lang indicator
-    updateActiveLang();
+    // stops per city
+    var stopCount = {};
+    allStops.forEach(function(s) { stopCount[s.city_slug] = (stopCount[s.city_slug] || 0) + 1; });
 
+    var cities = allCities.filter(function(c) { return c.region_slug === regionSlug; });
+
+    document.title = regionName + ' — Quolino';
+    buildCrumbs(continent, countryName, regionName);
+    buildRegion(region, regionName, countryName, country, rTr, cities, cityTrs, stopCount,
+                allRegions, regionTrs, allCities, countries, countryTrs);
   }).catch(function(err) {
     console.error('Supabase error:', err);
-    document.getElementById('regionContent').innerHTML =
-      '<div style="text-align:center;padding:80px 0;font-size:20px;color:var(--terra)">Błąd ładowania danych. Spróbuj odświeżyć stronę.</div>';
+    fail(ui('error.load', 'Nie udało się wczytać danych. Odśwież stronę.'));
   });
 }
 
-// ══════ REGION CONTENT ══════
-function buildRegionContent(region, regionName, countryName, flagCode, rTr, cities, cityTrs, allRegions, regionTrs, allCities, countries, countryTrs) {
-  var container = document.getElementById('regionContent');
+function fail(msg) {
+  document.getElementById('regionContent').innerHTML =
+    '<div class="state-msg">' + esc(msg) + '<br><br><a href="./">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
+}
+
+// ══════════════ BREADCRUMBS ══════════════
+// 🏠 › Europa › Włochy › Marche
+function buildCrumbs(continent, countryName, regionName) {
+  var nav = document.getElementById('crumbs');
+  if (!nav) return;
+  var homeLabel = ui('nav.home', 'Strona główna');
   var html = '';
 
-  // Back link
-  html += '<div class="region-hero">';
-  html += '<a href="./" class="back-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"></polyline></svg> ' + esc(ui('nav.back', 'Powrót')) + '</a>';
+  html += '<a class="crumb-home" href="./" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>' +
+          '</a>';
 
-  // Country + flag
-  html += '<div class="caps" style="font-size:15px">' + esc(countryName);
-  if (flagCode) html += ' <img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="" style="width:20px;height:14px;border-radius:3px;vertical-align:middle;margin-left:4px">';
-  html += '</div>';
+  var levels = [
+    { label: ui('continent.' + continent, 'Europa'), href: './#regiony' },
+    { label: countryName,                            href: './#regiony' },
+    { label: regionName,                             href: null }
+  ];
 
-  // Region name
-  html += '<h1 class="region-name">' + esc(regionName) + '</h1>';
-
-  // Description
-  if (rTr && rTr.description) {
-    html += '<p class="region-desc">' + esc(rTr.description) + '</p>';
-  }
-
-  // City count
-  html += '<p style="font-size:16px;color:var(--label);margin-top:8px">' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</p>';
-  html += '</div>';
-
-  // City grid
-  html += '<div class="city-grid">';
-  cities.forEach(function(city) {
-    var cTr = cityTrs.find(function(t) { return t.city_slug === city.slug; });
-    var title = cTr ? cTr.title : city.slug;
-    var subtitle = cTr ? cTr.subtitle : '';
-    var bandana = city.bandana_color || 'var(--terra)';
-    var duration = city.duration_hours ? durationLabel(city.duration_hours) : '';
-
-    html += '<a class="city-card" href="city.html?c=' + city.slug + '">';
-    html += '<div class="city-card-top">';
-    html += '<div class="city-bandana" style="background:' + bandana + '"></div>';
-    html += '<div>';
-    html += '<div class="city-card-title">' + esc(title) + '</div>';
-    if (duration) {
-      html += '<div class="city-card-meta">' + duration + '</div>';
-    }
-    html += '</div>';
-    html += '</div>';
-    if (subtitle) {
-      html += '<div class="city-card-subtitle">' + esc(subtitle) + '</div>';
-    }
-    html += '<div class="city-card-arrow">' + esc(ui('home.cta_open', 'Otwórz przewodnik')) + ' &rarr;</div>';
-    html += '</a>';
+  levels.forEach(function(l) {
+    if (!l.label) return;
+    html += '<span class="crumb-sep" aria-hidden="true">&rsaquo;</span>';
+    html += l.href
+      ? '<a href="' + l.href + '">' + esc(l.label) + '</a>'
+      : '<span class="crumb-current" aria-current="page">' + esc(l.label) + '</span>';
   });
+
+  nav.innerHTML = html;
+}
+
+// ══════════════ REGION + CITY TILES ══════════════
+function buildRegion(region, regionName, countryName, country, rTr, cities, cityTrs, stopCount,
+                     allRegions, regionTrs, allCities, countries, countryTrs) {
+  var el = document.getElementById('regionContent');
+  var flagCode = country ? country.flag_code : region.country_slug;
+  var html = '';
+
+  // ── Hero ──
+  html += '<div class="region-hero">';
+  html += '<div class="caps" style="font-size:14px">' + esc(countryName);
+  if (flagCode) html += ' <img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="" style="width:20px;height:14px;border-radius:3px;vertical-align:middle;margin-left:5px">';
+  html += '</div>';
+  html += '<h1 class="region-name">' + esc(regionName) + '</h1>';
+  if (rTr && rTr.description) html += '<p class="region-desc">' + esc(rTr.description) + '</p>';
+  html += '<div class="region-meta"><span>' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
   html += '</div>';
 
-  // Other regions
-  var otherRegions = allRegions.filter(function(r) { return r.slug !== regionSlug; });
-  var publishedSlugs = {};
-  allCities.forEach(function(c) { publishedSlugs[c.region_slug] = (publishedSlugs[c.region_slug] || 0) + 1; });
-  var otherPublished = otherRegions.filter(function(r) { return publishedSlugs[r.slug]; });
+  // ── City tiles ──
+  html += '<div class="city-grid" id="cityGrid"></div>';
 
-  if (otherPublished.length > 0) {
-    html += '<div class="other-regions">';
-    html += '<p class="caps">' + esc(ui('label.other_regions_italy', 'Inne regiony')) + '</p>';
-    html += '<div class="other-region-grid">';
-    otherPublished.forEach(function(reg) {
-      var oTr = regionTrs.find(function(t) { return t.region_slug === reg.slug; });
-      var oName = oTr ? oTr.name : reg.slug;
-      var oCt = countryTrs.find(function(t) { return t.country_slug === reg.country_slug; });
-      var oCountry = oCt ? oCt.name : '';
-      var oFlag = (countries.find(function(c) { return c.slug === reg.country_slug; }) || {}).flag_code || reg.country_slug;
-      var oCityCount = publishedSlugs[reg.slug] || 0;
+  // ── Other regions ──
+  var published = {};
+  allCities.forEach(function(c) { published[c.region_slug] = (published[c.region_slug] || 0) + 1; });
+  var others = allRegions.filter(function(r) { return r.slug !== regionSlug && published[r.slug]; });
 
-      html += '<a class="other-region-tile" href="region.html?r=' + reg.slug + '">';
-      html += '<div style="flex:1">';
-      html += '<div style="font-size:13px;color:var(--label)">' + esc(oCountry);
+  if (others.length) {
+    html += '<div class="other-regions"><p class="caps">' + esc(ui('label.other_regions_italy', 'Inne regiony')) + '</p><div class="other-region-grid">';
+    others.forEach(function(reg) {
+      var oTr    = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
+      var oName  = oTr ? oTr.name : reg.slug;
+      var oCt    = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
+      var oCoun  = oCt ? oCt.name : '';
+      var oFlag  = (countries.filter(function(c) { return c.slug === reg.country_slug; })[0] || {}).flag_code || reg.country_slug;
+      html += '<a class="other-region-tile" href="region.html?r=' + encodeURIComponent(reg.slug) + '">';
+      html += '<div style="flex:1"><div style="font-size:13px;color:var(--label)">' + esc(oCoun);
       if (oFlag) html += ' <img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="" style="width:16px;height:11px;border-radius:2px;vertical-align:middle;margin-left:3px">';
-      html += '</div>';
-      html += '<div style="font-size:20px;font-weight:800;letter-spacing:-.01em;margin-top:2px">' + esc(oName) + '</div>';
-      html += '<div style="font-size:14px;color:var(--label);margin-top:2px">' + oCityCount + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div>';
-      html += '</div>';
-      html += '<div style="font-size:20px;color:var(--terra)">&rarr;</div>';
-      html += '</a>';
+      html += '</div><div style="font-size:19px;font-weight:800;letter-spacing:-.01em;margin-top:2px">' + esc(oName) + '</div>';
+      html += '<div style="font-size:14px;color:var(--label);margin-top:2px">' + published[reg.slug] + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
+      html += '<div style="font-size:19px;color:var(--terra)">&rarr;</div></a>';
     });
     html += '</div></div>';
   }
 
-  container.innerHTML = html;
+  el.innerHTML = html;
+
+  // Build tiles as nodes so we can attach lazy photo loading per card
+  var grid = document.getElementById('cityGrid');
+  cities.forEach(function(city) {
+    var tr    = cityTrs.filter(function(t) { return t.city_slug === city.slug; })[0];
+    var title = tr ? tr.title : city.slug;
+    var sub   = tr ? tr.subtitle : '';
+    city._title = title;
+
+    var card = document.createElement('a');
+    card.className = 'city-card';
+    card.href = 'city.html?c=' + encodeURIComponent(city.slug);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'city-img-wrap loading';
+    if (city.duration_type) {
+      var badgeKey = city.duration_type === 'full_day' ? 'filter.full_day' : 'filter.half_day';
+      var badgeTxt = ui(badgeKey, '');
+      if (badgeTxt) {
+        var b = document.createElement('div');
+        b.className = 'city-badge';
+        b.textContent = badgeTxt;
+        wrap.appendChild(b);
+      }
+    }
+    card.appendChild(wrap);
+
+    var body = document.createElement('div');
+    body.className = 'city-body';
+    var stops = stopCount[city.slug] || 0;
+    body.innerHTML =
+      '<div class="city-head">' +
+        '<div class="city-name">' + esc(title) + '</div>' +
+        (city.duration_hours ? '<div class="city-dur">' + esc(durationLabel(city.duration_hours)) + '</div>' : '') +
+      '</div>' +
+      (sub ? '<div class="city-sub">' + esc(sub) + '</div>' : '') +
+      (stops ? '<div class="city-foot"><span class="city-accent" style="background:' + (city.bandana_color || 'var(--terra)') + '"></span><span>' + esc(stopsLabel(stops)) + '</span></div>' : '') +
+      '<div class="city-go"><span>' + esc(ui('home.cta_open', 'Zaczynamy!')) + '</span><span class="arrow" aria-hidden="true">&rarr;</span></div>';
+    card.appendChild(body);
+
+    grid.appendChild(card);
+    loadCityImage(wrap, city);
+  });
 }
 
-// ══════ LANGUAGE POPUP ══════
+// ══════════════ LANGUAGE POPUP ══════════════
 function buildLangPopup() {
   var grid = document.getElementById('langGrid');
   if (!grid) return;
   grid.innerHTML = '';
-
   langList.forEach(function(l) {
     var btn = document.createElement('button');
-    var flag = l.flag_code || l.code;
-    btn.innerHTML = '<img src="https://flagcdn.com/w40/' + flag + '.png" alt="">' + esc(l.name_native);
+    btn.innerHTML = '<img src="https://flagcdn.com/w40/' + (l.flag_code || l.code) + '.png" alt="">' + esc(l.name_native);
     if (l.code === currentLang) btn.classList.add('active');
     btn.addEventListener('click', function() {
       document.getElementById('langPopup').classList.remove('open');
-      if (l.code === currentLang) return;
-      loadPage(l.code);
+      if (l.code !== currentLang) loadPage(l.code);
     });
     grid.appendChild(btn);
   });
 }
 
-// ══════ ACTIVE LANG INDICATOR ══════
 function updateActiveLang() {
-  var lang = langList.find(function(l) { return l.code === currentLang; });
-  var flag = lang && lang.flag_code ? lang.flag_code : currentLang;
+  var l = langList.filter(function(x) { return x.code === currentLang; })[0];
+  var flag = (l && l.flag_code) ? l.flag_code : currentLang;
   var img = document.getElementById('activeFlagImg');
-  var drawerImg = document.getElementById('drawerFlagImg');
+  var dimg = document.getElementById('drawerFlagImg');
   var code = document.getElementById('activeLangCode');
-  if (img) img.src = 'https://flagcdn.com/w40/' + flag + '.png';
-  if (drawerImg) drawerImg.src = 'https://flagcdn.com/w40/' + flag + '.png';
+  if (img)  img.src  = 'https://flagcdn.com/w40/' + flag + '.png';
+  if (dimg) dimg.src = 'https://flagcdn.com/w40/' + flag + '.png';
   if (code) code.textContent = currentLang.toUpperCase();
 }
 
-// ══════ KEYBOARD ══════
+// ══════════════ KEYBOARD ══════════════
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     document.getElementById('langPopup').classList.remove('open');
@@ -370,7 +500,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// ══════ INIT ══════
+// ══════════════ INIT ══════════════
 loadPage(currentLang);
 </script>
 </body>
