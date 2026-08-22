@@ -379,8 +379,16 @@ function render(d) {
     if (t.kids_box) {
       html += '<div class="box box-kids"><p class="caps">' + ui('label.for_kids', 'Dla dzieci') + '</p><p>' + esc(t.kids_box) + '</p></div>';
     }
+    // D · Wskazówka — zaraz pod questem, bo ma pomóc go rozwiązać
+    if (t.hint) {
+      html += '<div class="box box-hint"><p class="caps">' + ui('label.hint', 'Wskazówka') + '</p><p>' + esc(t.hint) + '</p></div>';
+    }
     if (t.photo_task) {
       html += '<div class="box box-foto"><p class="caps">' + ui('label.photo_task', 'Zadanie foto') + '</p><p>' + esc(t.photo_task) + '</p></div>';
+    }
+    // E · Lokalny smak — legenda/anegdota dla rodzica
+    if (t.local_flavor) {
+      html += '<div class="box box-local"><p class="caps">' + ui('label.local_flavor', 'Lokalny smak') + '</p><p>' + esc(t.local_flavor) + '</p></div>';
     }
 
     html += '</div></div>';

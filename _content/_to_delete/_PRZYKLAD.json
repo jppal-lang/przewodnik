@@ -1,0 +1,95 @@
+{
+  "_uwaga": "Wzór. Skopiuj do cities/<region>/<slug>.json, wypełnij, usuń pola zaczynające się od _.",
+
+  "city": {
+    "slug": "spoleto",
+    "country": "it",
+    "region_slug": "umbria",
+    "lat": 42.7402,
+    "lon": 12.7386,
+    "duration_type": "half_day",
+    "duration_hours": 4,
+    "bandana_color": "#2E6B8A",
+    "wiki_article": "Ponte delle Torri",
+    "wiki_lang": "it",
+    "sort_order": 3,
+    "status": "draft"
+  },
+
+  "translation": {
+    "title": "Spoleto",
+    "region_label": "Umbria · pół dnia",
+    "subtitle": "Most na dziesięciu arkadach wysoki na 80 metrów, po którym szła kiedyś woda, a dziś idą ludzie. Miasto, w którym Hannibal odbił się od murów i poszedł dalej.",
+    "lead": null,
+    "good_to_know": "Centrum jest w strefie ZTL — parkuj przy Spoletosfera i jedź ruchomymi schodami pod Rocca Albornoziana. Most delle Torri bywa zamknięty po ulewach, sprawdź przed wyjazdem.",
+    "hero_note": null
+  },
+
+  "stops": [
+    {
+      "stop_number": 1,
+      "category": "parking",
+      "time_label": "16:00–16:15",
+      "price": "1,20 €/godz.",
+      "maps_query": "Parcheggio Spoletosfera, Spoleto",
+      "name": "Parking Spoletosfera",
+      "desc_paragraphs": [
+        "Duży parking pod miastem, poza strefą ZTL. Stąd ruchome schody i chodniki wiozą pod samą twierdzę — 200 metrów przewyższenia bez jednego kroku pod górę.",
+        "Nie wjeżdżaj wyżej. Kamery ZTL stoją przy każdej bramie, a mandat przychodzi pocztą do Polski pół roku później."
+      ],
+      "kids_box": "Policz, ile ruchomych schodów pokonacie po drodze na górę. Kto zgadnie najbliżej, wybiera lody na koniec.",
+      "photo_task": "Zdjęcie z ostatnich schodów, z miastem w tle."
+    },
+    {
+      "stop_number": 2,
+      "category": "monument",
+      "time_label": "16:30–17:15",
+      "price": "bezpłatnie",
+      "year_built": "1355",
+      "wiki_article": "Ponte delle Torri",
+      "maps_query": "Ponte delle Torri, Spoleto",
+      "name": "Ponte delle Torri",
+      "desc_paragraphs": [
+        "Osiemdziesiąt metrów wysokości, dziesięć arkad, 230 metrów długości. Zbudowany jako akwedukt — miał donieść wodę z góry Monteluco do miasta.",
+        "Goethe przyjechał tu w 1786 roku i napisał, że to najlepsze, co widział we Włoszech po Koloseum."
+      ],
+      "kids_box": "Policz arkady mostu. Potem zajrzyj w dół i sprawdź, czy widzisz dno wąwozu — kto pierwszy zobaczy rzekę?",
+      "photo_task": "Cały most w kadrze. Podpowiedź: trzeba się cofnąć na ścieżkę w lewo."
+    },
+    {
+      "stop_number": 3,
+      "category": "restaurant",
+      "time_label": "19:30",
+      "price": "ok. 25 €/os.",
+      "maps_query": "Piazza del Mercato, Spoleto",
+      "whatsapp": "+390743000000",
+      "name": "Kolacja przy Piazza del Mercato",
+      "desc_paragraphs": [
+        "Plac targowy stoi dokładnie tam, gdzie rzymskie forum. Wieczorem zamienia się w jadalnię pod gołym niebem."
+      ],
+      "kids_box": "Zamów po włosku: „Vorrei una pizza margherita, per favore”. Kelner się uśmiechnie.",
+      "photo_task": "Zdjęcie stołu z góry, ze wszystkimi talerzami."
+    }
+  ],
+
+  "day_plan": [
+    { "time_label": "16:00", "description": "Parking Spoletosfera, ruchome schody na górę" },
+    { "time_label": "16:30", "description": "Ponte delle Torri i ścieżka widokowa" },
+    { "time_label": "19:30", "description": "Kolacja na Piazza del Mercato" }
+  ],
+
+  "emergency": [
+    {
+      "type": "pharmacy",
+      "label": "Farmacia Comunale",
+      "description": "Przy głównym placu, czynna do 20:00",
+      "maps_query": "Farmacia Comunale, Spoleto"
+    },
+    {
+      "type": "toilet",
+      "label": "Toalety przy Rocca",
+      "description": "Przy wyjściu z ruchomych schodów",
+      "maps_query": "Rocca Albornoziana, Spoleto"
+    }
+  ]
+}

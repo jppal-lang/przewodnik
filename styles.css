@@ -234,6 +234,12 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .box-kids .caps{color:var(--olive)}
 .box-foto{background:var(--sea-bg)}
 .box-foto .caps{color:var(--sea)}
+/* D · Wskazówka — dopięta pod questem, lżejsza niż boks dziecka */
+.box-hint{background:transparent;border:1.5px dashed rgba(95,102,55,.45);margin-top:-4px}
+.box-hint .caps{color:var(--olive)}
+/* E · Lokalny smak — anegdota/legenda dla rodzica */
+.box-local{background:rgba(180,80,46,.06);border-left:4px solid var(--terra)}
+.box-local .caps{color:var(--terra)}
 .box p{font-size:18px;line-height:1.5;margin-top:8px}
 
 /* ===== Footer sections ===== */
