@@ -157,8 +157,8 @@ function ui(key, fallback) { return uiStrings[key] || fallback || key; }
 
 // ══════ DURATION LABEL ══════
 function durationLabel(hours) {
-  var suffix = ui('label.duration_h', 'h');
-  return '~' + hours + ' ' + suffix;
+  var tpl = ui('label.duration_h', '~{n}h');
+  return tpl.replace('{n}', hours);
 }
 
 // ══════ LOAD PAGE ══════
@@ -265,7 +265,7 @@ function buildRegionContent(region, regionName, countryName, flagCode, rTr, citi
   }
 
   // City count
-  html += '<p style="font-size:16px;color:var(--label);margin-top:8px">' + cities.length + ' ' + esc(ui('label.cities_suffix', 'miast')) + '</p>';
+  html += '<p style="font-size:16px;color:var(--label);margin-top:8px">' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</p>';
   html += '</div>';
 
   // City grid
@@ -319,7 +319,7 @@ function buildRegionContent(region, regionName, countryName, flagCode, rTr, citi
       if (oFlag) html += ' <img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="" style="width:16px;height:11px;border-radius:2px;vertical-align:middle;margin-left:3px">';
       html += '</div>';
       html += '<div style="font-size:20px;font-weight:800;letter-spacing:-.01em;margin-top:2px">' + esc(oName) + '</div>';
-      html += '<div style="font-size:14px;color:var(--label);margin-top:2px">' + oCityCount + ' ' + esc(ui('label.cities_suffix', 'miast')) + '</div>';
+      html += '<div style="font-size:14px;color:var(--label);margin-top:2px">' + oCityCount + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div>';
       html += '</div>';
       html += '<div style="font-size:20px;color:var(--terra)">&rarr;</div>';
       html += '</a>';
