@@ -481,12 +481,9 @@ function buildLangPopup() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  // Map language code → flag code (for flagcdn)
-  var FLAGS = {cz:'cz',dk:'dk',de:'de',en:'gb',es:'es',fr:'fr',hr:'hr',hu:'hu',it:'it',nl:'nl',no:'no',pl:'pl',pt:'pt',ro:'ro',se:'se',sk:'sk',ua:'ua'};
-
   langList.forEach(function(l) {
     var btn = document.createElement('button');
-    var flag = FLAGS[l.code] || l.code;
+    var flag = l.flag_code || l.code;
     btn.innerHTML = '<img src="https://flagcdn.com/w40/' + flag + '.png" alt="">' + esc(l.name_native);
     if (l.code === currentLang) btn.classList.add('active');
     btn.addEventListener('click', function() {
@@ -505,8 +502,8 @@ function switchLang(lang, flagCode) {
 
 // ── Update active language indicator ───────────────────
 function updateActiveLang() {
-  var FLAGS = {cz:'cz',dk:'dk',de:'de',en:'gb',es:'es',fr:'fr',hr:'hr',hu:'hu',it:'it',nl:'nl',no:'no',pl:'pl',pt:'pt',ro:'ro',se:'se',sk:'sk',ua:'ua'};
-  var flag = FLAGS[currentLang] || currentLang;
+  var lang = langList.find(function(l) { return l.code === currentLang; });
+  var flag = lang && lang.flag_code ? lang.flag_code : currentLang;
   var img = document.getElementById('activeFlagImg');
   var code = document.getElementById('activeLangCode');
   if (img) img.src = 'https://flagcdn.com/w40/' + flag + '.png';

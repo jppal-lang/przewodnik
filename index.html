@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/quolino-logo.svg"}}}
 </script>
@@ -97,19 +97,19 @@
 <!-- Sticky nav -->
 <nav class="sticky-nav">
   <div class="sticky-nav-inner">
-    <a href="/" class="logo">
+    <a href="./" class="logo">
       <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
     </a>
     <div class="nav-right">
       <div class="nav-desktop" style="display:flex;align-items:center;gap:12px">
-        <a href="#regiony" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1.5px solid var(--line);border-radius:999px;font-size:15px;font-weight:700;color:var(--ink)">Wybierz region</a>
+        <a href="#regiony" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1.5px solid var(--line);border-radius:999px;font-size:15px;font-weight:700;color:var(--ink)" data-ui="nav.select_region">Wybierz region</a>
         <button class="nav-lang-btn" onclick="document.getElementById('langPopup').classList.add('open')" aria-label="Zmień język">
           <img src="https://flagcdn.com/w40/pl.png" alt="" id="activeFlagImg">
           <span id="activeLangCode">PL</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <a class="bmc-link" href="https://buymeacoffee.com/questini" target="_blank" rel="noopener">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 6h14v2H3zm0 4h14v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm14-4h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 2v4M11 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Wesprzyj
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 6h14v2H3zm0 4h14v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm14-4h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 2v4M11 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span data-ui="nav.support">Wesprzyj</span>
         </a>
       </div>
       <button class="nav-mobile" onclick="document.getElementById('mobileDrawer').style.display='flex'" aria-label="Menu" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;align-items:center;justify-content:center">
@@ -128,12 +128,12 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
-    <a href="#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px">Wybierz region</a>
-    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px">Język</div>
+    <a href="#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
+    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
-      <img src="https://flagcdn.com/w40/pl.png" alt="" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> Zmień język
+      <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
     </button>
-    <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="height:52px;display:flex;align-items:center;justify-content:center;gap:10px;background:#FFDD00;color:var(--ink);border-radius:14px;font-size:18px;font-weight:700">☕ Wesprzyj projekt</a>
+    <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="height:52px;display:flex;align-items:center;justify-content:center;gap:10px;background:#FFDD00;color:var(--ink);border-radius:14px;font-size:18px;font-weight:700">☕ <span data-ui="nav.support_project">Wesprzyj projekt</span></a>
   </div>
 </div>
 
@@ -141,7 +141,7 @@
 <div class="lang-overlay" id="langPopup" onclick="this.classList.remove('open')">
   <div class="lang-popup" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.015em">Wybierz język</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.015em" data-ui="nav.select_lang">Wybierz język</div>
       <button onclick="document.getElementById('langPopup').classList.remove('open')" aria-label="Zamknij" style="width:44px;height:44px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
@@ -154,13 +154,13 @@
 
 <div class="hero-split">
   <div class="hero-left">
-    <div class="chip-soon" style="background:var(--olive-bg);color:var(--olive);display:inline-block;margin-bottom:4px">Gra terenowa w prawdziwym mieście</div>
-    <h1>Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
-    <p class="subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
+    <div class="chip-soon" style="background:var(--olive-bg);color:var(--olive);display:inline-block;margin-bottom:4px" data-ui="home.chip">Gra terenowa w prawdziwym mieście</div>
+    <h1 data-ui="home.h1">Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
+    <p class="subtitle" data-ui="home.subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px">
-      <a class="cta-btn" href="#regiony">Otwórz przewodnik →</a>
+      <a class="cta-btn" href="#regiony" data-ui="home.cta_open">Otwórz przewodnik →</a>
       <a href="#jak" style="min-height:56px;display:inline-flex;align-items:center;gap:8px;background:var(--parchment);color:var(--terra);border:2px solid var(--terra);border-radius:999px;padding:16px 28px;font-size:18px;font-weight:700">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg>Jak to działa
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg><span data-ui="home.cta_how">Jak to działa</span>
       </a>
     </div>
   </div>
@@ -168,33 +168,33 @@
     <video autoplay muted loop playsinline preload="metadata" poster="media/hero-poster.jpg" aria-hidden="true">
       <source src="media/hero.mp4" type="video/mp4">
     </video>
-    <div class="hero-badge">7 miast · Marche &amp; Umbria</div>
+    <div class="hero-badge" data-ui="home.hero_badge">7 miast · Marche &amp; Umbria</div>
   </div>
 </div>
 
 <!-- USP -->
 <div class="landing-section">
-  <p class="caps">Dlaczego Quolino</p>
+  <p class="caps" data-ui="home.why_quolino">Dlaczego Quolino</p>
   <div class="usp-grid">
     <div class="usp">
       <div class="usp-icon terra">🎯</div>
       <div>
-        <div class="usp-title">Dzieci grają, nie marudzą</div>
-        <div class="usp-text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie zamienia się w quest.</div>
+        <div class="usp-title" data-ui="home.usp1_title">Dzieci grają, nie marudzą</div>
+        <div class="usp-text" data-ui="home.usp1_text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie zamienia się w quest.</div>
       </div>
     </div>
     <div class="usp">
       <div class="usp-icon olive">☀️</div>
       <div>
-        <div class="usp-title">Godziny pod klimat</div>
-        <div class="usp-text">Trasa omija południowy upał. Start późnym popołudniem, finał kolacją przy zachodzie słońca.</div>
+        <div class="usp-title" data-ui="home.usp2_title">Godziny pod klimat</div>
+        <div class="usp-text" data-ui="home.usp2_text">Trasa omija południowy upał. Start późnym popołudniem, finał kolacją przy zachodzie słońca.</div>
       </div>
     </div>
     <div class="usp">
       <div class="usp-icon sea">🅿️</div>
       <div>
-        <div class="usp-title">Zaczynasz od parkingu</div>
-        <div class="usp-text">Przystanek nr 1 to zawsze parking: cena, nawigacja i ostrzeżenie o strefie ZTL. Bez krążenia i mandatów.</div>
+        <div class="usp-title" data-ui="home.usp3_title">Zaczynasz od parkingu</div>
+        <div class="usp-text" data-ui="home.usp3_text">Przystanek nr 1 to zawsze parking: cena, nawigacja i ostrzeżenie o strefie ZTL. Bez krążenia i mandatów.</div>
       </div>
     </div>
   </div>
@@ -202,12 +202,12 @@
 
 <!-- How it works -->
 <div class="landing-section" id="jak">
-  <p class="caps">Jak to działa</p>
+  <p class="caps" data-ui="home.how_title">Jak to działa</p>
   <div class="how-grid">
-    <div class="how-step"><strong>Wybierz region i miasto</strong><p>Lista miast z odległością i czasem dojazdu od waszej bazy.</p></div>
-    <div class="how-step"><strong>Jedź: nawigacja z telefonu</strong><p>Jeden przycisk prowadzi do parkingu w Google Maps.</p></div>
-    <div class="how-step"><strong>Zwiedzaj przystanek po przystanku</strong><p>Opisy, misje dla dzieci i zadania foto w kolejności trasy.</p></div>
-    <div class="how-step"><strong>Zakończ kolacją</strong><p>Ostatni przystanek to restauracja. Rezerwacja przez WhatsApp.</p></div>
+    <div class="how-step"><strong data-ui="home.step1_title">Wybierz region i miasto</strong><p data-ui="home.step1_text">Lista miast z odległością i czasem dojazdu od waszej bazy.</p></div>
+    <div class="how-step"><strong data-ui="home.step2_title">Jedź: nawigacja z telefonu</strong><p data-ui="home.step2_text">Jeden przycisk prowadzi do parkingu w Google Maps.</p></div>
+    <div class="how-step"><strong data-ui="home.step3_title">Zwiedzaj przystanek po przystanku</strong><p data-ui="home.step3_text">Opisy, misje dla dzieci i zadania foto w kolejności trasy.</p></div>
+    <div class="how-step"><strong data-ui="home.step4_title">Zakończ kolacją</strong><p data-ui="home.step4_text">Ostatni przystanek to restauracja. Rezerwacja przez WhatsApp.</p></div>
   </div>
 </div>
 
@@ -215,128 +215,247 @@
 <div class="landing-section">
   <div class="about-grid">
     <div class="about-text">
-      <h2 style="margin:0 0 4px;font-size:28px;font-weight:800;letter-spacing:-.015em;line-height:1.15">Rodzinne przewodniki po miastach Europy: od parkingu do kolacji</h2>
-      <p>Quolino to gotowe plany wycieczek jednodniowych dla rodzin z dziećmi, podróżujących autem po Europie. Każde miasto rozpisane godzina po godzinie: gdzie zaparkować, co zobaczyć, ile kosztują bilety i gdzie zjeść kolację.</p>
-      <p>Ale Quolino to nie kolejny przewodnik z listą zabytków. To <strong>gra terenowa w prawdziwym mieście</strong>: każdy przystanek ma misję dla dzieci. Znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
-      <p><strong>Godziny dostosowane do klimatu.</strong> W ciepłych krajach trasa omija południowy upał. Zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
-      <p><strong>Zaczynasz od parkingu.</strong> Każde miasto otwiera się informacją, gdzie zostawić auto: z ceną, linkiem do nawigacji i ostrzeżeniem o strefie ZTL. Koniec z krążeniem po zakazanych strefach i mandatami z kamer.</p>
-      <p>Aktualnie dostępny region: <strong>Marche i Umbria</strong> (Włochy). 7 miast, 46 przystanków, kompletne plany na 7 dni. W przygotowaniu: Toskania, Kraków i okolice.</p>
+      <h2 style="margin:0 0 4px;font-size:28px;font-weight:800;letter-spacing:-.015em;line-height:1.15" data-ui="home.about_h2">Rodzinne przewodniki po miastach Europy: od parkingu do kolacji</h2>
+      <p data-ui="home.about_p1">Quolino to gotowe plany wycieczek jednodniowych dla rodzin z dziećmi, podróżujących autem po Europie. Każde miasto rozpisane godzina po godzinie: gdzie zaparkować, co zobaczyć, ile kosztują bilety i gdzie zjeść kolację.</p>
+      <p data-ui="home.about_p2">Ale Quolino to nie kolejny przewodnik z listą zabytków. To gra terenowa w prawdziwym mieście: każdy przystanek ma misję dla dzieci. Znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
+      <p data-ui="home.about_p3">Godziny dostosowane do klimatu. W ciepłych krajach trasa omija południowy upał. Zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
+      <p data-ui="home.about_p4">Zaczynasz od parkingu. Każde miasto otwiera się informacją, gdzie zostawić auto: z ceną, linkiem do nawigacji i ostrzeżeniem o strefie ZTL. Koniec z krążeniem po zakazanych strefach i mandatami z kamer.</p>
+      <p data-ui="home.about_p5">Aktualnie dostępny region: Marche i Umbria (Włochy). 7 miast, 46 przystanków, kompletne plany na 7 dni. W przygotowaniu: Toskania, Kraków i okolice.</p>
     </div>
     <div class="about-boxes">
       <div class="about-box sea">
-        <h2>Dla kogo jest Quolino</h2>
+        <h2 data-ui="home.who_h2">Dla kogo jest Quolino</h2>
         <ul>
-          <li><strong>Rodziny z dziećmi 9–16 lat</strong> podróżujące autem po Europie</li>
-          <li><strong>Rodzice, którzy nie chcą planować</strong>: gotowy plan, otwierasz i jedziesz</li>
-          <li><strong>Rodziny szukające czegoś więcej niż plaża</strong>: kultura i zabawa zamiast leżaka</li>
-          <li><strong>Polscy turyści we Włoszech</strong>: przewodniki po polsku, z rozmówkami i WhatsAppem do restauracji</li>
+          <li data-ui="home.who_li1">Rodziny z dziećmi 9–16 lat podróżujące autem po Europie</li>
+          <li data-ui="home.who_li2">Rodzice, którzy nie chcą planować: gotowy plan, otwierasz i jedziesz</li>
+          <li data-ui="home.who_li3">Rodziny szukające czegoś więcej niż plaża: kultura i zabawa zamiast leżaka</li>
+          <li data-ui="home.who_li4">Polscy turyści we Włoszech: przewodniki po polsku, z rozmówkami i WhatsAppem do restauracji</li>
         </ul>
       </div>
       <div class="about-box parchment">
-        <h2>Co jest w każdym przewodniku</h2>
+        <h2 data-ui="home.what_h2">Co jest w każdym przewodniku</h2>
         <ul>
-          <li>Parking jako przystanek nr 1: z ceną, nawigacją i informacją o ZTL</li>
-          <li>5–9 przystanków z cenami biletów i opisami</li>
-          <li>Misje i zagadki dla dzieci przy każdym przystanku</li>
-          <li>Zadania fotograficzne: album ze wspólnych zdjęć z podróży</li>
-          <li>Ciekawostki historyczne dla dorosłych: daty, kontekst, anegdoty</li>
-          <li>Kolacja jako ostatni przystanek: z linkiem do WhatsApp restauracji</li>
-          <li>Plan awaryjny: apteka, toalety, plac zabaw, szpital</li>
-          <li>Rozmówki w języku lokalnym</li>
-          <li>Zdjęcia zabytków z Wikimedia Commons</li>
+          <li data-ui="home.what_li1">Parking jako przystanek nr 1: z ceną, nawigacją i informacją o ZTL</li>
+          <li data-ui="home.what_li2">5–9 przystanków z cenami biletów i opisami</li>
+          <li data-ui="home.what_li3">Misje i zagadki dla dzieci przy każdym przystanku</li>
+          <li data-ui="home.what_li4">Zadania fotograficzne: album ze wspólnych zdjęć z podróży</li>
+          <li data-ui="home.what_li5">Ciekawostki historyczne dla dorosłych: daty, kontekst, anegdoty</li>
+          <li data-ui="home.what_li6">Kolacja jako ostatni przystanek: z linkiem do WhatsApp restauracji</li>
+          <li data-ui="home.what_li7">Plan awaryjny: apteka, toalety, plac zabaw, szpital</li>
+          <li data-ui="home.what_li8">Rozmówki w języku lokalnym</li>
+          <li data-ui="home.what_li9">Zdjęcia zabytków z Wikimedia Commons</li>
         </ul>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Regions -->
+<!-- Regions — rendered dynamically -->
 <div class="landing-section" id="regiony">
-  <p class="caps">Wybierz region</p>
-  <div class="region-grid">
-    <a class="region-tile" href="wlochy/marche/index.html" style="border-color:var(--terra)">
-      <div style="flex:1">
-        <div class="caps" style="font-size:14px">Włochy <img src="https://flagcdn.com/w40/it.png" alt="" style="width:18px;height:13px;border-radius:2px;vertical-align:middle;margin-left:4px"></div>
-        <div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">Marche</div>
-        <div style="font-size:18px;color:var(--ink2);margin-top:4px">5 miast · gotowe plany</div>
-      </div>
-      <div class="region-arrow">→</div>
-    </a>
-    <a class="region-tile" href="wlochy/umbria/index.html" style="border-color:var(--terra)">
-      <div style="flex:1">
-        <div class="caps" style="font-size:14px">Włochy <img src="https://flagcdn.com/w40/it.png" alt="" style="width:18px;height:13px;border-radius:2px;vertical-align:middle;margin-left:4px"></div>
-        <div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">Umbria</div>
-        <div style="font-size:18px;color:var(--ink2);margin-top:4px">2 miasta · gotowe plany</div>
-      </div>
-      <div class="region-arrow">→</div>
-    </a>
-    <div class="region-tile soon">
-      <div style="flex:1">
-        <div class="caps" style="font-size:14px">Włochy</div>
-        <div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">Toskania</div>
-      </div>
-      <span class="chip-soon">Wkrótce</span>
-    </div>
-    <div class="region-tile soon">
-      <div style="flex:1">
-        <div class="caps" style="font-size:14px">Polska <img src="https://flagcdn.com/w40/pl.png" alt="" style="width:18px;height:13px;border-radius:2px;vertical-align:middle;margin-left:4px"></div>
-        <div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">Kraków i okolice</div>
-      </div>
-      <span class="chip-soon">Wkrótce</span>
-    </div>
-    <div class="region-tile soon">
-      <div style="flex:1">
-        <div class="caps" style="font-size:14px">Polska</div>
-        <div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">Warszawa</div>
-      </div>
-      <span class="chip-soon">Wkrótce</span>
-    </div>
-    <div class="region-tile soon">
-      <div style="flex:1">
-        <div class="caps" style="font-size:14px">Polska</div>
-        <div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">Gdańsk</div>
-      </div>
-      <span class="chip-soon">Wkrótce</span>
-    </div>
+  <p class="caps" data-ui="home.select_region">Wybierz region</p>
+  <div class="region-grid" id="regionGrid">
+    <!-- filled by JS -->
   </div>
 </div>
 
 <!-- CTA -->
 <div class="cta-box">
-  <h2>Wszystkie przewodniki za darmo</h2>
-  <p>Otwórz region na telefonie, wybierz miasto na dziś i ruszaj. Nic nie trzeba pobierać ani zakładać.</p>
-  <a class="cta-btn" href="wlochy/umbria/index.html">Otwórz przewodnik →</a>
-  <p style="margin-top:16px;font-size:18px;color:var(--ink2)">Podoba Ci się Quolino? <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="color:var(--terra);font-weight:700">Postaw nam kawę ☕</a></p>
+  <h2 data-ui="home.all_free_h2">Wszystkie przewodniki za darmo</h2>
+  <p data-ui="home.all_free_text">Otwórz region na telefonie, wybierz miasto na dziś i ruszaj. Nic nie trzeba pobierać ani zakładać.</p>
+  <a class="cta-btn" href="#regiony" data-ui="home.cta_open">Otwórz przewodnik →</a>
+  <p style="margin-top:16px;font-size:18px;color:var(--ink2)" data-ui="home.coffee_text">Podoba Ci się Quolino? Postaw nam kawę ☕</p>
 </div>
 
 <div class="footer">
   <div class="logo" style="justify-content:center;margin-bottom:8px">
     <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
   </div>
-  © 2026 · Rodzinne przewodniki wypadowe
+  <span data-ui="home.footer">© 2026 · Rodzinne przewodniki wypadowe</span>
 </div>
 
 </div>
 
-<script src="migrate-storage.js"></script>
 <script>
-// Language popup
-var LANGS=[['CZ','cz','Čeština'],['DK','dk','Dansk'],['DE','de','Deutsch'],['EN','gb','English'],['ES','es','Español'],['FR','fr','Français'],['HR','hr','Hrvatski'],['HU','hu','Magyar'],['IT','it','Italiano'],['NL','nl','Nederlands'],['NO','no','Norsk'],['PL','pl','Polski'],['PT','pt','Português'],['RO','ro','Română'],['SE','se','Svenska'],['SK','sk','Slovenčina'],['UA','ua','Українська']];
-var grid=document.getElementById('langGrid');
-LANGS.forEach(function(l){
-  var b=document.createElement('button');
-  b.innerHTML='<img src="https://flagcdn.com/w40/'+l[1]+'.png" alt="">'+l[2];
-  if(l[0]==='PL')b.classList.add('active');
-  b.addEventListener('click',function(){
-    grid.querySelectorAll('button').forEach(function(x){x.classList.remove('active')});
-    b.classList.add('active');
-    document.getElementById('activeFlagImg').src='https://flagcdn.com/w40/'+l[1]+'.png';
-    document.getElementById('activeLangCode').textContent=l[0];
-    document.getElementById('langPopup').classList.remove('open');
+// ══════ CONFIG ══════
+var SB_URL = 'https://ntwpjcupffdozstbijhh.supabase.co/rest/v1';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+var FALLBACK = 'pl';
+
+// ══════ STATE ══════
+var currentLang = readPref() || new URLSearchParams(location.search).get('lang') || FALLBACK;
+var langList = [];
+var uiStrings = {};
+
+// ══════ HELPERS ══════
+function sb(table, params) {
+  var url = SB_URL + '/' + table;
+  if (params) url += '?' + params;
+  return fetch(url, {
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+  }).then(function(r) {
+    if (!r.ok) throw new Error(r.status + ' ' + table);
+    return r.json();
   });
-  grid.appendChild(b);
+}
+function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
+function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
+function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function ui(key, fallback) { return uiStrings[key] || fallback || key; }
+
+// ══════ LOAD PAGE ══════
+function loadPage(lang) {
+  currentLang = lang;
+  savePref(lang);
+
+  Promise.all([
+    sb('languages', 'enabled=eq.true&order=priority'),
+    sb('ui_translations', 'lang=eq.' + lang),
+    sb('regions', 'select=*&order=sort_order'),
+    sb('region_translations', 'lang=eq.' + lang),
+    sb('countries', 'select=*'),
+    sb('country_translations', 'lang=eq.' + lang),
+    sb('cities', 'status=eq.published&select=slug,region_slug,sort_order&order=sort_order'),
+  ]).then(function(results) {
+    langList        = results[0];
+    var uiRows      = results[1];
+    var regions     = results[2];
+    var regionTrs   = results[3];
+    var countries   = results[4];
+    var countryTrs  = results[5];
+    var cities      = results[6];
+
+    // Build UI strings map
+    uiStrings = {};
+    uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });
+
+    // Apply all data-ui elements
+    document.querySelectorAll('[data-ui]').forEach(function(el) {
+      var key = el.getAttribute('data-ui');
+      var val = uiStrings[key];
+      if (val) el.textContent = val;
+    });
+
+    // Update page title
+    if (uiStrings['home.title']) document.title = uiStrings['home.title'];
+
+    // Build region grid
+    buildRegionGrid(regions, regionTrs, countries, countryTrs, cities);
+
+    // Build language popup
+    buildLangPopup();
+
+    // Update active lang indicator
+    updateActiveLang();
+
+  }).catch(function(err) {
+    console.error('Supabase error:', err);
+  });
+}
+
+// ══════ REGION GRID ══════
+function buildRegionGrid(regions, regionTrs, countries, countryTrs, cities) {
+  var grid = document.getElementById('regionGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  // Published regions (those with cities)
+  var publishedSlugs = {};
+  cities.forEach(function(c) { publishedSlugs[c.region_slug] = (publishedSlugs[c.region_slug] || 0) + 1; });
+
+  // Render published regions first
+  regions.forEach(function(reg) {
+    var cityCount = publishedSlugs[reg.slug];
+    if (!cityCount) return;
+
+    var rTr = regionTrs.find(function(t) { return t.region_slug === reg.slug; });
+    var regionName = rTr ? rTr.name : reg.slug;
+
+    var country = countries.find(function(c) { return c.slug === reg.country_slug; });
+    var cTr = countryTrs.find(function(t) { return t.country_slug === reg.country_slug; });
+    var countryName = cTr ? cTr.name : (reg.country_slug || '');
+    var flagCode = country ? country.flag_code : reg.country_slug;
+
+    var tile = document.createElement('a');
+    tile.className = 'region-tile';
+    tile.href = 'region.html?r=' + reg.slug;
+    tile.style.borderColor = 'var(--terra)';
+    tile.innerHTML =
+      '<div style="flex:1">' +
+        '<div class="caps" style="font-size:14px">' + esc(countryName) +
+          (flagCode ? ' <img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="" style="width:18px;height:13px;border-radius:2px;vertical-align:middle;margin-left:4px">' : '') +
+        '</div>' +
+        '<div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">' + esc(regionName) + '</div>' +
+        '<div style="font-size:18px;color:var(--ink2);margin-top:4px">' + cityCount + ' ' + ui('home.region_ready', 'gotowe plany') + '</div>' +
+      '</div>' +
+      '<div class="region-arrow">→</div>';
+    grid.appendChild(tile);
+  });
+
+  // "Coming soon" regions from ui_translations
+  var soonRegions = [
+    { key: 'region.toskania', country: 'label.country_italy' },
+    { key: 'region.krakow',   country: 'label.country_poland' },
+    { key: 'region.warszawa', country: 'label.country_poland' },
+    { key: 'region.gdansk',   country: 'label.country_poland' },
+  ];
+
+  soonRegions.forEach(function(sr) {
+    var name = ui(sr.key, sr.key.split('.')[1]);
+    var countryName = ui(sr.country, '');
+    var tile = document.createElement('div');
+    tile.className = 'region-tile soon';
+    tile.innerHTML =
+      '<div style="flex:1">' +
+        '<div class="caps" style="font-size:14px">' + esc(countryName) + '</div>' +
+        '<div style="font-size:24px;font-weight:800;letter-spacing:-.015em;margin-top:4px">' + esc(name) + '</div>' +
+      '</div>' +
+      '<span class="chip-soon">' + ui('chip.soon', 'Wkrótce') + '</span>';
+    grid.appendChild(tile);
+  });
+}
+
+// ══════ LANGUAGE POPUP ══════
+function buildLangPopup() {
+  var grid = document.getElementById('langGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  langList.forEach(function(l) {
+    var btn = document.createElement('button');
+    var flag = l.flag_code || l.code;
+    btn.innerHTML = '<img src="https://flagcdn.com/w40/' + flag + '.png" alt="">' + esc(l.name_native);
+    if (l.code === currentLang) btn.classList.add('active');
+    btn.addEventListener('click', function() {
+      document.getElementById('langPopup').classList.remove('open');
+      if (l.code === currentLang) return;
+      loadPage(l.code);
+    });
+    grid.appendChild(btn);
+  });
+}
+
+// ══════ ACTIVE LANG INDICATOR ══════
+function updateActiveLang() {
+  var lang = langList.find(function(l) { return l.code === currentLang; });
+  var flag = lang && lang.flag_code ? lang.flag_code : currentLang;
+  var img = document.getElementById('activeFlagImg');
+  var drawerImg = document.getElementById('drawerFlagImg');
+  var code = document.getElementById('activeLangCode');
+  if (img) img.src = 'https://flagcdn.com/w40/' + flag + '.png';
+  if (drawerImg) drawerImg.src = 'https://flagcdn.com/w40/' + flag + '.png';
+  if (code) code.textContent = currentLang.toUpperCase();
+}
+
+// ══════ KEYBOARD ══════
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('langPopup').classList.remove('open');
+    document.getElementById('mobileDrawer').style.display = 'none';
+  }
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.getElementById('langPopup').classList.remove('open');document.getElementById('mobileDrawer').style.display='none'}});
+
+// ══════ INIT ══════
+loadPage(currentLang);
 </script>
 </body>
 </html>
