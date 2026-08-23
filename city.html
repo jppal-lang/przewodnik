@@ -243,6 +243,7 @@ function loadPage(lang) {
 
     // Set <title>
     document.title = (cityTr.title || city.slug) + ' — Quolino';
+    ustawMeta(city, cityTr, processedStops);
     document.documentElement.lang = lang;
     if (city.bandana_color) {
       document.body.dataset.city = city.slug;
@@ -333,21 +334,22 @@ function render(d) {
 
   // Wstep — akapity rozdzielone pustym wierszem ida jako osobne akapity
   if (tr.lead) {
-    html += '<div class="city-lead-block">';
+    html += '<section class="city-lead-block" id="wstep" aria-label="' + esc(ui('label.intro', 'Wstęp')) + '">';
     String(tr.lead).split(/\n\s*\n/).forEach(function(par) {
       if (par.trim()) html += '<p class="city-lead">' + esc(par.trim()) + '</p>';
     });
-    html += '</div>';
+    html += '</section>';
   }
 
   // Plan dnia — zaraz po wstepie, zanim ktokolwiek zejdzie do przystankow
   if (d.dayPlan && d.dayPlan.length) {
-    html += '<div class="city-section"><p class="caps">' + esc(ui('label.day_plan', 'Plan dnia')) + '</p>';
+    html += '<section class="city-section" id="plan-dnia">';
+    html += '<h2 class="caps">' + esc(ui('label.day_plan', 'Plan dnia')) + '</h2>';
     html += '<div class="plan-card">';
     d.dayPlan.forEach(function(row) {
       html += '<div class="plan-row"><span class="plan-time">' + esc(row.time_label) + '</span><span>' + esc(row.description) + '</span></div>';
     });
-    html += '</div></div>';
+    html += '</div></section>';
   }
 
   // Zweryfikowana trasa calego dnia — jeden link zamiast jedenastu nawigacji
@@ -365,13 +367,13 @@ function render(d) {
     if (c && uzyte.indexOf(c) === -1) uzyte.push(c);
   });
   if (uzyte.length) {
-    html += '<div class="legend" data-hide-kid><p class="caps">' + esc(ui('label.icons_legend', 'Ikony trasy')) + '</p><div class="legend-items">';
+    html += '<section class="legend" id="ikony" data-hide-kid><h2 class="caps">' + esc(ui('label.icons_legend', 'Ikony trasy')) + '</h2><div class="legend-items">';
     uzyte.forEach(function(c) {
       html += '<span class="legend-item"><span class="stop-cat stop-cat--' + c + '">' +
               (CAT_ICONS[c] || CAT_ICONS.monument) + '</span>' +
               esc(ui('cat.' + c, c)) + '</span>';
     });
-    html += '</div></div>';
+    html += '</div></section>';
   }
 
   // Trasa jest rama, nie klatka (WYTYCZNE §15) — to samo zdanie przy kazdym miescie
@@ -380,7 +382,9 @@ function render(d) {
           esc(ui('text.flexible_route', 'Każdy punkt może być obowiązkowy albo opcjonalny. Możecie pominąć przystanek, zmienić kolejność, skrócić pobyt albo dodać własny. Numer punktu to podpowiedź, nie harmonogram.')) +
           '</p></div>';
 
-  // Stops
+  // Trasa punkt po punkcie — wlasna sekcja z naglowkiem
+  html += '<section class="city-section" id="wycieczka">';
+  html += '<h2 class="caps">' + esc(ui('label.route_stops', 'Trasa punkt po punkcie')) + '</h2>';
   html += '<div class="stops" id="stops">';
   stops.forEach(function(item) {
     var s = item.stop, t = item.tr || {};
@@ -397,7 +401,7 @@ function render(d) {
     html += '<div class="stop-row1">';
     html += '<span class="' + catClass + '">' + icon + '</span>';
     html += '<span class="stop-num">' + id + (s.time_label ? ' · ' + esc(s.time_label) : '') + '</span>';
-    html += '<span class="stop-name">' + esc(t.name || 'Przystanek ' + id) + '</span>';
+    html += '<h3 class="stop-name">' + esc(t.name || 'Przystanek ' + id) + '</h3>';
     html += '<span class="stop-chev">▼</span>';
     html += '</div>';
 
@@ -490,27 +494,27 @@ function render(d) {
 
     html += '</div></div>';
   });
-  html += '</div>';
+  html += '</div></section>';
 
   // Lokalne jedzenie
   if (tr.local_food) {
-    html += '<div class="city-section">';
-    html += '<p class="caps">' + esc(ui('label.local_food', 'Lokalne jedzenie')) + '</p>';
+    html += '<section class="city-section" id="lokalne-jedzenie">';
+    html += '<h2 class="caps">' + esc(ui('label.local_food', 'Lokalne jedzenie')) + '</h2>';
     html += '<p class="note" style="margin-top:0">' + esc(tr.local_food) + '</p>';
-    html += '</div>';
+    html += '</section>';
   }
 
   // Good to know
   if (tr.good_to_know) {
-    html += '<div class="city-section">';
-    html += '<p class="caps">' + esc(ui('label.good_to_know', 'Warto wiedzieć')) + '</p>';
+    html += '<section class="city-section" id="warto-wiedziec">';
+    html += '<h2 class="caps">' + esc(ui('label.good_to_know', 'Warto wiedzieć')) + '</h2>';
     html += '<p class="note" style="margin-top:0">' + esc(tr.good_to_know) + '</p>';
-    html += '</div>';
+    html += '</section>';
   }
 
   // Sekcje, ktore wczesniej byly zakladkami — teraz jedna pod druga
-  html += '<div class="city-section" id="punkty-awaryjne" data-hide-kid>';
-  html += '<p class="caps">' + esc(ui('label.emergency', 'Punkty awaryjne')) + '</p>';
+  html += '<section class="city-section" id="punkty-awaryjne" data-hide-kid>';
+  html += '<h2 class="caps">' + esc(ui('label.emergency', 'Punkty awaryjne')) + '</h2>';
   if (d.emergency && d.emergency.length) {
     d.emergency.forEach(function(e) {
       html += '<div class="info-row">';
@@ -523,11 +527,11 @@ function render(d) {
   } else {
     html += '<p class="note">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
   }
-  html += '</div>';
+  html += '</section>';
 
   // Phrases
-  html += '<div class="city-section" id="rozmowki" data-hide-kid>';
-  html += '<p class="caps">' + esc(ui('label.phrases', 'Rozmówki')) + '</p>';
+  html += '<section class="city-section" id="rozmowki" data-hide-kid>';
+  html += '<h2 class="caps">' + esc(ui('label.phrases', 'Rozmówki')) + '</h2>';
   if (d.phrases && d.phrases.length) {
     html += '<div class="phrase-card">';
     d.phrases.forEach(function(p) {
@@ -537,11 +541,11 @@ function render(d) {
   } else {
     html += '<p class="note">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
   }
-  html += '</div>';
+  html += '</section>';
 
   // Phones
-  html += '<div class="city-section" id="telefony" data-hide-kid>';
-  html += '<p class="caps">' + esc(ui('label.phones', 'Telefony')) + '</p>';
+  html += '<section class="city-section" id="telefony" data-hide-kid>';
+  html += '<h2 class="caps">' + esc(ui('label.phones', 'Telefony')) + '</h2>';
   if (d.phones && d.phones.length) {
     d.phones.forEach(function(p) {
       html += '<div class="tel-row"><span>' + esc(p.label) + '</span><a href="tel:' + esc(p.number.replace(/\s/g,'')) + '">' + esc(p.number) + '</a></div>';
@@ -549,18 +553,93 @@ function render(d) {
   } else {
     html += '<p class="note">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
   }
-  html += '</div>';
+  html += '</section>';
 
   // QR
-  html += '<div class="city-section" id="qr-dziecka" data-hide-kid>';
-  html += '<p class="caps">' + esc(ui('label.qr_kid', 'QR dla dziecka')) + '</p>';
+  html += '<section class="city-section" id="qr-dziecka" data-hide-kid>';
+  html += '<h2 class="caps">' + esc(ui('label.qr_kid', 'QR dla dziecka')) + '</h2>';
   html += '<div class="qr-share"><div class="qr-share-code" id="qrCode"></div>';
   html += '<div class="qr-share-text"><p>' + ui('qr.scan_text', 'Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik w widoku dziecka.') + '</p>';
   html += '<a class="qr-share-link" href="#" id="qrLink"></a></div></div>';
-  html += '</div>';
+  html += '</section>';
 
   // Inject
   document.getElementById('mainContent').innerHTML = html;
+}
+
+// ── Meta i dane strukturalne ───────────────────────────
+// Strona jest budowana w JS, wiec opis, Open Graph i JSON-LD trzeba
+// dopisac po pobraniu danych. Bez tego wyszukiwarka widzi pusty szablon.
+function ustawMeta(city, cityTr, stops) {
+  var tytul = (cityTr.title || city.slug);
+  var opis  = cityTr.subtitle || (cityTr.lead || '').split(/\n\s*\n/)[0] || '';
+  if (opis.length > 300) opis = opis.slice(0, 297) + '…';
+  var baza  = location.origin + location.pathname.replace(/[^/]*$/, '');
+  var obraz = city.hero_image
+    ? city.hero_image
+    : (city.country && city.slug ? 'media/tours/' + city.country + '-' + city.slug + '-hero-1200.webp' : '');
+
+  function meta(atrybut, klucz, wartosc) {
+    if (!wartosc) return;
+    var el = document.head.querySelector('meta[' + atrybut + '="' + klucz + '"]');
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(atrybut, klucz);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', wartosc);
+  }
+  meta('name', 'description', opis);
+  meta('property', 'og:type', 'article');
+  meta('property', 'og:title', tytul + ' — Quolino');
+  meta('property', 'og:description', opis);
+  meta('property', 'og:url', location.href);
+  if (obraz) meta('property', 'og:image', baza + obraz);
+  meta('name', 'twitter:card', obraz ? 'summary_large_image' : 'summary');
+
+  var kanon = document.head.querySelector('link[rel="canonical"]');
+  if (!kanon) {
+    kanon = document.createElement('link');
+    kanon.rel = 'canonical';
+    document.head.appendChild(kanon);
+  }
+  kanon.href = location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);
+
+  // JSON-LD: wycieczka z lista przystankow w kolejnosci trasy
+  var punkty = stops.map(function(item, i) {
+    var s = item.stop, t = item.tr || {};
+    var miejsce = {
+      '@type': 'TouristAttraction',
+      name: t.name || ('Przystanek ' + (i + 1))
+    };
+    if (t.desc_paragraphs && t.desc_paragraphs.length) miejsce.description = t.desc_paragraphs[0];
+    if (s.lat && s.lon) {
+      miejsce.geo = { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lon };
+    }
+    if (s.website) miejsce.url = s.website;
+    if (s.phone) miejsce.telephone = s.phone;
+    return { '@type': 'ListItem', position: i + 1, item: miejsce };
+  });
+
+  var ld = {
+    '@context': 'https://schema.org',
+    '@type': 'TouristTrip',
+    name: tytul,
+    description: opis,
+    url: kanon.href,
+    touristType: 'Rodziny z dziećmi',
+    itinerary: { '@type': 'ItemList', numberOfItems: punkty.length, itemListElement: punkty }
+  };
+  if (obraz) ld.image = baza + obraz;
+  if (city.duration_hours) ld.estimatedDuration = 'PT' + city.duration_hours + 'H';
+
+  var stary = document.getElementById('ld-wycieczka');
+  if (stary) stary.remove();
+  var tag = document.createElement('script');
+  tag.type = 'application/ld+json';
+  tag.id = 'ld-wycieczka';
+  tag.textContent = JSON.stringify(ld);
+  document.head.appendChild(tag);
 }
 
 // ── Build language popup grid ──────────────────────────
