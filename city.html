@@ -193,7 +193,7 @@ function loadPage(lang) {
   // Fetch all data in parallel
   Promise.all([
     sb('cities', 'slug=eq.' + citySlug + '&select=*'),
-    sb('city_translations', 'city_slug=eq.' + citySlug + '&lang=eq.' + lang),
+    sb('city_translations', 'city_slug=eq.' + citySlug + '&lang=in.(' + lang + ',' + FALLBACK + ')'),
     sb('stops', 'city_slug=eq.' + citySlug + '&select=*,stop_translations(*)&order=sort_order'),
     sb('day_plan', 'city_slug=eq.' + citySlug + '&lang=eq.' + lang + '&order=sort_order'),
     sb('emergency_points', 'city_slug=eq.' + citySlug + '&lang=eq.' + lang + '&order=sort_order'),
@@ -207,7 +207,12 @@ function loadPage(lang) {
     sb('countries', 'select=*'),
   ]).then(function(results) {
     var city       = results[0][0];
-    var cityTr     = results[1][0] || {};
+    // Przystanki mialy zejscie na FALLBACK od poczatku, karta miasta nie —
+    // przez to angielska wersja pokazywala surowy slug zamiast tytulu.
+    var cityTrRows = results[1];
+    var cityTr     = cityTrRows.filter(function(r) { return r.lang === lang; })[0]
+                  || cityTrRows.filter(function(r) { return r.lang === FALLBACK; })[0]
+                  || cityTrRows[0] || {};
     var stops      = results[2];
     var dayPlan    = results[3];
     var emergency  = results[4];
@@ -445,6 +450,10 @@ function render(d) {
                  '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
                  esc(ui(s.reservation === 'required' || s.reservation === 'recommended' ? 'btn.reserve' : 'btn.write',
                         s.reservation ? 'Rezerwuj' : 'Napisz')) + '</span></a>');
+    }
+    if (s.phone) {
+      akcje.push('<a class="act act-sec" href="tel:' + esc(String(s.phone).replace(/[^0-9+]/g, '')) +
+                 '" onclick="event.stopPropagation()"><span>' + esc(ui('btn.call', 'Zadzwoń')) + '</span></a>');
     }
     if (s.website) {
       akcje.push('<a class="act act-sec" href="' + esc(s.website) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +

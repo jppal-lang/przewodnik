@@ -461,6 +461,23 @@ W danych: orientacyjny koszt, poziom formalności, strój, godziny, `reservation
 
 Do JSON-a trafia **jedna wybrana restauracja**. Odrzucone warianty → `_notes`.
 
+## Kontakt do lokalu — obowiązkowy
+
+Każdy lokal (`restaurant`, `icecream`, `sweets`) dostaje komplet:
+
+| Pole | Format | Uwaga |
+|---|---|---|
+| `phone` | `"+39 0742 651 234"` | międzynarodowy, ze spacjami; strona robi z tego przycisk „Zadzwoń" |
+| `website` | pełny `https://…` | oficjalna strona lokalu, nie agregator w rodzaju TripAdvisora |
+| `whatsapp` | `"+39 333 111 222"` | tylko jeśli lokal naprawdę odbiera na WhatsAppie |
+| `verify_url` | link | tam turysta sprawdzi godziny sam |
+
+**Rezerwacja bez kontaktu jest bezużyteczna.** Jeśli `reservation` to `required` albo
+`recommended`, musi być `phone` albo `whatsapp` — inaczej mówimy rodzinie „zarezerwuj"
+i nie dajemy czym.
+
+Telefonu nie wymyślasz. Nie ma potwierdzonego numeru → `null` i notka w `_notes`.
+
 ---
 
 # 16. ZDJĘCIA — RYSUJEMY WŁASNE, NIE POBIERAMY
@@ -587,6 +604,8 @@ Wszystkie sekcje opcjonalne.
 cena + status (`price` albo `parking_cost`) · `verify_url` · `maps_query` · dress code **tylko
 jeśli jest wymóg** · czas pobytu · 2–4 akapity opisu rodzica · daty i kontekst · quest ·
 wskazówka pisana do dziecka · zadanie foto · lokalny smak jeśli istnieje · źródła
+
+**Każdy lokal:** telefon · strona · WhatsApp jeśli działa · rezerwacja z kontaktem, którym da się z niej skorzystać
 
 **Czego tam nie ma:** wersalików w nazwach · zdania w `year_built` · komentarza o pewności
 w `price` i `opening_hours` · `dress_code` typu „brak wymogów" · `wiki_article` w nowym mieście

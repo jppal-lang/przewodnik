@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 CATEGORIES = {"parking", "monument", "church", "museum", "house", "viewpoint",
-              "restaurant", "icecream", "sweets", "photo"}
+              "restaurant", "icecream", "sweets", "photo", "street", "castle", "synagogue"}
 EMERGENCY  = {"pharmacy", "hospital", "toilet", "playground"}
 DURATIONS  = {"half_day", "full_day"}
 STATUSES   = {"draft", "published"}
@@ -123,6 +123,23 @@ def validate_city(folder: Path):
         # §14 — ocena i liczba opinii idą w parze
         if (s.get("rating") is None) != (s.get("reviews_count") is None):
             err(slug, f"{k}: rating i reviews_count muszą wystąpić razem albo wcale")
+        # Lokale: turysta musi miec jak zadzwonic i gdzie sprawdzic karte
+        if s.get("category") in ("restaurant", "icecream", "sweets"):
+            if not s.get("phone"):
+                err(slug, f"{k}: lokal bez telefonu — pole 'phone' jest obowiazkowe")
+            if not s.get("website"):
+                err(slug, f"{k}: lokal bez strony — pole 'website' jest obowiazkowe")
+        if s.get("reservation") in ("required", "recommended") and not (s.get("phone") or s.get("whatsapp")):
+            err(slug, f"{k}: rezerwacja '{s['reservation']}' bez telefonu i bez WhatsAppa — nie ma jak zarezerwowac")
+        # Dane, ktore ida wprost na strone (IMPORT §4b)
+        if s.get("price") and re.search(r"weryfikacj|do sprawdzenia|do potwierdzenia", str(s["price"]), re.I):
+            err(slug, f"{k}: 'price' zawiera komentarz o pewnosci — cena albo null, watpliwosc niesie price_status")
+        if s.get("opening_hours") and re.search(r"wymaga|weryfikacj|sprawdz", str(s["opening_hours"]), re.I):
+            err(slug, f"{k}: 'opening_hours' to nie sa godziny — albo godziny, albo null")
+        if s.get("year_built") and len(str(s["year_built"])) > 40:
+            err(slug, f"{k}: 'year_built' ma {len(str(s['year_built']))} znakow — to plakietka na rok albo okres, historia idzie do desc_paragraphs")
+        if not s.get("lat") or not s.get("lon"):
+            err(slug, f"{k}: brak lat/lon — nawigacja po samej nazwie potrafi wskazac inne miasto")
         if s.get("category") == "restaurant" and s.get("rating") is not None:
             if s["rating"] < 4.1:
                 err(slug, f"{k}: restauracja z oceną {s['rating']} — próg to 4,1")
@@ -172,6 +189,11 @@ def validate_city(folder: Path):
         for f in CITY_TEXT:
             if f not in data.get("city", {}):
                 err(slug, f"{code}: brak klucza city.{f}")
+        ct = data.get("city", {})
+        if not ct.get("lead"):
+            err(slug, f"{code}: city.lead puste — wstep dokumentu to tresc miasta, nie ozdoba")
+        elif ct.get("lead") and "\n\n" not in ct["lead"] and len(ct["lead"]) > 400:
+            warn(slug, f"{code}: city.lead to jeden dlugi blok — akapity rozdziel pustym wierszem")
 
         s_keys = set(data.get("stops", {}).keys())
         if s_keys != meta_keys:
@@ -185,6 +207,18 @@ def validate_city(folder: Path):
             for f in STOP_TEXT:
                 if f not in st:
                     err(slug, f"{code}: {key} — brak klucza '{f}' (użyj null)")
+            nm = st.get("name") or ""
+            litery = [c for c in nm if c.isalpha()]
+            if len(litery) > 3 and all(c.isupper() for c in litery):
+                err(slug, f"{code}: {key} — nazwa wersalikami ('{nm}'); wielkosc liter ustawia CSS")
+            if not st.get("photo_task"):
+                err(slug, f"{code}: {key} — brak 'photo_task', a zadanie foto jest obowiazkowe")
+            dc = (st.get("dress_code") or "").lower()
+            if dc and re.search(r"brak (szczeg|wymog)|dowoln|bez wymog", dc):
+                err(slug, f"{code}: {key} — dress_code '{st['dress_code']}' ma byc null, gdy nie ma wymogu")
+            n_par = len(st.get("desc_paragraphs") or [])
+            if code == "pl" and not 2 <= n_par <= 4:
+                err(slug, f"{code}: {key} — {n_par} akapitow opisu, wytyczna mowi 2–4")
             dp = st.get("desc_paragraphs")
             if dp is not None and not isinstance(dp, list):
                 err(slug, f"{code}: {key} — desc_paragraphs musi być listą")
@@ -213,7 +247,8 @@ def validate_city(folder: Path):
 
     got = {p.name.split(".")[-2] for p in lang_files}
     if got == {"pl"}:
-        warn(slug, "tylko wersja polska — brak tłumaczeń")
+        warn(slug, "tylko wersja polska — po zatwierdzeniu zamów u ChatGPT: "
+                   f"„Przetłumacz {slug} na en, de, it”")
     opt = sum(1 for s in stops if s.get("optional"))
     print(f"  {slug}: {len(stops)} przystanków ({opt} opcjonalnych), języki: {', '.join(sorted(got))}")
 

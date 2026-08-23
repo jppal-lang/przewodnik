@@ -263,6 +263,8 @@ a stało się tekstem widocznym dla turysty. Import odrzuca pliki, które to mie
 | `subtitle` | opisowy człon nagłówka dokumentu, bez emoji i nazwy miasta | własnego, ogólnego zdania „zamiast" |
 | `lead` | **wszystkie** akapity wstępu, rozdzielone `\n\n` | jednego zdania streszczenia — strona pokazuje wstęp nad trasą |
 | `hero_note` | ramka „Po drodze…" w całości | `null`, gdy dokument ją ma |
+| `phone` | telefon lokalu: `"+39 0742 651 234"` | pominięcia przy `restaurant`/`icecream`/`sweets` — kolumna `stops.phone` już jest |
+| `website` | oficjalna strona lokalu | linku do agregatora zamiast strony |
 
 **`lat` i `lon` są obowiązkowe przy każdym punkcie.** Bez nich nawigacja idzie po nazwie
 tekstowej, a „Via Giulia" prowadzi do innego miasta.
