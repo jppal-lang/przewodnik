@@ -53,9 +53,14 @@ Po poprawkach oddaj oba pliki. Tłumaczeń jeszcze nie rób.
 
 ---
 
-Dopiero gdy polska wersja przejdzie weryfikację:
+Dopiero gdy polska wersja przejdzie weryfikację — i etapami, zgodnie z §19:
 
-> Przetłumacz Spello na en, de, it.
+1. > Przetłumacz Spello na angielski.
+2. > Przetłumacz Spello na włoski.
+3. > Skonfrontuj wersję angielską i włoską z polską: kompletność, fakty, daty i liczby,
+   > nazwy własne, terminy historyczne, sens legend, nic dodanego ani utraconego, naturalność.
+4. > Przetłumacz Spello na pozostałe języki.
 
-Kolejność ma znaczenie: tłumaczenie niesprawdzonej treści powiela ten sam błąd
-tyle razy, ile jest języków.
+Angielski jest wersją kontrolną, włoski — kontrolą kulturową dla atrakcji we Włoszech.
+Przeskoczenie wprost z polskiego na kilkanaście języków rozsyła ewentualny błąd
+w kilkanaście miejsc naraz.

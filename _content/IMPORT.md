@@ -260,6 +260,7 @@ a stało się tekstem widocznym dla turysty. Import odrzuca pliki, które to mie
 | `photo_task` | konkretne zadanie foto — **obowiązkowe** | `null`, „zrób ładne zdjęcie" |
 | `desc_paragraphs` | 2–4 akapity, przy każdym punkcie tak samo | jednego akapitu przy bramie i jedenastu przy kolacji |
 | `wiki_article` | w nowych miastach `null` | tytułów — zdjęcia rysujemy sami, patrz niżej |
+| `region_label` | samą nazwę regionu: `"Umbria"` | `"Umbria · pół dnia"` — czas dokleja strona z `duration_type`, inaczej wychodzi „Umbria · pół dnia · pół dnia" |
 | `subtitle` | opisowy człon nagłówka dokumentu, bez emoji i nazwy miasta | własnego, ogólnego zdania „zamiast" |
 | `lead` | **wszystkie** akapity wstępu, rozdzielone `\n\n` | jednego zdania streszczenia — strona pokazuje wstęp nad trasą |
 | `hero_note` | ramka „Po drodze…" w całości | `null`, gdy dokument ją ma |
@@ -306,6 +307,12 @@ dla restauracji, komplet kluczy w każdym języku, zgodność liczby akapitów z
 brak `_notes` w tłumaczeniach oraz zakazane kilometry i czasy dojazdu.
 
 Reguł z §4b walidator jeszcze nie egzekwuje — sprawdzam je przy imporcie ręcznie.
+
+**Kolejność języków jest wiążąca dla importu.** Zgodnie z §19 instrukcji ChatGPT tłumaczenia
+powstają etapami: najpierw `en`, potem język lokalny atrakcji (Włochy → `it`), potem konfrontacja
+obu z polskim, a dopiero na końcu pozostałe języki. Import odrzuca paczkę, w której są języki
+dalsze, a brakuje `en` albo lokalnego — bo znaczy to, że ktoś tłumaczył prosto z polskiego
+i ewentualny błąd poszedł od razu w kilkanaście wersji.
 
 ---
 

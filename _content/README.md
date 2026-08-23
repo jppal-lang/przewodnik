@@ -46,7 +46,9 @@ Ten numer jest jedynym łącznikiem — dzięki niemu plik niemiecki i polski za
    Potem wystarczają krótkie polecenia: „Zrób Spello, region Umbria".
 1. **Treść** — ChatGPT oddaje `.meta.json` + `.pl.json`, pushuje.
 2. **Weryfikacja** — redaktor sprawdza polską wersję. Uwagi lądują w bloku `_notes`.
-3. **Tłumaczenia** — dopiero po zatwierdzeniu polskiego: „Przetłumacz Spello na en, de, it".
+3. **Tłumaczenia** — dopiero po zatwierdzeniu polskiego i **etapami** (CHATGPT-PROJEKT §19):
+   angielski → język lokalny atrakcji → konfrontacja obu z polskim → pozostałe języki.
+   Angielski jest wersją kontrolną, lokalny — kontrolą kulturową.
 4. **Walidacja** — `python3 validate.py` w katalogu `_content/`. Kod wyjścia 1 = nie importować.
 5. **Import** — JP mówi Claude'owi „zaimportuj Spello".
 6. Poprawki robi się **w plikach**, potem re-import. Nigdy bezpośrednio w bazie.

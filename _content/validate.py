@@ -190,6 +190,9 @@ def validate_city(folder: Path):
             if f not in data.get("city", {}):
                 err(slug, f"{code}: brak klucza city.{f}")
         ct = data.get("city", {})
+        if ct.get("region_label") and "·" in ct["region_label"]:
+            err(slug, f"{code}: city.region_label = '{ct['region_label']}' — ma byc sama nazwa regionu, "
+                      "czas trwania dokleja strona")
         if not ct.get("lead"):
             err(slug, f"{code}: city.lead puste — wstep dokumentu to tresc miasta, nie ozdoba")
         elif ct.get("lead") and "\n\n" not in ct["lead"] and len(ct["lead"]) > 400:
@@ -246,9 +249,22 @@ def validate_city(folder: Path):
             err(slug, f"{code}: blok _notes nie może być tłumaczony — usuń go")
 
     got = {p.name.split(".")[-2] for p in lang_files}
+
+    # §19 — etapy: pl → en → jezyk lokalny → reszta
+    local = (c.get("country") or "").lower()
+    dalsze = got - {"pl", "en", local}
+    if dalsze and "en" not in got:
+        err(slug, f"jezyki {sorted(dalsze)} bez wersji angielskiej — EN jest wersja kontrolna, "
+                  "powstaje pierwszy (§19)")
+    if dalsze and local and local not in got:
+        err(slug, f"jezyki {sorted(dalsze)} bez wersji lokalnej '{local}' — lokalna jest kontrola "
+                  "kulturowa i powstaje przed pozostalymi (§19)")
+    if got == {"pl", "en"} and local and local not in got:
+        warn(slug, f"jest pl i en — kolejny etap to jezyk lokalny: „Przetlumacz {slug} na {local}”")
+
     if got == {"pl"}:
-        warn(slug, "tylko wersja polska — po zatwierdzeniu zamów u ChatGPT: "
-                   f"„Przetłumacz {slug} na en, de, it”")
+        warn(slug, "tylko wersja polska — po zatwierdzeniu zamów u ChatGPT etap 1: "
+                   f"„Przetłumacz {slug} na angielski”")
     opt = sum(1 for s in stops if s.get("optional"))
     print(f"  {slug}: {len(stops)} przystanków ({opt} opcjonalnych), języki: {', '.join(sorted(got))}")
 

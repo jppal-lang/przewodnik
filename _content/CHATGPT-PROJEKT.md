@@ -188,7 +188,7 @@ się zgadzać w `desc_paragraphs`, `kids_box`, `hint` i `local_flavor`.
   "lang": "pl",
   "city": {
     "title": "Spello",
-    "region_label": "Umbria · pół dnia",
+    "region_label": "Umbria",
     "subtitle": "Jedno–dwa zdania z hakiem. To leci na kafel, przycinane do 2 linijek.",
     "lead": null,
     "good_to_know": "ZTL, bilety, godziny — praktyczne uwagi do całego miasta.",
@@ -216,6 +216,9 @@ się zgadzać w `desc_paragraphs`, `kids_box`, `hint` i `local_flavor`.
 ```
 
 **Pole nieużywane → `null`. Nie pomijaj klucza.**
+
+`region_label` to **sama nazwa regionu**. Długość wycieczki dokleja strona z `duration_type` —
+`"Umbria · pół dnia"` wyświetli się jako „Umbria · pół dnia · pół dnia".
 
 ## Wstęp dokumentu → pola miasta
 
@@ -541,6 +544,51 @@ Nie zakładaj, że zdjęcie z internetu pochodzi z danego miejsca.
 Osobne zadanie, **dopiero po zatwierdzeniu polskiego**. Tłumaczenie niesprawdzonej treści
 to powielanie błędu razy siedemnaście.
 
+## Zasada przygotowania i kontroli tłumaczeń
+
+Tłumaczenia przygotowujemy etapami. Nie tłumaczymy tekstu bezpośrednio z polskiego na wszystkie
+języki jednocześnie.
+
+### Kolejność pracy
+
+1. **Najpierw przygotowujemy wersję angielską (`EN`).**
+   Tłumaczenie powinno być kompletne, precyzyjne i zachowywać wszystkie informacje zawarte
+   w zatwierdzonej wersji polskiej. Angielski jest główną wersją pośrednią wykorzystywaną
+   do kontroli jakości dalszych tłumaczeń.
+
+2. **Następnie przygotowujemy język lokalny atrakcji (`LOCAL`).**
+   Dla atrakcji znajdującej się we Włoszech będzie to włoski, dla atrakcji w Niemczech niemiecki
+   itd. Wersja lokalna musi uwzględniać naturalną terminologię, lokalne nazwy własne, nazwy
+   zabytków, wydarzeń, instytucji oraz właściwy sposób opisywania lokalnej kultury.
+
+3. **Konfrontujemy wersję angielską z językiem lokalnym.**
+   Obie wersje sprawdzamy względem zatwierdzonego tekstu polskiego. Kontrolujemy przede wszystkim:
+   - kompletność informacji,
+   - zgodność faktów,
+   - daty i liczby,
+   - nazwy własne,
+   - terminy historyczne i specjalistyczne,
+   - znaczenie legend i lokalnych opowieści,
+   - brak informacji dodanych lub utraconych podczas tłumaczenia,
+   - naturalność języka.
+
+4. **Dopiero po zatwierdzeniu EN + LOCAL przygotowujemy pozostałe języki.**
+   Pozostałe wersje językowe tworzymy na podstawie zatwierdzonej treści, korzystając z polskiej
+   wersji źródłowej oraz zweryfikowanych wersji angielskiej i lokalnej.
+
+5. **Każde tłumaczenie musi zachować pełną strukturę treści.**
+   Nie wolno skracać, upraszczać ani usuwać informacji tylko dlatego, że tekst jest tłumaczony.
+   Liczba akapitów, questów, wskazówek i pól powinna odpowiadać wersji źródłowej.
+
+### Zasada nadrzędna
+
+Polski jest źródłem redakcyjnym treści i faktów. Angielski jest główną wersją kontrolną.
+Język lokalny jest kontrolą kulturową i językową. Dopiero po wzajemnym sprawdzeniu EN i LOCAL
+przygotowujemy pozostałe języki.
+
+Nie wolno dopuścić do sytuacji, w której błąd z polskiego tłumaczenia zostanie automatycznie
+powielony w kilkunastu kolejnych językach.
+
 **Struktura pliku jest nietykalna.** Te same klucze, ta sama kolejność, ta sama liczba akapitów
 w `desc_paragraphs`. `null` w źródle → `null` w tłumaczeniu. Zmieniasz tylko `"lang"`.
 `stop_key` nie tłumaczysz. Bloku `_notes` nie przenosisz.
@@ -631,7 +679,10 @@ brak godzin wyjazdu i powrotu z bazy
 | Polecenie | Co oddajesz |
 |---|---|
 | „Zrób {{miasto}}, region {{region}}" | `<slug>.meta.json` + `<slug>.pl.json` |
-| „Przetłumacz {{miasto}} na en, de, it" | `<slug>.en.json`, `<slug>.de.json`, `<slug>.it.json` |
+| „Przetłumacz {{miasto}} na angielski" | `<slug>.en.json` — etap 1, zawsze pierwszy |
+| „Przetłumacz {{miasto}} na język lokalny" | `<slug>.<local>.json` — etap 2 (Włochy → `it`) |
+| „Skonfrontuj EN i {{local}} z polskim" | raport rozbieżności wg §19, bez plików |
+| „Przetłumacz {{miasto}} na pozostałe języki" | reszta plików — dopiero po zatwierdzeniu EN + LOCAL |
 | „Popraw {{miasto}}: {{zmiana}}" | `<slug>.patch.json` |
 
 Miasta już w bazie — nie dubluj slugów:

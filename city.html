@@ -342,7 +342,9 @@ function render(d) {
 
   // Hero body
   html += '<div class="city-hero-body">';
-  html += '<p class="caps">' + esc(tr.region_label || d.regionName || '') + ' · ' + durationLabel(city) + '</p>';
+  // Region bierzemy z tabeli regionow, nie z pola tekstowego — 'region_label'
+  // bywa zapisane jako „Umbria · pół dnia" i czas doklejal sie drugi raz.
+  html += '<p class="caps">' + esc(d.regionName || tr.region_label || '') + ' · ' + durationLabel(city) + '</p>';
   html += '<h1>' + esc(tr.title || city.slug) + '</h1>';
   if (tr.subtitle) html += '<p class="subtitle">' + esc(tr.subtitle) + '</p>';
   if (tr.hero_note) html += '<p class="stop-note" style="margin-top:4px">' + esc(tr.hero_note) + '</p>';
