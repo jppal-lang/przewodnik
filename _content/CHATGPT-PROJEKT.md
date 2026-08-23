@@ -269,8 +269,19 @@ Google przyjmuje do 9 waypointów plus start i metę — 11 punktów łącznie.
 Dla muzeów, kościołów, pałaców, twierdz i restauracji sprawdzasz: godziny otwarcia,
 dni zamknięcia, cenę, zakres biletu, konieczność rezerwacji, ograniczenia wejścia.
 
-Brak potwierdzenia ceny → `"price": "do potwierdzenia"`, `"price_status": "unverified"`.
-Brak potwierdzenia godzin → analogicznie `hours_status`.
+Brak potwierdzenia ceny → `"price_status": "unverified"`. Brak potwierdzenia godzin →
+analogicznie `hours_status`.
+
+**W `price` idzie sama cena, nigdy komentarz o jej pewności.** Strona sama dopisuje
+„do sprawdzenia", gdy status jest `unverified` — jeśli zrobisz to jeszcze raz w treści,
+turysta zobaczy „€8 — do weryfikacji · do sprawdzenia".
+
+Dobrze: `"price": "€8 dorosły / €4 dziecko 6–14 lat"`, `"price_status": "unverified"`
+Źle: `"price": "€8 dorosły / €4 dziecko — do ponownej weryfikacji"`
+Źle: `"price": "wymaga weryfikacji"` — brak ceny to `null`, nie zdanie o jej braku.
+
+To samo dotyczy `opening_hours`: albo godziny, albo `null`. `"godziny sezonowe wymagają
+sprawdzenia"` to nie są godziny.
 
 **Każdy punkt musi mieć `verify_url`** — link do samodzielnego sprawdzenia, najlepiej oficjalny.
 
@@ -282,6 +293,16 @@ liczby opinii, dat, nazwisk, nazw dzieł, autorów, legend.
 
 Nie znasz dokładnego roku → podajesz potwierdzony okres (`I w. p.n.e.`). Nie zgadujesz.
 
+**`year_built` to rok albo okres — nie zdanie.** Pole ląduje na stronie jako mała plakietka
+obok nazwy punktu; całe zdanie rozwala układ karty.
+
+Dobrze: `"I w. p.n.e."`, `"1500–1501"`, `"XIII w."`
+Źle: `"odkrycie pozostałości willi — lipiec 2005"`
+Źle: `"I faza — epoka augustowska (27 p.n.e.–14 n.e.); II faza — II–pocz. III w. n.e."`
+
+Historia budowy, fazy, okoliczności odkrycia → do `desc_paragraphs`. Tam jest na to miejsce
+i tam turysta tego szuka.
+
 ---
 
 # 9. STRÓJ I UWAGI PRAKTYCZNE
@@ -289,6 +310,11 @@ Nie znasz dokładnego roku → podajesz potwierdzony okres (`I w. p.n.e.`). Nie 
 `dress_code` obowiązkowy wszędzie, gdzie są ograniczenia — nie tylko w kościołach.
 Także katedry, bazyliki, klasztory, synagogi, pałace, wybrane restauracje.
 Przykład: `"Ramiona i kolana zakryte."`
+
+**Nie ma wymogu → `null`.** Nie `"brak szczególnych wymogów"`, nie `"strój dowolny"`.
+Strona pokazuje ten box tylko wtedy, gdy pole jest wypełnione — jedenaście punktów z napisem
+„Strój: brak szczególnych wymogów" to jedenaście pustych ramek, przez które turysta przestaje
+czytać tę rubrykę i przegapia kościół, gdzie wymóg naprawdę jest.
 
 `practical_note` to warunki na miejscu, nie ubiór formalny:
 `"Warto zabrać bluzę — w jaskini temperatura jest znacznie niższa."`
@@ -298,7 +324,16 @@ Przykład: `"Ramiona i kolana zakryte."`
 # 10. OPIS RODZICA (`desc_paragraphs`)
 
 Nie może być trzema zdaniami typu „Rzymska willa z bogatymi mozaikami".
-Ma pozwolić rodzicowi **opowiedzieć miejsce dziecku**. 2–3 akapity.
+Ma pozwolić rodzicowi **opowiedzieć miejsce dziecku**. **2–4 akapity — przy każdym punkcie.**
+
+Ta liczba obowiązuje tak samo bramę miejską, jak i główne muzeum. Jeden akapit to za mało:
+rodzic staje przed obiektem i nie ma czego opowiedzieć. Więcej niż cztery to ściana tekstu,
+której nikt nie czyta na stojąco z dzieckiem za rękę.
+
+**Kolacja nie jest wyjątkiem.** Restauracja to przystanek jak każdy inny: 2–4 akapity o lokalu
+i kuchni. Karta dań, historia rodziny, opis każdego dania i rozmówki do zamawiania nie mieszczą
+się w jednym punkcie — jedenaście akapitów przy osterii, gdy Porta Venere ma jeden, to nie jest
+przewodnik po mieście, tylko recenzja restauracji z dodatkiem.
 
 Zawiera, zależnie od obiektu: kiedy powstał, kto zbudował, po co, co się tam działo,
 jak zmieniało się w czasie, ważne postacie, funkcję pomieszczeń, znaczenie dla regionu,
@@ -347,7 +382,16 @@ Przy parkingu i restauracji **nie twórz questu na siłę** → `null`.
 
 # 12. WSKAZÓWKA (`hint`)
 
-Ma realnie pomóc rozwiązać quest. Nie ogólnik, nie powtórzenie pytania:
+Ma realnie pomóc rozwiązać quest. **Piszesz do dziecka, w drugiej osobie** — tak jak quest.
+
+Wskazówka nie jest instrukcją oceniania dla rodzica. Zdania typu *„Dziecko powinno wskazać
+konkretny detal i podać widoczne uzasadnienie"* opisują, jak sprawdzić odpowiedź — a mają
+naprowadzić na nią dziecko.
+
+Źle: *„Dziecko powinno rozpoznać rzymskie elementy po materiale."*
+Dobrze: *„Popatrz na dolne bloki bramy — są duże, jasne i idealnie do siebie dopasowane."*
+
+Nie ogólnik, nie powtórzenie pytania:
 > „Rzymskie elementy rozpoznasz po dużych, starannie dopasowanych blokach białego kamienia.
 > Przy średniowiecznych wieżach zwróć uwagę na inny materiał."
 
@@ -400,16 +444,19 @@ Do JSON-a trafia **jedna wybrana restauracja**. Odrzucone warianty → `_notes`.
 
 ---
 
-# 16. `wiki_article` — SPRAWDŹ, NIE ZGADUJ
+# 16. ZDJĘCIA — RYSUJEMY WŁASNE, NIE POBIERAMY
 
-Z tego pola bierze się zdjęcie na kafel i przy przystanku. Dla każdego tytułu:
-otwórz `it.wikipedia.org/wiki/<tytuł>`, potwierdź, że **artykuł istnieje** i **ma zdjęcie główne**.
+Grafiki robimy sami: jedna ilustracja z maskotką Que na wycieczkę, przerabiana lokalnie
+na WebP. **Nie szukasz zdjęć, nie podajesz linków do zdjęć, nie odsyłasz do Wikimedia Commons.**
 
-Nie ma artykułu albo zdjęcia → `null`. **Nie wymyślaj tytułów.**
-Zmyślony tytuł = 404 i pusty kafel. Zdarzyło się przy Rimini i Rawennie.
+`wiki_article` i `wiki_lang` nie są już potrzebne — pole zostaje w schemacie dla starszych
+miast, ale **nie wypełniasz go w nowych**. Wikipedia zostaje wyłącznie źródłem kontekstu
+historycznego przy pisaniu opisów (i tak jak w §8 — nie godzin, cen ani zasad wejścia).
 
-`city.wiki_article` wskazuje **najbardziej rozpoznawalny zabytek miasta** — to zdjęcie
-sprzedaje kafel na stronie regionu.
+**`photo_task` jest obowiązkowy przy każdym punkcie.** To zadanie foto dla dziecka: co ma
+sfotografować i dlaczego akurat to. Jedno zdanie, konkret, nie „zrób ładne zdjęcie".
+Dobrze: *„Sfotografuj kota z mozaiki tak, żeby cały zmieścił się w kadrze — potem porównacie
+go z waszym kotem w domu."*
 
 ---
 
@@ -426,6 +473,11 @@ Zaczyna się na parkingu, kończy na ostatnim przystanku.
 
 Nazwy własne zabytków zostają w oryginale: `Porta Consolare`, `Fontana Maggiore`.
 Turysta musi je rozpoznać na tabliczce i w Google Maps.
+
+**Zapisujesz je normalną kapitalizacją, nigdy wersalikami.** `Porta Consolare`, nie
+`PORTA CONSOLARE`. Wielkość liter to sprawa wyglądu strony i ustawia ją CSS; wersaliki
+wpisane do bazy zostają w niej na zawsze, wyglądają jak krzyk i psują tłumaczenia,
+bo w części języków wersaliki gubią znaki diakrytyczne.
 
 ---
 
@@ -512,10 +564,13 @@ Wszystkie sekcje opcjonalne.
 
 # 21. CHECKLISTA PRZED ODDANIEM
 
-**Każdy punkt:** `stop_key` · kategoria z listy · `location` · godziny + status ·
-cena + status (`price` albo `parking_cost`) · `verify_url` · `maps_query` · dress code jeśli
-występuje · czas pobytu · bogaty opis rodzica · daty i kontekst · quest · wskazówka ·
-lokalny smak jeśli istnieje · źródła
+**Każdy punkt:** `stop_key` · kategoria z listy · `location` · `lat` i `lon` · godziny + status ·
+cena + status (`price` albo `parking_cost`) · `verify_url` · `maps_query` · dress code **tylko
+jeśli jest wymóg** · czas pobytu · 2–4 akapity opisu rodzica · daty i kontekst · quest ·
+wskazówka pisana do dziecka · zadanie foto · lokalny smak jeśli istnieje · źródła
+
+**Czego tam nie ma:** wersalików w nazwach · zdania w `year_built` · komentarza o pewności
+w `price` i `opening_hours` · `dress_code` typu „brak wymogów" · `wiki_article` w nowym mieście
 
 **Zgodność ze źródłem:** liczba akapitów w `desc_paragraphs`, `kids_box`, `hint`
 i `local_flavor` zgadza się z dokumentem HTML · żaden tekst nie został skrócony ani przepisany ·

@@ -239,6 +239,12 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .box-hint .caps{color:var(--olive)}
 /* E · Lokalny smak — anegdota/legenda dla rodzica */
 .box-local{background:rgba(180,80,46,.06);border-left:4px solid var(--terra)}
+.box-practical{background:var(--chip-bg)}
+.box-practical .caps{color:var(--ink2)}
+.box-dress{background:transparent;border:1.5px solid var(--line)}
+.box-dress .caps{color:var(--label)}
+.route-all{margin-top:14px}
+.route-all .act{width:100%;justify-content:center;height:52px;font-size:17px}
 .box-local .caps{color:var(--terra)}
 .box p{font-size:18px;line-height:1.5;margin-top:8px}
 

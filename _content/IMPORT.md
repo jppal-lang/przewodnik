@@ -244,6 +244,33 @@ Jeśli nie — policzę z kolejności.
 
 ---
 
+## 4b. Pola, które strona pokazuje wprost
+
+Odkąd karta miasta renderuje komplet danych, kilka pól przestało być notatką redakcyjną,
+a stało się tekstem widocznym dla turysty. Import odrzuca pliki, które to mieszają.
+
+| Pole | Co ma zawierać | Czego nie wolno |
+|---|---|---|
+| `price` | samą cenę: `"€8 dorosły / €4 dziecko 6–14 lat"` | komentarza o pewności — „do weryfikacji" dopisuje strona ze `price_status` |
+| `opening_hours` | godziny albo `null` | `"godziny sezonowe wymagają sprawdzenia"` — to nie są godziny |
+| `year_built` | rok lub okres: `"I w. p.n.e."`, `"1500–1501"` | zdania: `"odkrycie pozostałości willi — lipiec 2005"` → to idzie w `desc_paragraphs` |
+| `dress_code` | realny wymóg: `"Ramiona i kolana zakryte."` | `"brak szczególnych wymogów"` → ma być `null` |
+| `name` | `"Porta Consolare"` | `"PORTA CONSOLARE"` — wersaliki ustawia CSS |
+| `hint` | zdanie **do dziecka**, druga osoba | instrukcji oceniania dla rodzica |
+| `photo_task` | konkretne zadanie foto — **obowiązkowe** | `null`, „zrób ładne zdjęcie" |
+| `desc_paragraphs` | 2–4 akapity, przy każdym punkcie tak samo | jednego akapitu przy bramie i jedenastu przy kolacji |
+| `wiki_article` | w nowych miastach `null` | tytułów — zdjęcia rysujemy sami, patrz niżej |
+
+**`lat` i `lon` są obowiązkowe przy każdym punkcie.** Bez nich nawigacja idzie po nazwie
+tekstowej, a „Via Giulia" prowadzi do innego miasta.
+
+**Zdjęcia nie przychodzą w plikach.** Grafikę robi JP (jedna ilustracja z Que na wycieczkę),
+skrypt `img/!build-img.py` tnie ją na WebP, a strona składa ścieżkę z konwencji
+`media/tours/<kraj>-<slug miasta>`. W plikach treści nie ma pola na zdjęcie i nie ma linków
+do Wikimedia Commons.
+
+---
+
 ## 4a. Gdy treść powstała najpierw w HTML
 
 Dokument HTML jest wtedy **źródłem prawdy**, a JSON jego wiernym odwzorowaniem.
@@ -272,6 +299,8 @@ Walidator sprawdza m.in.: unikalność i format `stop_key`, parking na pozycji 0
 `verify_url` przy każdym punkcie, cenę i godziny bez statusu weryfikacji, próg 4,1 / 100 opinii
 dla restauracji, komplet kluczy w każdym języku, zgodność liczby akapitów z wersją polską,
 brak `_notes` w tłumaczeniach oraz zakazane kilometry i czasy dojazdu.
+
+Reguł z §4b walidator jeszcze nie egzekwuje — sprawdzam je przy imporcie ręcznie.
 
 ---
 

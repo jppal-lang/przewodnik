@@ -335,6 +335,13 @@ function render(d) {
   html += '<h1>' + esc(tr.title || city.slug) + '</h1>';
   if (tr.subtitle) html += '<p class="subtitle">' + esc(tr.subtitle) + '</p>';
   if (tr.hero_note) html += '<p class="stop-note" style="margin-top:4px">' + esc(tr.hero_note) + '</p>';
+  // Zweryfikowana trasa calego dnia — jeden link zamiast jedenastu nawigacji
+  if (city.route_url) {
+    html += '<div class="route-all">' +
+              '<a class="act act-pri" href="' + esc(city.route_url) + '" target="_blank" rel="noopener">' +
+                NAV_ICON + '<span>' + esc(ui('btn.route_all', 'Cała trasa w Google Maps')) + '</span></a>' +
+            '</div>';
+  }
   html += '</div>';
 
   // Tabs
@@ -354,7 +361,8 @@ function render(d) {
     var catClass = 'stop-cat stop-cat--' + cat;
     var icon = CAT_ICONS[cat] || CAT_ICONS.monument;
 
-    html += '<div class="stop open" data-id="' + id + '">';
+    html += '<div class="stop open" data-id="' + id + '"' +
+            (s.stop_key ? ' id="' + esc(s.stop_key) + '"' : '') + '>';
     html += '<button class="stop-header" onclick="toggleStop(\'' + id + '\')">';
 
     // Row 1: icon + number + name
@@ -366,17 +374,51 @@ function render(d) {
     html += '</div>';
 
     // Chips
+    // Cena i godziny NIGDY nie udaja pewnosci: jesli status mowi 'unverified',
+    // plakietka sama sie do tego przyznaje (WYTYCZNE §3).
+    var doSprawdzenia = esc(ui('label.unverified', 'do sprawdzenia'));
     var chips = [];
     if (s.year_built) chips.push('<span class="chip-sm chip-neutral">' + esc(s.year_built) + '</span>');
-    if (s.price) chips.push('<span class="chip-sm chip-olive">' + esc(s.price) + '</span>');
+    if (s.visit_duration) chips.push('<span class="chip-sm chip-neutral">&#9201; ' + esc(s.visit_duration) + '</span>');
+    if (s.opening_hours) {
+      chips.push('<span class="chip-sm chip-neutral">&#128336; ' + esc(s.opening_hours) +
+                 (s.hours_status === 'unverified' ? ' &middot; ' + doSprawdzenia : '') + '</span>');
+    }
+    if (s.price) {
+      chips.push('<span class="chip-sm chip-olive">' + esc(s.price) +
+                 (s.price_status === 'unverified' ? ' &middot; ' + doSprawdzenia : '') + '</span>');
+    }
+    if (s.rating) {
+      chips.push('<span class="chip-sm chip-neutral">&#9733; ' + esc(String(s.rating).replace('.', ',')) +
+                 (s.reviews_count ? ' &middot; ' + s.reviews_count : '') + '</span>');
+    }
+    if (s.optional)    chips.push('<span class="chip-sm chip-sea">' + esc(ui('label.optional', 'opcjonalnie')) + '</span>');
+    if (s.sunset_spot) chips.push('<span class="chip-sm chip-sea">&#127751; ' + esc(ui('label.sunset', 'na zachód słońca')) + '</span>');
     if (chips.length) html += '<div class="stop-chips">' + chips.join('') + '</div>';
 
     // Actions
+    var akcje = [];
     if (s.maps_query) {
-      html += '<div class="stop-actions">';
-      html += '<a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.maps_query) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + NAV_ICON + '<span>' + ui('btn.navigate', 'Nawiguj') + '</span></a>';
-      html += '</div>';
+      akcje.push('<a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=' +
+                 encodeURIComponent(s.maps_query) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' +
+                 NAV_ICON + '<span>' + esc(ui('btn.navigate', 'Nawiguj')) + '</span></a>');
     }
+    if (s.whatsapp) {
+      akcje.push('<a class="act act-sec" href="https://wa.me/' + encodeURIComponent(String(s.whatsapp).replace(/[^0-9]/g, '')) +
+                 '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
+                 esc(ui(s.reservation === 'required' || s.reservation === 'recommended' ? 'btn.reserve' : 'btn.write',
+                        s.reservation ? 'Rezerwuj' : 'Napisz')) + '</span></a>');
+    }
+    if (s.website) {
+      akcje.push('<a class="act act-sec" href="' + esc(s.website) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
+                 esc(ui('btn.www', 'WWW')) + '</span></a>');
+    }
+    // §3: przy kazdym punkcie ma byc czym sprawdzic dane samodzielnie
+    if (s.verify_url) {
+      akcje.push('<a class="act act-sec" href="' + esc(s.verify_url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
+                 esc(ui('btn.verify', 'Sprawdź')) + '</span></a>');
+    }
+    if (akcje.length) html += '<div class="stop-actions">' + akcje.join('') + '</div>';
 
     html += '</button>';
 
@@ -406,6 +448,13 @@ function render(d) {
     if (t.local_flavor) {
       html += '<div class="box box-local"><p class="caps">' + ui('label.local_flavor', 'Lokalny smak') + '</p><p>' + esc(t.local_flavor) + '</p></div>';
     }
+    if (t.practical_note) {
+      html += '<div class="box box-practical"><p class="caps">' + esc(ui('label.practical', 'Praktycznie')) + '</p><p>' + esc(t.practical_note) + '</p></div>';
+    }
+    // Stroj pokazujemy tylko wtedy, gdy naprawde jest wymog — puste pole znaczy „bez wymogow"
+    if (t.dress_code) {
+      html += '<div class="box box-dress"><p class="caps">' + esc(ui('label.dress_code', 'Strój')) + '</p><p>' + esc(t.dress_code) + '</p></div>';
+    }
 
     html += '</div></div>';
   });
@@ -420,6 +469,14 @@ function render(d) {
       html += '<div class="plan-row"><span class="plan-time">' + esc(row.time_label) + '</span><span>' + esc(row.description) + '</span></div>';
     });
     html += '</div></div>';
+  }
+
+  // Lokalne jedzenie
+  if (tr.local_food) {
+    html += '<div class="foot-section">';
+    html += '<p class="caps">' + esc(ui('label.local_food', 'Lokalne jedzenie')) + '</p>';
+    html += '<p class="note" style="margin-top:0">' + esc(tr.local_food) + '</p>';
+    html += '</div>';
   }
 
   // Good to know
