@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quolino — region</title>
+<title>Quolino — kraj</title>
 <meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,8 +162,8 @@
   <!-- Breadcrumbs -->
   <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
 
-  <!-- Region content -->
-  <div id="regionContent">
+  <!-- Country content -->
+  <div id="pageContent">
     <div class="state-msg">&#8230;</div>
   </div>
 
@@ -185,7 +185,7 @@ var IMG_TTL = 7 * 24 * 3600 * 1000;   // photo URL cache: 7 days
 var IMG_WIDTH = 800;
 
 // ══════════════ STATE ══════════════
-var regionSlug  = new URLSearchParams(location.search).get('r');
+var countrySlug = new URLSearchParams(location.search).get('k');
 var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
 var langList = [];
 var uiStrings = {};
@@ -201,40 +201,21 @@ function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e)
 function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function ui(key, fb) { return uiStrings[key] || fb || key; }
 
-// "~{n}h" → "~4h"
-function durationLabel(h) { return ui('label.duration_h', '~{n}h').replace('{n}', h); }
-
-// Slavic plural handling for the stop counter
-function stopsLabel(n) {
-  var slavic = { pl:1, cs:1, sk:1, uk:1, hr:1 };
-  var key = 'label.stops_count';
-  if (slavic[currentLang]) {
-    var m = n % 10, h = n % 100;
-    if (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) key = 'label.stops_count_few';
-  }
-  return ui(key, '{n} stops').replace('{n}', n);
-}
-
-// ══════════════ CITY PHOTOS (Wikipedia) ══════════════
-// hero_image in the DB wins; otherwise we look the photo up once from
-// Wikipedia via the city's wiki_article and cache the URL in localStorage.
-
+// ══════════════ PHOTOS (Wikipedia) ══════════════
+// Region nie ma wlasnego zdjecia — bierzemy pierwsze miasto regionu.
 function cachedImg(slug) {
   try {
     var raw = localStorage.getItem('quolino_img3_' + slug);
     if (!raw) return null;
     var o = JSON.parse(raw);
     if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
-    return o.url;               // may be '' meaning "known: no photo"
+    return o.url;
   } catch(e) { return null; }
 }
 function cacheImg(slug, url) {
   try { localStorage.setItem('quolino_img3_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
 }
 function wikiThumb(city) {
-  // Prosimy API o wygenerowanie miniatury o zadanej szerokosci.
-  // Recznie sklejane adresy /800px-.../ Wikimedia odrzuca bledem 400 —
-  // serwuje tylko te rozmiary, ktore sama wczesniej wygenerowala.
   var lang = city.wiki_lang || 'it';
   var url = 'https://' + lang + '.wikipedia.org/w/api.php'
           + '?action=query&prop=pageimages&format=json&origin=*'
@@ -250,36 +231,34 @@ function wikiThumb(city) {
       return (th && th.source) ? th.source : '';
     });
 }
-function paintImage(wrap, url, city) {
-  if (!url) { showFallback(wrap, city); return; }
+function showFallback(wrap, color, letter) {
+  wrap.classList.remove('loading');
+  if (wrap.querySelector('.city-fallback')) return;
+  wrap.style.background = 'linear-gradient(135deg,' + (color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)';
+  var d = document.createElement('div');
+  d.className = 'city-fallback';
+  d.textContent = (letter || '?').charAt(0).toUpperCase();
+  wrap.appendChild(d);
+}
+function paintImage(wrap, url, color, letter) {
+  if (!url) { showFallback(wrap, color, letter); return; }
   var img = document.createElement('img');
-  img.className = 'city-img';
-  img.alt = '';
-  img.loading = 'lazy';
-  img.decoding = 'async';
+  img.className = 'city-img'; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
   img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
-  img.onerror = function() { img.remove(); showFallback(wrap, city); };
+  img.onerror = function() { img.remove(); showFallback(wrap, color, letter); };
   img.src = url;
   wrap.appendChild(img);
 }
-function showFallback(wrap, city) {
-  wrap.classList.remove('loading');
-  if (wrap.querySelector('.city-fallback')) return;
-  var c = city.bandana_color || '#B4502E';
-  wrap.style.background = 'linear-gradient(135deg,' + c + ' 0%, rgba(56,48,38,.55) 100%)';
-  var d = document.createElement('div');
-  d.className = 'city-fallback';
-  d.textContent = (city._title || city.slug || '?').charAt(0).toUpperCase();
-  wrap.appendChild(d);
-}
-function loadCityImage(wrap, city) {
-  if (city.hero_image) { paintImage(wrap, city.hero_image, city); return; }
-  var cached = cachedImg(city.slug);
-  if (cached !== null) { paintImage(wrap, cached, city); return; }
-  if (!city.wiki_article) { showFallback(wrap, city); return; }
+function loadCover(wrap, city, letter) {
+  if (!city) { showFallback(wrap, null, letter); return; }
+  var color = city.bandana_color;
+  if (city.hero_image) { paintImage(wrap, city.hero_image, color, letter); return; }
+  var c = cachedImg(city.slug);
+  if (c !== null) { paintImage(wrap, c, color, letter); return; }
+  if (!city.wiki_article) { showFallback(wrap, color, letter); return; }
   wikiThumb(city)
-    .then(function(url) { cacheImg(city.slug, url); paintImage(wrap, url, city); })
-    .catch(function() { showFallback(wrap, city); });
+    .then(function(url) { cacheImg(city.slug, url); paintImage(wrap, url, color, letter); })
+    .catch(function() { showFallback(wrap, color, letter); });
 }
 
 // ══════════════ LOAD PAGE ══════════════
@@ -288,18 +267,16 @@ function loadPage(lang) {
   savePref(lang);
   document.documentElement.lang = lang;
 
-  if (!regionSlug) { fail('Brak parametru regionu.'); return; }
+  if (!countrySlug) { fail('Brak parametru kraju.'); return; }
 
   Promise.all([
     sb('languages', 'enabled=eq.true&order=priority'),
     sb('ui_translations', 'lang=eq.' + lang),
     sb('regions', 'select=*&order=sort_order'),
     sb('region_translations', 'lang=eq.' + lang),
-    sb('countries', 'select=*'),
+    sb('countries', 'select=*&order=sort_order'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,duration_type,duration_hours,hero_image,wiki_article,wiki_lang,sort_order&order=sort_order'),
-    sb('city_translations', 'lang=eq.' + lang),
-    sb('stops', 'select=city_slug')
+    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,hero_image,wiki_article,wiki_lang,sort_order&order=sort_order')
   ]).then(function(res) {
     langList        = res[0];
     var uiRows      = res[1];
@@ -308,8 +285,6 @@ function loadPage(lang) {
     var countries   = res[4];
     var countryTrs  = res[5];
     var allCities   = res[6];
-    var cityTrs     = res[7];
-    var allStops    = res[8];
 
     uiStrings = {};
     uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });
@@ -321,26 +296,17 @@ function loadPage(lang) {
       if (v) el.textContent = v;
     });
 
-    var region = allRegions.filter(function(r) { return r.slug === regionSlug; })[0];
-    if (!region) { fail(ui('error.region_not_found', 'Nie znaleźliśmy tego regionu.')); return; }
+    var country = countries.filter(function(c) { return c.slug === countrySlug; })[0];
+    if (!country) { fail(ui('error.country_not_found', 'Nie znaleźliśmy tego kraju.')); return; }
 
-    var rTr        = regionTrs.filter(function(t) { return t.region_slug === regionSlug; })[0];
-    var regionName = rTr ? rTr.name : regionSlug;
-    var country    = countries.filter(function(c) { return c.slug === region.country_slug; })[0];
-    var cTr        = countryTrs.filter(function(t) { return t.country_slug === region.country_slug; })[0];
-    var countryName = cTr ? cTr.name : (region.country_slug || '');
-    var continent   = (country && country.continent) || 'europe';
+    var cTr         = countryTrs.filter(function(t) { return t.country_slug === countrySlug; })[0];
+    var countryName = cTr ? cTr.name : countrySlug;
+    var continent   = country.continent || 'europe';
 
-    // stops per city
-    var stopCount = {};
-    allStops.forEach(function(s) { stopCount[s.city_slug] = (stopCount[s.city_slug] || 0) + 1; });
-
-    var cities = allCities.filter(function(c) { return c.region_slug === regionSlug; });
-
-    document.title = regionName + ' — Quolino';
-    buildCrumbs(continent, countryName, regionName, region.country_slug);
-    buildRegion(region, regionName, countryName, country, rTr, cities, cityTrs, stopCount,
-                allRegions, regionTrs, allCities, countries, countryTrs);
+    document.title = countryName + ' — Quolino';
+    buildCrumbs(continent, countryName);
+    buildCountry(country, countryName, allRegions, regionTrs, allCities,
+                 countries, countryTrs);
   }).catch(function(err) {
     console.error('Supabase error:', err);
     fail(ui('error.load', 'Nie udało się wczytać danych. Odśwież stronę.'));
@@ -348,13 +314,13 @@ function loadPage(lang) {
 }
 
 function fail(msg) {
-  document.getElementById('regionContent').innerHTML =
+  document.getElementById('pageContent').innerHTML =
     '<div class="state-msg">' + esc(msg) + '<br><br><a href="./">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
 }
 
 // ══════════════ BREADCRUMBS ══════════════
-// 🏠 › Europa › Włochy › Marche
-function buildCrumbs(continent, countryName, regionName, countrySlug) {
+// 🏠 › Europa › Włochy
+function buildCrumbs(continent, countryName) {
   var nav = document.getElementById('crumbs');
   if (!nav) return;
   var homeLabel = ui('nav.home', 'Strona główna');
@@ -367,8 +333,7 @@ function buildCrumbs(continent, countryName, regionName, countrySlug) {
 
   var levels = [
     { label: ui('continent.' + continent, 'Europa'), href: './#regiony' },
-    { label: countryName,                            href: countrySlug ? 'country.html?k=' + encodeURIComponent(countrySlug) : './#regiony' },
-    { label: regionName,                             href: null }
+    { label: countryName,                            href: null }
   ];
 
   levels.forEach(function(l) {
@@ -382,46 +347,61 @@ function buildCrumbs(continent, countryName, regionName, countrySlug) {
   nav.innerHTML = html;
 }
 
-// ══════════════ REGION + CITY TILES ══════════════
-function buildRegion(region, regionName, countryName, country, rTr, cities, cityTrs, stopCount,
-                     allRegions, regionTrs, allCities, countries, countryTrs) {
-  var el = document.getElementById('regionContent');
-  var flagCode = country ? country.flag_code : region.country_slug;
+// ══════════════ KRAJ + KAFLE REGIONÓW ══════════════
+function buildCountry(country, countryName, allRegions, regionTrs, allCities,
+                      countries, countryTrs) {
+  var el = document.getElementById('pageContent');
   var html = '';
+
+  // miasta pogrupowane po regionie (juz posortowane sort_order)
+  var byRegion = {};
+  allCities.forEach(function(c) {
+    if (!byRegion[c.region_slug]) byRegion[c.region_slug] = [];
+    byRegion[c.region_slug].push(c);
+  });
+
+  var regions = allRegions.filter(function(r) {
+    return r.country_slug === country.slug && byRegion[r.slug] && byRegion[r.slug].length;
+  });
+  var cityTotal = regions.reduce(function(n, r) { return n + byRegion[r.slug].length; }, 0);
 
   // ── Hero ──
   html += '<div class="region-hero">';
-  html += '<div class="caps" style="font-size:14px">' + esc(countryName);
-  if (flagCode) html += ' <img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="" style="width:20px;height:14px;border-radius:3px;vertical-align:middle;margin-left:5px">';
-  html += '</div>';
-  html += '<h1 class="region-name">' + esc(regionName) + '</h1>';
-  if (rTr && rTr.description) html += '<p class="region-desc">' + esc(rTr.description) + '</p>';
-  html += '<div class="region-meta"><span>' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
+  html += '<div class="caps" style="font-size:14px">' + esc(ui('continent.' + (country.continent || 'europe'), 'Europa')) + '</div>';
+  html += '<h1 class="region-name">' + esc(countryName);
+  if (country.flag_code) html += ' <img src="https://flagcdn.com/w40/' + country.flag_code + '.png" alt="" style="width:36px;height:25px;border-radius:4px;vertical-align:middle;margin-left:8px">';
+  html += '</h1>';
+  html += '<div class="region-meta"><span>' + cityTotal + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
   html += '</div>';
 
-  // ── City tiles ──
-  html += '<div class="city-grid" id="cityGrid"></div>';
+  if (!regions.length) {
+    html += '<div class="state-msg">' + esc(ui('error.no_regions', 'Jeszcze nic tu nie ma — wracamy wkrótce.')) + '</div>';
+    el.innerHTML = html;
+    return;
+  }
 
-  // ── Other regions ──
-  var published = {};
-  allCities.forEach(function(c) { published[c.region_slug] = (published[c.region_slug] || 0) + 1; });
-  var others = allRegions.filter(function(r) {
-    return r.slug !== regionSlug && published[r.slug] && r.country_slug === region.country_slug;
+  // ── Kafle regionów ──
+  html += '<div class="city-grid" id="regionGrid"></div>';
+
+  // ── Inne kraje ──
+  var otherCountries = countries.filter(function(c) {
+    if (c.slug === country.slug) return false;
+    return allRegions.some(function(r) {
+      return r.country_slug === c.slug && byRegion[r.slug] && byRegion[r.slug].length;
+    });
   });
 
-  if (others.length) {
-    html += '<div class="other-regions"><p class="caps">' + esc(ui('label.other_regions_italy', 'Inne regiony')) + '</p><div class="other-region-grid">';
-    others.forEach(function(reg) {
-      var oTr    = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
-      var oName  = oTr ? oTr.name : reg.slug;
-      var oCt    = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
-      var oCoun  = oCt ? oCt.name : '';
-      var oFlag  = (countries.filter(function(c) { return c.slug === reg.country_slug; })[0] || {}).flag_code || reg.country_slug;
-      html += '<a class="other-region-tile" href="region.html?r=' + encodeURIComponent(reg.slug) + '">';
-      html += '<div style="flex:1"><div style="font-size:13px;color:var(--label)">' + esc(oCoun);
-      if (oFlag) html += ' <img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="" style="width:16px;height:11px;border-radius:2px;vertical-align:middle;margin-left:3px">';
-      html += '</div><div style="font-size:19px;font-weight:800;letter-spacing:-.01em;margin-top:2px">' + esc(oName) + '</div>';
-      html += '<div style="font-size:14px;color:var(--label);margin-top:2px">' + published[reg.slug] + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
+  if (otherCountries.length) {
+    html += '<div class="other-regions"><p class="caps">' + esc(ui('label.other_countries', 'Inne kraje')) + '</p><div class="other-region-grid">';
+    otherCountries.forEach(function(oc) {
+      var oTr   = countryTrs.filter(function(t) { return t.country_slug === oc.slug; })[0];
+      var oName = oTr ? oTr.name : oc.slug;
+      var oCnt  = allRegions.filter(function(r) { return r.country_slug === oc.slug; })
+                            .reduce(function(n, r) { return n + ((byRegion[r.slug] || []).length); }, 0);
+      html += '<a class="other-region-tile" href="country.html?k=' + encodeURIComponent(oc.slug) + '">';
+      html += '<div style="flex:1"><div style="font-size:19px;font-weight:800;letter-spacing:-.01em">' + esc(oName);
+      if (oc.flag_code) html += ' <img src="https://flagcdn.com/w40/' + oc.flag_code + '.png" alt="" style="width:18px;height:13px;border-radius:2px;vertical-align:middle;margin-left:4px">';
+      html += '</div><div style="font-size:14px;color:var(--label);margin-top:2px">' + oCnt + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
       html += '<div style="font-size:19px;color:var(--terra)">&rarr;</div></a>';
     });
     html += '</div></div>';
@@ -429,47 +409,31 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
 
   el.innerHTML = html;
 
-  // Build tiles as nodes so we can attach lazy photo loading per card
-  var grid = document.getElementById('cityGrid');
-  cities.forEach(function(city) {
-    var tr    = cityTrs.filter(function(t) { return t.city_slug === city.slug; })[0];
-    var title = tr ? tr.title : city.slug;
-    var sub   = tr ? tr.subtitle : '';
-    city._title = title;
+  var grid = document.getElementById('regionGrid');
+  regions.forEach(function(reg) {
+    var rTr        = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
+    var regionName = rTr ? rTr.name : reg.slug;
+    var regCities  = byRegion[reg.slug];
 
     var card = document.createElement('a');
     card.className = 'city-card';
-    card.href = 'city.html?c=' + encodeURIComponent(city.slug);
+    card.href = 'region.html?r=' + encodeURIComponent(reg.slug);
 
     var wrap = document.createElement('div');
     wrap.className = 'city-img-wrap loading';
-    if (city.duration_type) {
-      var badgeKey = city.duration_type === 'full_day' ? 'filter.full_day' : 'filter.half_day';
-      var badgeTxt = ui(badgeKey, '');
-      if (badgeTxt) {
-        var b = document.createElement('div');
-        b.className = 'city-badge';
-        b.textContent = badgeTxt;
-        wrap.appendChild(b);
-      }
-    }
     card.appendChild(wrap);
 
     var body = document.createElement('div');
     body.className = 'city-body';
-    var stops = stopCount[city.slug] || 0;
     body.innerHTML =
-      '<div class="city-head">' +
-        '<div class="city-name">' + esc(title) + '</div>' +
-        (city.duration_hours ? '<div class="city-dur">' + esc(durationLabel(city.duration_hours)) + '</div>' : '') +
-      '</div>' +
-      (sub ? '<div class="city-sub">' + esc(sub) + '</div>' : '') +
-      (stops ? '<div class="city-foot"><span class="city-accent" style="background:' + (city.bandana_color || 'var(--terra)') + '"></span><span>' + esc(stopsLabel(stops)) + '</span></div>' : '') +
+      '<div class="city-head"><div class="city-name">' + esc(regionName) + '</div></div>' +
+      (rTr && rTr.description ? '<div class="city-sub">' + esc(rTr.description) + '</div>' : '') +
+      '<div class="city-foot"><span>' + regCities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>' +
       '<div class="city-go"><span>' + esc(ui('home.cta_open', 'Zaczynamy!')) + '</span><span class="arrow" aria-hidden="true">&rarr;</span></div>';
     card.appendChild(body);
 
     grid.appendChild(card);
-    loadCityImage(wrap, city);
+    loadCover(wrap, regCities[0], regionName);
   });
 }
 

@@ -296,7 +296,7 @@ function render(d) {
 
   var levels = [
     { label: ui('continent.' + (d.continent || 'europe'), 'Europa'), href: './#regiony' },
-    { label: d.countryName, href: './#regiony' },
+    { label: d.countryName, href: city.country ? 'country.html?k=' + encodeURIComponent(city.country) : './#regiony' },
     { label: d.regionName,  href: city.region_slug ? 'region.html?r=' + encodeURIComponent(city.region_slug) : null },
     { label: tr.title || city.slug, href: null }
   ];

@@ -79,6 +79,13 @@
 .region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px 22px;margin-top:24px}
 .region-tile{display:block;color:var(--ink);border-radius:18px}
 .region-tile:focus-visible{outline:3px solid var(--terra);outline-offset:4px}
+.country-head{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 -8px}
+.country-head:not(:first-child){margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.country-head h3{display:flex;align-items:center;gap:9px;font-size:24px;font-weight:800;letter-spacing:-.015em}
+.country-head h3 img{width:26px;height:18px;border-radius:3px;object-fit:cover;border:1px solid rgba(56,48,38,.12)}
+.country-head a{display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:var(--terra)}
+.country-head a .arrow{transition:transform .2s ease}
+.country-head a:hover .arrow{transform:translateX(4px)}
 .rt-img-wrap{position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
 .rt-img-wrap::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(56,48,38,.07);pointer-events:none}
 .rt-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.02);transition:opacity .45s ease,transform .5s ease}
@@ -380,15 +387,10 @@ function loadPage(lang) {
 // ══════ COVER PHOTOS (Wikipedia, cached in localStorage) ══════
 var IMG_TTL = 7 * 24 * 3600 * 1000;
 var IMG_WIDTH = 800;
-function bumpWidth(url, maxOrig) {
-  // Wikimedia zwraca 400, gdy zadana szerokosc przekracza oryginal.
-  // Dlatego nigdy nie prosimy o wiecej, niz oryginal faktycznie ma.
-  var cel = maxOrig ? Math.min(IMG_WIDTH, maxOrig) : IMG_WIDTH;
-  return url.replace(/\/(\d+)px-/, '/' + cel + 'px-');
-}
+
 function cachedImg(slug) {
   try {
-    var raw = localStorage.getItem('quolino_img2_' + slug);
+    var raw = localStorage.getItem('quolino_img3_' + slug);
     if (!raw) return null;
     var o = JSON.parse(raw);
     if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
@@ -396,18 +398,25 @@ function cachedImg(slug) {
   } catch(e) { return null; }
 }
 function cacheImg(slug, url) {
-  try { localStorage.setItem('quolino_img2_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
+  try { localStorage.setItem('quolino_img3_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
 }
 function wikiThumb(city) {
+  // Prosimy API o wygenerowanie miniatury o zadanej szerokosci.
+  // Recznie sklejane adresy /800px-.../ Wikimedia odrzuca bledem 400 —
+  // serwuje tylko te rozmiary, ktore sama wczesniej wygenerowala.
   var lang = city.wiki_lang || 'it';
-  var title = encodeURIComponent(String(city.wiki_article).replace(/ /g, '_'));
-  return fetch('https://' + lang + '.wikipedia.org/api/rest_v1/page/summary/' + title)
+  var url = 'https://' + lang + '.wikipedia.org/w/api.php'
+          + '?action=query&prop=pageimages&format=json&origin=*'
+          + '&pithumbsize=' + IMG_WIDTH
+          + '&titles=' + encodeURIComponent(String(city.wiki_article));
+  return fetch(url)
     .then(function(r) { if (!r.ok) throw new Error('wiki ' + r.status); return r.json(); })
     .then(function(j) {
-      var t = j.thumbnail && j.thumbnail.source;
-      var o = j.originalimage;
-      if (!t) return o ? o.source : '';
-      return bumpWidth(t, o && o.width ? o.width : 0);
+      var pages = j && j.query && j.query.pages;
+      if (!pages) return '';
+      var k = Object.keys(pages)[0];
+      var th = pages[k] && pages[k].thumbnail;
+      return (th && th.source) ? th.source : '';
     });
 }
 function tileFallback(wrap, color, letter) {
@@ -453,10 +462,42 @@ function buildRegionGrid(regions, regionTrs, countries, countryTrs, cities) {
     byRegion[c.region_slug].push(c);
   });
 
-  // ── Published regions ──
+  // ── Published regions, pogrupowane po kraju ──
+  // Hierarchia: kontynent > kraj > region > miasto > miejsce.
+  // Kontynent na razie pomijamy (jeden), kraj dostaje naglowek z linkiem do country.html.
+  var countryOrder = countries.slice().sort(function(a, b) {
+    return (a.sort_order || 0) - (b.sort_order || 0);
+  });
+  var ordered = [];
+  countryOrder.forEach(function(co) {
+    regions.forEach(function(reg) {
+      if (reg.country_slug === co.slug) ordered.push(reg);
+    });
+  });
   regions.forEach(function(reg) {
+    if (ordered.indexOf(reg) === -1) ordered.push(reg);   // kraj spoza tabeli countries
+  });
+
+  var lastCountry = null;
+  ordered.forEach(function(reg) {
     var regCities = byRegion[reg.slug];
     if (!regCities || !regCities.length) return;
+
+    if (reg.country_slug !== lastCountry) {
+      lastCountry = reg.country_slug;
+      var hCo   = countries.filter(function(c) { return c.slug === reg.country_slug; })[0];
+      var hTr   = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
+      var coName = hTr ? hTr.name : (reg.country_slug || '');
+      var coFlag = hCo ? hCo.flag_code : reg.country_slug;
+      var head = document.createElement('div');
+      head.className = 'country-head';
+      head.innerHTML =
+        '<h3>' + (coFlag ? '<img src="https://flagcdn.com/w40/' + coFlag + '.png" alt="">' : '') + esc(coName) + '</h3>' +
+        '<a href="country.html?k=' + encodeURIComponent(reg.country_slug) + '">' +
+          '<span>' + esc(ui('home.country_all', 'Zobacz cały kraj')) + '</span>' +
+          '<span class="arrow" aria-hidden="true">&rarr;</span></a>';
+      grid.appendChild(head);
+    }
 
     var rTr = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
     var regionName = rTr ? rTr.name : reg.slug;
@@ -472,12 +513,6 @@ function buildRegionGrid(regions, regionTrs, countries, countryTrs, cities) {
 
     var wrap = document.createElement('div');
     wrap.className = 'rt-img-wrap loading';
-    if (countryName) {
-      var badge = document.createElement('div');
-      badge.className = 'rt-flag';
-      badge.innerHTML = (flagCode ? '<img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="">' : '') + esc(countryName);
-      wrap.appendChild(badge);
-    }
     tile.appendChild(wrap);
 
     var body = document.createElement('div');
