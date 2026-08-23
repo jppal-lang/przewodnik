@@ -123,12 +123,12 @@ var uiStrings = {};    // ui_translations for currentLang
 
 // ── SVG icons per stop category ────────────────────────
 // Rysunki Que z media/icons — plik dla kategorii, jesli istnieje.
-// 'restaurant' nie ma jeszcze wlasnego rysunku, wiec zostaje przy wektorze.
+// Kategoria bez rysunku po prostu zostaje przy ikonie wektorowej.
 var QUE_IKONY = {
   parking: 'parking', monument: 'monument', church: 'church', museum: 'museum',
-  house: 'house', viewpoint: 'viewpoint-city', icecream: 'icecream',
-  sweets: 'sweets', photo: 'photo', street: 'street', castle: 'castle',
-  synagogue: 'synagogue'
+  house: 'house', viewpoint: 'viewpoint-city', restaurant: 'restaurant',
+  icecream: 'icecream', sweets: 'sweets', photo: 'photo', street: 'street',
+  castle: 'castle', synagogue: 'synagogue'
 };
 var QUE_DIR = 'media/icons/';
 
@@ -389,13 +389,27 @@ function render(d) {
     return out + '</div></div>';
   }
 
+  // Kategoria przystanku po jego kluczu — plan dnia pokazuje te sama ikone
+  // co karta punktu, a wiersz prowadzi do niego kotwica.
+  var katPoKluczu = {};
+  stops.forEach(function(item) {
+    if (item.stop.stop_key) katPoKluczu[item.stop.stop_key] = item.stop.category;
+  });
+
   // Plan dnia — zaraz po wstepie, zanim ktokolwiek zejdzie do przystankow
   if (d.dayPlan && d.dayPlan.length) {
     html += '<div class="city-block" id="plan-dnia">';
     html += '<h2 class="caps">' + esc(ui('label.day_plan', 'Plan dnia')) + '</h2>';
     html += '<div class="plan-card">';
     d.dayPlan.forEach(function(row) {
-      html += '<div class="plan-row"><span class="plan-time">' + esc(row.time_label) + '</span><span>' + esc(row.description) + '</span></div>';
+      var kat  = row.stop_key ? katPoKluczu[row.stop_key] : null;
+      var opis = row.stop_key
+        ? '<a class="plan-link" href="#' + esc(row.stop_key) + '">' + esc(row.description) + '</a>'
+        : esc(row.description);
+      html += '<div class="plan-row">' +
+                '<span class="plan-time">' + esc(row.time_label) + '</span>' +
+                '<span class="plan-desc">' + (kat ? ikonaKategorii(kat) : '') + opis + '</span>' +
+              '</div>';
     });
     html += '</div>';
     html += legendaHtml();
