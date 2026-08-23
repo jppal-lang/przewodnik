@@ -273,9 +273,16 @@ h3.stop-name{margin:0}
 body.kid-mode .city-section[data-hide-kid]{display:none}
 .foot-section .caps{margin-bottom:12px}
 .plan-card{background:var(--parchment);border-radius:16px;box-shadow:var(--sh1);border:1.5px solid var(--line);overflow:hidden}
-.plan-row{display:grid;grid-template-columns:72px 1fr;font-size:18px;padding:12px 16px;border-bottom:1px solid var(--chip-bg)}
+/* Kolumna czasu bywa dluzsza niz „18:50" — „opcjonalnie / zachod slonca"
+   przy sztywnych 72 px nachodzilo na opis. Stad wlasna szerokosc i odstep. */
+.plan-row{display:grid;grid-template-columns:minmax(72px,auto) 1fr;gap:6px 14px;font-size:18px;padding:12px 16px;border-bottom:1px solid var(--chip-bg);align-items:start}
 .plan-row:last-child{border-bottom:none}
-.plan-time{font-weight:700;color:var(--terra)}
+.plan-time{font-weight:700;color:var(--terra);line-height:1.3}
+@media(max-width:520px){
+  /* na waskim ekranie czas nad opisem — inaczej zostaje 3 cm na tekst */
+  .plan-row{grid-template-columns:1fr;gap:2px}
+  .plan-time{font-size:15px}
+}
 .info-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:18px;padding:10px 0;border-bottom:1px solid var(--line)}
 .info-row:last-child{border-bottom:none}
 .info-row strong{font-weight:600}
