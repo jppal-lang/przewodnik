@@ -218,12 +218,15 @@ function stopsLabel(n) {
 // ══════════════ CITY PHOTOS (Wikipedia) ══════════════
 // hero_image in the DB wins; otherwise we look the photo up once from
 // Wikipedia via the city's wiki_article and cache the URL in localStorage.
-function bumpWidth(url) {
-  return url.replace(/\/(\d+)px-/, '/' + IMG_WIDTH + 'px-');
+function bumpWidth(url, maxOrig) {
+  // Wikimedia zwraca 400, gdy zadana szerokosc przekracza oryginal.
+  // Dlatego nigdy nie prosimy o wiecej, niz oryginal faktycznie ma.
+  var cel = maxOrig ? Math.min(IMG_WIDTH, maxOrig) : IMG_WIDTH;
+  return url.replace(/\/(\d+)px-/, '/' + cel + 'px-');
 }
 function cachedImg(slug) {
   try {
-    var raw = localStorage.getItem('quolino_img_' + slug);
+    var raw = localStorage.getItem('quolino_img2_' + slug);
     if (!raw) return null;
     var o = JSON.parse(raw);
     if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
@@ -231,7 +234,7 @@ function cachedImg(slug) {
   } catch(e) { return null; }
 }
 function cacheImg(slug, url) {
-  try { localStorage.setItem('quolino_img_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
+  try { localStorage.setItem('quolino_img2_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
 }
 function wikiThumb(city) {
   var lang = city.wiki_lang || 'it';
@@ -239,8 +242,10 @@ function wikiThumb(city) {
   return fetch('https://' + lang + '.wikipedia.org/api/rest_v1/page/summary/' + title)
     .then(function(r) { if (!r.ok) throw new Error('wiki ' + r.status); return r.json(); })
     .then(function(j) {
-      var src = (j.thumbnail && j.thumbnail.source) || (j.originalimage && j.originalimage.source);
-      return src ? bumpWidth(src) : '';
+      var t = j.thumbnail && j.thumbnail.source;
+      var o = j.originalimage;
+      if (!t) return o ? o.source : '';
+      return bumpWidth(t, o && o.width ? o.width : 0);
     });
 }
 function paintImage(wrap, url, city) {
