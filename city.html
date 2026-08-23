@@ -12,6 +12,10 @@
 /* ===== Stop category icons ===== */
 .stop-cat{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;flex-shrink:0;margin-right:4px;vertical-align:middle}
 .stop-cat svg{width:16px;height:16px}
+/* Rysunek Que wygrywa z wektorem, gdy plik istnieje */
+.cat-img{width:100%;height:100%;object-fit:contain;display:block}
+.stop-cat.has-img{width:40px;height:40px;background:transparent;border-radius:10px}
+.stop-cat.has-img svg{display:none}
 .stop-cat--parking{background:var(--sea-bg);color:var(--sea)}.stop-cat--parking svg{stroke:var(--sea)}
 .stop-cat--museum{background:#F3E8F5;color:#7B4FA2}.stop-cat--museum svg{stroke:#7B4FA2}
 .stop-cat--house{background:var(--olive-bg);color:var(--olive)}.stop-cat--house svg{stroke:var(--olive)}
@@ -118,6 +122,29 @@ var langList = [];     // enabled languages
 var uiStrings = {};    // ui_translations for currentLang
 
 // ── SVG icons per stop category ────────────────────────
+// Rysunki Que z media/icons — plik dla kategorii, jesli istnieje.
+// 'restaurant' nie ma jeszcze wlasnego rysunku, wiec zostaje przy wektorze.
+var QUE_IKONY = {
+  parking: 'parking', monument: 'monument', church: 'church', museum: 'museum',
+  house: 'house', viewpoint: 'viewpoint-city', icecream: 'icecream',
+  sweets: 'sweets', photo: 'photo', street: 'street', castle: 'castle',
+  synagogue: 'synagogue'
+};
+var QUE_DIR = 'media/icons/';
+
+// Rysunek Que lezy na wektorze: jesli plik sie wczyta, CSS chowa wektor;
+// jesli go nie ma, zostaje dotychczasowa ikona i nic nie miga.
+function ikonaKategorii(cat) {
+  var svg = CAT_ICONS[cat] || CAT_ICONS.monument;
+  var plik = QUE_IKONY[cat];
+  var img = plik
+    ? '<img class="cat-img" src="' + QUE_DIR + 'icon-' + plik + '-128.webp" alt=""' +
+      ' width="128" height="128" loading="lazy" decoding="async"' +
+      ' onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">'
+    : '';
+  return '<span class="stop-cat stop-cat--' + cat + '">' + img + svg + '</span>';
+}
+
 var CAT_ICONS = {
   parking:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3.5 3.5 0 010 7H9"/></svg>',
   museum:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
@@ -302,6 +329,10 @@ function render(d) {
   });
   html += '</nav>';
 
+  // ── SEKCJA 1: start — zdjecie, naglowek, wstep, plan dnia z legenda,
+  //    link do trasy i notka o elastycznosci. Jedna calosc przed trasa.
+  html += '<section class="city-start" id="start">';
+
   // Hero image — grafika 16:9 z Que; gradient pod spodem gra role zapasu,
   // wiec miasto bez narysowanej grafiki nie wyglada na zepsute.
   var imgBase = city.hero_image
@@ -341,15 +372,36 @@ function render(d) {
     html += '</section>';
   }
 
+  // Legenda ikon — tylko kategorie, ktore w tym miescie wystepuja.
+  // Siedzi w planie dnia, bo tam czyta sie trase i tam ikony cos znacza.
+  var uzyte = [];
+  stops.forEach(function(item) {
+    var c = item.stop.category;
+    if (c && uzyte.indexOf(c) === -1) uzyte.push(c);
+  });
+  function legendaHtml() {
+    if (!uzyte.length) return '';
+    var out = '<div class="legend" id="ikony" data-hide-kid><p class="legend-title">' +
+              esc(ui('label.icons_legend', 'Ikony trasy')) + '</p><div class="legend-items">';
+    uzyte.forEach(function(c) {
+      out += '<span class="legend-item">' + ikonaKategorii(c) + esc(ui('cat.' + c, c)) + '</span>';
+    });
+    return out + '</div></div>';
+  }
+
   // Plan dnia — zaraz po wstepie, zanim ktokolwiek zejdzie do przystankow
   if (d.dayPlan && d.dayPlan.length) {
-    html += '<section class="city-section" id="plan-dnia">';
+    html += '<div class="city-block" id="plan-dnia">';
     html += '<h2 class="caps">' + esc(ui('label.day_plan', 'Plan dnia')) + '</h2>';
     html += '<div class="plan-card">';
     d.dayPlan.forEach(function(row) {
       html += '<div class="plan-row"><span class="plan-time">' + esc(row.time_label) + '</span><span>' + esc(row.description) + '</span></div>';
     });
-    html += '</div></section>';
+    html += '</div>';
+    html += legendaHtml();
+    html += '</div>';
+  } else {
+    html += legendaHtml();
   }
 
   // Zweryfikowana trasa calego dnia — jeden link zamiast jedenastu nawigacji
@@ -360,27 +412,13 @@ function render(d) {
             '</div>';
   }
 
-  // Legenda ikon — tylko kategorie, ktore w tym miescie wystepuja
-  var uzyte = [];
-  stops.forEach(function(item) {
-    var c = item.stop.category;
-    if (c && uzyte.indexOf(c) === -1) uzyte.push(c);
-  });
-  if (uzyte.length) {
-    html += '<section class="legend" id="ikony" data-hide-kid><h2 class="caps">' + esc(ui('label.icons_legend', 'Ikony trasy')) + '</h2><div class="legend-items">';
-    uzyte.forEach(function(c) {
-      html += '<span class="legend-item"><span class="stop-cat stop-cat--' + c + '">' +
-              (CAT_ICONS[c] || CAT_ICONS.monument) + '</span>' +
-              esc(ui('cat.' + c, c)) + '</span>';
-    });
-    html += '</div></section>';
-  }
-
   // Trasa jest rama, nie klatka (WYTYCZNE §15) — to samo zdanie przy kazdym miescie
   html += '<div class="box box-flex" data-hide-kid><p class="caps">' +
           esc(ui('label.flexible_route', 'Elastyczna trasa')) + '</p><p>' +
           esc(ui('text.flexible_route', 'Każdy punkt może być obowiązkowy albo opcjonalny. Możecie pominąć przystanek, zmienić kolejność, skrócić pobyt albo dodać własny. Numer punktu to podpowiedź, nie harmonogram.')) +
           '</p></div>';
+
+  html += '</section>';   // koniec sekcji startowej
 
   // Trasa punkt po punkcie — wlasna sekcja z naglowkiem
   html += '<section class="city-section" id="wycieczka">';
@@ -390,8 +428,7 @@ function render(d) {
     var s = item.stop, t = item.tr || {};
     var id = num(s.stop_number);
     var cat = s.category || 'other';
-    var catClass = 'stop-cat stop-cat--' + cat;
-    var icon = CAT_ICONS[cat] || CAT_ICONS.monument;
+
 
     html += '<div class="stop open" data-id="' + id + '"' +
             (s.stop_key ? ' id="' + esc(s.stop_key) + '"' : '') + '>';
@@ -399,7 +436,7 @@ function render(d) {
 
     // Row 1: icon + number + name
     html += '<div class="stop-row1">';
-    html += '<span class="' + catClass + '">' + icon + '</span>';
+    html += ikonaKategorii(cat);
     html += '<span class="stop-num">' + id + (s.time_label ? ' · ' + esc(s.time_label) : '') + '</span>';
     html += '<h3 class="stop-name">' + esc(t.name || 'Przystanek ' + id) + '</h3>';
     html += '<span class="stop-chev">▼</span>';

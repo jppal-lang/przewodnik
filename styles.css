@@ -249,6 +249,7 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .legend-item{display:inline-flex;align-items:center;gap:7px;font-size:15px;color:var(--ink2)}
 .legend-item .stop-cat{width:30px;height:30px}
 .legend-item .stop-cat svg{width:17px;height:17px}
+.legend-item .stop-cat.has-img{width:36px;height:36px}
 .box-flex{background:var(--sea-bg);margin-top:18px}
 .box-flex .caps{color:var(--sea)}
 .route-all{margin-top:14px}
@@ -260,9 +261,14 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .foot-section{margin-top:28px}
 /* Sekcje strony miasta — jedna pod druga, oddzielone kreska */
 .city-section{margin-top:32px;padding-top:26px;border-top:1px solid var(--line)}
-.city-section > .caps,
-.legend > .caps{margin:0 0 12px;font-size:13px;font-weight:700}
+.city-section > .caps{margin:0 0 12px;font-size:13px;font-weight:700}
 h3.stop-name{margin:0}
+/* Sekcja startowa: zdjecie, naglowek, wstep, plan dnia, trasa */
+.city-start{display:block}
+.city-block{margin-top:28px}
+.city-block > .caps{margin:0 0 12px;font-size:13px;font-weight:700}
+.legend{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.legend-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--label);margin:0 0 10px}
 
 body.kid-mode .city-section[data-hide-kid]{display:none}
 .foot-section .caps{margin-bottom:12px}
