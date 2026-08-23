@@ -7,9 +7,8 @@
 <meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://upload.wikimedia.org">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <style>
 /* ── Sticky nav ─────────────────────────────────────── */
 .sticky-nav{position:sticky;top:0;z-index:100;background:rgba(255,252,245,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(231,219,198,.6);box-shadow:var(--sh1);padding:0 20px}
@@ -56,7 +55,7 @@
 .city-card{display:block;color:var(--ink);border-radius:18px}
 .city-card:focus-visible{outline:3px solid var(--terra);outline-offset:4px}
 
-.city-img-wrap{position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
+.city-img-wrap{position:relative;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
 .city-img-wrap::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(56,48,38,.07);pointer-events:none}
 .city-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.02);transition:opacity .45s ease,transform .5s ease}
 .city-img.loaded{opacity:1;transform:scale(1)}
@@ -181,8 +180,6 @@
 var SB_URL = 'https://ntwpjcupffdozstbijhh.supabase.co/rest/v1';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
 var FALLBACK = 'pl';
-var IMG_TTL = 7 * 24 * 3600 * 1000;   // photo URL cache: 7 days
-var IMG_WIDTH = 800;
 
 // ══════════════ STATE ══════════════
 var regionSlug  = new URLSearchParams(location.search).get('r');
@@ -215,71 +212,43 @@ function stopsLabel(n) {
   return ui(key, '{n} stops').replace('{n}', n);
 }
 
-// ══════════════ CITY PHOTOS (Wikipedia) ══════════════
-// hero_image in the DB wins; otherwise we look the photo up once from
-// Wikipedia via the city's wiki_article and cache the URL in localStorage.
+// ══════ GRAFIKI TRAS ══════
+// Jedna grafika z Que na wycieczke, robiona lokalnie skryptem img/!build-img.py.
+// Nazwa wynika ze slugow: media/tours/<kraj>-<miasto>-tile-384.webp itd.
+// Zadnych zapytan do Wikipedii i zadnego cache w localStorage — pliki sa nasze,
+// wiec wystarczy poprawna sciezka i przegladarkowy cache.
+var IMG_DIR = 'media/tours/';
 
-function cachedImg(slug) {
-  try {
-    var raw = localStorage.getItem('quolino_img3_' + slug);
-    if (!raw) return null;
-    var o = JSON.parse(raw);
-    if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
-    return o.url;               // may be '' meaning "known: no photo"
-  } catch(e) { return null; }
+function imgBase(city) {
+  if (!city) return '';
+  if (city.hero_image) return city.hero_image;          // nadpisanie z bazy
+  if (!city.country || !city.slug) return '';
+  return IMG_DIR + city.country + '-' + city.slug;
 }
-function cacheImg(slug, url) {
-  try { localStorage.setItem('quolino_img3_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
-}
-function wikiThumb(city) {
-  // Prosimy API o wygenerowanie miniatury o zadanej szerokosci.
-  // Recznie sklejane adresy /800px-.../ Wikimedia odrzuca bledem 400 —
-  // serwuje tylko te rozmiary, ktore sama wczesniej wygenerowala.
-  var lang = city.wiki_lang || 'it';
-  var url = 'https://' + lang + '.wikipedia.org/w/api.php'
-          + '?action=query&prop=pageimages&format=json&origin=*'
-          + '&pithumbsize=' + IMG_WIDTH
-          + '&titles=' + encodeURIComponent(String(city.wiki_article));
-  return fetch(url)
-    .then(function(r) { if (!r.ok) throw new Error('wiki ' + r.status); return r.json(); })
-    .then(function(j) {
-      var pages = j && j.query && j.query.pages;
-      if (!pages) return '';
-      var k = Object.keys(pages)[0];
-      var th = pages[k] && pages[k].thumbnail;
-      return (th && th.source) ? th.source : '';
-    });
-}
-function paintImage(wrap, url, city) {
-  if (!url) { showFallback(wrap, city); return; }
-  var img = document.createElement('img');
-  img.className = 'city-img';
-  img.alt = '';
-  img.loading = 'lazy';
-  img.decoding = 'async';
-  img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
-  img.onerror = function() { img.remove(); showFallback(wrap, city); };
-  img.src = url;
-  wrap.appendChild(img);
-}
-function showFallback(wrap, city) {
+function showFallback(wrap, color, letter) {
   wrap.classList.remove('loading');
   if (wrap.querySelector('.city-fallback')) return;
-  var c = city.bandana_color || '#B4502E';
-  wrap.style.background = 'linear-gradient(135deg,' + c + ' 0%, rgba(56,48,38,.55) 100%)';
+  wrap.style.background = 'linear-gradient(135deg,' + (color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)';
   var d = document.createElement('div');
   d.className = 'city-fallback';
-  d.textContent = (city._title || city.slug || '?').charAt(0).toUpperCase();
+  d.textContent = (letter || '?').charAt(0).toUpperCase();
   wrap.appendChild(d);
 }
-function loadCityImage(wrap, city) {
-  if (city.hero_image) { paintImage(wrap, city.hero_image, city); return; }
-  var cached = cachedImg(city.slug);
-  if (cached !== null) { paintImage(wrap, cached, city); return; }
-  if (!city.wiki_article) { showFallback(wrap, city); return; }
-  wikiThumb(city)
-    .then(function(url) { cacheImg(city.slug, url); paintImage(wrap, url, city); })
-    .catch(function() { showFallback(wrap, city); });
+function loadCityImage(wrap, city, letter) {
+  var base = imgBase(city);
+  var color = city ? city.bandana_color : null;
+  if (!base) { showFallback(wrap, color, letter); return; }
+  var img = document.createElement('img');
+  img.className = 'city-img';
+  img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+  img.width = 768; img.height = 768;
+  img.src    = base + '-tile-384.webp';
+  img.srcset = base + '-tile-384.webp 384w, ' + base + '-tile-768.webp 768w';
+  img.sizes  = '(max-width:560px) 92vw, 300px';
+  img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
+  // brak pliku = jeszcze nie narysowany — wtedy gradient z litera, bez bledu w konsoli
+  img.onerror = function() { img.remove(); showFallback(wrap, color, letter); };
+  wrap.appendChild(img);
 }
 
 // ══════════════ LOAD PAGE ══════════════
@@ -297,7 +266,7 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,duration_type,duration_hours,hero_image,wiki_article,wiki_lang,sort_order&order=sort_order'),
+    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,duration_type,duration_hours,hero_image,sort_order&order=sort_order'),
     sb('city_translations', 'lang=eq.' + lang),
     sb('stops', 'select=city_slug')
   ]).then(function(res) {
@@ -435,7 +404,6 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
     var tr    = cityTrs.filter(function(t) { return t.city_slug === city.slug; })[0];
     var title = tr ? tr.title : city.slug;
     var sub   = tr ? tr.subtitle : '';
-    city._title = title;
 
     var card = document.createElement('a');
     card.className = 'city-card';
@@ -469,7 +437,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
     card.appendChild(body);
 
     grid.appendChild(card);
-    loadCityImage(wrap, city);
+    loadCityImage(wrap, city, title);
   });
 }
 

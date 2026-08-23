@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <style>
 /* ===== Stop category icons ===== */
 .stop-cat{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;flex-shrink:0;margin-right:4px;vertical-align:middle}
@@ -309,8 +309,22 @@ function render(d) {
   });
   html += '</nav>';
 
-  // Hero image
-  html += '<div class="hero-img"' + (city.hero_image ? ' style="background-image:url(' + esc(city.hero_image) + ')"' : '') + '>';
+  // Hero image — grafika 16:9 z Que; gradient pod spodem gra role zapasu,
+  // wiec miasto bez narysowanej grafiki nie wyglada na zepsute.
+  var imgBase = city.hero_image
+    ? city.hero_image
+    : (city.country && city.slug ? 'media/tours/' + city.country + '-' + city.slug : '');
+  html += '<div class="hero-img" style="background:linear-gradient(135deg,' +
+          (city.bandana_color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)">';
+  if (imgBase) {
+    html += '<img src="' + esc(imgBase) + '-hero-800.webp"' +
+            ' srcset="' + esc(imgBase) + '-hero-480.webp 480w, ' +
+                          esc(imgBase) + '-hero-800.webp 800w, ' +
+                          esc(imgBase) + '-hero-1200.webp 1200w"' +
+            ' sizes="(max-width:900px) 100vw, 900px"' +
+            ' width="1200" height="675" alt="" decoding="async"' +
+            ' onerror="this.remove()">';
+  }
   html += '<div class="hero-over"><div></div>';
   html += '<button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 <span>' + ui('btn.kid_view', 'Widok dziecka') + '</span></button>';
   html += '</div></div>';

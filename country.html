@@ -7,9 +7,8 @@
 <meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://upload.wikimedia.org">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <style>
 /* ── Sticky nav ─────────────────────────────────────── */
 .sticky-nav{position:sticky;top:0;z-index:100;background:rgba(255,252,245,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(231,219,198,.6);box-shadow:var(--sh1);padding:0 20px}
@@ -56,7 +55,7 @@
 .city-card{display:block;color:var(--ink);border-radius:18px}
 .city-card:focus-visible{outline:3px solid var(--terra);outline-offset:4px}
 
-.city-img-wrap{position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
+.city-img-wrap{position:relative;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
 .city-img-wrap::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(56,48,38,.07);pointer-events:none}
 .city-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.02);transition:opacity .45s ease,transform .5s ease}
 .city-img.loaded{opacity:1;transform:scale(1)}
@@ -181,8 +180,6 @@
 var SB_URL = 'https://ntwpjcupffdozstbijhh.supabase.co/rest/v1';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
 var FALLBACK = 'pl';
-var IMG_TTL = 7 * 24 * 3600 * 1000;   // photo URL cache: 7 days
-var IMG_WIDTH = 800;
 
 // ══════════════ STATE ══════════════
 var countrySlug = new URLSearchParams(location.search).get('k');
@@ -201,35 +198,18 @@ function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e)
 function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function ui(key, fb) { return uiStrings[key] || fb || key; }
 
-// ══════════════ PHOTOS (Wikipedia) ══════════════
-// Region nie ma wlasnego zdjecia — bierzemy pierwsze miasto regionu.
-function cachedImg(slug) {
-  try {
-    var raw = localStorage.getItem('quolino_img3_' + slug);
-    if (!raw) return null;
-    var o = JSON.parse(raw);
-    if (!o.ts || Date.now() - o.ts > IMG_TTL) return null;
-    return o.url;
-  } catch(e) { return null; }
-}
-function cacheImg(slug, url) {
-  try { localStorage.setItem('quolino_img3_' + slug, JSON.stringify({ url: url || '', ts: Date.now() })); } catch(e) {}
-}
-function wikiThumb(city) {
-  var lang = city.wiki_lang || 'it';
-  var url = 'https://' + lang + '.wikipedia.org/w/api.php'
-          + '?action=query&prop=pageimages&format=json&origin=*'
-          + '&pithumbsize=' + IMG_WIDTH
-          + '&titles=' + encodeURIComponent(String(city.wiki_article));
-  return fetch(url)
-    .then(function(r) { if (!r.ok) throw new Error('wiki ' + r.status); return r.json(); })
-    .then(function(j) {
-      var pages = j && j.query && j.query.pages;
-      if (!pages) return '';
-      var k = Object.keys(pages)[0];
-      var th = pages[k] && pages[k].thumbnail;
-      return (th && th.source) ? th.source : '';
-    });
+// ══════ GRAFIKI TRAS ══════
+// Jedna grafika z Que na wycieczke, robiona lokalnie skryptem img/!build-img.py.
+// Nazwa wynika ze slugow: media/tours/<kraj>-<miasto>-tile-384.webp itd.
+// Zadnych zapytan do Wikipedii i zadnego cache w localStorage — pliki sa nasze,
+// wiec wystarczy poprawna sciezka i przegladarkowy cache.
+var IMG_DIR = 'media/tours/';
+
+function imgBase(city) {
+  if (!city) return '';
+  if (city.hero_image) return city.hero_image;          // nadpisanie z bazy
+  if (!city.country || !city.slug) return '';
+  return IMG_DIR + city.country + '-' + city.slug;
 }
 function showFallback(wrap, color, letter) {
   wrap.classList.remove('loading');
@@ -240,25 +220,21 @@ function showFallback(wrap, color, letter) {
   d.textContent = (letter || '?').charAt(0).toUpperCase();
   wrap.appendChild(d);
 }
-function paintImage(wrap, url, color, letter) {
-  if (!url) { showFallback(wrap, color, letter); return; }
-  var img = document.createElement('img');
-  img.className = 'city-img'; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-  img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
-  img.onerror = function() { img.remove(); showFallback(wrap, color, letter); };
-  img.src = url;
-  wrap.appendChild(img);
-}
 function loadCover(wrap, city, letter) {
-  if (!city) { showFallback(wrap, null, letter); return; }
-  var color = city.bandana_color;
-  if (city.hero_image) { paintImage(wrap, city.hero_image, color, letter); return; }
-  var c = cachedImg(city.slug);
-  if (c !== null) { paintImage(wrap, c, color, letter); return; }
-  if (!city.wiki_article) { showFallback(wrap, color, letter); return; }
-  wikiThumb(city)
-    .then(function(url) { cacheImg(city.slug, url); paintImage(wrap, url, color, letter); })
-    .catch(function() { showFallback(wrap, color, letter); });
+  var base = imgBase(city);
+  var color = city ? city.bandana_color : null;
+  if (!base) { showFallback(wrap, color, letter); return; }
+  var img = document.createElement('img');
+  img.className = 'city-img';
+  img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+  img.width = 768; img.height = 768;
+  img.src    = base + '-tile-384.webp';
+  img.srcset = base + '-tile-384.webp 384w, ' + base + '-tile-768.webp 768w';
+  img.sizes  = '(max-width:560px) 92vw, 300px';
+  img.onload  = function() { wrap.classList.remove('loading'); img.classList.add('loaded'); };
+  // brak pliku = jeszcze nie narysowany — wtedy gradient z litera, bez bledu w konsoli
+  img.onerror = function() { img.remove(); showFallback(wrap, color, letter); };
+  wrap.appendChild(img);
 }
 
 // ══════════════ LOAD PAGE ══════════════
@@ -276,7 +252,7 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*&order=sort_order'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,region_slug,bandana_color,hero_image,wiki_article,wiki_lang,sort_order&order=sort_order')
+    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order&order=sort_order')
   ]).then(function(res) {
     langList        = res[0];
     var uiRows      = res[1];
