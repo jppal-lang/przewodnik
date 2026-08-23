@@ -258,6 +258,10 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 
 /* ===== Footer sections ===== */
 .foot-section{margin-top:28px}
+/* Sekcje strony miasta — jedna pod druga, oddzielone kreska */
+.city-section{margin-top:32px;padding-top:26px;border-top:1px solid var(--line)}
+.city-section > .caps{margin-bottom:12px}
+body.kid-mode .city-section[data-hide-kid]{display:none}
 .foot-section .caps{margin-bottom:12px}
 .plan-card{background:var(--parchment);border-radius:16px;box-shadow:var(--sh1);border:1.5px solid var(--line);overflow:hidden}
 .plan-row{display:grid;grid-template-columns:72px 1fr;font-size:18px;padding:12px 16px;border-bottom:1px solid var(--chip-bg)}
