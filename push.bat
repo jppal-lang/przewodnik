@@ -17,10 +17,18 @@ if not "!GALAZ!"=="main" (
     if /i not "!DALEJ!"=="t" goto :przerwane
 )
 
-REM ---- opis zmian: argument > pytanie > data ----
+REM ---- data i godzina ----
+REM %DATE% zalezy od ustawien regionalnych Windows i potrafi dokleic dzien
+REM tygodnia. Bierzemy stempel z PowerShella w stalym formacie, a gdyby
+REM go nie bylo — wracamy do %DATE%.
+set "STEMPEL="
+for /f "usebackq delims=" %%d in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-dd HH:mm'" 2^>nul`) do set "STEMPEL=%%d"
+if not defined STEMPEL set "STEMPEL=%DATE% %TIME:~0,5%"
+
+REM ---- opis zmian: argument > pytanie > sama data ----
 set "MSG=%~1"
-if "!MSG!"=="" set /p "MSG=Opis zmian (Enter = data i godzina): "
-if "!MSG!"=="" set "MSG=deploy %DATE% %TIME:~0,5%"
+if "!MSG!"=="" set /p "MSG=Opis zmian (Enter = !STEMPEL!): "
+if "!MSG!"=="" set "MSG=deploy !STEMPEL!"
 
 echo.
 echo === 1/4  Zmiany lokalne ===

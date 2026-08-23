@@ -354,7 +354,7 @@ function render(d) {
     var catClass = 'stop-cat stop-cat--' + cat;
     var icon = CAT_ICONS[cat] || CAT_ICONS.monument;
 
-    html += '<div class="stop open" data-id="' + id + '"' + (s.wiki_article ? ' data-wiki="' + esc(s.wiki_article) + '"' : '') + '>';
+    html += '<div class="stop open" data-id="' + id + '">';
     html += '<button class="stop-header" onclick="toggleStop(\'' + id + '\')">';
 
     // Row 1: icon + number + name
@@ -382,7 +382,9 @@ function render(d) {
 
     // Stop body
     html += '<div class="stop-body">';
-    html += '<div class="stop-photo"' + (s.hero_image ? ' style="background-image:url(' + esc(s.hero_image) + ')"' : '') + '></div>';
+    if (s.hero_image) {
+      html += '<div class="stop-photo" style="background-image:url(' + esc(s.hero_image) + ')"></div>';
+    }
 
     if (t.desc_paragraphs && t.desc_paragraphs.length) {
       t.desc_paragraphs.forEach(function(p) {

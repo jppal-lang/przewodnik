@@ -71,28 +71,6 @@
   });
 })();
 
-/* Zdjęcia z wolnych źródeł: miniatury z Wikipedii (Wikimedia Commons) */
-(function(){
-  document.querySelectorAll('.stop[data-wiki]').forEach(function(stop){
-    var title = stop.getAttribute('data-wiki');
-    var slot = stop.querySelector('.stop-photo');
-    if(!slot) return;
-    var url = 'https://it.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title.replace(/ /g,'_'));
-    fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
-      if(!d) return;
-      var img = (d.originalimage && d.originalimage.source) || (d.thumbnail && d.thumbnail.source);
-      if(!img) return;
-      if(d.thumbnail && d.thumbnail.source) img = d.thumbnail.source.replace(/\/(\d+)px-/, '/900px-');
-      var im = document.createElement('img');
-      im.src = img; im.alt = title; im.loading = 'lazy';
-      im.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:14px';
-      slot.innerHTML = ''; slot.appendChild(im);
-      var cap = document.createElement('a');
-      cap.href = (d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page) || '#';
-      cap.target = '_blank'; cap.rel = 'noopener';
-      cap.textContent = 'Foto: Wikimedia Commons / Wikipedia';
-      cap.style.cssText = 'display:block;margin-top:6px;font-size:12px;color:var(--label);border-bottom:1px dashed var(--line);width:fit-content';
-      slot.insertAdjacentElement('afterend', cap);
-    }).catch(function(){});
-  });
-})();
+/* Zdjecia przystankow: wylacznie wlasne pliki z media/tours.
+   Blok ciagnacy miniatury z Wikipedii zostal usuniety — zero zewnetrznych
+   zapytan i zero podpisow odsylajacych do Wikimedia Commons. */
