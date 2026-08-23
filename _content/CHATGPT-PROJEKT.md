@@ -217,6 +217,25 @@ się zgadzać w `desc_paragraphs`, `kids_box`, `hint` i `local_flavor`.
 
 **Pole nieużywane → `null`. Nie pomijaj klucza.**
 
+## Wstęp dokumentu → pola miasta
+
+Jeśli treść powstała najpierw w HTML, **wstęp nie jest ozdobą dokumentu — jest treścią miasta**
+i musi trafić do pól, dosłownie:
+
+| W dokumencie | Pole | Uwaga |
+|---|---|---|
+| człon nagłówka po myślniku (`🌿 Spello — rzymskie mozaiki, renesansowe freski i legenda o Orlando`) | `subtitle` | bez emoji i bez nazwy miasta — sama część opisowa |
+| akapity wstępu pod nagłówkiem | `lead` | **wszystkie**, rozdzielone pustym wierszem (`\n\n`); strona renderuje je jako osobne akapity |
+| ramka „Po drodze…" | `hero_note` | całe zdanie, nie streszczenie |
+
+Nie wolno zastąpić ich własnymi, ogólnymi zdaniami. Przy Spello v31 wstęp — trzy akapity
+napisane specjalnie do tej trasy — zniknął, bo JSON przyniósł zamiast niego dwa neutralne
+zdania o tym, że „miasto najlepiej poznaje się własnym rytmem". Tego się nie da odzyskać
+inaczej niż ręcznie z dokumentu.
+
+Legenda ikon, pasek numerów punktów, licznik ocen i ramka o elastycznej trasie **nie są treścią
+miasta** — składa je strona i są takie same wszędzie. Nie przenosisz ich do JSON-a.
+
 ---
 
 # 6. KATEGORIE I IKONY

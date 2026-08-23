@@ -243,6 +243,14 @@ h1{font-size:32px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
 .box-practical .caps{color:var(--ink2)}
 .box-dress{background:transparent;border:1.5px solid var(--line)}
 .box-dress .caps{color:var(--label)}
+.city-lead-block{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.legend{margin-top:24px}
+.legend-items{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:10px}
+.legend-item{display:inline-flex;align-items:center;gap:7px;font-size:15px;color:var(--ink2)}
+.legend-item .stop-cat{width:30px;height:30px}
+.legend-item .stop-cat svg{width:17px;height:17px}
+.box-flex{background:var(--sea-bg);margin-top:18px}
+.box-flex .caps{color:var(--sea)}
 .route-all{margin-top:14px}
 .route-all .act{width:100%;justify-content:center;height:52px;font-size:17px}
 .box-local .caps{color:var(--terra)}

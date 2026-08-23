@@ -260,6 +260,9 @@ a stało się tekstem widocznym dla turysty. Import odrzuca pliki, które to mie
 | `photo_task` | konkretne zadanie foto — **obowiązkowe** | `null`, „zrób ładne zdjęcie" |
 | `desc_paragraphs` | 2–4 akapity, przy każdym punkcie tak samo | jednego akapitu przy bramie i jedenastu przy kolacji |
 | `wiki_article` | w nowych miastach `null` | tytułów — zdjęcia rysujemy sami, patrz niżej |
+| `subtitle` | opisowy człon nagłówka dokumentu, bez emoji i nazwy miasta | własnego, ogólnego zdania „zamiast" |
+| `lead` | **wszystkie** akapity wstępu, rozdzielone `\n\n` | jednego zdania streszczenia — strona pokazuje wstęp nad trasą |
+| `hero_note` | ramka „Po drodze…" w całości | `null`, gdy dokument ją ma |
 
 **`lat` i `lon` są obowiązkowe przy każdym punkcie.** Bez nich nawigacja idzie po nazwie
 tekstowej, a „Via Giulia" prowadzi do innego miasta.

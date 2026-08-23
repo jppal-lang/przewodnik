@@ -139,6 +139,12 @@ var CAT_ICONS = {
   viewpoint:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
   monument:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 20V8l7-5 7 5v12"/><rect x="9" y="12" width="6" height="8"/></svg>',
   park:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="M5 12s2-7 7-7 7 7 7 7"/><path d="M3 22h18"/></svg>',
+  castle:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l3 2V6l3 2V6l3-2 3 2v2l3-2v4l3-2v13z"/><path d="M10 21v-5h4v5"/></svg>',
+  street:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22 9 2M20 22 15 2"/><path d="M12 6v3M12 13v3M12 20v1"/></svg>',
+  icecream:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11a4 4 0 1 1 8 0"/><path d="M7 11h10l-5 10z"/></svg>',
+  sweets:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M5 20v-6a7 7 0 0 1 14 0v6"/><path d="M12 7V4"/></svg>',
+  photo:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  synagogue:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 5v13H4V8z"/><path d="m12 10 2.6 4.5h-5.2z"/><path d="m12 19-2.6-4.5h5.2z"/></svg>',
 };
 
 var TAB_ICONS = {
@@ -344,6 +350,37 @@ function render(d) {
   }
   html += '</div>';
 
+  // Wstep — akapity rozdzielone pustym wierszem ida jako osobne akapity
+  if (tr.lead) {
+    html += '<div class="city-lead-block">';
+    String(tr.lead).split(/\n\s*\n/).forEach(function(par) {
+      if (par.trim()) html += '<p class="city-lead">' + esc(par.trim()) + '</p>';
+    });
+    html += '</div>';
+  }
+
+  // Legenda ikon — tylko kategorie, ktore w tym miescie wystepuja
+  var uzyte = [];
+  stops.forEach(function(item) {
+    var c = item.stop.category;
+    if (c && uzyte.indexOf(c) === -1) uzyte.push(c);
+  });
+  if (uzyte.length) {
+    html += '<div class="legend" data-hide-kid><p class="caps">' + esc(ui('label.icons_legend', 'Ikony trasy')) + '</p><div class="legend-items">';
+    uzyte.forEach(function(c) {
+      html += '<span class="legend-item"><span class="stop-cat stop-cat--' + c + '">' +
+              (CAT_ICONS[c] || CAT_ICONS.monument) + '</span>' +
+              esc(ui('cat.' + c, c)) + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  // Trasa jest rama, nie klatka (WYTYCZNE §15) — to samo zdanie przy kazdym miescie
+  html += '<div class="box box-flex" data-hide-kid><p class="caps">' +
+          esc(ui('label.flexible_route', 'Elastyczna trasa')) + '</p><p>' +
+          esc(ui('text.flexible_route', 'Każdy punkt może być obowiązkowy albo opcjonalny. Możecie pominąć przystanek, zmienić kolejność, skrócić pobyt albo dodać własny. Numer punktu to podpowiedź, nie harmonogram.')) +
+          '</p></div>';
+
   // Tabs
   html += '<nav class="city-tabs" id="cityTabs" aria-label="Sekcje" data-hide-kid>';
   html += tabBtn('punkty-awaryjne', TAB_ICONS.emergency, ui('label.emergency', 'Punkty awaryjne'), true);
@@ -484,13 +521,6 @@ function render(d) {
     html += '<div class="foot-section">';
     html += '<p class="caps">' + ui('label.good_to_know', 'Warto wiedzieć') + '</p>';
     html += '<p class="note" style="margin-top:0">' + esc(tr.good_to_know) + '</p>';
-    html += '</div>';
-  }
-
-  // Lead (intro paragraph)
-  if (tr.lead) {
-    html += '<div class="foot-section">';
-    html += '<p class="note" style="margin-top:0">' + esc(tr.lead) + '</p>';
     html += '</div>';
   }
 
