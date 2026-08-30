@@ -7,33 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=6">
-<style>
-/* ===== Stop category icons ===== */
-.stop-cat{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;flex-shrink:0;margin-right:4px;vertical-align:middle}
-.stop-cat svg{width:16px;height:16px}
-/* Rysunek Que wygrywa z wektorem, gdy plik istnieje */
-.cat-img{width:100%;height:100%;object-fit:contain;display:block}
-.stop-cat.has-img{width:40px;height:40px;background:transparent;border-radius:10px}
-.stop-cat.has-img svg{display:none}
-.stop-cat--parking{background:var(--sea-bg);color:var(--sea)}.stop-cat--parking svg{stroke:var(--sea)}
-.stop-cat--museum{background:#F3E8F5;color:#7B4FA2}.stop-cat--museum svg{stroke:#7B4FA2}
-.stop-cat--house{background:var(--olive-bg);color:var(--olive)}.stop-cat--house svg{stroke:var(--olive)}
-.stop-cat--church{background:#FDE8E0;color:var(--terra)}.stop-cat--church svg{stroke:var(--terra)}
-.stop-cat--restaurant{background:#FFF3E0;color:#BF6C00}.stop-cat--restaurant svg{stroke:#BF6C00}
-.stop-cat--viewpoint{background:var(--sea-bg);color:var(--sea)}.stop-cat--viewpoint svg{stroke:var(--sea)}
-.stop-cat--monument{background:#E8EDF5;color:#4A6FA5}.stop-cat--monument svg{stroke:#4A6FA5}
-.stop-cat--park{background:var(--olive-bg);color:var(--olive)}.stop-cat--park svg{stroke:var(--olive)}
-.stop-cat--other{background:var(--chip-bg);color:var(--ink2)}.stop-cat--other svg{stroke:var(--ink2)}
-
-
-/* ===== Loading / error states ===== */
-.tpl-loading{text-align:center;padding:80px 20px;font-size:18px;color:var(--ink2)}
-.tpl-error{text-align:center;padding:80px 20px;color:var(--terra)}
-.tpl-error h2{font-size:24px;margin-bottom:8px}
-.tpl-spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--terra);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-</style>
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
@@ -94,17 +68,21 @@
 </div>
 
 <!-- ==================== MAIN CONTENT (rendered by JS) ==================== -->
-<div class="wrap" id="mainContent">
-  <div class="tpl-loading" id="loadingState">
-    <div class="tpl-spinner"></div>
-    <div>Ładowanie wycieczki…</div>
+<main class="qc" id="city" data-view="adult">
+  <div class="qc-wrap" id="mainContent">
+    <div class="tpl-loading" id="loadingState">
+      <div class="tpl-spinner"></div>
+      <div>Ładowanie wycieczki…</div>
+    </div>
   </div>
-</div>
+</main>
 
 <script>
 /* ============================================================
-   QUOLINO — city.html template
+   QUOLINO — city.html template v7
    Vanilla JS · Supabase REST API · Zero dependencies
+   New design: two-column layout, details/summary stops,
+   sticky tabs, sidebar, large icon containers
    ============================================================ */
 (function(){
 'use strict';
@@ -117,13 +95,11 @@ var FALLBACK = 'pl';
 // ── State ──────────────────────────────────────────────
 var citySlug = new URLSearchParams(location.search).get('c');
 var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
-var cityData = null;   // raw city row
-var langList = [];     // enabled languages
-var uiStrings = {};    // ui_translations for currentLang
+var cityData = null;
+var langList = [];
+var uiStrings = {};
 
-// ── SVG icons per stop category ────────────────────────
-// Rysunki Que z media/icons — plik dla kategorii, jesli istnieje.
-// Kategoria bez rysunku po prostu zostaje przy ikonie wektorowej.
+// ── Que icons per stop category ───────────────────────
 var QUE_IKONY = {
   parking: 'parking', monument: 'monument', church: 'church', museum: 'museum',
   house: 'house', viewpoint: 'viewpoint-city', restaurant: 'restaurant',
@@ -132,37 +108,45 @@ var QUE_IKONY = {
 };
 var QUE_DIR = 'media/icons/';
 
-// Rysunek Que lezy na wektorze: jesli plik sie wczyta, CSS chowa wektor;
-// jesli go nie ma, zostaje dotychczasowa ikona i nic nie miga.
-function ikonaKategorii(cat) {
-  var svg = CAT_ICONS[cat] || CAT_ICONS.monument;
-  var plik = QUE_IKONY[cat];
-  var img = plik
-    ? '<img class="cat-img" src="' + QUE_DIR + 'icon-' + plik + '-128.webp" alt=""' +
-      ' width="128" height="128" loading="lazy" decoding="async"' +
-      ' onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">'
-    : '';
-  return '<span class="stop-cat stop-cat--' + cat + '">' + img + svg + '</span>';
-}
-
-var CAT_ICONS = {
-  parking:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3.5 3.5 0 010 7H9"/></svg>',
-  museum:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
-  house:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21V14h6v7"/></svg>',
-  church:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21H6V10l6-7 6 7z"/><path d="M12 3v4M9 21v-4a3 3 0 016 0v4"/><path d="M2 10h4M18 10h4"/></svg>',
-  restaurant: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
-  viewpoint:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
-  monument:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 20V8l7-5 7 5v12"/><rect x="9" y="12" width="6" height="8"/></svg>',
-  park:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="M5 12s2-7 7-7 7 7 7 7"/><path d="M3 22h18"/></svg>',
-  castle:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l3 2V6l3 2V6l3-2 3 2v2l3-2v4l3-2v13z"/><path d="M10 21v-5h4v5"/></svg>',
-  street:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22 9 2M20 22 15 2"/><path d="M12 6v3M12 13v3M12 20v1"/></svg>',
-  icecream:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11a4 4 0 1 1 8 0"/><path d="M7 11h10l-5 10z"/></svg>',
-  sweets:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M5 20v-6a7 7 0 0 1 14 0v6"/><path d="M12 7V4"/></svg>',
-  photo:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="3.5"/></svg>',
-  synagogue:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 5v13H4V8z"/><path d="m12 10 2.6 4.5h-5.2z"/><path d="m12 19-2.6-4.5h5.2z"/></svg>',
+// SVG fallback icons per category
+var CAT_SVGS = {
+  parking:    '<svg class="qc-icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3.5 3.5 0 010 7H9"/></svg>',
+  museum:     '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
+  house:      '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21V14h6v7"/></svg>',
+  church:     '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M18 21H6V10l6-7 6 7z"/><path d="M12 3v4M9 21v-4a3 3 0 016 0v4"/><path d="M2 10h4M18 10h4"/></svg>',
+  restaurant: '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+  viewpoint:  '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  monument:   '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M2 20h20M5 20V8l7-5 7 5v12"/><rect x="9" y="12" width="6" height="8"/></svg>',
+  park:       '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M12 22V8"/><path d="M5 12s2-7 7-7 7 7 7 7"/><path d="M3 22h18"/></svg>',
+  castle:     '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M3 21V8l3 2V6l3 2V6l3-2 3 2v2l3-2v4l3-2v13z"/><path d="M10 21v-5h4v5"/></svg>',
+  street:     '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M4 22 9 2M20 22 15 2"/><path d="M12 6v3M12 13v3M12 20v1"/></svg>',
+  icecream:   '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 1 8 0"/><path d="M7 11h10l-5 10z"/></svg>',
+  sweets:     '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M5 20v-6a7 7 0 0 1 14 0v6"/><path d="M12 7V4"/></svg>',
+  photo:      '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  synagogue:  '<svg class="qc-icon-svg" viewBox="0 0 24 24"><path d="m12 3 8 5v13H4V8z"/><path d="m12 10 2.6 4.5h-5.2z"/><path d="m12 19-2.6-4.5h5.2z"/></svg>',
 };
 
-var NAV_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+// Build icon HTML — large 112px container with Que image + SVG fallback
+function ikonaQc(cat, num) {
+  var svg = CAT_SVGS[cat] || CAT_SVGS.monument;
+  var plik = QUE_IKONY[cat];
+  var img = plik
+    ? '<img src="' + QUE_DIR + 'icon-' + plik + '-256.webp" alt=""' +
+      ' width="256" height="256" loading="lazy" decoding="async"' +
+      ' onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">'
+    : '';
+  return '<span class="qc-icon">' + img + svg +
+         '<span class="qc-icon__no">' + num + '</span></span>';
+}
+
+// Small inline icon for plan dnia rows (32px)
+function ikonaMala(cat) {
+  var plik = QUE_IKONY[cat];
+  if (!plik) return '';
+  return '<span class="qc-row__icon"><img src="' + QUE_DIR + 'icon-' + plik + '-128.webp" alt="" width="128" height="128" loading="lazy" decoding="async" onerror="this.parentNode.style.display=\'none\'"></span>';
+}
+
+var NAV_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
 
 // ── Supabase fetch helper ──────────────────────────────
 function sb(table, params) {
@@ -198,7 +182,6 @@ function loadPage(lang) {
   currentLang = lang;
   savePref(lang);
 
-  // Fetch all data in parallel
   Promise.all([
     sb('cities', 'slug=eq.' + citySlug + '&select=*'),
     sb('city_translations', 'city_slug=eq.' + citySlug + '&lang=in.(' + lang + ',' + FALLBACK + ')'),
@@ -215,8 +198,6 @@ function loadPage(lang) {
     sb('countries', 'select=*'),
   ]).then(function(results) {
     var city       = results[0][0];
-    // Przystanki mialy zejscie na FALLBACK od poczatku, karta miasta nie —
-    // przez to angielska wersja pokazywala surowy slug zamiast tytulu.
     var cityTrRows = results[1];
     var cityTr     = cityTrRows.filter(function(r) { return r.lang === lang; })[0]
                   || cityTrRows.filter(function(r) { return r.lang === FALLBACK; })[0]
@@ -236,11 +217,9 @@ function loadPage(lang) {
     if (!city) { showError('Nie znaleziono wycieczki: ' + esc(citySlug)); return; }
     cityData = city;
 
-    // Build UI strings map
     uiStrings = {};
     uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });
 
-    // Find region/country names
     var region = regions.find(function(r) { return r.slug === city.region_slug; }) || {};
     var regionName = '';
     var regionTr = regionTrs.find(function(r) { return r.region_slug === city.region_slug; });
@@ -253,7 +232,6 @@ function loadPage(lang) {
     var countryRow = countries.find(function(c) { return c.slug === city.country; }) || {};
     var continent  = countryRow.continent || 'europe';
 
-    // Process stops: pick translation for current lang, fallback to pl
     var processedStops = stops.map(function(s) {
       var tr = null;
       if (s.stop_translations && s.stop_translations.length) {
@@ -264,36 +242,26 @@ function loadPage(lang) {
       return { stop: s, tr: tr };
     });
 
-    // Filter phrases & phones for this city's country
     var phrases = allPhrases.filter(function(p) { return p.country === city.country; });
     var cityPhones = phones.filter(function(p) { return p.country_slug === city.country; });
 
-    // Set <title>
-    document.title = (cityTr.title || city.slug) + ' — Quolino';
+    // SEO title
+    var seoTitle = (cityTr.title || city.slug) + ' ' + ui('seo.with_kids', 'z dziećmi') +
+                   ' — ' + ui('seo.trip_plan', 'plan wycieczki') + ' | Quolino';
+    document.title = seoTitle;
     ustawMeta(city, cityTr, processedStops);
     document.documentElement.lang = lang;
-    if (city.bandana_color) {
-      document.body.dataset.city = city.slug;
-      document.body.dataset.country = city.country;
-    }
 
-    // Render
     render({
-      city: city,
-      cityTr: cityTr,
-      stops: processedStops,
-      dayPlan: dayPlan,
-      emergency: emergency,
-      phrases: phrases,
-      phones: cityPhones,
-      regionName: regionName,
-      countryName: countryName,
-      continent: continent,
+      city: city, cityTr: cityTr, stops: processedStops, dayPlan: dayPlan,
+      emergency: emergency, phrases: phrases, phones: cityPhones,
+      regionName: regionName, countryName: countryName, continent: continent,
     });
 
-    // Build language popup
     buildLangPopup();
     updateActiveLang();
+    initTabs();
+    initTaskCheckboxes();
 
   }).catch(function(err) {
     console.error('[city.html]', err);
@@ -301,326 +269,354 @@ function loadPage(lang) {
   });
 }
 
-// ── Render main content ────────────────────────────────
+// ── Render ─────────────────────────────────────────────
 function render(d) {
   var city = d.city, tr = d.cityTr, stops = d.stops;
   var num = function(n) { return String(n).padStart(2, '0'); };
   var html = '';
 
-  // Breadcrumb: 🏠 › Europa › Włochy › Marche › Urbino
+  // ── Breadcrumb ──
   var homeLabel = ui('nav.home', 'Strona główna');
-  html += '<nav class="crumbs" aria-label="Breadcrumb">';
-  html += '<a class="crumb-home" href="./" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
-            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-            '<path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg></a>';
+  html += '<nav class="qc-crumbs" aria-label="Breadcrumb">';
+  html += '<a href="./" title="' + esc(homeLabel) + '">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Quolino</a>';
 
   var levels = [
     { label: ui('continent.' + (d.continent || 'europe'), 'Europa'), href: './#regiony' },
-    { label: d.countryName, href: city.country ? 'country.html?k=' + encodeURIComponent(city.country) : './#regiony' },
+    { label: d.countryName, href: city.country ? 'country.html?k=' + encodeURIComponent(city.country) : null },
     { label: d.regionName,  href: city.region_slug ? 'region.html?r=' + encodeURIComponent(city.region_slug) : null },
     { label: tr.title || city.slug, href: null }
   ];
   levels.forEach(function(l) {
     if (!l.label) return;
-    html += '<span class="crumb-sep" aria-hidden="true">&rsaquo;</span>';
+    html += '<span aria-hidden="true">/</span>';
     html += l.href
       ? '<a href="' + l.href + '">' + esc(l.label) + '</a>'
-      : '<span class="crumb-current" aria-current="page">' + esc(l.label) + '</span>';
+      : '<span aria-current="page">' + esc(l.label) + '</span>';
   });
   html += '</nav>';
 
-  // ── SEKCJA 1: start — zdjecie, naglowek, wstep, plan dnia z legenda,
-  //    link do trasy i notka o elastycznosci. Jedna calosc przed trasa.
-  html += '<section class="city-start" id="start">';
+  // ── Intro ──
+  html += '<section class="qc-intro">';
+  html += '<div class="qc-intro__text">';
+  html += '<p class="qc-eyebrow">' + esc(d.regionName || '') + ' · ' + durationLabel(city) + '</p>';
+  html += '<h1 class="qc-title">' + esc(tr.title || city.slug) + '</h1>';
+  if (tr.subtitle) html += '<p class="qc-lede">' + esc(tr.subtitle) + '</p>';
+  html += '<p class="qc-facts">';
+  html += '<span><strong>' + stops.length + '</strong> ' + ui('label.stops_count', 'przystanków') + '</span>';
+  if (city.duration_hours) html += '<span><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
+  if (city.start_time && city.end_time) html += '<span><strong>' + esc(city.start_time) + ' → ' + esc(city.end_time) + '</strong></span>';
+  if (city.walk_km) html += '<span><strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong> ' + ui('label.on_foot', 'pieszo') + (city.climb_m ? ' · ' + city.climb_m + ' m ' + ui('label.uphill', 'w górę') : '') + '</span>';
+  html += '</p>';
+  html += '</div>';
+  html += '<div class="qc-intro__actions">';
+  html += '<button class="qc-btn qc-btn--ghost" type="button" id="qcKidToggle" aria-pressed="false">&#128065; ' + ui('btn.kid_view', 'Widok dziecka') + '</button>';
+  if (city.route_url) {
+    html += '<a class="qc-btn qc-btn--primary" href="' + esc(city.route_url) + '" target="_blank" rel="noopener">' + NAV_ICON + ' ' + esc(ui('btn.route_all', 'Cała trasa w Google Maps')) + '</a>';
+  } else if (stops.length && stops[0].stop.maps_query) {
+    html += '<a class="qc-btn qc-btn--primary" href="https://www.google.com/maps/search/?api=1&query=' +
+            encodeURIComponent(stops[0].stop.maps_query) + '" target="_blank" rel="noopener">' + NAV_ICON + ' ' + esc(ui('btn.navigate_start', 'Prowadź do startu')) + '</a>';
+  }
+  html += '</div>';
+  html += '</section>';
 
-  // Hero image — grafika 16:9 z Que; gradient pod spodem gra role zapasu,
-  // wiec miasto bez narysowanej grafiki nie wyglada na zepsute.
+  // ── Hero image ──
   var imgBase = city.hero_image
     ? city.hero_image
     : (city.country && city.slug ? 'media/tours/' + city.country + '-' + city.slug : '');
-  html += '<div class="hero-img" style="background:linear-gradient(135deg,' +
-          (city.bandana_color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)">';
   if (imgBase) {
+    html += '<figure class="qc-hero">';
     html += '<img src="' + esc(imgBase) + '-hero-800.webp"' +
             ' srcset="' + esc(imgBase) + '-hero-480.webp 480w, ' +
                           esc(imgBase) + '-hero-800.webp 800w, ' +
                           esc(imgBase) + '-hero-1200.webp 1200w"' +
             ' sizes="(max-width:900px) 100vw, 900px"' +
-            ' width="1200" height="675" alt="" decoding="async"' +
-            ' onerror="this.remove()">';
-  }
-  html += '<div class="hero-over"><div></div>';
-  html += '<button class="kid-toggle" onclick="toggleKidView()" aria-pressed="false">👁 <span>' + ui('btn.kid_view', 'Widok dziecka') + '</span></button>';
-  html += '</div></div>';
-
-  // Hero body
-  html += '<div class="city-hero-body">';
-  // Region bierzemy z tabeli regionow, nie z pola tekstowego — 'region_label'
-  // bywa zapisane jako „Umbria · pół dnia" i czas doklejal sie drugi raz.
-  html += '<p class="caps">' + esc(d.regionName || tr.region_label || '') + ' · ' + durationLabel(city) + '</p>';
-  html += '<h1>' + esc(tr.title || city.slug) + '</h1>';
-  if (tr.subtitle) html += '<p class="subtitle">' + esc(tr.subtitle) + '</p>';
-  if (tr.hero_note) html += '<p class="stop-note" style="margin-top:4px">' + esc(tr.hero_note) + '</p>';
-  html += '</div>';
-
-  // Wstep — akapity rozdzielone pustym wierszem ida jako osobne akapity
-  if (tr.lead) {
-    html += '<section class="city-lead-block" id="wstep" aria-label="' + esc(ui('label.intro', 'Wstęp')) + '">';
-    String(tr.lead).split(/\n\s*\n/).forEach(function(par) {
-      if (par.trim()) html += '<p class="city-lead">' + esc(par.trim()) + '</p>';
-    });
-    html += '</section>';
+            ' width="1200" height="675"' +
+            ' alt="' + esc(tr.title || city.slug) + '"' +
+            ' decoding="async" onerror="this.parentNode.style.display=\'none\'">';
+    html += '</figure>';
   }
 
-  // Legenda ikon — tylko kategorie, ktore w tym miescie wystepuja.
-  // Siedzi w planie dnia, bo tam czyta sie trase i tam ikony cos znacza.
-  var uzyte = [];
-  stops.forEach(function(item) {
-    var c = item.stop.category;
-    if (c && uzyte.indexOf(c) === -1) uzyte.push(c);
-  });
-  function legendaHtml() {
-    if (!uzyte.length) return '';
-    var out = '<div class="legend" id="ikony" data-hide-kid><p class="legend-title">' +
-              esc(ui('label.icons_legend', 'Ikony trasy')) + '</p><div class="legend-items">';
-    uzyte.forEach(function(c) {
-      out += '<span class="legend-item">' + ikonaKategorii(c) + esc(ui('cat.' + c, c)) + '</span>';
-    });
-    return out + '</div></div>';
-  }
+  // ── Sticky tabs ──
+  html += '<nav class="qc-tabs" aria-label="Sekcje">';
+  html += '<a class="qc-tab" href="#trasa" aria-current="true">' + ui('tab.route', 'Trasa') + '</a>';
+  html += '<a class="qc-tab" href="#plan">' + ui('tab.plan', 'Plan dnia') + '</a>';
+  html += '<a class="qc-tab" href="#awaryjne">' + ui('tab.emergency', 'Punkty awaryjne') + '</a>';
+  html += '<a class="qc-tab" href="#rozmowki">' + ui('tab.phrases', 'Rozmówki') + '</a>';
+  html += '<a class="qc-tab" href="#telefony">' + ui('tab.phones', 'Telefony') + '</a>';
+  html += '<a class="qc-tab" href="#qr">' + ui('tab.qr', 'QR dla dziecka') + '</a>';
+  html += '<a class="qc-tab qc-tab--support" href="https://buymeacoffee.com/questini" target="_blank" rel="noopener">☕ ' + ui('nav.support', 'Wesprzyj') + '</a>';
+  html += '</nav>';
 
-  // Kategoria przystanku po jego kluczu — plan dnia pokazuje te sama ikone
-  // co karta punktu, a wiersz prowadzi do niego kotwica.
+  // Kategoria po kluczu — do ikon w plan dnia
   var katPoKluczu = {};
   stops.forEach(function(item) {
     if (item.stop.stop_key) katPoKluczu[item.stop.stop_key] = item.stop.category;
   });
 
-  // Plan dnia — zaraz po wstepie, zanim ktokolwiek zejdzie do przystankow
-  if (d.dayPlan && d.dayPlan.length) {
-    html += '<div class="city-block" id="plan-dnia">';
-    html += '<h2 class="caps">' + esc(ui('label.day_plan', 'Plan dnia')) + '</h2>';
-    html += '<div class="plan-card">';
-    d.dayPlan.forEach(function(row) {
-      var kat  = row.stop_key ? katPoKluczu[row.stop_key] : null;
-      var opis = row.stop_key
-        ? '<a class="plan-link" href="#' + esc(row.stop_key) + '">' + esc(row.description) + '</a>'
-        : esc(row.description);
-      html += '<div class="plan-row">' +
-                '<span class="plan-time">' + esc(row.time_label) + '</span>' +
-                '<span class="plan-desc">' + (kat ? ikonaKategorii(kat) : '') + opis + '</span>' +
-              '</div>';
-    });
-    html += '</div>';
-    html += legendaHtml();
-    html += '</div>';
-  } else {
-    html += legendaHtml();
-  }
+  // ── Two-column layout ──
+  html += '<div class="qc-layout">';
+  html += '<div class="qc-main">';
 
-  // Zweryfikowana trasa calego dnia — jeden link zamiast jedenastu nawigacji
-  if (city.route_url) {
-    html += '<div class="route-all">' +
-              '<a class="act act-pri" href="' + esc(city.route_url) + '" target="_blank" rel="noopener">' +
-                NAV_ICON + '<span>' + esc(ui('btn.route_all', 'Cała trasa w Google Maps')) + '</span></a>' +
-            '</div>';
-  }
-
-  // Trasa jest rama, nie klatka (WYTYCZNE §15) — to samo zdanie przy kazdym miescie
-  html += '<div class="box box-flex" data-hide-kid><p class="caps">' +
-          esc(ui('label.flexible_route', 'Elastyczna trasa')) + '</p><p>' +
-          esc(ui('text.flexible_route', 'Każdy punkt może być obowiązkowy albo opcjonalny. Możecie pominąć przystanek, zmienić kolejność, skrócić pobyt albo dodać własny. Numer punktu to podpowiedź, nie harmonogram.')) +
-          '</p></div>';
-
-  html += '</section>';   // koniec sekcji startowej
-
-  // Trasa punkt po punkcie — wlasna sekcja z naglowkiem
-  html += '<section class="city-section" id="wycieczka">';
-  html += '<h2 class="caps">' + esc(ui('label.route_stops', 'Trasa punkt po punkcie')) + '</h2>';
-  html += '<div class="stops" id="stops">';
-  stops.forEach(function(item) {
+  // ═══ TRASA ═══
+  html += '<section class="qc-stops" id="trasa">';
+  stops.forEach(function(item, idx) {
     var s = item.stop, t = item.tr || {};
     var id = num(s.stop_number);
-    var cat = s.category || 'other';
+    var cat = s.category || 'monument';
+    var isDinner = s.variant === 'dinner' || (idx === stops.length - 1 && (cat === 'restaurant' || cat === 'icecream'));
+    var openAttr = idx === 0 ? ' open' : '';
 
+    html += '<details class="qc-stop' + (isDinner ? ' qc-stop--dinner' : '') + '"' + openAttr + '>';
+    html += '<summary class="qc-stop__head">';
 
-    html += '<div class="stop open" data-id="' + id + '"' +
-            (s.stop_key ? ' id="' + esc(s.stop_key) + '"' : '') + '>';
-    html += '<button class="stop-header" onclick="toggleStop(\'' + id + '\')">';
+    // Icon 112px
+    html += ikonaQc(cat, id);
 
-    // Row 1: icon + number + name
-    html += '<div class="stop-row1">';
-    html += ikonaKategorii(cat);
-    html += '<span class="stop-num">' + id + (s.time_label ? ' · ' + esc(s.time_label) : '') + '</span>';
-    html += '<h3 class="stop-name">' + esc(t.name || 'Przystanek ' + id) + '</h3>';
-    html += '<span class="stop-chev">▼</span>';
-    html += '</div>';
+    // Title block
+    html += '<span class="qc-stop__title">';
+    html += '<span class="qc-stop__time">' + id + (s.time_label ? ' · ' + esc(s.time_label) : '') + '</span>';
+    html += '<span class="qc-stop__name">' + esc(t.name || 'Przystanek ' + id) + '</span>';
+    html += '</span>';
 
-    // Chips
-    // Cena i godziny NIGDY nie udaja pewnosci: jesli status mowi 'unverified',
-    // plakietka sama sie do tego przyznaje (WYTYCZNE §3).
-    var doSprawdzenia = esc(ui('label.unverified', 'do sprawdzenia'));
-    var chips = [];
-    if (s.year_built) chips.push('<span class="chip-sm chip-neutral">' + esc(s.year_built) + '</span>');
-    if (s.visit_duration) chips.push('<span class="chip-sm chip-neutral">&#9201; ' + esc(s.visit_duration) + '</span>');
-    if (s.opening_hours) {
-      chips.push('<span class="chip-sm chip-neutral">&#128336; ' + esc(s.opening_hours) +
-                 (s.hours_status === 'unverified' ? ' &middot; ' + doSprawdzenia : '') + '</span>');
-    }
+    // Meta column: pills + nav button
+    html += '<span class="qc-stop__meta">';
+    if (s.year_built) html += '<span class="qc-pill">' + esc(s.year_built) + '</span>';
     if (s.price) {
-      chips.push('<span class="chip-sm chip-olive">' + esc(s.price) +
-                 (s.price_status === 'unverified' ? ' &middot; ' + doSprawdzenia : '') + '</span>');
+      var doSprawdzenia = ui('label.unverified', 'do sprawdzenia');
+      html += '<span class="qc-pill">' + esc(s.price) +
+              (s.price_status === 'unverified' ? ' · ' + esc(doSprawdzenia) : '') + '</span>';
     }
-    if (s.rating) {
-      chips.push('<span class="chip-sm chip-neutral">&#9733; ' + esc(String(s.rating).replace('.', ',')) +
-                 (s.reviews_count ? ' &middot; ' + s.reviews_count : '') + '</span>');
-    }
-    if (s.optional)    chips.push('<span class="chip-sm chip-sea">' + esc(ui('label.optional', 'opcjonalnie')) + '</span>');
-    if (s.sunset_spot) chips.push('<span class="chip-sm chip-sea">&#127751; ' + esc(ui('label.sunset', 'na zachód słońca')) + '</span>');
-    if (chips.length) html += '<div class="stop-chips">' + chips.join('') + '</div>';
-
-    // Actions
-    var akcje = [];
+    if (s.visit_duration) html += '<span class="qc-pill">&#9201; ' + esc(s.visit_duration) + '</span>';
     if (s.maps_query) {
-      akcje.push('<a class="act act-pri" href="https://www.google.com/maps/search/?api=1&query=' +
-                 encodeURIComponent(s.maps_query) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' +
-                 NAV_ICON + '<span>' + esc(ui('btn.navigate', 'Nawiguj')) + '</span></a>');
+      html += '<a class="qc-btn qc-btn--primary qc-btn--sm" href="https://www.google.com/maps/search/?api=1&query=' +
+              encodeURIComponent(s.maps_query) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(ui('btn.navigate', 'Nawiguj')) + '</a>';
     }
-    if (s.whatsapp) {
-      akcje.push('<a class="act act-sec" href="https://wa.me/' + encodeURIComponent(String(s.whatsapp).replace(/[^0-9]/g, '')) +
-                 '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
-                 esc(ui(s.reservation === 'required' || s.reservation === 'recommended' ? 'btn.reserve' : 'btn.write',
-                        s.reservation ? 'Rezerwuj' : 'Napisz')) + '</span></a>');
-    }
-    if (s.phone) {
-      akcje.push('<a class="act act-sec" href="tel:' + esc(String(s.phone).replace(/[^0-9+]/g, '')) +
-                 '" onclick="event.stopPropagation()"><span>' + esc(ui('btn.call', 'Zadzwoń')) + '</span></a>');
-    }
-    if (s.website) {
-      akcje.push('<a class="act act-sec" href="' + esc(s.website) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
-                 esc(ui('btn.www', 'WWW')) + '</span></a>');
-    }
-    // §3: przy kazdym punkcie ma byc czym sprawdzic dane samodzielnie
-    if (s.verify_url) {
-      akcje.push('<a class="act act-sec" href="' + esc(s.verify_url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span>' +
-                 esc(ui('btn.verify', 'Sprawdź')) + '</span></a>');
-    }
-    if (akcje.length) html += '<div class="stop-actions">' + akcje.join('') + '</div>';
+    html += '</span>';
 
-    html += '</button>';
+    // Chevron
+    html += '<span class="qc-chev" aria-hidden="true">&#x25BC;</span>';
+    html += '</summary>';
 
-    // Stop body
-    html += '<div class="stop-body">';
-    if (s.hero_image) {
-      html += '<div class="stop-photo" style="background-image:url(' + esc(s.hero_image) + ')"></div>';
-    }
+    // ── Stop body ──
+    html += '<div class="qc-stop__body">';
 
-    if (t.desc_paragraphs && t.desc_paragraphs.length) {
-      t.desc_paragraphs.forEach(function(p) {
-        html += '<p class="stop-desc">' + esc(p) + '</p>';
-      });
-    }
-
-    if (t.kids_box) {
-      html += '<div class="box box-kids"><p class="caps">' + ui('label.for_kids', 'Dla dzieci') + '</p><p>' + esc(t.kids_box) + '</p></div>';
-    }
-    // D · Wskazówka — zaraz pod questem, bo ma pomóc go rozwiązać
-    if (t.hint) {
-      html += '<div class="box box-hint"><p class="caps">' + ui('label.hint', 'Wskazówka') + '</p><p>' + esc(t.hint) + '</p></div>';
-    }
-    if (t.photo_task) {
-      html += '<div class="box box-foto"><p class="caps">' + ui('label.photo_task', 'Zadanie foto') + '</p><p>' + esc(t.photo_task) + '</p></div>';
-    }
-    // E · Lokalny smak — legenda/anegdota dla rodzica
-    if (t.local_flavor) {
-      html += '<div class="box box-local"><p class="caps">' + ui('label.local_flavor', 'Lokalny smak') + '</p><p>' + esc(t.local_flavor) + '</p></div>';
-    }
+    // Warning note
     if (t.practical_note) {
-      html += '<div class="box box-practical"><p class="caps">' + esc(ui('label.practical', 'Praktycznie')) + '</p><p>' + esc(t.practical_note) + '</p></div>';
+      html += '<p class="qc-note"><span aria-hidden="true">&#x26A0;&#xFE0F;</span><span>' + esc(t.practical_note) + '</span></p>';
     }
-    // Stroj pokazujemy tylko wtedy, gdy naprawde jest wymog — puste pole znaczy „bez wymogow"
+
+    // Extra links
+    var extraLinks = [];
+    if (s.website) extraLinks.push('<a class="qc-btn qc-btn--sm" href="' + esc(s.website) + '" target="_blank" rel="noopener">' + esc(ui('btn.www', 'WWW')) + '</a>');
+    if (s.phone) extraLinks.push('<a class="qc-btn qc-btn--sm" href="tel:' + esc(String(s.phone).replace(/[^0-9+]/g, '')) + '">' + esc(ui('btn.call', 'Zadzwoń')) + '</a>');
+    if (s.whatsapp) extraLinks.push('<a class="qc-btn qc-btn--sm" href="https://wa.me/' + encodeURIComponent(String(s.whatsapp).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + esc(ui(s.reservation ? 'btn.reserve' : 'btn.write', s.reservation ? 'Rezerwuj' : 'Napisz')) + '</a>');
+    if (s.verify_url) extraLinks.push('<a class="qc-btn qc-btn--sm" href="' + esc(s.verify_url) + '" target="_blank" rel="noopener">' + esc(ui('btn.verify', 'Sprawdź')) + '</a>');
+    if (extraLinks.length) html += '<div class="qc-links">' + extraLinks.join('') + '</div>';
+
+    // Prose (adult description)
+    if (t.desc_paragraphs && t.desc_paragraphs.length) {
+      html += '<div class="qc-prose">';
+      t.desc_paragraphs.forEach(function(p) { html += '<p>' + esc(p) + '</p>'; });
+      html += '</div>';
+    }
+
+    // Opening hours chip
+    if (s.opening_hours) {
+      var doSpr = ui('label.unverified', 'do sprawdzenia');
+      html += '<p class="qc-note" style="background:var(--qc-line-2);border-color:var(--qc-line);color:var(--qc-ink-2)"><span>&#128336; ' +
+              esc(ui('label.hours', 'Godziny')) + ': ' + esc(s.opening_hours) +
+              (s.hours_status === 'unverified' ? ' · ' + esc(doSpr) : '') + '</span></p>';
+    }
+
+    // Dress code
     if (t.dress_code) {
-      html += '<div class="box box-dress"><p class="caps">' + esc(ui('label.dress_code', 'Strój')) + '</p><p>' + esc(t.dress_code) + '</p></div>';
+      html += '<p class="qc-note" style="background:var(--qc-tint-2);border-color:var(--qc-tint);color:var(--qc-ink-2)"><span>&#128085; ' +
+              esc(ui('label.dress_code', 'Strój')) + ': ' + esc(t.dress_code) + '</span></p>';
     }
 
-    html += '</div></div>';
-  });
-  html += '</div></section>';
+    // Local flavor
+    if (t.local_flavor) {
+      html += '<p class="qc-note" style="background:var(--qc-tint);border-color:#E4D5C9;color:#6E3A20"><span>' +
+              esc(ui('label.local_flavor', 'Lokalny smak')) + ': ' + esc(t.local_flavor) + '</span></p>';
+    }
 
-  // Lokalne jedzenie
+    // Missions & photo tasks
+    var hasMission = t.kids_box || t.hint;
+    var hasPhoto = t.photo_task;
+    if (hasMission || hasPhoto) {
+      html += '<div class="qc-tasks">';
+      if (t.kids_box) {
+        var taskKey = (s.stop_key || s.slug || id) + '-mission';
+        html += '<div class="qc-task">';
+        html += '<label class="qc-task__label"><input type="checkbox" data-qc-task="' + esc(taskKey) + '">' + esc(ui('label.mission', 'Misja')) + '</label>';
+        html += '<p>' + esc(t.kids_box) + '</p>';
+        if (t.hint) html += '<p style="margin-top:6px;font-style:italic;color:var(--qc-ink-3)">' + esc(ui('label.hint', 'Wskazówka')) + ': ' + esc(t.hint) + '</p>';
+        html += '</div>';
+      }
+      if (hasPhoto) {
+        var photoKey = (s.stop_key || s.slug || id) + '-photo';
+        html += '<div class="qc-task qc-task--photo">';
+        html += '<label class="qc-task__label"><input type="checkbox" data-qc-task="' + esc(photoKey) + '">' + esc(ui('label.photo_task', 'Zadanie foto')) + '</label>';
+        html += '<p>' + esc(t.photo_task) + '</p>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div></details>';
+  });
+  html += '</section>';
+
+  // ═══ PLAN DNIA ═══
+  html += '<section id="plan">';
+  html += '<h2 class="qc-section__title">' + esc(ui('label.day_plan', 'Plan dnia')) + '</h2>';
+  if (tr.subtitle) html += '<p class="qc-section__sub">' + esc(tr.subtitle) + '</p>';
+  if (d.dayPlan && d.dayPlan.length) {
+    html += '<div class="qc-panel">';
+    d.dayPlan.forEach(function(row) {
+      var kat = row.stop_key ? katPoKluczu[row.stop_key] : null;
+      var opis = row.stop_key
+        ? '<a href="#' + esc(row.stop_key) + '">' + esc(row.description) + '</a>'
+        : esc(row.description);
+      html += '<div class="qc-row">';
+      html += '<span class="qc-row__time">' + esc(row.time_label) + '</span>';
+      if (kat) html += ikonaMala(kat);
+      html += '<span class="qc-row__what">' + opis + '</span>';
+      if (row.duration) html += '<span class="qc-row__dur">' + esc(row.duration) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p style="font-size:16px;color:var(--qc-ink-3)">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
+  }
+  html += '</section>';
+
+  // ═══ PUNKTY AWARYJNE ═══
+  html += '<section id="awaryjne">';
+  html += '<h2 class="qc-section__title">' + esc(ui('label.emergency', 'Punkty awaryjne')) + '</h2>';
+  html += '<p class="qc-section__sub">' + esc(ui('label.emergency_sub', 'Apteka, toalety, cień i plac zabaw — wszystko kilka minut od trasy.')) + '</p>';
+  if (d.emergency && d.emergency.length) {
+    html += '<div class="qc-cards">';
+    d.emergency.forEach(function(e) {
+      html += '<div class="qc-card">';
+      html += '<div class="qc-card__icon" aria-hidden="true">&#128138;</div>';
+      html += '<h3 class="qc-card__title">' + esc(e.label) + '</h3>';
+      html += '<p>' + esc(e.description) + '</p>';
+      if (e.maps_query) {
+        html += '<a class="qc-card__link" href="https://maps.google.com/?q=' + encodeURIComponent(e.maps_query) + '" target="_blank" rel="noopener">' + ui('btn.navigate', 'Nawiguj') + ' →</a>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p style="font-size:16px;color:var(--qc-ink-3)">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
+  }
+  html += '</section>';
+
+  // ═══ ROZMÓWKI ═══
+  html += '<section id="rozmowki">';
+  html += '<h2 class="qc-section__title">' + esc(ui('label.phrases', 'Rozmówki')) + '</h2>';
+  html += '<p class="qc-section__sub">' + esc(ui('label.phrases_sub', 'Dziesięć zdań, które wystarczą na cały dzień.')) + '</p>';
+  if (d.phrases && d.phrases.length) {
+    html += '<div class="qc-panel">';
+    d.phrases.forEach(function(p) {
+      html += '<div class="qc-phrase">';
+      html += '<span class="qc-phrase__pl">' + esc(p.phrase_user) + '</span>';
+      html += '<span class="qc-phrase__it" lang="' + esc(city.country === 'it' ? 'it' : '') + '">' + esc(p.phrase_local) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p style="font-size:16px;color:var(--qc-ink-3)">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
+  }
+  html += '</section>';
+
+  // ═══ TELEFONY ═══
+  html += '<section id="telefony">';
+  html += '<h2 class="qc-section__title">' + esc(ui('label.phones', 'Telefony')) + '</h2>';
+  if (d.phones && d.phones.length) {
+    html += '<div class="qc-tels">';
+    d.phones.forEach(function(p) {
+      var isLong = p.number.length > 6;
+      html += '<a class="qc-tel" href="tel:' + esc(p.number.replace(/\s/g, '')) + '">';
+      html += '<span class="qc-tel__label">' + esc(p.label) + '</span>';
+      html += '<span class="qc-tel__no' + (isLong ? ' qc-tel__no--long' : '') + '">' + esc(p.number) + '</span>';
+      html += '</a>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p style="font-size:16px;color:var(--qc-ink-3)">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
+  }
+  html += '</section>';
+
+  html += '</div>'; // end qc-main
+
+  // ═══ SIDEBAR ═══
+  html += '<aside class="qc-aside">';
+
+  // Stats box
+  html += '<div class="qc-box">';
+  html += '<p class="qc-box__label">' + esc(ui('label.today_route', 'Dzisiejsza trasa')) + '</p>';
+  html += '<div class="qc-stats">';
+  html += '<span class="qc-stat">' + esc(ui('label.stops_label', 'Przystanki')) + ' <strong>' + stops.length + '</strong></span>';
+  if (city.walk_km) html += '<span class="qc-stat">' + esc(ui('label.on_foot', 'Pieszo')) + ' <strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong></span>';
+  if (city.climb_m) html += '<span class="qc-stat">' + esc(ui('label.uphill_label', 'Wejście w górę')) + ' <strong>' + city.climb_m + ' m</strong></span>';
+  if (city.tickets_budget) html += '<span class="qc-stat">' + esc(ui('label.tickets', 'Bilety (rodzina 2+2)')) + ' <strong>' + esc(city.tickets_budget) + '</strong></span>';
+  if (city.parking_cost) html += '<span class="qc-stat">' + esc(ui('label.parking', 'Parking')) + ' <strong>' + esc(city.parking_cost) + '</strong></span>';
+  html += '</div>';
+  if (city.sunset_time) {
+    html += '<div class="qc-hr"></div>';
+    html += '<p>' + esc(ui('label.sunset_today', 'Zachód słońca dziś')) + ' <strong>' + esc(city.sunset_time) + '</strong></p>';
+  }
+  html += '</div>';
+
+  // QR box
+  html += '<div class="qc-box qc-box--qr" id="qr">';
+  html += '<p class="qc-box__label">' + esc(ui('label.qr_kid', 'QR dla dziecka')) + '</p>';
+  html += '<div class="qc-qr" id="qrCode"></div>';
+  html += '<p>' + esc(ui('qr.scan_text', 'Zeskanuj na drugim telefonie — dziecko dostanie tylko misje i zadania foto.')) + '</p>';
+  html += '</div>';
+
+  // Intro / lead in sidebar
+  if (tr.lead) {
+    html += '<div class="qc-box">';
+    String(tr.lead).split(/\n\s*\n/).forEach(function(par) {
+      if (par.trim()) html += '<p>' + esc(par.trim()) + '</p>';
+    });
+    html += '</div>';
+  }
+
+  // Local food
   if (tr.local_food) {
-    html += '<section class="city-section" id="lokalne-jedzenie">';
-    html += '<h2 class="caps">' + esc(ui('label.local_food', 'Lokalne jedzenie')) + '</h2>';
-    html += '<p class="note" style="margin-top:0">' + esc(tr.local_food) + '</p>';
-    html += '</section>';
+    html += '<div class="qc-box qc-box--fest">';
+    html += '<p class="qc-box__title" style="font-size:17px;font-weight:700;color:#8A4526">' + esc(ui('label.local_food', 'Lokalne jedzenie')) + '</p>';
+    html += '<p>' + esc(tr.local_food) + '</p>';
+    html += '</div>';
   }
 
   // Good to know
   if (tr.good_to_know) {
-    html += '<section class="city-section" id="warto-wiedziec">';
-    html += '<h2 class="caps">' + esc(ui('label.good_to_know', 'Warto wiedzieć')) + '</h2>';
-    html += '<p class="note" style="margin-top:0">' + esc(tr.good_to_know) + '</p>';
-    html += '</section>';
-  }
-
-  // Sekcje, ktore wczesniej byly zakladkami — teraz jedna pod druga
-  html += '<section class="city-section" id="punkty-awaryjne" data-hide-kid>';
-  html += '<h2 class="caps">' + esc(ui('label.emergency', 'Punkty awaryjne')) + '</h2>';
-  if (d.emergency && d.emergency.length) {
-    d.emergency.forEach(function(e) {
-      html += '<div class="info-row">';
-      html += '<div class="info-row-text"><strong>' + esc(e.label) + '</strong> ' + esc(e.description) + '</div>';
-      if (e.maps_query) {
-        html += '<a class="info-nav" href="https://maps.google.com/?q=' + encodeURIComponent(e.maps_query) + '" target="_blank" rel="noopener">' + NAV_ICON + '<span>' + ui('btn.navigate', 'Nawiguj') + '</span></a>';
-      }
-      html += '</div>';
-    });
-  } else {
-    html += '<p class="note">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
-  }
-  html += '</section>';
-
-  // Phrases
-  html += '<section class="city-section" id="rozmowki" data-hide-kid>';
-  html += '<h2 class="caps">' + esc(ui('label.phrases', 'Rozmówki')) + '</h2>';
-  if (d.phrases && d.phrases.length) {
-    html += '<div class="phrase-card">';
-    d.phrases.forEach(function(p) {
-      html += '<div class="phrase-pair"><div class="phrase-pl">' + esc(p.phrase_user) + '</div><div class="phrase-it">' + esc(p.phrase_local) + '</div></div>';
-    });
+    html += '<div class="qc-box">';
+    html += '<p class="qc-box__label">' + esc(ui('label.good_to_know', 'Warto wiedzieć')) + '</p>';
+    html += '<p style="margin-top:10px">' + esc(tr.good_to_know) + '</p>';
     html += '</div>';
-  } else {
-    html += '<p class="note">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
   }
-  html += '</section>';
 
-  // Phones
-  html += '<section class="city-section" id="telefony" data-hide-kid>';
-  html += '<h2 class="caps">' + esc(ui('label.phones', 'Telefony')) + '</h2>';
-  if (d.phones && d.phones.length) {
-    d.phones.forEach(function(p) {
-      html += '<div class="tel-row"><span>' + esc(p.label) + '</span><a href="tel:' + esc(p.number.replace(/\s/g,'')) + '">' + esc(p.number) + '</a></div>';
-    });
-  } else {
-    html += '<p class="note">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
-  }
-  html += '</section>';
+  // Support link
+  html += '<a class="qc-box qc-box--support" href="https://buymeacoffee.com/questini" target="_blank" rel="noopener">';
+  html += '<p style="font-size:17px;font-weight:700;color:#fff">' + esc(ui('label.like_quolino', 'Podoba się Quolino?')) + '</p>';
+  html += '<p>' + esc(ui('nav.support_coffee', 'Postaw nam kawę')) + ' ☕</p>';
+  html += '</a>';
 
-  // QR
-  html += '<section class="city-section" id="qr-dziecka" data-hide-kid>';
-  html += '<h2 class="caps">' + esc(ui('label.qr_kid', 'QR dla dziecka')) + '</h2>';
-  html += '<div class="qr-share"><div class="qr-share-code" id="qrCode"></div>';
-  html += '<div class="qr-share-text"><p>' + ui('qr.scan_text', 'Zeskanuj telefonem dziecka — otworzy się ten sam przewodnik w widoku dziecka.') + '</p>';
-  html += '<a class="qr-share-link" href="#" id="qrLink"></a></div></div>';
-  html += '</section>';
+  html += '</aside>';
+  html += '</div>'; // end qc-layout
 
-  // Inject
   document.getElementById('mainContent').innerHTML = html;
 }
 
-// ── Meta i dane strukturalne ───────────────────────────
-// Strona jest budowana w JS, wiec opis, Open Graph i JSON-LD trzeba
-// dopisac po pobraniu danych. Bez tego wyszukiwarka widzi pusty szablon.
+// ── Meta / structured data ────────────────────────────
 function ustawMeta(city, cityTr, stops) {
   var tytul = (cityTr.title || city.slug);
   var opis  = cityTr.subtitle || (cityTr.lead || '').split(/\n\s*\n/)[0] || '';
@@ -633,11 +629,7 @@ function ustawMeta(city, cityTr, stops) {
   function meta(atrybut, klucz, wartosc) {
     if (!wartosc) return;
     var el = document.head.querySelector('meta[' + atrybut + '="' + klucz + '"]');
-    if (!el) {
-      el = document.createElement('meta');
-      el.setAttribute(atrybut, klucz);
-      document.head.appendChild(el);
-    }
+    if (!el) { el = document.createElement('meta'); el.setAttribute(atrybut, klucz); document.head.appendChild(el); }
     el.setAttribute('content', wartosc);
   }
   meta('name', 'description', opis);
@@ -649,35 +641,22 @@ function ustawMeta(city, cityTr, stops) {
   meta('name', 'twitter:card', obraz ? 'summary_large_image' : 'summary');
 
   var kanon = document.head.querySelector('link[rel="canonical"]');
-  if (!kanon) {
-    kanon = document.createElement('link');
-    kanon.rel = 'canonical';
-    document.head.appendChild(kanon);
-  }
+  if (!kanon) { kanon = document.createElement('link'); kanon.rel = 'canonical'; document.head.appendChild(kanon); }
   kanon.href = location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);
 
-  // JSON-LD: wycieczka z lista przystankow w kolejnosci trasy
   var punkty = stops.map(function(item, i) {
     var s = item.stop, t = item.tr || {};
-    var miejsce = {
-      '@type': 'TouristAttraction',
-      name: t.name || ('Przystanek ' + (i + 1))
-    };
+    var miejsce = { '@type': 'TouristAttraction', name: t.name || ('Przystanek ' + (i + 1)) };
     if (t.desc_paragraphs && t.desc_paragraphs.length) miejsce.description = t.desc_paragraphs[0];
-    if (s.lat && s.lon) {
-      miejsce.geo = { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lon };
-    }
+    if (s.lat && s.lon) miejsce.geo = { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lon };
     if (s.website) miejsce.url = s.website;
     if (s.phone) miejsce.telephone = s.phone;
     return { '@type': 'ListItem', position: i + 1, item: miejsce };
   });
 
   var ld = {
-    '@context': 'https://schema.org',
-    '@type': 'TouristTrip',
-    name: tytul,
-    description: opis,
-    url: kanon.href,
+    '@context': 'https://schema.org', '@type': 'TouristTrip',
+    name: tytul, description: opis, url: kanon.href,
     touristType: 'Rodziny z dziećmi',
     itinerary: { '@type': 'ItemList', numberOfItems: punkty.length, itemListElement: punkty }
   };
@@ -687,38 +666,72 @@ function ustawMeta(city, cityTr, stops) {
   var stary = document.getElementById('ld-wycieczka');
   if (stary) stary.remove();
   var tag = document.createElement('script');
-  tag.type = 'application/ld+json';
-  tag.id = 'ld-wycieczka';
+  tag.type = 'application/ld+json'; tag.id = 'ld-wycieczka';
   tag.textContent = JSON.stringify(ld);
   document.head.appendChild(tag);
 }
+
+// ── Sticky tabs with IntersectionObserver ──────────────
+function initTabs() {
+  var tabs = [].slice.call(document.querySelectorAll('.qc-tab[href^="#"]'));
+  var map = {};
+  tabs.forEach(function(t) { map[t.getAttribute('href').slice(1)] = t; });
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (!e.isIntersecting) return;
+      tabs.forEach(function(t) { t.removeAttribute('aria-current'); });
+      if (map[e.target.id]) map[e.target.id].setAttribute('aria-current', 'true');
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  Object.keys(map).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) io.observe(el);
+  });
+}
+
+// ── Task checkboxes (localStorage) ────────────────────
+function initTaskCheckboxes() {
+  document.querySelectorAll('[data-qc-task]').forEach(function(box) {
+    var key = 'qc.task.' + box.dataset.qcTask;
+    try { box.checked = localStorage.getItem(key) === '1'; } catch(e) {}
+    box.addEventListener('change', function() {
+      try { localStorage.setItem(key, box.checked ? '1' : '0'); } catch(e) {}
+    });
+  });
+}
+
+// ── Kid view toggle ───────────────────────────────────
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('#qcKidToggle');
+  if (!btn) return;
+  var root = document.getElementById('city');
+  var kid = root.dataset.view === 'kid';
+  root.dataset.view = kid ? 'adult' : 'kid';
+  btn.setAttribute('aria-pressed', String(!kid));
+  btn.innerHTML = '&#128065; ' + (kid ? ui('btn.kid_view', 'Widok dziecka') : ui('btn.parent_view', 'Widok rodzica'));
+});
 
 // ── Build language popup grid ──────────────────────────
 function buildLangPopup() {
   var grid = document.getElementById('langGrid');
   if (!grid) return;
   grid.innerHTML = '';
-
   langList.forEach(function(l) {
     var btn = document.createElement('button');
     var flag = l.flag_code || l.code;
     btn.innerHTML = '<img src="https://flagcdn.com/w40/' + flag + '.png" alt="">' + esc(l.name_native);
     if (l.code === currentLang) btn.classList.add('active');
-    btn.addEventListener('click', function() {
-      switchLang(l.code, flag);
-    });
+    btn.addEventListener('click', function() { switchLang(l.code, flag); });
     grid.appendChild(btn);
   });
 }
 
-// ── Switch language ────────────────────────────────────
-function switchLang(lang, flagCode) {
+function switchLang(lang) {
   document.getElementById('langPopup').classList.remove('open');
   if (lang === currentLang) return;
   loadPage(lang);
 }
 
-// ── Update active language indicator ───────────────────
 function updateActiveLang() {
   var lang = langList.find(function(l) { return l.code === currentLang; });
   var flag = lang && lang.flag_code ? lang.flag_code : currentLang;
@@ -728,30 +741,12 @@ function updateActiveLang() {
   if (code) code.textContent = currentLang.toUpperCase();
 }
 
-// ── Error/loading states ───────────────────────────────
+// ── Error state ───────────────────────────────────────
 function showError(msg) {
   document.getElementById('mainContent').innerHTML = '<div class="tpl-error"><h2>Ups!</h2><p>' + esc(msg) + '</p><p><a href="./">← Wróć na stronę główną</a></p></div>';
 }
 
-// ── Global: toggle stop accordion ──────────────────────
-window.toggleStop = function(id) {
-  document.querySelectorAll('.stop').forEach(function(s) {
-    if (s.dataset.id === id) s.classList.toggle('open');
-    else s.classList.remove('open');
-  });
-};
-
-// ── Global: kid view toggle ────────────────────────────
-window.toggleKidView = function() {
-  document.body.classList.toggle('kid-mode');
-  var btn = document.querySelector('.kid-toggle');
-  if (btn) {
-    var pressed = document.body.classList.contains('kid-mode');
-    btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
-  }
-};
-
-// ── Keyboard: Escape closes popups ─────────────────────
+// ── Keyboard: Escape closes popups ────────────────────
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     document.getElementById('langPopup').classList.remove('open');
@@ -759,7 +754,19 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// ── Init ───────────────────────────────────────────────
+// ── Sticky nav offset for tabs ────────────────────────
+// Height of sticky nav = header height for tab positioning
+(function() {
+  var nav = document.querySelector('.sticky-nav');
+  if (nav) {
+    document.querySelector('.qc').style.setProperty('--qc-header-h', nav.offsetHeight + 'px');
+    window.addEventListener('resize', function() {
+      document.querySelector('.qc').style.setProperty('--qc-header-h', nav.offsetHeight + 'px');
+    });
+  }
+})();
+
+// ── Init ──────────────────────────────────────────────
 loadPage(currentLang);
 
 })();
