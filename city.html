@@ -304,7 +304,7 @@ function render(d) {
   html += '<h1 class="qc-title">' + esc(tr.title || city.slug) + '</h1>';
   if (tr.subtitle) html += '<p class="qc-lede">' + esc(tr.subtitle) + '</p>';
   html += '<p class="qc-facts">';
-  html += '<span><strong>' + stops.length + '</strong> ' + ui('label.stops_count', 'przystanków') + '</span>';
+  html += '<span>' + ui('label.stops_count', '{n} przystanków').replace('{n}', '<strong>' + stops.length + '</strong>') + '</span>';
   if (city.duration_hours) html += '<span><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
   if (city.start_time && city.end_time) html += '<span><strong>' + esc(city.start_time) + ' → ' + esc(city.end_time) + '</strong></span>';
   if (city.walk_km) html += '<span><strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong> ' + ui('label.on_foot', 'pieszo') + (city.climb_m ? ' · ' + city.climb_m + ' m ' + ui('label.uphill', 'w górę') : '') + '</span>';
