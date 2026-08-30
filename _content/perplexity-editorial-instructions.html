@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instrukcja tagowania HTML dla Perplexity AI — Quolino/Questini</title>
+<style>
+:root {
+  --bg: #FAFAF7;
+  --surface: #fff;
+  --ink: #1A1A1A;
+  --ink2: #555;
+  --accent: #2563EB;
+  --green: #16A34A;
+  --red: #DC2626;
+  --border: #E6E3DE;
+  --code-bg: #F3F1ED;
+  --tint: #EFF6FF;
+}
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 1.8rem; margin-bottom: .5rem; }
+h2 { font-size: 1.35rem; margin: 2rem 0 .75rem; border-bottom: 2px solid var(--accent); padding-bottom: .3rem; }
+h3 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; color: var(--accent); }
+h4 { font-size: 1rem; margin: 1rem 0 .4rem; }
+p { margin: .5rem 0; }
+code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: .9em; }
+pre { background: var(--code-bg); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: .75rem 0; font-size: .85rem; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: .75rem 0; font-size: .9rem; }
+th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+th { background: var(--tint); font-weight: 600; }
+tr:nth-child(even) { background: #FAFAF7; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .8rem; font-weight: 600; }
+.badge--table { background: #DBEAFE; color: #1E40AF; }
+.badge--col { background: #DCFCE7; color: #166534; }
+.badge--required { background: #FEE2E2; color: #991B1B; }
+.badge--optional { background: #FEF3C7; color: #92400E; }
+.important { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 1rem; border-radius: 0 8px 8px 0; margin: 1rem 0; }
+.important strong { color: #92400E; }
+.example { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.subtitle { color: var(--ink2); font-size: 1rem; margin-bottom: 1.5rem; }
+.toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; margin: 1.5rem 0; }
+.toc ol { padding-left: 1.5rem; }
+.toc li { margin: .3rem 0; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>Instrukcja tagowania HTML dla Perplexity AI</h1>
+<p class="subtitle">Wersja 1.0 · Quolino/Questini · Sierpień 2026</p>
+
+<div class="important">
+<strong>CEL:</strong> Perplexity AI generuje plik HTML z treścią wycieczki po mieście. Każdy element treści musi mieć atrybut <code>id</code> lub <code>data-field</code> identyczny z nazwą kolumny w bazie danych Supabase. Dzięki temu import do bazy jest automatyczny — parser czyta HTML, wyciąga wartości po atrybutach i wstawia do odpowiednich tabel.
+</div>
+
+<div class="toc">
+<strong>Spis treści</strong>
+<ol>
+<li><a href="#schemat-bazy">Schemat bazy danych</a></li>
+<li><a href="#konwencja-id">Konwencja nazewnictwa ID</a></li>
+<li><a href="#struktura-pliku">Wymagana struktura pliku HTML</a></li>
+<li><a href="#sekcja-meta">Sekcja META — dane miasta</a></li>
+<li><a href="#sekcja-stop">Sekcja STOP — przystanek</a></li>
+<li><a href="#sekcja-emergency">Sekcja EMERGENCY — punkty awaryjne</a></li>
+<li><a href="#sekcja-phrases">Sekcja PHRASES — rozmówki</a></li>
+<li><a href="#sekcja-phones">Sekcja PHONES — telefony</a></li>
+<li><a href="#json-ld">Blok JSON-LD z danymi strukturalnymi</a></li>
+<li><a href="#przyklad">Pełny przykład jednego przystanku</a></li>
+<li><a href="#reguly">Reguły redakcyjne</a></li>
+<li><a href="#checklist">Checklist przed oddaniem</a></li>
+</ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="schemat-bazy">1. Schemat bazy danych</h2>
+
+<p>Poniżej tabele, do których importujemy treść. Nazwy kolumn = nazwy atrybutów w HTML.</p>
+
+<h3>Tabela: <code>stops</code> <span class="badge badge--table">dane przystanku</span></h3>
+<table>
+<tr><th>Kolumna</th><th>Typ</th><th>Opis</th><th>Wymagana</th></tr>
+<tr><td><code>stop_key</code></td><td>text</td><td>Unikalny slug przystanku, np. <code>basilica-santa-chiara</code></td><td><span class="badge badge--required">TAK</span></td></tr>
+<tr><td><code>stop_number</code></td><td>smallint</td><td>Numer na trasie (1, 2, 3…)</td><td><span class="badge badge--required">TAK</span></td></tr>
+<tr><td><code>category</code></td><td>text</td><td>Kategoria z tabeli stop_categories: <code>church</code>, <code>museum</code>, <code>viewpoint</code>, <code>castle</code>, <code>square</code>, <code>parking</code>, <code>restaurant</code>, <code>icecream</code>, <code>walk</code>, <code>fountain</code>, <code>gate</code>, <code>sweets</code>, <code>roman</code></td><td><span class="badge badge--required">TAK</span></td></tr>
+<tr><td><code>optional</code></td><td>boolean</td><td><code>true</code> jeśli przystanek opcjonalny</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>time_label</code></td><td>text</td><td>Sugerowana godzina, np. <code>10:30</code></td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>visit_duration</code></td><td>text</td><td>Czas zwiedzania, np. <code>~45 min</code></td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>year_built</code></td><td>text</td><td>Rok budowy / wiek, np. <code>1257</code></td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>price</code></td><td>text</td><td>Cena wstępu, np. <code>wolny</code> lub <code>€5</code></td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>opening_hours</code></td><td>text</td><td>Godziny otwarcia</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>maps_query</code></td><td>text</td><td>Zapytanie do Google Maps, np. <code>Basilica di Santa Chiara, Piazza Santa Chiara, Assisi, Italy</code></td><td><span class="badge badge--required">TAK</span></td></tr>
+<tr><td><code>phone</code></td><td>text</td><td>Telefon kontaktowy (format międzynarodowy)</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>website</code></td><td>text</td><td>Oficjalna strona www</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>verify_url</code></td><td>text</td><td>Link do weryfikacji danych</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>sources</code></td><td>text[]</td><td>Tablica linków źródłowych (JSON array)</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>ztl</code></td><td>text</td><td>Informacja o strefie ZTL</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>reservation</code></td><td>text</td><td>Informacja o rezerwacji</td><td><span class="badge badge--optional">NIE</span></td></tr>
+<tr><td><code>sunset_spot</code></td><td>boolean</td><td><code>true</code> jeśli punkt widokowy na zachód słońca</td><td><span class="badge badge--optional">NIE</span></td></tr>
+</table>
+
+<h3>Tabela: <code>stop_translations</code> <span class="badge badge--table">treści przystanku</span></h3>
+<table>
+<tr><th>Kolumna</th><th>Typ</th><th>Opis</th><th>Sekcja edytorska</th></tr>
+<tr><td><code>name</code></td><td>text</td><td>Nazwa przystanku w danym języku</td><td>Nagłówek</td></tr>
+<tr><td><code>desc_paragraphs</code></td><td>text[]</td><td>Opis dla rodzica — tablica akapitów. Każdy <code>&lt;p&gt;</code> w sekcji B to osobny element tablicy.</td><td><strong>Sekcja B</strong></td></tr>
+<tr><td><code>kids_box</code></td><td>text</td><td>Treść dla dziecka: informacja + quest (całość sekcji C)</td><td><strong>Sekcja C</strong></td></tr>
+<tr><td><code>hint</code></td><td>text</td><td>Wskazówka pomagająca dziecku rozwiązać quest</td><td><strong>Sekcja D</strong></td></tr>
+<tr><td><code>local_flavor</code></td><td>text</td><td>Lokalny smak: legenda, anegdota, ciekawostka</td><td><strong>Sekcja E</strong></td></tr>
+<tr><td><code>photo_task</code></td><td>text</td><td>Zadanie fotograficzne (jeśli osobne od questu)</td><td><strong>Sekcja C</strong> (opcjonalnie)</td></tr>
+<tr><td><code>practical_note</code></td><td>text</td><td>Uwaga praktyczna (np. "wygodne buty")</td><td>Tabela danych</td></tr>
+<tr><td><code>dress_code</code></td><td>text</td><td>Wymagany strój (np. "kościelny — kolana i ramiona zakryte")</td><td>Tabela danych</td></tr>
+</table>
+
+<h3>Tabela: <code>emergency_points</code> <span class="badge badge--table">punkty awaryjne</span></h3>
+<table>
+<tr><th>Kolumna</th><th>Typ</th><th>Opis</th></tr>
+<tr><td><code>type</code></td><td>text</td><td><code>pharmacy</code>, <code>toilet</code>, <code>playground</code>, <code>hospital</code></td></tr>
+<tr><td><code>label</code></td><td>text</td><td>Nazwa konkretnego miejsca</td></tr>
+<tr><td><code>description</code></td><td>text</td><td>Opis / lokalizacja</td></tr>
+<tr><td><code>maps_query</code></td><td>text</td><td>Zapytanie do Google Maps</td></tr>
+</table>
+
+<h3>Tabela: <code>day_plan</code> <span class="badge badge--table">plan dnia</span></h3>
+<table>
+<tr><th>Kolumna</th><th>Typ</th><th>Opis</th></tr>
+<tr><td><code>time_label</code></td><td>text</td><td>Godzina, np. <code>10:30</code></td></tr>
+<tr><td><code>description</code></td><td>text</td><td>Co robimy, np. <code>Basilica di Santa Chiara</code></td></tr>
+<tr><td><code>stop_key</code></td><td>text</td><td>Powiązanie z przystankiem</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="konwencja-id">2. Konwencja nazewnictwa ID</h2>
+
+<p>Każdy element HTML z treścią do importu musi mieć atrybut <code>id</code> zbudowany wg wzorca:</p>
+
+<pre><code>id="{stop_key}--{nazwa_kolumny}"</code></pre>
+
+<p>Separator to <strong>podwójny myślnik</strong> <code>--</code> (odróżnia go od myślników w stop_key).</p>
+
+<h3>Przykłady:</h3>
+<pre><code>id="basilica-santa-chiara--name"
+id="basilica-santa-chiara--desc_paragraphs"
+id="basilica-santa-chiara--kids_box"
+id="basilica-santa-chiara--hint"
+id="basilica-santa-chiara--local_flavor"
+id="basilica-santa-chiara--photo_task"
+id="basilica-santa-chiara--dress_code"
+id="basilica-santa-chiara--practical_note"
+id="basilica-santa-chiara--time_label"
+id="basilica-santa-chiara--visit_duration"
+id="basilica-santa-chiara--year_built"
+id="basilica-santa-chiara--price"
+id="basilica-santa-chiara--opening_hours"
+id="basilica-santa-chiara--maps_query"
+id="basilica-santa-chiara--verify_url"
+id="basilica-santa-chiara--sources"
+</code></pre>
+
+<div class="important">
+<strong>ZASADA:</strong> Nazwy kolumn w atrybucie <code>id</code> muszą być <em>dokładnie identyczne</em> z nazwami kolumn w bazie danych. Nie tłumacz, nie zmieniaj wielkości liter, nie zamieniaj podkreślników na myślniki. <code>desc_paragraphs</code> — nie <code>descParagraphs</code>, nie <code>desc-paragraphs</code>, nie <code>opis</code>.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="struktura-pliku">3. Wymagana struktura pliku HTML</h2>
+
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="pl"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;{PAŃSTWO}-{Region}-{Miasto}-v{NN}&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;!-- 1. META: dane miasta --&gt;
+  &lt;section id="city-meta"&gt; ... &lt;/section&gt;
+
+  &lt;!-- 2. STOPS: przystanki (powtarzalny blok) --&gt;
+  &lt;article id="stop--{stop_key}" data-stop-number="{N}" data-category="{cat}"&gt;
+    ...
+  &lt;/article&gt;
+
+  &lt;!-- 3. EMERGENCY: punkty awaryjne --&gt;
+  &lt;section id="emergency-points"&gt; ... &lt;/section&gt;
+
+  &lt;!-- 4. DAY PLAN: generowany automatycznie z stops --&gt;
+
+  &lt;!-- 5. JSON-LD: dane strukturalne --&gt;
+  &lt;script id="questini-data" type="application/json"&gt;
+    { ... }
+  &lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="sekcja-meta">4. Sekcja META — dane miasta</h2>
+
+<p>Jedna sekcja na początku pliku z danymi ogólnymi wycieczki.</p>
+
+<pre><code>&lt;section id="city-meta"&gt;
+  &lt;h1&gt;{Nazwa miasta} — plan wycieczki z dziećmi&lt;/h1&gt;
+
+  &lt;div id="meta--city_slug"&gt;assisi&lt;/div&gt;
+  &lt;div id="meta--country"&gt;it&lt;/div&gt;
+  &lt;div id="meta--region_slug"&gt;umbria&lt;/div&gt;
+  &lt;div id="meta--lang"&gt;pl&lt;/div&gt;
+  &lt;div id="meta--duration_type"&gt;half_day_afternoon&lt;/div&gt;
+  &lt;div id="meta--duration_hours"&gt;7&lt;/div&gt;
+  &lt;div id="meta--lat"&gt;43.0709&lt;/div&gt;
+  &lt;div id="meta--lon"&gt;12.619&lt;/div&gt;
+
+  &lt;!-- city_translations --&gt;
+  &lt;div id="meta--title"&gt;Asyż&lt;/div&gt;
+  &lt;div id="meta--subtitle"&gt;Asyż z dziećmi — plan wycieczki&lt;/div&gt;
+  &lt;div id="meta--lead"&gt;Asyż to miasto św. Franciszka...&lt;/div&gt;
+&lt;/section&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="sekcja-stop">5. Sekcja STOP — przystanek</h2>
+
+<p>Każdy przystanek to jeden <code>&lt;article&gt;</code>. Wewnątrz — divy z treścią, każdy z <code>id</code> mapującym na kolumnę.</p>
+
+<h3>Pełna struktura bloku przystanku:</h3>
+
+<pre><code>&lt;article id="stop--basilica-santa-chiara"
+         data-stop-number="2"
+         data-category="church"
+         data-optional="false"&gt;
+
+  &lt;!-- === NAGŁÓWEK === --&gt;
+  &lt;h2 id="basilica-santa-chiara--name"&gt;Basilica di Santa Chiara&lt;/h2&gt;
+
+  &lt;!-- === SEKCJA A: DANE PRZYSTANKU (tabela stops) === --&gt;
+  &lt;div class="stop-data"&gt;
+    &lt;div id="basilica-santa-chiara--stop_key"&gt;basilica-santa-chiara&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--maps_query"&gt;Basilica di Santa Chiara, Piazza Santa Chiara, Assisi, Italy&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--time_label"&gt;10:30&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--visit_duration"&gt;~45 min&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--year_built"&gt;1257–1265&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--price"&gt;wolny (krypta €3)&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--opening_hours"&gt;6:30–12:00, 14:00–18:30 (lato do 19:00)&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--verify_url"&gt;https://www.assisisantachiara.it/&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--phone"&gt;+39 075 812282&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--website"&gt;https://www.assisisantachiara.it/&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--ztl"&gt;&lt;/div&gt;
+    &lt;div id="basilica-santa-chiara--reservation"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- === SEKCJA A2: DRESS CODE + PRACTICAL NOTE (tabela stop_translations) === --&gt;
+  &lt;div id="basilica-santa-chiara--dress_code"&gt;kościelny — kolana i ramiona zakryte&lt;/div&gt;
+  &lt;div id="basilica-santa-chiara--practical_note"&gt;Bilety online nie są wymagane.&lt;/div&gt;
+
+  &lt;!-- === SEKCJA B: RODZIC — OPIS (stop_translations.desc_paragraphs) === --&gt;
+  &lt;div id="basilica-santa-chiara--desc_paragraphs"&gt;
+    &lt;p&gt;Pierwszy akapit opisu dla rodzica. Każdy tag &amp;lt;p&amp;gt; to osobny
+    element tablicy desc_paragraphs w bazie.&lt;/p&gt;
+    &lt;p&gt;Drugi akapit opisu...&lt;/p&gt;
+    &lt;p&gt;Trzeci akapit opisu...&lt;/p&gt;
+    &lt;!-- dowolna liczba &lt;p&gt;, każdy = osobny element tablicy --&gt;
+  &lt;/div&gt;
+
+  &lt;!-- === SEKCJA C: DZIECKO — QUEST (stop_translations.kids_box) === --&gt;
+  &lt;div id="basilica-santa-chiara--kids_box"&gt;
+    &lt;p&gt;Informacja dla dziecka gdzie jest i co widzi.&lt;/p&gt;
+    &lt;p&gt;Ciekawostka: jedna konkretna ciekawostka.&lt;/p&gt;
+    &lt;p&gt;Quest: Opis zadania do wykonania na miejscu.&lt;/p&gt;
+  &lt;/div&gt;
+
+  &lt;!-- === SEKCJA C2: ZADANIE FOTO (opcjonalne) === --&gt;
+  &lt;div id="basilica-santa-chiara--photo_task"&gt;Zrób zdjęcie...&lt;/div&gt;
+
+  &lt;!-- === SEKCJA D: WSKAZÓWKA (stop_translations.hint) === --&gt;
+  &lt;div id="basilica-santa-chiara--hint"&gt;Szukaj krucyfiksu po lewej stronie nawy...&lt;/div&gt;
+
+  &lt;!-- === SEKCJA E: LOKALNY SMAK (stop_translations.local_flavor) === --&gt;
+  &lt;div id="basilica-santa-chiara--local_flavor"&gt;Na placu przed bazyliką...&lt;/div&gt;
+
+  &lt;!-- === SEKCJA F: ŹRÓDŁA (stops.sources) === --&gt;
+  &lt;div id="basilica-santa-chiara--sources"&gt;
+    &lt;a href="https://en.wikipedia.org/wiki/..."&gt;Wikipedia — Basilica di Santa Chiara&lt;/a&gt;
+    &lt;a href="https://www.assisisantachiara.it/"&gt;Oficjalna strona bazyliki&lt;/a&gt;
+  &lt;/div&gt;
+
+  &lt;!-- === SEKCJA G: UWAGA OGÓLNA (editorial_notes, nie importowana do frontendu) === --&gt;
+  &lt;div id="basilica-santa-chiara--editorial_note" class="editorial"&gt;
+    Uwagi redakcyjne, notatki wewnętrzne. Ten blok NIE jest importowany
+    do publicznej bazy — służy wyłącznie redakcji.
+  &lt;/div&gt;
+
+&lt;/article&gt;</code></pre>
+
+<div class="important">
+<strong>KLUCZOWE REGUŁY SEKCJI B (desc_paragraphs):</strong><br>
+• Każdy <code>&lt;p&gt;</code> wewnątrz diva <code>--desc_paragraphs</code> staje się osobnym elementem tablicy w bazie.<br>
+• <strong>Nie skracaj, nie łącz paragrafów.</strong> Jeśli tekst ma 15 akapitów — wstaw 15 tagów <code>&lt;p&gt;</code>.<br>
+• Nagłówki <code>&lt;h4&gt;</code> wewnątrz opisu traktuj jako wyróżnienie — wstaw jako <code>&lt;p&gt;&lt;strong&gt;Nagłówek&lt;/strong&gt;&lt;/p&gt;</code> — osobny element tablicy.<br>
+• Tekst ma być bogaty, merytoryczny, 8–15 akapitów dla głównych zabytków.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="sekcja-emergency">6. Sekcja EMERGENCY — punkty awaryjne</h2>
+
+<pre><code>&lt;section id="emergency-points"&gt;
+  &lt;div class="emergency-item" data-type="pharmacy" data-sort="10"&gt;
+    &lt;div class="emg--label"&gt;Farmacia Bartoli&lt;/div&gt;
+    &lt;div class="emg--description"&gt;Via Cavour 63. Sprawdź godziny otwarcia.&lt;/div&gt;
+    &lt;div class="emg--maps_query"&gt;Farmacia Bartoli, Assisi PG, Italy&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="emergency-item" data-type="toilet" data-sort="20"&gt;
+    &lt;div class="emg--label"&gt;Toalety publiczne&lt;/div&gt;
+    &lt;div class="emg--description"&gt;Toalety przy Piazza del Comune.&lt;/div&gt;
+    &lt;div class="emg--maps_query"&gt;Public toilets, Assisi PG, Italy&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="emergency-item" data-type="playground" data-sort="30"&gt;
+    &lt;div class="emg--label"&gt;Plac zabaw&lt;/div&gt;
+    &lt;div class="emg--description"&gt;Plac zabaw w Parco Regina Margherita.&lt;/div&gt;
+    &lt;div class="emg--maps_query"&gt;Parco Regina Margherita, Assisi, Italy&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="emergency-item" data-type="hospital" data-sort="40"&gt;
+    &lt;div class="emg--label"&gt;Ospedale di Assisi&lt;/div&gt;
+    &lt;div class="emg--description"&gt;Szpital w Asyżu, 10 min samochodem.&lt;/div&gt;
+    &lt;div class="emg--maps_query"&gt;Ospedale di Assisi, Italy&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/section&gt;</code></pre>
+
+<p>Minimalne typy: <code>pharmacy</code> (×2), <code>toilet</code> (×1), <code>playground</code> (×1), <code>hospital</code> (×1).</p>
+
+<!-- ============================================================ -->
+<h2 id="sekcja-phrases">7. Sekcja PHRASES — rozmówki</h2>
+
+<pre><code>&lt;section id="phrases" data-country="it"&gt;
+  &lt;div class="phrase" data-sort="10"&gt;
+    &lt;span class="phrase--phrase_user"&gt;Dzień dobry&lt;/span&gt;
+    &lt;span class="phrase--phrase_local" lang="it"&gt;Buongiorno&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="phrase" data-sort="20"&gt;
+    &lt;span class="phrase--phrase_user"&gt;Dziękuję&lt;/span&gt;
+    &lt;span class="phrase--phrase_local" lang="it"&gt;Grazie&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;!-- minimum 8–12 zwrotów: powitania, jedzenie, pieniądze, pomoc, dzieci --&gt;
+&lt;/section&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="sekcja-phones">8. Sekcja PHONES — telefony</h2>
+
+<pre><code>&lt;section id="phone-numbers" data-country="it"&gt;
+  &lt;div class="phone-item" data-sort="10"&gt;
+    &lt;span class="phone--label"&gt;Pogotowie&lt;/span&gt;
+    &lt;span class="phone--number"&gt;112&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="phone-item" data-sort="20"&gt;
+    &lt;span class="phone--label"&gt;Policja&lt;/span&gt;
+    &lt;span class="phone--number"&gt;113&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;!-- numery: pogotowie, policja, straż pożarna, ambasada PL --&gt;
+&lt;/section&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="json-ld">9. Blok JSON-LD z danymi strukturalnymi</h2>
+
+<p>Na dole pliku umieść blok <code>&lt;script type="application/json"&gt;</code> z pełnymi danymi strukturalnymi. Ten blok jest <strong>autorytatywny</strong> — parser importowy czyta przede wszystkim z niego.</p>
+
+<pre><code>&lt;script id="questini-data" type="application/json"&gt;
+{
+  "doc": {
+    "version": "v07",
+    "generated_at": "2026-08-27",
+    "source_file": "IT-Umbria-Assisi-v07.html",
+    "title": "IT-Umbria-Assisi-v07"
+  },
+  "city": {
+    "slug": "assisi",
+    "country": "it",
+    "region_slug": "umbria",
+    "lat": 43.0709,
+    "lon": 12.619,
+    "duration_type": "half_day_afternoon",
+    "duration_hours": 7,
+    "wiki_article": "Assisi",
+    "wiki_lang": "it",
+    "status": "draft"
+  },
+  "route": {
+    "url": "https://www.google.com/maps/dir/?api=1&amp;origin=...&amp;destination=...&amp;waypoints=...&amp;travelmode=walking",
+    "source": "generated",
+    "verified_at": null
+  },
+  "stops": [
+    {
+      "stop_key": "basilica-santa-chiara",
+      "stop_number": 2,
+      "category": "church",
+      "optional": false,
+      "maps_query": "Basilica di Santa Chiara, Piazza Santa Chiara, Assisi, Italy",
+      "time_label": "10:30",
+      "visit_duration": "~45 min",
+      "year_built": "1257–1265",
+      "price": "wolny",
+      "opening_hours": "6:30–12:00, 14:00–18:30",
+      "verify_url": "https://...",
+      "phone": "+39 075 812282",
+      "website": "https://...",
+      "dress_code": "kościelny",
+      "sources": [
+        {"name": "Wikipedia", "url": "https://..."},
+        {"name": "Oficjalna strona", "url": "https://..."}
+      ]
+    }
+  ],
+  "emergency": [
+    {"type": "pharmacy", "label": "Farmacia Bartoli", "description": "Via Cavour 63.", "maps_query": "Farmacia Bartoli, Assisi PG, Italy"}
+  ],
+  "phrases": [
+    {"phrase_user": "Dzień dobry", "phrase_local": "Buongiorno"}
+  ],
+  "phones": [
+    {"label": "Pogotowie", "number": "112"}
+  ]
+}
+&lt;/script&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="przyklad">10. Pełny przykład jednego przystanku</h2>
+
+<div class="example">
+<pre><code>&lt;article id="stop--parking-mojano"
+         data-stop-number="1"
+         data-category="parking"
+         data-optional="false"&gt;
+
+  &lt;h2 id="parking-mojano--name"&gt;Parking Porta Mojano&lt;/h2&gt;
+
+  &lt;div class="stop-data"&gt;
+    &lt;div id="parking-mojano--stop_key"&gt;parking-mojano&lt;/div&gt;
+    &lt;div id="parking-mojano--maps_query"&gt;Parcheggio Mojano, Viale Vittorio Emanuele II 299, Assisi, Italy&lt;/div&gt;
+    &lt;div id="parking-mojano--time_label"&gt;10:00&lt;/div&gt;
+    &lt;div id="parking-mojano--visit_duration"&gt;~15 min&lt;/div&gt;
+    &lt;div id="parking-mojano--year_built"&gt;&lt;/div&gt;
+    &lt;div id="parking-mojano--price"&gt;€14/doba&lt;/div&gt;
+    &lt;div id="parking-mojano--opening_hours"&gt;24 h&lt;/div&gt;
+    &lt;div id="parking-mojano--verify_url"&gt;https://www.sabait.it/it/parcheggio-assisi/parcheggio-saba-mojano&lt;/div&gt;
+    &lt;div id="parking-mojano--phone"&gt;&lt;/div&gt;
+    &lt;div id="parking-mojano--website"&gt;https://www.mojanoassisiparking.it/&lt;/div&gt;
+    &lt;div id="parking-mojano--ztl"&gt;&lt;/div&gt;
+    &lt;div id="parking-mojano--reservation"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div id="parking-mojano--dress_code"&gt;&lt;/div&gt;
+  &lt;div id="parking-mojano--practical_note"&gt;Winda i ruchome schody prowadzą
+  do centrum. Bramka automatyczna przy wyjeździe.&lt;/div&gt;
+
+  &lt;div id="parking-mojano--desc_paragraphs"&gt;
+    &lt;p&gt;Parking podziemny Porta Mojano to najwygodniejszy punkt
+    startowy do zwiedzania Asyżu z dziećmi. Mieści się pod Viale
+    Vittorio Emanuele II 299, tuż przy bramie Porta Mojano.&lt;/p&gt;
+    &lt;p&gt;Z parkingu do centrum prowadzą ruchome schody i winda.
+    Schody ruchome działają jednak tylko w górę — na powrót
+    najlepiej skorzystać z windy lub wejść od strony Viale.&lt;/p&gt;
+  &lt;/div&gt;
+
+  &lt;div id="parking-mojano--kids_box"&gt;
+    &lt;p&gt;Jesteś w podziemnym parkingu pod Asyżem. Zaraz pojedziemy
+    ruchomymi schodami w górę, do starego miasta na wzgórzu.&lt;/p&gt;
+    &lt;p&gt;Quest: Ruchome schody. Policz, ile ruchomych schodów
+    trzeba pokonać, żeby wyjechać z parkingu do miasta.&lt;/p&gt;
+  &lt;/div&gt;
+
+  &lt;div id="parking-mojano--photo_task"&gt;&lt;/div&gt;
+
+  &lt;div id="parking-mojano--hint"&gt;Szukaj oznaczenia "Centro" — strzałki
+  prowadzą do ruchomych schodów.&lt;/div&gt;
+
+  &lt;div id="parking-mojano--local_flavor"&gt;Nazwa "Mojano" pochodzi od
+  starożytnej bramy Porta Mojano w murach Asyżu.&lt;/div&gt;
+
+  &lt;div id="parking-mojano--sources"&gt;
+    &lt;a href="https://www.sabait.it/it/parcheggio-assisi/parcheggio-saba-mojano"&gt;Saba — Parcheggio Mojano Assisi&lt;/a&gt;
+    &lt;a href="https://www.mojanoassisiparking.it/"&gt;Mojano Assisi Parking (oficjalna)&lt;/a&gt;
+  &lt;/div&gt;
+
+  &lt;div id="parking-mojano--editorial_note" class="editorial"&gt;&lt;/div&gt;
+
+&lt;/article&gt;</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="reguly">11. Reguły redakcyjne</h2>
+
+<h3>Sekcja B — opis dla rodzica (<code>desc_paragraphs</code>)</h3>
+<p>• Bogate, wieloparagrafowe opisy: 8–15 akapitów dla kluczowych zabytków (katedry, bazyliki, twierdze), 3–5 dla punktów prostszych (parking, lodziarnia, powrót).</p>
+<p>• Każdy <code>&lt;p&gt;</code> = osobny element tablicy w bazie. <strong>Nie łącz paragrafów.</strong></p>
+<p>• Jeśli w opisie są podtematy (Historia, Co zobaczyć, Praktyka) — wstaw je jako <code>&lt;p&gt;&lt;strong&gt;Historia&lt;/strong&gt;&lt;/p&gt;</code> — osobny element tablicy.</p>
+<p>• Legendy i tradycje hagiograficzne wyraźnie oznaczaj: "według tradycji", "legenda głosi".</p>
+<p>• Źródłowo prawdziwe — sprawdzone daty, fakty, ceny.</p>
+
+<h3>Sekcja C — quest dla dziecka (<code>kids_box</code>)</h3>
+<p>• Krótka informacja: "Jesteś w [miejsce]. To [co to jest, 1–2 zdania]."</p>
+<p>• Ciekawostka: jeden konkretny, zaskakujący fakt.</p>
+<p>• Quest: <strong>faktyczne zadanie do wykonania na miejscu</strong> — obserwacja, znalezienie detalu, porównanie, dedukcja. Nie "dowiedz się" (to nudne), ale "znajdź", "policz", "porównaj", "wskaż".</p>
+
+<h3>Sekcja D — wskazówka (<code>hint</code>)</h3>
+<p>• Jedna, konkretna wskazówka pomagająca dziecku rozwiązać quest. Nie odpowiedź, ale naprowadzenie.</p>
+
+<h3>Sekcja E — lokalny smak (<code>local_flavor</code>)</h3>
+<p>• Jedna ciekawostka z okolicy: legenda, anegdota, ciekawostka ekonomiczna, tradycja lokalna.</p>
+
+<h3>Nazewnictwo pliku</h3>
+<p>Format: <code>{PAŃSTWO}-{Region}-{Miasto}-v{NN}.html</code></p>
+<p>Przykłady: <code>IT-Umbria-Assisi-v07.html</code>, <code>IT-Umbria-Spello-v31.html</code>, <code>HR-Istra-Rovinj-v01.html</code></p>
+
+<!-- ============================================================ -->
+<h2 id="checklist">12. Checklist przed oddaniem</h2>
+
+<table>
+<tr><th>#</th><th>Sprawdź</th><th>Opis</th></tr>
+<tr><td>1</td><td>Wszystkie <code>id</code> unikalne</td><td>Każdy <code>id</code> w dokumencie musi być unikalny. Wzorzec: <code>{stop_key}--{kolumna}</code>.</td></tr>
+<tr><td>2</td><td>Nazwy kolumn identyczne z bazą</td><td><code>desc_paragraphs</code> nie <code>desc-paragraphs</code>. <code>kids_box</code> nie <code>kidsBox</code>.</td></tr>
+<tr><td>3</td><td>Każdy stop ma pełen zestaw divów</td><td>Nawet puste: <code>&lt;div id="xxx--dress_code"&gt;&lt;/div&gt;</code> — nie pomijaj.</td></tr>
+<tr><td>4</td><td>desc_paragraphs: osobne <code>&lt;p&gt;</code></td><td>Każdy akapit to osobny <code>&lt;p&gt;</code>. Nie łącz w jeden blok.</td></tr>
+<tr><td>5</td><td>stop_key slug poprawny</td><td>Tylko małe litery, cyfry, myślniki. Bez spacji, bez polskich znaków.</td></tr>
+<tr><td>6</td><td>maps_query wypełniony</td><td>Każdy przystanek musi mieć <code>maps_query</code> z pełnym adresem.</td></tr>
+<tr><td>7</td><td>Źródła (<code>sources</code>)</td><td>Każdy przystanek ma minimum 2 linki źródłowe z atrybutem <code>href</code>.</td></tr>
+<tr><td>8</td><td>JSON-LD blok na dole</td><td>Blok <code>&lt;script id="questini-data"&gt;</code> z pełnymi danymi strukturalnymi.</td></tr>
+<tr><td>9</td><td>Emergency: min. 5 pozycji</td><td>2× apteka, 1× toalety, 1× plac zabaw, 1× szpital.</td></tr>
+<tr><td>10</td><td>Frazy: min. 8 zwrotów</td><td>Powitania, jedzenie, zakupy, pomoc, dzieci.</td></tr>
+<tr><td>11</td><td>article posiada data-category</td><td>Każdy <code>&lt;article&gt;</code> ma <code>data-category</code> z tabeli stop_categories.</td></tr>
+<tr><td>12</td><td>Questy obserwacyjne</td><td>Quest = zadanie na miejscu. Nie "dowiedz się w domu", nie quiz wiedzy.</td></tr>
+</table>
+
+<h2>Podsumowanie mapowania sekcji → baza danych</h2>
+<table>
+<tr><th>Sekcja edytorska</th><th>Atrybut id</th><th>Tabela</th><th>Kolumna</th></tr>
+<tr><td>Nagłówek</td><td><code>{key}--name</code></td><td>stop_translations</td><td>name</td></tr>
+<tr><td>A — Dane</td><td><code>{key}--stop_key</code>, <code>{key}--maps_query</code>, <code>{key}--time_label</code>, <code>{key}--visit_duration</code>, <code>{key}--year_built</code>, <code>{key}--price</code>, <code>{key}--opening_hours</code>, <code>{key}--verify_url</code>, <code>{key}--phone</code>, <code>{key}--website</code></td><td>stops</td><td>(odpowiednie)</td></tr>
+<tr><td>A2 — Strój</td><td><code>{key}--dress_code</code></td><td>stop_translations</td><td>dress_code</td></tr>
+<tr><td>A2 — Uwaga praktyczna</td><td><code>{key}--practical_note</code></td><td>stop_translations</td><td>practical_note</td></tr>
+<tr><td>B — Opis rodzica</td><td><code>{key}--desc_paragraphs</code></td><td>stop_translations</td><td>desc_paragraphs</td></tr>
+<tr><td>C — Quest dziecka</td><td><code>{key}--kids_box</code></td><td>stop_translations</td><td>kids_box</td></tr>
+<tr><td>C2 — Foto zadanie</td><td><code>{key}--photo_task</code></td><td>stop_translations</td><td>photo_task</td></tr>
+<tr><td>D — Wskazówka</td><td><code>{key}--hint</code></td><td>stop_translations</td><td>hint</td></tr>
+<tr><td>E — Lokalny smak</td><td><code>{key}--local_flavor</code></td><td>stop_translations</td><td>local_flavor</td></tr>
+<tr><td>F — Źródła</td><td><code>{key}--sources</code></td><td>stops</td><td>sources</td></tr>
+<tr><td>G — Uwaga redakcyjna</td><td><code>{key}--editorial_note</code></td><td>editorial_notes</td><td>note</td></tr>
+</table>
+
+</body>
+</html>

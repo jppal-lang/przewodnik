@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{CITY}} z dziećmi — plan wycieczki | Quolino</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="quolino-city.css">
+</head>
+<body>
+
+<!-- ================================================================
+     HEADER STRONY — NIE ZMIENIAMY.
+     Zostaje dokładnie ten, który jest dziś w city.html.
+     Poniżej tylko atrapa, żeby szablon dał się otworzyć samodzielnie.
+     ================================================================ -->
+<header id="site-header" style="padding:14px 20px;border-bottom:1px solid #E6E3DE;background:#fff">
+  <!-- obecny header quolino.com -->
+</header>
+
+<!-- ================================================================
+     SZABLON WIDOKU MIASTA
+     {{TOKENY}} = miejsca do podstawienia z data/<miasto>.json
+     Bloki [POWTARZALNY] renderujcie w pętli i usuńcie z szablonu nadmiar.
+     data-view="adult" | "kid"  → przełącznik widoku dziecka
+
+     MAPOWANIE ID → BAZA DANYCH (Supabase)
+     ─────────────────────────────────────
+     Konwencja: data-db-table="tabela" data-db-col="kolumna"
+     Na elementach powtarzalnych (stop): data-stop-key="{{STOP_KEY}}"
+     Renderer wstawia: id="{{STOP_KEY}}--kolumna"
+     ================================================================ -->
+<main class="qc" id="city" data-view="adult" data-db-table="cities" data-city-slug="{{CITY_SLUG}}">
+  <div class="qc-wrap">
+
+    <nav class="qc-crumbs" aria-label="Ścieżka">
+      <a href="/index.html">Quolino</a><span>/</span>
+      <a href="/index.html#regiony" data-db-table="country_translations" data-db-col="name">{{COUNTRY}}</a><span>/</span>
+      <a href="{{REGION_URL}}" data-db-table="region_translations" data-db-col="name">{{REGION}}</a><span>/</span>
+      <span aria-current="page" data-db-table="city_translations" data-db-col="title">{{CITY}}</span>
+    </nav>
+
+    <section class="qc-intro" data-db-table="city_translations">
+      <div class="qc-intro__text">
+        <p class="qc-eyebrow" data-db-col="subtitle">{{EYEBROW}}</p>
+        <h1 class="qc-title" data-db-col="title">{{CITY}}</h1>
+        <p class="qc-lede" data-db-col="lead">{{LEDE}}</p>
+        <p class="qc-facts">
+          <span data-db-table="cities" data-db-col="stops_count"><strong>{{STOPS_COUNT}}</strong> przystanków</span>
+          <span data-db-table="cities" data-db-col="duration_hours"><strong>{{DURATION}}</strong> trasy</span>
+          <span><strong>{{TIME_WINDOW}}</strong></span>
+          <span><strong>{{WALK_KM}}</strong> pieszo · {{CLIMB_M}} w górę</span>
+        </p>
+      </div>
+      <div class="qc-intro__actions">
+        <button class="qc-btn qc-btn--ghost" type="button" data-qc-toggle-view aria-pressed="false">👁 Widok dziecka</button>
+        <a class="qc-btn" href="{{PARKING_NAV_URL}}" data-db-table="stops" data-db-col="maps_query" data-db-filter="category=parking">Prowadź do parkingu</a>
+      </div>
+    </section>
+
+    <figure class="qc-hero">
+      <!-- 2100×900, object-fit: cover -->
+      <img src="{{HERO_SRC}}" width="2100" height="900" alt="{{HERO_ALT}}" data-db-table="cities" data-db-col="hero_image">
+    </figure>
+
+    <nav class="qc-tabs" aria-label="Sekcje">
+      <a class="qc-tab" href="#trasa" aria-current="true">Trasa</a>
+      <a class="qc-tab" href="#plan">Plan dnia</a>
+      <a class="qc-tab" href="#awaryjne">Punkty awaryjne</a>
+      <a class="qc-tab" href="#rozmowki">Rozmówki</a>
+      <a class="qc-tab" href="#telefony">Telefony</a>
+      <a class="qc-tab" href="#qr">QR dla dziecka</a>
+      <a class="qc-tab qc-tab--support" href="{{SUPPORT_URL}}">☕ Wesprzyj</a>
+    </nav>
+
+    <div class="qc-layout">
+      <div class="qc-main">
+
+        <!-- ============ TRASA ============ -->
+        <section class="qc-stops" id="trasa">
+
+          <!-- [POWTARZALNY] jeden przystanek = jeden element stops[].
+               Pierwszy w pętli dostaje atrybut open.
+               Renderer wstawia id="stop--{{STOP_KEY}}" na <details>
+               i id="{{STOP_KEY}}--kolumna" na każdym polu treści. -->
+          <details class="qc-stop" id="stop--{{STOP_KEY}}" open
+                   data-db-table="stops"
+                   data-stop-key="{{STOP_KEY}}"
+                   data-stop-id="{{STOP_ID}}"
+                   data-stop-number="{{STOP_NO}}"
+                   data-category="{{STOP_CATEGORY}}"
+                   data-optional="{{STOP_OPTIONAL}}">
+            <summary class="qc-stop__head">
+              <span class="qc-icon">
+                <img src="{{STOP_ICON}}" alt="" data-db-col="icon">
+                <span class="qc-icon__no" data-db-col="stop_number">{{STOP_NO}}</span>
+              </span>
+              <span class="qc-stop__title">
+                <span class="qc-stop__time">
+                  <span data-db-col="time_label">{{STOP_TIME}}</span> ·
+                  <span data-db-col="visit_duration">{{STOP_DURATION}}</span>
+                </span>
+                <span class="qc-stop__name" data-db-table="stop_translations" data-db-col="name">{{STOP_NAME}}</span>
+              </span>
+              <span class="qc-stop__meta">
+                <!-- [POWTARZALNY] 0–3 etykiety: rok budowy, cena wstępu, uwaga -->
+                <span class="qc-pill" data-db-col="year_built">{{STOP_PILL}}</span>
+                <span class="qc-pill" data-db-col="price">{{STOP_PILL}}</span>
+                <!-- przycisk nawigacji zawsze na końcu kolumny -->
+                <a class="qc-btn qc-btn--primary qc-btn--sm" href="{{STOP_NAV_URL}}" data-db-col="maps_query">{{STOP_NAV_LABEL}}</a>
+              </span>
+              <span class="qc-chev" aria-hidden="true">▼</span>
+            </summary>
+
+            <div class="qc-stop__body">
+              <!-- opcjonalne: ostrzeżenie (ZTL, bilety online, godziny) -->
+              <p class="qc-note" data-db-col="ztl"><span aria-hidden="true">⚠️</span>
+                <span><strong>{{NOTE_TITLE}}:</strong> {{NOTE_TEXT}}</span>
+              </p>
+              <!-- opcjonalne: pozostałe linki (WWW, telefon, godziny) -->
+              <div class="qc-links">
+                <a class="qc-btn qc-btn--sm" href="{{LINK_URL}}" data-db-col="website">{{LINK_LABEL}}</a>
+                <a class="qc-btn qc-btn--sm" href="tel:{{PHONE}}" data-db-col="phone">{{PHONE_LABEL}}</a>
+                <span data-db-col="opening_hours">{{OPENING_HOURS}}</span>
+                <span data-db-col="verify_url" hidden>{{VERIFY_URL}}</span>
+                <span data-db-col="reservation" hidden>{{RESERVATION}}</span>
+              </div>
+              <!-- opis dla dorosłych — ukrywany w widoku dziecka
+                   Każdy <p> = jeden element tablicy stop_translations.desc_paragraphs -->
+              <div class="qc-prose" data-db-table="stop_translations" data-db-col="desc_paragraphs">
+                <p>{{STOP_PROSE_1}}</p>
+                <p>{{STOP_PROSE_2}}</p>
+                <!-- renderer wstawia tyle <p> ile jest elementów w tablicy desc_paragraphs -->
+              </div>
+              <!-- uwaga praktyczna — widoczna nad opisem lub w aside -->
+              <p class="qc-note qc-note--practical" data-db-table="stop_translations" data-db-col="practical_note" hidden>{{PRACTICAL_NOTE}}</p>
+              <!-- dress code — widoczny gdy niepusty -->
+              <p class="qc-note qc-note--dress" data-db-table="stop_translations" data-db-col="dress_code" hidden>{{DRESS_CODE}}</p>
+              <div class="qc-tasks">
+                <div class="qc-task" data-db-table="stop_translations" data-db-col="kids_box">
+                  <label class="qc-task__label"><input type="checkbox" data-qc-task="{{STOP_KEY}}-mission">Misja</label>
+                  <p>{{STOP_MISSION}}</p>
+                </div>
+                <div class="qc-task qc-task--photo" data-db-table="stop_translations" data-db-col="photo_task">
+                  <label class="qc-task__label"><input type="checkbox" data-qc-task="{{STOP_KEY}}-photo">Zadanie foto</label>
+                  <p>{{STOP_PHOTO}}</p>
+                </div>
+              </div>
+              <!-- wskazówka — widoczna tylko w widoku dziecka -->
+              <div class="qc-hint" data-db-table="stop_translations" data-db-col="hint">
+                <p>{{STOP_HINT}}</p>
+              </div>
+              <!-- lokalny smak — widoczny w obu widokach -->
+              <div class="qc-flavor" data-db-table="stop_translations" data-db-col="local_flavor">
+                <p>{{STOP_LOCAL_FLAVOR}}</p>
+              </div>
+              <!-- źródła redakcyjne — nie renderowane publicznie -->
+              <div data-db-table="stops" data-db-col="sources" hidden>{{SOURCES_JSON}}</div>
+            </div>
+          </details>
+
+          <!-- wariant: ostatni przystanek dnia (kolacja) — variant: "dinner"
+               ta sama struktura, dochodzi klasa qc-stop--dinner -->
+          <details class="qc-stop qc-stop--dinner" id="stop--{{STOP_KEY}}"
+                   data-db-table="stops"
+                   data-stop-key="{{STOP_KEY}}"
+                   data-stop-id="{{STOP_ID}}"
+                   data-stop-number="{{STOP_NO}}"
+                   data-category="restaurant"
+                   data-optional="{{STOP_OPTIONAL}}">
+            <summary class="qc-stop__head">
+              <span class="qc-icon">
+                <img src="{{STOP_ICON}}" alt="" data-db-col="icon">
+                <span class="qc-icon__no" data-db-col="stop_number">{{STOP_NO}}</span>
+              </span>
+              <span class="qc-stop__title">
+                <span class="qc-stop__time">
+                  <span data-db-col="time_label">{{STOP_TIME}}</span> · finał dnia
+                </span>
+                <span class="qc-stop__name" data-db-table="stop_translations" data-db-col="name">{{STOP_NAME}}</span>
+              </span>
+              <span class="qc-stop__meta">
+                <span class="qc-pill" data-db-col="price">{{STOP_PILL}}</span>
+                <a class="qc-btn qc-btn--primary qc-btn--sm" href="{{STOP_NAV_URL}}" data-db-col="maps_query">{{STOP_NAV_LABEL}}</a>
+              </span>
+              <span class="qc-chev" aria-hidden="true">▼</span>
+            </summary>
+            <div class="qc-stop__body">
+              <div class="qc-links">
+                <a class="qc-btn qc-btn--sm" href="tel:{{PHONE}}" data-db-col="phone">Zadzwoń</a>
+                <a class="qc-btn qc-btn--sm" href="{{STOP_NAV_URL}}" data-db-col="maps_query">Nawiguj</a>
+                <span data-db-col="opening_hours">{{OPENING_HOURS}}</span>
+                <span data-db-col="website" hidden>{{WEBSITE}}</span>
+                <span data-db-col="reservation" hidden>{{RESERVATION}}</span>
+              </div>
+              <div class="qc-prose" data-db-table="stop_translations" data-db-col="desc_paragraphs">
+                <p>{{STOP_PROSE_1}}</p>
+              </div>
+              <div class="qc-tasks">
+                <div class="qc-task" data-db-table="stop_translations" data-db-col="kids_box">
+                  <label class="qc-task__label"><input type="checkbox" data-qc-task="{{STOP_KEY}}-mission">Misja</label>
+                  <p>{{STOP_MISSION}}</p>
+                </div>
+              </div>
+              <div class="qc-hint" data-db-table="stop_translations" data-db-col="hint">
+                <p>{{STOP_HINT}}</p>
+              </div>
+              <div class="qc-flavor" data-db-table="stop_translations" data-db-col="local_flavor">
+                <p>{{STOP_LOCAL_FLAVOR}}</p>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- ============ PLAN DNIA ============
+             liczony z tego samego stops[]: time · name · duration
+             Tabela: day_plan (city_slug, lang, time_label, description, sort_order, stop_key) -->
+        <section id="plan" data-db-table="day_plan">
+          <h2 class="qc-section__title">Plan dnia</h2>
+          <p class="qc-section__sub">{{PLAN_SUB}}</p>
+          <div class="qc-panel">
+            <!-- [POWTARZALNY] -->
+            <div class="qc-row" data-stop-key="{{STOP_KEY}}" data-sort-order="{{SORT_ORDER}}">
+              <span class="qc-row__time" data-db-col="time_label">{{STOP_TIME}}</span>
+              <span class="qc-row__what" data-db-col="description">{{STOP_NAME}}</span>
+              <span class="qc-row__dur">{{STOP_DURATION}}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ PUNKTY AWARYJNE ============
+             Tabela: emergency_points (city_slug, lang, type, label, description, maps_query, sort_order) -->
+        <section id="awaryjne" data-db-table="emergency_points">
+          <h2 class="qc-section__title">Punkty awaryjne</h2>
+          <p class="qc-section__sub">{{EMERGENCY_SUB}}</p>
+          <div class="qc-cards">
+            <!-- [POWTARZALNY] apteka / toalety / plac zabaw / szpital -->
+            <div class="qc-card" data-type="{{EMG_TYPE}}" data-sort-order="{{EMG_SORT}}">
+              <div class="qc-card__icon" aria-hidden="true" data-db-col="type">{{EMG_ICON}}</div>
+              <h3 class="qc-card__title" data-db-col="label">{{EMG_TITLE}}</h3>
+              <p data-db-col="description">{{EMG_TEXT}}</p>
+              <a class="qc-card__link" href="{{EMG_NAV_URL}}" data-db-col="maps_query">Nawiguj →</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ ROZMÓWKI ============
+             Tabela: phrases (country, lang, phrase_local, phrase_user, sort_order) -->
+        <section id="rozmowki" data-db-table="phrases">
+          <h2 class="qc-section__title">Rozmówki</h2>
+          <p class="qc-section__sub">{{PHRASES_SUB}}</p>
+          <div class="qc-panel">
+            <!-- [POWTARZALNY] -->
+            <div class="qc-phrase" data-sort-order="{{SORT_ORDER}}">
+              <span class="qc-phrase__pl" data-db-col="phrase_user">{{PHRASE_PL}}</span>
+              <span class="qc-phrase__it" lang="{{LANG}}" data-db-col="phrase_local">{{PHRASE_FOREIGN}}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ TELEFONY ============
+             Tabela: phone_numbers (country_slug, type, label, number, sort_order) -->
+        <section id="telefony" data-db-table="phone_numbers">
+          <h2 class="qc-section__title">Telefony</h2>
+          <div class="qc-tels">
+            <!-- [POWTARZALNY] numery krótkie bez modyfikatora,
+                 długie z qc-tel__no--long -->
+            <a class="qc-tel" href="tel:{{TEL_NUMBER}}" data-sort-order="{{SORT_ORDER}}">
+              <span class="qc-tel__label" data-db-col="label">{{TEL_LABEL}}</span>
+              <span class="qc-tel__no" data-db-col="number">{{TEL_NUMBER}}</span>
+            </a>
+            <a class="qc-tel" href="tel:{{TEL_NUMBER}}" data-sort-order="{{SORT_ORDER}}">
+              <span class="qc-tel__label" data-db-col="label">{{TEL_LABEL}}</span>
+              <span class="qc-tel__no qc-tel__no--long" data-db-col="number">{{TEL_NUMBER}}</span>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ PANEL BOCZNY ============ -->
+      <aside class="qc-aside">
+        <div class="qc-box" data-db-table="cities">
+          <p class="qc-box__label">Dzisiejsza trasa</p>
+          <div class="qc-stats">
+            <span class="qc-stat">Przystanki <strong data-db-col="stops_count">{{STOPS_COUNT}}</strong></span>
+            <span class="qc-stat">Pieszo <strong>{{WALK_KM}}</strong></span>
+            <span class="qc-stat">Wejście w górę <strong>{{CLIMB_M}}</strong></span>
+            <span class="qc-stat">Bilety (rodzina 2+2) <strong>{{TICKETS}}</strong></span>
+            <span class="qc-stat">Parking <strong>{{PARKING_COST}}</strong></span>
+          </div>
+          <div class="qc-hr"></div>
+          <p>Zachód słońca dziś <strong>{{SUNSET}}</strong> — {{SUNSET_HINT}}</p>
+        </div>
+
+        <div class="qc-box qc-box--qr" id="qr">
+          <p class="qc-box__label">QR dla dziecka</p>
+          <img class="qc-qr" src="{{QR_SRC}}" width="150" height="150" alt="Kod QR do widoku dziecka">
+          <p>Zeskanuj na drugim telefonie — dziecko dostanie tylko misje i zadania foto.</p>
+        </div>
+
+        <!-- opcjonalny blok: lokalne święto / sezonowa uwaga -->
+        <div class="qc-box qc-box--fest" data-db-table="city_translations">
+          <p class="qc-box__title" data-db-col="good_to_know">{{FEST_TITLE}}</p>
+          <p>{{FEST_TEXT}}</p>
+        </div>
+
+        <a class="qc-box qc-box--support" href="{{SUPPORT_URL}}">
+          <p class="qc-box__title">Podoba się Quolino?</p>
+          <p>Postaw nam kawę ☕</p>
+        </a>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<!-- STOPKA STRONY — bez zmian, obecna z city.html -->
+
+<script>
+/* widok dziecka: chowa opisy dla dorosłych i etykiety cen */
+document.querySelectorAll('[data-qc-toggle-view]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var root = document.getElementById('city');
+    var kid = root.dataset.view === 'kid';
+    root.dataset.view = kid ? 'adult' : 'kid';
+    btn.setAttribute('aria-pressed', String(!kid));
+    btn.textContent = kid ? '👁 Widok dziecka' : '👁 Widok rodzica';
+  });
+});
+
+/* odhaczone misje trzymane lokalnie na urządzeniu */
+document.querySelectorAll('[data-qc-task]').forEach(function (box) {
+  var key = 'qc.task.' + box.dataset.qcTask;
+  box.checked = localStorage.getItem(key) === '1';
+  box.addEventListener('change', function () {
+    localStorage.setItem(key, box.checked ? '1' : '0');
+  });
+});
+
+/* podświetlenie aktywnej zakładki sekcji */
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('.qc-tab[href^="#"]'));
+  var map = {};
+  tabs.forEach(function (t) { map[t.getAttribute('href').slice(1)] = t; });
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      tabs.forEach(function (t) { t.removeAttribute('aria-current'); });
+      if (map[e.target.id]) map[e.target.id].setAttribute('aria-current', 'true');
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  Object.keys(map).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
