@@ -376,8 +376,13 @@ function render(d) {
     var isDinner = s.variant === 'dinner' || (idx === stops.length - 1 && (cat === 'restaurant' || cat === 'icecream'));
     var openAttr = idx === 0 ? ' open' : '';
 
-    html += '<details class="qc-stop' + (isDinner ? ' qc-stop--dinner' : '') + '"' + openAttr + '>';
+    html += '<details class="qc-stop' + (isDinner ? ' qc-stop--dinner' : '') + '" data-stop-num="' + s.stop_number + '"' + openAttr + '>';
     html += '<summary class="qc-stop__head">';
+    // Parent toggle switch (visible only in parent view)
+    html += '<label class="qc-stop-toggle" onclick="event.stopPropagation()" title="' + esc(ui('btn.toggle_stop', 'Włącz/wyłącz dla dziecka')) + '">';
+    html += '<input type="checkbox" checked data-toggle-stop="' + s.stop_number + '" onchange="toggleStop(this)">';
+    html += '<span class="qc-stop-toggle__slider"></span>';
+    html += '</label>';
 
     // Icon 112px
     html += ikonaQc(cat, id);
@@ -567,7 +572,11 @@ function render(d) {
   html += '<div class="qc-box qc-box--qr" id="qr">';
   html += '<p class="qc-box__label">' + esc(ui('label.qr_kid', 'QR dla dziecka')) + '</p>';
   html += '<div class="qc-qr" id="qrCode"></div>';
-  html += '<p>' + esc(ui('qr.scan_text', 'Zeskanuj na drugim telefonie — dziecko dostanie tylko misje i zadania foto.')) + '</p>';
+  html += '<p style="margin-top:12px">' + esc(ui('qr.scan_text', 'Zeskanuj na drugim telefonie — dziecko dostanie tylko misje i zadania foto.')) + '</p>';
+  html += '<div class="qc-copy-row">';
+  html += '<input type="text" id="qrUrlInput" readonly>';
+  html += '<button type="button" onclick="var i=document.getElementById(\'qrUrlInput\');navigator.clipboard.writeText(i.value).then(function(){var b=event.target;b.textContent=\'' + esc(ui('btn.copied', 'Skopiowano!')) + '\';setTimeout(function(){b.textContent=\'' + esc(ui('btn.copy_link', 'Kopiuj link')) + '\'},1500)})">' + esc(ui('btn.copy_link', 'Kopiuj link')) + '</button>';
+  html += '</div>';
   html += '</div>';
 
   // Intro / lead in sidebar
@@ -757,6 +766,28 @@ document.addEventListener('keydown', function(e) {
   }
 })();
 
+// ── Stop toggle for kid view ─────────────────────────
+function toggleStop(checkbox) {
+  var num = checkbox.dataset.toggleStop;
+  var stop = document.querySelector('.qc-stop[data-stop-num="' + num + '"]');
+  if (stop) {
+    if (checkbox.checked) {
+      stop.classList.remove('qc-stop--disabled');
+    } else {
+      stop.classList.add('qc-stop--disabled');
+    }
+  }
+  generateKidQR(); // update QR with new hidden stops
+}
+
+function getHiddenStops() {
+  var hidden = [];
+  document.querySelectorAll('[data-toggle-stop]').forEach(function(cb) {
+    if (!cb.checked) hidden.push(cb.dataset.toggleStop);
+  });
+  return hidden;
+}
+
 // ── QR code generator ────────────────────────────────
 function generateKidQR() {
   var el = document.getElementById('qrCode');
@@ -765,6 +796,8 @@ function generateKidQR() {
   params.set('c', citySlug);
   params.set('lang', currentLang);
   params.set('view', 'kid');
+  var hidden = getHiddenStops();
+  if (hidden.length) params.set('hide', hidden.join(','));
   var kidUrl = location.origin + location.pathname + '?' + params.toString();
   el.innerHTML = '';
   new QRCode(el, {
@@ -775,11 +808,14 @@ function generateKidQR() {
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
+  var urlInput = document.getElementById('qrUrlInput');
+  if (urlInput) urlInput.value = kidUrl;
 }
 
 // ── Auto-enable kid view from URL param ──────────────
 function applyKidViewParam() {
-  var viewParam = new URLSearchParams(location.search).get('view');
+  var params = new URLSearchParams(location.search);
+  var viewParam = params.get('view');
   if (viewParam === 'kid') {
     var root = document.getElementById('city');
     if (root) root.dataset.view = 'kid';
@@ -787,6 +823,14 @@ function applyKidViewParam() {
     if (btn) {
       btn.setAttribute('aria-pressed', 'true');
       btn.innerHTML = '&#128065; ' + ui('btn.parent_view', 'Widok rodzica');
+    }
+    // Hide stops from URL param
+    var hideParam = params.get('hide');
+    if (hideParam) {
+      hideParam.split(',').forEach(function(num) {
+        var stop = document.querySelector('.qc-stop[data-stop-num="' + num.trim() + '"]');
+        if (stop) stop.style.display = 'none';
+      });
     }
   }
 }
