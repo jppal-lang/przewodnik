@@ -332,7 +332,7 @@ function render(d) {
   // ── Hero image ──
   var imgBase = city.hero_image
     ? 'media/tours/' + city.hero_image
-    : (city.slug ? 'media/tours/quolino-' + city.slug : '');
+    : (city.country && city.slug ? 'media/tours/quolino-' + city.country + '-' + city.slug : '');
   if (imgBase) {
     html += '<figure class="qc-hero">';
     html += '<img src="' + esc(imgBase) + '-hero-800.webp"' +
@@ -632,7 +632,7 @@ function ustawMeta(city, cityTr, stops) {
   var baza  = location.origin + location.pathname.replace(/[^/]*$/, '');
   var obraz = city.hero_image
     ? 'media/tours/' + city.hero_image + '-hero-1200.webp'
-    : (city.slug ? 'media/tours/quolino-' + city.slug + '-hero-1200.webp' : '');
+    : (city.country && city.slug ? 'media/tours/quolino-' + city.country + '-' + city.slug + '-hero-1200.webp' : '');
 
   function meta(atrybut, klucz, wartosc) {
     if (!wartosc) return;
