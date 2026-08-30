@@ -123,6 +123,14 @@
 @media(max-width:799px){.nav-desktop{display:none!important}}
 @media(min-width:800px){.nav-mobile{display:none!important}}
 </style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z3YC8NF30B"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-Z3YC8NF30B');
+</script>
 </head>
 <body>
 
@@ -386,16 +394,16 @@ function loadPage(lang) {
 
 // ══════ GRAFIKI TRAS ══════
 // Jedna grafika z Que na wycieczke, robiona lokalnie skryptem img/!build-img.py.
-// Nazwa wynika ze slugow: media/tours/<kraj>-<miasto>-tile-384.webp itd.
+// Nazwa wynika ze slugow: media/tours/quolino-<miasto>-tile-384.webp itd.
 // Zadnych zapytan do Wikipedii i zadnego cache w localStorage — pliki sa nasze,
 // wiec wystarczy poprawna sciezka i przegladarkowy cache.
 var IMG_DIR = 'media/tours/';
 
 function imgBase(city) {
   if (!city) return '';
-  if (city.hero_image) return city.hero_image;          // nadpisanie z bazy
-  if (!city.country || !city.slug) return '';
-  return IMG_DIR + city.country + '-' + city.slug;
+  if (city.hero_image) return IMG_DIR + city.hero_image; // nadpisanie z bazy
+  if (!city.slug) return '';
+  return IMG_DIR + 'quolino-' + city.slug;
 }
 function tileFallback(wrap, color, letter) {
   wrap.classList.remove('loading');

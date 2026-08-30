@@ -8,6 +8,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=7">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z3YC8NF30B"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-Z3YC8NF30B');
+</script>
 </head>
 <body>
 
@@ -323,8 +331,8 @@ function render(d) {
 
   // ── Hero image ──
   var imgBase = city.hero_image
-    ? city.hero_image
-    : (city.country && city.slug ? 'media/tours/' + city.country + '-' + city.slug : '');
+    ? 'media/tours/' + city.hero_image
+    : (city.slug ? 'media/tours/quolino-' + city.slug : '');
   if (imgBase) {
     html += '<figure class="qc-hero">';
     html += '<img src="' + esc(imgBase) + '-hero-800.webp"' +
@@ -623,8 +631,8 @@ function ustawMeta(city, cityTr, stops) {
   if (opis.length > 300) opis = opis.slice(0, 297) + '…';
   var baza  = location.origin + location.pathname.replace(/[^/]*$/, '');
   var obraz = city.hero_image
-    ? city.hero_image
-    : (city.country && city.slug ? 'media/tours/' + city.country + '-' + city.slug + '-hero-1200.webp' : '');
+    ? 'media/tours/' + city.hero_image + '-hero-1200.webp'
+    : (city.slug ? 'media/tours/quolino-' + city.slug + '-hero-1200.webp' : '');
 
   function meta(atrybut, klucz, wartosc) {
     if (!wartosc) return;
