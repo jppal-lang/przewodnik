@@ -655,12 +655,15 @@ body.kid-mode .city-menu{display:none}
 .qc-stop--dinner .qc-task p{color:#D8D3CA}
 
 /* ---------- stop toggle switch ---------- */
-.qc-stop-toggle{position:relative;display:inline-flex;align-items:center;width:40px;height:22px;flex-shrink:0;cursor:pointer;margin-right:4px}
+.qc-stop-toggle{position:relative;display:inline-flex;align-items:center;width:44px;height:24px;flex-shrink:0;cursor:pointer;margin-right:6px}
 .qc-stop-toggle input{opacity:0;width:0;height:0;position:absolute}
-.qc-stop-toggle__slider{position:absolute;inset:0;background:#ccc;border-radius:22px;transition:background .2s}
-.qc-stop-toggle__slider::before{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
-.qc-stop-toggle input:checked+.qc-stop-toggle__slider{background:var(--qc-accent,#C85A2A)}
-.qc-stop-toggle input:checked+.qc-stop-toggle__slider::before{transform:translateX(18px)}
+.qc-stop-toggle__slider{position:absolute;inset:0;background:var(--line,#E7DBC6);border-radius:24px;transition:background .25s ease,box-shadow .25s ease;box-shadow:inset 0 1px 3px rgba(60,42,20,.12)}
+.qc-stop-toggle__slider::before{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .25s cubic-bezier(.4,.1,.2,1);box-shadow:0 1px 3px rgba(60,42,20,.18),0 0 0 1px rgba(60,42,20,.04)}
+.qc-stop-toggle input:checked+.qc-stop-toggle__slider{background:var(--terra,#B4502E);box-shadow:inset 0 1px 3px rgba(60,42,20,.06)}
+.qc-stop-toggle input:checked+.qc-stop-toggle__slider::before{transform:translateX(20px)}
+.qc-stop-toggle:hover .qc-stop-toggle__slider{box-shadow:inset 0 1px 3px rgba(60,42,20,.18)}
+.qc-stop-toggle:active .qc-stop-toggle__slider::before{width:22px}
+.qc-stop-toggle:active input:checked+.qc-stop-toggle__slider::before{transform:translateX(16px);width:22px}
 /* Disabled stop (parent view) */
 .qc-stop--disabled{opacity:.35;pointer-events:auto}
 .qc-stop--disabled .qc-stop__head{pointer-events:auto}
