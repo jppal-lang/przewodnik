@@ -201,7 +201,6 @@ function loadPage(lang) {
     sb('regions', 'select=slug,country_slug'),
     sb('region_translations', 'lang=eq.' + lang),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('phrases', 'lang=eq.' + lang + '&order=sort_order'),
     sb('phone_numbers', 'order=sort_order'),
     sb('countries', 'select=*'),
   ]).then(function(results) {
@@ -218,9 +217,8 @@ function loadPage(lang) {
     var regions    = results[7];
     var regionTrs  = results[8];
     var countryTrs = results[9];
-    var allPhrases = results[10];
-    var phones     = results[11];
-    var countries  = results[12];
+    var phones     = results[10];
+    var countries  = results[11];
 
     if (!city) { showError('Nie znaleziono wycieczki: ' + esc(citySlug)); return; }
     cityData = city;
@@ -250,7 +248,6 @@ function loadPage(lang) {
       return { stop: s, tr: tr };
     });
 
-    var phrases = allPhrases.filter(function(p) { return p.country === city.country; });
     var cityPhones = phones.filter(function(p) { return p.country_slug === city.country; });
 
     // SEO title
@@ -262,7 +259,7 @@ function loadPage(lang) {
 
     render({
       city: city, cityTr: cityTr, stops: processedStops, dayPlan: dayPlan,
-      emergency: emergency, phrases: phrases, phones: cityPhones,
+      emergency: emergency, phones: cityPhones,
       regionName: regionName, countryName: countryName, continent: continent,
     });
 
@@ -270,6 +267,8 @@ function loadPage(lang) {
     updateActiveLang();
     initTabs();
     initTaskCheckboxes();
+    generateKidQR();
+    applyKidViewParam();
 
   }).catch(function(err) {
     console.error('[city.html]', err);
@@ -351,7 +350,6 @@ function render(d) {
   html += '<a class="qc-tab" href="#trasa" aria-current="true">' + ui('tab.route', 'Trasa') + '</a>';
   html += '<a class="qc-tab" href="#plan">' + ui('tab.plan', 'Plan dnia') + '</a>';
   html += '<a class="qc-tab" href="#awaryjne">' + ui('tab.emergency', 'Punkty awaryjne') + '</a>';
-  html += '<a class="qc-tab" href="#rozmowki">' + ui('tab.phrases', 'Rozmówki') + '</a>';
   html += '<a class="qc-tab" href="#telefony">' + ui('tab.phones', 'Telefony') + '</a>';
   html += '<a class="qc-tab" href="#qr">' + ui('tab.qr', 'QR dla dziecka') + '</a>';
   html += '<a class="qc-tab qc-tab--support" href="https://buymeacoffee.com/questini" target="_blank" rel="noopener">☕ ' + ui('nav.support', 'Wesprzyj') + '</a>';
@@ -523,23 +521,6 @@ function render(d) {
   }
   html += '</section>';
 
-  // ═══ ROZMÓWKI ═══
-  html += '<section id="rozmowki">';
-  html += '<h2 class="qc-section__title">' + esc(ui('label.phrases', 'Rozmówki')) + '</h2>';
-  html += '<p class="qc-section__sub">' + esc(ui('label.phrases_sub', 'Dziesięć zdań, które wystarczą na cały dzień.')) + '</p>';
-  if (d.phrases && d.phrases.length) {
-    html += '<div class="qc-panel">';
-    d.phrases.forEach(function(p) {
-      html += '<div class="qc-phrase">';
-      html += '<span class="qc-phrase__pl">' + esc(p.phrase_user) + '</span>';
-      html += '<span class="qc-phrase__it" lang="' + esc(city.country === 'it' ? 'it' : '') + '">' + esc(p.phrase_local) + '</span>';
-      html += '</div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<p style="font-size:16px;color:var(--qc-ink-3)">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
-  }
-  html += '</section>';
 
   // ═══ TELEFONY ═══
   html += '<section id="telefony">';
@@ -773,6 +754,61 @@ document.addEventListener('keydown', function(e) {
     });
   }
 })();
+
+// ── QR code generator ────────────────────────────────
+function generateKidQR() {
+  var el = document.getElementById('qrCode');
+  if (!el) return;
+  var params = new URLSearchParams();
+  params.set('c', citySlug);
+  params.set('lang', currentLang);
+  params.set('view', 'kid');
+  var kidUrl = location.origin + location.pathname + '?' + params.toString();
+
+  // Load qrcode lib dynamically, then render
+  if (typeof QRCode !== 'undefined') {
+    renderQR(el, kidUrl);
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = function() { renderQR(el, kidUrl); };
+    s.onerror = function() {
+      // Fallback: just show the URL
+      el.innerHTML = '<p style="font-size:13px;word-break:break-all;text-align:center">' + esc(kidUrl) + '</p>';
+    };
+    document.head.appendChild(s);
+  }
+}
+
+function renderQR(el, url) {
+  el.innerHTML = '';
+  new QRCode(el, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#2c2416',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  var urlText = document.createElement('p');
+  urlText.style.cssText = 'font-size:11px;word-break:break-all;color:#888;margin-top:8px;text-align:center';
+  urlText.textContent = url;
+  el.appendChild(urlText);
+}
+
+// ── Auto-enable kid view from URL param ──────────────
+function applyKidViewParam() {
+  var viewParam = new URLSearchParams(location.search).get('view');
+  if (viewParam === 'kid') {
+    var root = document.getElementById('city');
+    if (root) root.dataset.view = 'kid';
+    var btn = document.getElementById('qcKidToggle');
+    if (btn) {
+      btn.setAttribute('aria-pressed', 'true');
+      btn.innerHTML = '&#128065; ' + ui('btn.parent_view', 'Widok rodzica');
+    }
+  }
+}
 
 // ── Init ──────────────────────────────────────────────
 loadPage(currentLang);
