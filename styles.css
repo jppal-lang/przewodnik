@@ -731,7 +731,9 @@ body.kid-mode .city-menu{display:none}
 
 /* ---------- widok dziecka ---------- */
 .qc[data-view="kid"] .qc-prose,
-.qc[data-view="kid"] .qc-pill{display:none}
+.qc[data-view="kid"] .qc-pill,
+.qc[data-view="kid"] .qc-box--qr,
+.qc[data-view="kid"] #qcKidToggle{display:none}
 
 /* ---------- loading / error ---------- */
 .qc .tpl-loading{text-align:center;padding:80px 20px;font-size:18px;color:var(--qc-ink-3)}

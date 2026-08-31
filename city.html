@@ -767,6 +767,7 @@ document.addEventListener('keydown', function(e) {
 })();
 
 // ── Stop toggle for kid view ─────────────────────────
+window.toggleStop = toggleStop;
 function toggleStop(checkbox) {
   var num = checkbox.dataset.toggleStop;
   var stop = document.querySelector('.qc-stop[data-stop-num="' + num + '"]');
