@@ -790,6 +790,39 @@ function getHiddenStops() {
 }
 
 // ── QR code generator ────────────────────────────────
+function addLogoToQR(canvas) {
+  var ctx = canvas.getContext('2d');
+  var size = canvas.width;
+  var logoSize = Math.round(size * 0.22);
+  var cx = size / 2;
+  var cy = size / 2;
+  var pad = Math.round(logoSize * 0.15);
+
+  // White circle background with subtle shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(44,36,22,.18)';
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, logoSize / 2 + pad, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.restore();
+
+  // Terra circle border
+  ctx.beginPath();
+  ctx.arc(cx, cy, logoSize / 2 + pad, 0, Math.PI * 2);
+  ctx.strokeStyle = '#B4502E';
+  ctx.lineWidth = Math.max(2, Math.round(size * 0.012));
+  ctx.stroke();
+
+  // "Q" letter
+  ctx.font = 'bold ' + logoSize + 'px "Figtree", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#B4502E';
+  ctx.fillText('Q', cx, cy + Math.round(logoSize * 0.04));
+}
+
 function generateKidQR() {
   var el = document.getElementById('qrCode');
   if (!el || typeof QRCode === 'undefined') return;
@@ -803,12 +836,20 @@ function generateKidQR() {
   el.innerHTML = '';
   new QRCode(el, {
     text: kidUrl,
-    width: 200,
-    height: 200,
+    width: 260,
+    height: 260,
     colorDark: '#2c2416',
     colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
+    correctLevel: QRCode.CorrectLevel.H
   });
+  // Overlay logo after QR renders
+  setTimeout(function() {
+    var canvas = el.querySelector('canvas');
+    if (canvas) addLogoToQR(canvas);
+    // Hide the fallback <img> that qrcodejs creates
+    var img = el.querySelector('img');
+    if (img) img.style.display = 'none';
+  }, 50);
   var urlInput = document.getElementById('qrUrlInput');
   if (urlInput) urlInput.value = kidUrl;
 }
