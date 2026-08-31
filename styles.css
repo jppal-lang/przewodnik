@@ -672,6 +672,10 @@ body.kid-mode .city-menu{display:none}
 /* Hide toggle in kid view */
 [data-view="kid"] .qc-stop-toggle{display:none}
 
+/* ---------- route button below stops ---------- */
+.qc-route-bottom{margin:20px 0 8px;text-align:center}
+.qc-route-bottom .qc-btn{width:100%;max-width:400px}
+
 /* ---------- sekcje ---------- */
 .qc-section__title{margin:0 0 6px;font-size:clamp(24px,6vw,30px);letter-spacing:-.03em;font-weight:800}
 .qc-section__sub{margin-bottom:20px;font-size:16px;color:var(--qc-ink-3)}

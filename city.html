@@ -313,7 +313,7 @@ function render(d) {
   html += '<h1 class="qc-title">' + esc(tr.title || city.slug) + '</h1>';
   if (tr.subtitle) html += '<p class="qc-lede">' + esc(tr.subtitle) + '</p>';
   html += '<p class="qc-facts">';
-  html += '<span>' + ui('label.stops_count', '{n} przystanków').replace('{n}', '<strong>' + stops.length + '</strong>') + '</span>';
+  html += '<span>' + ui('label.stops_count', '{n} przystanków').replace('{n}', '<strong data-stop-count>' + stops.length + '</strong>') + '</span>';
   if (city.duration_hours) html += '<span><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
   if (city.start_time && city.end_time) html += '<span><strong>' + esc(city.start_time) + ' → ' + esc(city.end_time) + '</strong></span>';
   if (city.walk_km) html += '<span><strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong> ' + ui('label.on_foot', 'pieszo') + (city.climb_m ? ' · ' + city.climb_m + ' m ' + ui('label.uphill', 'w górę') : '') + '</span>';
@@ -556,7 +556,7 @@ function render(d) {
   html += '<div class="qc-box">';
   html += '<p class="qc-box__label">' + esc(ui('label.today_route', 'Dzisiejsza trasa')) + '</p>';
   html += '<div class="qc-stats">';
-  html += '<span class="qc-stat">' + esc(ui('label.stops_label', 'Przystanki')) + ' <strong>' + stops.length + '</strong></span>';
+  html += '<span class="qc-stat">' + esc(ui('label.stops_label', 'Przystanki')) + ' <strong data-stop-count>' + stops.length + '</strong></span>';
   if (city.walk_km) html += '<span class="qc-stat">' + esc(ui('label.on_foot', 'Pieszo')) + ' <strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong></span>';
   if (city.climb_m) html += '<span class="qc-stat">' + esc(ui('label.uphill_label', 'Wejście w górę')) + ' <strong>' + city.climb_m + ' m</strong></span>';
   if (city.tickets_budget) html += '<span class="qc-stat">' + esc(ui('label.tickets', 'Bilety (rodzina 2+2)')) + ' <strong>' + esc(city.tickets_budget) + '</strong></span>';
@@ -778,7 +778,17 @@ function toggleStop(checkbox) {
       stop.classList.add('qc-stop--disabled');
     }
   }
+  updateActiveStopCount();
   generateKidQR(); // update QR with new hidden stops
+}
+
+function updateActiveStopCount() {
+  var total = document.querySelectorAll('[data-toggle-stop]').length;
+  var hidden = getHiddenStops().length;
+  var active = total - hidden;
+  document.querySelectorAll('[data-stop-count]').forEach(function(el) {
+    el.textContent = active;
+  });
 }
 
 function getHiddenStops() {
@@ -790,37 +800,42 @@ function getHiddenStops() {
 }
 
 // ── QR code generator ────────────────────────────────
+var _qrLogo = new Image();
+_qrLogo.src = 'data:image/png;base64,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';
+
 function addLogoToQR(canvas) {
   var ctx = canvas.getContext('2d');
   var size = canvas.width;
-  var logoSize = Math.round(size * 0.22);
+  var logoSize = Math.round(size * 0.24);
   var cx = size / 2;
   var cy = size / 2;
-  var pad = Math.round(logoSize * 0.15);
+  var pad = Math.round(logoSize * 0.12);
+  var r = logoSize / 2 + pad;
 
-  // White circle background with subtle shadow
+  // White circle background with shadow
   ctx.save();
-  ctx.shadowColor = 'rgba(44,36,22,.18)';
-  ctx.shadowBlur = 4;
+  ctx.shadowColor = 'rgba(44,36,22,.2)';
+  ctx.shadowBlur = 6;
   ctx.beginPath();
-  ctx.arc(cx, cy, logoSize / 2 + pad, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
   ctx.restore();
 
   // Terra circle border
   ctx.beginPath();
-  ctx.arc(cx, cy, logoSize / 2 + pad, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.strokeStyle = '#B4502E';
   ctx.lineWidth = Math.max(2, Math.round(size * 0.012));
   ctx.stroke();
 
-  // "Q" letter
-  ctx.font = 'bold ' + logoSize + 'px "Figtree", system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#B4502E';
-  ctx.fillText('Q', cx, cy + Math.round(logoSize * 0.04));
+  // Draw mascot logo
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.drawImage(_qrLogo, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize);
+  ctx.restore();
 }
 
 function generateKidQR() {
