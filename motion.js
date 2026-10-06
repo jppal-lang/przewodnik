@@ -23,7 +23,8 @@
       btn.setAttribute('aria-label', paused ? 'Odtwórz animację' : 'Zatrzymaj animację');
       btn.classList.toggle('is-paused', paused);
     }
-    if (reduce) { v.removeAttribute('autoplay'); v.pause(); }
+    // film gra także przy „ograniczonych animacjach” — ma przycisk pauzy (WCAG 2.2.2)
+    if (v.paused) { var pp = v.play(); if (pp && pp.catch) pp.catch(function () {}); }
     btn.addEventListener('click', function () {
       if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else { v.pause(); }
     });
@@ -33,8 +34,9 @@
   }
   document.querySelectorAll('[data-video-toggle]').forEach(initVideo);
 
-  if (reduce || !('IntersectionObserver' in window)) return;
+  if (!('IntersectionObserver' in window)) return;
   document.documentElement.classList.add('motion');
+  if (reduce) document.documentElement.classList.add('motion-soft');
 
   // ── wklejanie przy przewijaniu ──
   var queue = [], timer = null;

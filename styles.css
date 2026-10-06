@@ -579,10 +579,7 @@ body:has(.qc[data-view="kid"]) a[href*="buymeacoffee"]{display:none!important}
   .qc-row__dur{grid-column:3}
   .qc-hero{transform:rotate(-1deg)}
 }
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
-  .sticker,.region-tile,.city-card,.qc-hero,.qc-icon{transform:none!important}
-}
+
 @media print{
   .sticky-nav,.qc-tabs,.qc-box--support,.qc-intro__actions{display:none}
   .band{box-shadow:none;clip-path:none;background:#fff;color:#000}
@@ -690,9 +687,20 @@ html.motion .route:has(.is-in)::before{transform:scaleX(1)}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}
 .qc-album-count strong.pop{display:inline-block;animation:pop .5s var(--ease)}
 
+/* „Ogranicz animacje” w systemie (w Windows często włączone domyślnie):
+   strona nie zamiera — zostaje łagodne pojawianie się i film z przyciskiem pauzy,
+   znikają tylko obroty, skoki i odbicia. */
+@keyframes fadein{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){
-  .sheet > *,.cover-copy > *{animation:none}
-  .sticker::before,.region-tile::before,.city-card::before{display:none}
+  .sheet > *,.cover-copy > *{animation-name:fadein;animation-duration:.6s}
+  html.motion [data-rv].is-in,
+  html.motion .region-tile[data-rv].is-in,
+  html.motion .city-card[data-rv].is-in,
+  html.motion .qc-strip__stk[data-rv].is-in,
+  html.motion .route-step[data-rv].is-in .sticker{animation-name:fadein;animation-duration:.6s}
+  .qc-stop.just-collected .qc-icon{animation-name:fadein}
+  .qc-burst{display:none}
+  a.sticker:hover,.region-tile:hover,.city-card:hover,.qc-stop:hover .qc-icon{transform:rotate(var(--tilt,0deg))}
 }
 /* małe naklejki miast na okładce: nazwa nad regionem, bez nachodzenia */
 .sheet .sticker:not(.sticker--video) .sticker-cap{flex-direction:column;align-items:flex-start;gap:2px;padding:8px 4px 9px}
