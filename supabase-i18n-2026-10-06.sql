@@ -1038,3 +1038,28 @@ insert into region_translations(region_slug,lang,name) values
 ('umbria','sv','Umbrien'),
 ('umbria','uk','Умбрія')
 on conflict (region_slug,lang) do nothing;
+
+-- 4) nagłówki punktów awaryjnych (typ punktu) we wszystkich językach
+insert into ui_translations(key,lang,value)
+select k.k, d.lang, (string_to_array(d.vals,'|'))[k.ord]
+from unnest(array['emerg.pharmacy','emerg.toilet','emerg.playground','emerg.hospital']) with ordinality as k(k,ord)
+cross join (values
+('pl','Apteka|Toalety|Plac zabaw|Szpital'),
+('en','Pharmacy|Toilets|Playground|Hospital'),
+('de','Apotheke|Toiletten|Spielplatz|Krankenhaus'),
+('it','Farmacia|Bagni|Parco giochi|Ospedale'),
+('cs','Lékárna|Toalety|Dětské hřiště|Nemocnice'),
+('da','Apotek|Toiletter|Legeplads|Hospital'),
+('es','Farmacia|Aseos|Parque infantil|Hospital'),
+('fr','Pharmacie|Toilettes|Aire de jeux|Hôpital'),
+('hr','Ljekarna|Toaleti|Dječje igralište|Bolnica'),
+('hu','Gyógyszertár|Mosdó|Játszótér|Kórház'),
+('nl','Apotheek|Toiletten|Speeltuin|Ziekenhuis'),
+('no','Apotek|Toaletter|Lekeplass|Sykehus'),
+('pt','Farmácia|Casas de banho|Parque infantil|Hospital'),
+('ro','Farmacie|Toalete|Loc de joacă|Spital'),
+('sk','Lekáreň|Toalety|Detské ihrisko|Nemocnica'),
+('sv','Apotek|Toaletter|Lekplats|Sjukhus'),
+('uk','Аптека|Туалети|Дитячий майданчик|Лікарня')
+) as d(lang,vals)
+on conflict (key,lang) do nothing;

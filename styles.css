@@ -718,3 +718,8 @@ html.motion .route:has(.is-in)::before{transform:scaleX(1)}
   .sheet .slot-no{font-size:28px}
   .sheet .slot-name{display:none}
 }
+
+/* punkty awaryjne: nagłówek = typ (tłumaczony), pod nim nazwa własna z bazy */
+.qc-card__name{margin-top:2px!important;font-weight:700;color:var(--ink)!important}
+.qc-card--hospital .qc-card__title{color:var(--rosso)}
+.qc-card--pharmacy .qc-card__title{color:var(--verde)}

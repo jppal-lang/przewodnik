@@ -81,7 +81,10 @@ naklejkę, gdy zaliczy misje przystanku.
 - Przystanki: `details.qc-stop` z naklejką-ikoną (numer), nazwą, „odwrotem” (ROK · BILET · CZAS),
   Nawiguj; w środku: uwagi, opis, misja i zadanie foto (checkboxy, localStorage `qc.task.*`).
 - Przełącznik przy przystanku (rodzic) chowa go w widoku dziecka (`?view=kid&hide=…`).
-- Sekcje: Plan dnia, Punkty awaryjne, Telefony; panel boczny: trasa, QR dla dziecka, jedzenie, wsparcie.
+- Sekcja pod trasą: tylko Punkty awaryjne — nagłówek karty to typ punktu w języku strony
+  (`emerg.pharmacy/toilet/playground/hospital`), pod nim nazwa własna z bazy.
+  Plan dnia i Telefony usunięte 2026-10-06 (decyzja JP: plan dublował trasę).
+- Panel boczny: trasa, QR dla dziecka, jedzenie, warto wiedzieć, wsparcie.
 - Bez km/czasów dojazdu (zasada nr 2).
 
 ---
@@ -100,7 +103,7 @@ naklejkę, gdy zaliczy misje przystanku.
 - Język: `?lang=xx` > `localStorage('quolino_lang')` > `pl`. Napisy z `ui_translations`
   (`data-ui` w HTML, `ui('klucz','fallback')` w JS).
 - `i18n-ui.js` (w `<head>`, przed skryptami stron):
-  1. słownik 56 napisów interfejsu × 17 języków — gdy klucza brak w bazie;
+  1. słownik 60 napisów interfejsu × 17 języków — gdy klucza brak w bazie;
      kolejność: baza[język] > słownik[język] > baza/słownik[en] > pl;
   2. zapytania `*_translations`, `day_plan`, `emergency_points` z `lang=eq.X`
      pobierają X, en, pl i zostawiają najlepszą wersję (brak tłumaczenia ≠ slug ani „Dane wkrótce.”);
