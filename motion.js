@@ -20,7 +20,8 @@
     function sync() {
       var paused = v.paused;
       btn.setAttribute('aria-pressed', String(paused));
-      btn.setAttribute('aria-label', paused ? 'Odtwórz animację' : 'Zatrzymaj animację');
+      var T = window.QUI ? window.QUI.t : function () { return ''; };
+      btn.setAttribute('aria-label', paused ? (T('video.play') || 'Odtwórz animację') : (T('video.pause') || 'Zatrzymaj animację'));
       btn.classList.toggle('is-paused', paused);
     }
     // film gra także przy „ograniczonych animacjach” — ma przycisk pauzy (WCAG 2.2.2)
