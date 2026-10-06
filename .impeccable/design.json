@@ -1,0 +1,593 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T17:19:17+00:00",
+  "title": "Design System: Quolino",
+  "extensions": {
+    "colorMeta": {
+      "azzurro": {
+        "role": "primary",
+        "displayName": "Azzurro reprezentacji",
+        "canonical": "#0B4EA2",
+        "oklch": "oklch(43.8% 0.150 257.5)",
+        "tonalRamp": [
+          "#00072B",
+          "#002152",
+          "#0F3D7C",
+          "#245CA9",
+          "#4680D3",
+          "#74A6EF",
+          "#A2CDFF",
+          "#CEF1FF"
+        ]
+      },
+      "azzurro-ink": {
+        "role": "primary",
+        "displayName": "Azzurro ciemne",
+        "canonical": "#083D80",
+        "oklch": "oklch(37.1% 0.125 257.4)",
+        "tonalRamp": [
+          "#000926",
+          "#06234A",
+          "#1A3F72",
+          "#305D9D",
+          "#5181C5",
+          "#7DA6E3",
+          "#A9CDFF",
+          "#D4F1FF"
+        ]
+      },
+      "azzurro-deep": {
+        "role": "primary",
+        "displayName": "Azzurro nocne",
+        "canonical": "#062A58",
+        "oklch": "oklch(29.1% 0.092 256.9)",
+        "tonalRamp": [
+          "#010A1F",
+          "#0F2441",
+          "#254065",
+          "#3D5F8D",
+          "#5E82B4",
+          "#87A7D3",
+          "#B2CDF2",
+          "#DAF0FF"
+        ]
+      },
+      "azzurro-50": {
+        "role": "primary",
+        "displayName": "Azzurro blade",
+        "canonical": "#E2EBF7",
+        "oklch": "oklch(93.7% 0.019 255.5)",
+        "tonalRamp": [
+          "#060B13",
+          "#1E252D",
+          "#39404A",
+          "#575E68",
+          "#79818C",
+          "#9DA5B1",
+          "#C3CBD7",
+          "#E6EFFB"
+        ]
+      },
+      "sun": {
+        "role": "secondary",
+        "displayName": "Słońce",
+        "canonical": "#FFC629",
+        "oklch": "oklch(85.5% 0.166 86.2)",
+        "tonalRamp": [
+          "#1A0500",
+          "#3A1C00",
+          "#5D3700",
+          "#835300",
+          "#A97600",
+          "#C99E2E",
+          "#EAC675",
+          "#FFEBAB"
+        ]
+      },
+      "sun-ink": {
+        "role": "secondary",
+        "displayName": "Atrament słońca",
+        "canonical": "#3B2A00",
+        "oklch": "oklch(29.7% 0.061 84.8)",
+        "tonalRamp": [
+          "#110A00",
+          "#2D220B",
+          "#4B3E21",
+          "#6C5B38",
+          "#907E58",
+          "#B3A382",
+          "#D7C9AE",
+          "#F8EDD7"
+        ]
+      },
+      "sun-50": {
+        "role": "secondary",
+        "displayName": "Słońce blade",
+        "canonical": "#FFF4CF",
+        "oklch": "oklch(96.6% 0.049 93.4)",
+        "tonalRamp": [
+          "#0F0B01",
+          "#292411",
+          "#473F28",
+          "#665D40",
+          "#898061",
+          "#ADA589",
+          "#D1CBB3",
+          "#F4EFDC"
+        ]
+      },
+      "rosso": {
+        "role": "tertiary",
+        "displayName": "Rosso",
+        "canonical": "#C81E36",
+        "oklch": "oklch(53.8% 0.201 21.2)",
+        "tonalRamp": [
+          "#290000",
+          "#520003",
+          "#7F0016",
+          "#AD122B",
+          "#DA414C",
+          "#F87678",
+          "#FFA7A5",
+          "#FFD3D0"
+        ]
+      },
+      "rosso-50": {
+        "role": "tertiary",
+        "displayName": "Rosso blade",
+        "canonical": "#FBE6E9",
+        "oklch": "oklch(94.3% 0.023 7.7)",
+        "tonalRamp": [
+          "#10090A",
+          "#2B2123",
+          "#493C3E",
+          "#69595B",
+          "#8D7B7E",
+          "#B0A0A2",
+          "#D4C7C9",
+          "#F6EBED"
+        ]
+      },
+      "verde": {
+        "role": "tertiary",
+        "displayName": "Verde",
+        "canonical": "#1F7A48",
+        "oklch": "oklch(51.4% 0.115 154.3)",
+        "tonalRamp": [
+          "#001202",
+          "#002E12",
+          "#044D29",
+          "#1E6E41",
+          "#449362",
+          "#75B68B",
+          "#A4DAB5",
+          "#D0FBDD"
+        ]
+      },
+      "verde-50": {
+        "role": "tertiary",
+        "displayName": "Verde blade",
+        "canonical": "#E1F2E7",
+        "oklch": "oklch(94.5% 0.023 157.6)",
+        "tonalRamp": [
+          "#070D09",
+          "#1E2621",
+          "#38433C",
+          "#546159",
+          "#76847B",
+          "#9CA8A0",
+          "#C3CEC7",
+          "#E8F1EB"
+        ]
+      },
+      "page": {
+        "role": "neutral",
+        "displayName": "Strona albumu",
+        "canonical": "#EAF0F8",
+        "oklch": "oklch(95.3% 0.013 255.5)",
+        "tonalRamp": [
+          "#080B10",
+          "#20242A",
+          "#3B4046",
+          "#595E65",
+          "#7B8188",
+          "#9FA5AD",
+          "#C5CBD3",
+          "#E9EFF7"
+        ],
+        "note": "Grunt z rastrem: radial-gradient(rgba(11,78,162,.075) 1.1px, transparent 1.5px) / 15px 15px."
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Biały karton",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#808080",
+          "#A4A4A4",
+          "#CACACA",
+          "#EEEEEE"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Atrament",
+        "canonical": "#0E1A2B",
+        "oklch": "oklch(21.6% 0.038 257.2)",
+        "tonalRamp": [
+          "#060B13",
+          "#1C2530",
+          "#364050",
+          "#515F71",
+          "#738196",
+          "#99A6B8",
+          "#C1CBDB",
+          "#E6EFFC"
+        ]
+      },
+      "ink2": {
+        "role": "neutral",
+        "displayName": "Atrament drugi",
+        "canonical": "#3E4C63",
+        "oklch": "oklch(41.4% 0.043 260.2)",
+        "tonalRamp": [
+          "#060B15",
+          "#1C2432",
+          "#354052",
+          "#515E74",
+          "#728199",
+          "#98A5BA",
+          "#C0CBDD",
+          "#E6EFFE"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Szary albumu",
+        "canonical": "#5D6B82",
+        "oklch": "oklch(52.5% 0.040 260.3)",
+        "tonalRamp": [
+          "#060B14",
+          "#1D2431",
+          "#364051",
+          "#525E73",
+          "#738197",
+          "#99A5B9",
+          "#C1CBDC",
+          "#E7EFFD"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Linia",
+        "canonical": "#D3DDEA",
+        "oklch": "oklch(89.4% 0.021 254.9)",
+        "tonalRamp": [
+          "#080B10",
+          "#20242B",
+          "#3A4048",
+          "#575E69",
+          "#79818C",
+          "#9EA5AF",
+          "#C5CBD3",
+          "#EAEFF6"
+        ]
+      },
+      "slot": {
+        "role": "neutral",
+        "displayName": "Obrys miejsca",
+        "canonical": "#A9BBD3",
+        "oklch": "oklch(78.6% 0.040 255.6)",
+        "tonalRamp": [
+          "#060B14",
+          "#1C2531",
+          "#354150",
+          "#505F72",
+          "#728297",
+          "#98A6B9",
+          "#C0CCDC",
+          "#E6EFFD"
+        ]
+      },
+      "slot-ink": {
+        "role": "neutral",
+        "displayName": "Numer miejsca",
+        "canonical": "#B8C7DB",
+        "oklch": "oklch(82.5% 0.033 255.6)",
+        "tonalRamp": [
+          "#070B12",
+          "#1D252E",
+          "#37414D",
+          "#535F6F",
+          "#748193",
+          "#9AA6B5",
+          "#C2CBD9",
+          "#E7EFFA"
+        ]
+      },
+      "cover-ink-soft": {
+        "role": "neutral",
+        "displayName": "Mgła okładki",
+        "canonical": "#DCE7F7",
+        "oklch": "oklch(92.4% 0.025 257.6)",
+        "tonalRamp": [
+          "#080B11",
+          "#1F242C",
+          "#39404A",
+          "#565E6B",
+          "#78818E",
+          "#9DA5B1",
+          "#C4CBD5",
+          "#E9EFF7"
+        ]
+      }
+    },
+    "gradients": [
+      {
+        "name": "foil",
+        "value": "linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%)",
+        "purpose": "Naklejka-folia: kolacja i Quo #00."
+      },
+      {
+        "name": "page-dots",
+        "value": "radial-gradient(rgba(11,78,162,.075) 1.1px,transparent 1.5px) 0 0/15px 15px",
+        "purpose": "Raster drukowanej strony albumu na tle body."
+      }
+    ],
+    "teamColor": {
+      "token": "--team",
+      "default": "{colors.azzurro}",
+      "source": "cities.bandana_color (Supabase), ustawiany inline",
+      "lightVariant": ".qc-band--light: --team-ink #0E1A2B, przyciski azzurro"
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Nazwa miasta/regionu na pasie drużyny."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "h1/h2 okładki i sekcji albumu; h2 clamp(36px,5.6vw,64px)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Nazwy na naklejkach, kafelkach, przystankach i panelach."
+      },
+      "number": {
+        "displayName": "Number",
+        "purpose": "Numery w kapslach, godziny, statystyki, telefony (14–32px)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Cały tekst czytany; min 18px."
+      },
+      "subhead": {
+        "displayName": "Subhead",
+        "purpose": "h3 w treści, tytuły kart."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Krótkie metadane w kapitalikach; nigdy treść."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lift-1",
+        "value": "0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07)",
+        "purpose": "Panele, karty, kapsle, przyciski."
+      },
+      {
+        "name": "lift-2",
+        "value": "0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16)",
+        "purpose": "Naklejki w spoczynku, otwarty przystanek."
+      },
+      {
+        "name": "lift-3",
+        "value": "0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26)",
+        "purpose": "Naklejka podniesiona, zdjęcie miasta, okno języka."
+      },
+      {
+        "name": "press",
+        "value": "inset 0 -4px 0 rgba(0,0,0,.18)",
+        "purpose": "Docisk przycisków pełnych; :active spłaszcza do -1px."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Wszystkie przejścia stanów naklejek i przycisków (.25–.35s)."
+      },
+      {
+        "name": "wklej",
+        "value": "0.7s var(--ease): rotate(-14deg) scale(1.35) translateY(-18px), opacity 0 → 55% rotate(1deg) scale(.97) → rotate(var(--tilt)) scale(1)",
+        "purpose": "Wklejenie naklejki po zaliczeniu misji w widoku dziecka."
+      },
+      {
+        "name": "shimmer",
+        "value": "1.4s infinite, gradient 100deg",
+        "purpose": "Ładowanie obrazu kafla."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition/animation .01ms, transform:none na naklejkach",
+        "purpose": "prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-s",
+        "value": "560px"
+      },
+      {
+        "name": "phone",
+        "value": "720px"
+      },
+      {
+        "name": "nav",
+        "value": "800px"
+      },
+      {
+        "name": "route",
+        "value": "900px"
+      },
+      {
+        "name": "cover",
+        "value": "960px"
+      },
+      {
+        "name": "city-aside",
+        "value": "1040px"
+      }
+    ],
+    "tilt": {
+      "range": "-3deg … +2deg",
+      "pattern": "naprzemiennie (nth-child 3n / even)",
+      "hero": "-1.2deg (telefon -1deg)"
+    }
+  },
+  "components": [
+    {
+      "name": "Przycisk główny",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Główna akcja na stronie albumu (np. „Wybierz miasto”).",
+      "html": "<button class=\"ds-btn\">Wybierz miasto</button>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-btn{font-family:'Archivo',system-ui,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border-radius:var(--r-btn);border:0;font-size:19px;font-weight:800;line-height:1.1;background:var(--azzurro);color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),var(--lift-1);cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease)} .ds-btn:hover{transform:translateY(-2px);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),var(--lift-2)} .ds-btn:active{transform:translateY(1px);box-shadow:inset 0 -1px 0 rgba(0,0,0,.18)} .ds-btn:focus-visible{outline:3px solid var(--sun);outline-offset:3px}"
+    },
+    {
+      "name": "Przycisk słońce",
+      "kind": "button",
+      "refersTo": "button-sun",
+      "description": "Akcja na pasie drużyny (Trasa) i wsparcie.",
+      "html": "<button class=\"ds-btn-sun\">Trasa w Mapach</button>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-btn-sun{font-family:'Archivo',system-ui,sans-serif;display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 26px;border-radius:var(--r-btn);border:0;font-size:19px;font-weight:800;background:var(--sun);color:var(--sun-ink);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),var(--lift-1);cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease)} .ds-btn-sun:hover{transform:translateY(-2px);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),var(--lift-2)} .ds-btn-sun:focus-visible{outline:3px solid var(--azzurro-deep);outline-offset:3px}"
+    },
+    {
+      "name": "Przycisk drugorzędny",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Biały kartonowy przycisk z obrysem: nawigacja do przystanku, linki pomocnicze.",
+      "html": "<button class=\"ds-btn-sec\">Nawiguj</button>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-btn-sec{font-family:'Archivo',system-ui,sans-serif;display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:10px 20px;border-radius:var(--r-btn);border:0;background:var(--card);color:var(--azzurro-ink);font-size:18px;font-weight:800;box-shadow:inset 0 0 0 2px var(--rule);cursor:pointer;transition:box-shadow .25s,background .15s} .ds-btn-sec:hover{box-shadow:inset 0 0 0 2px var(--azzurro);background:var(--azzurro-50)} .ds-btn-sec:active{transform:translateY(1px)} .ds-btn-sec:focus-visible{outline:3px solid var(--sun);outline-offset:3px}"
+    },
+    {
+      "name": "Naklejka",
+      "kind": "card",
+      "refersTo": "sticker",
+      "description": "Podstawowy obiekt świata: biały kartonik z numerem w kapslu, przechyłem i paskiem drużyny.",
+      "html": "<a class=\"ds-stk\" href=\"#\" style=\"--tilt:-2deg;--team:#1F7A48\"><span class=\"ds-stk-no\">03</span><span class=\"ds-stk-art\"></span><span class=\"ds-stk-cap\"><span class=\"ds-stk-name\">Perugia</span><span class=\"ds-stk-team\">Umbria</span></span><span class=\"ds-stk-band\"></span></a>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-stk{font-family:'Archivo',system-ui,sans-serif;position:relative;display:flex;flex-direction:column;width:200px;background:var(--card);color:var(--ink);text-decoration:none;border-radius:var(--r-stk);padding:7px 7px 0;box-shadow:var(--lift-2);transform:rotate(var(--tilt,0deg));transition:transform .35s var(--ease),box-shadow .35s var(--ease)} .ds-stk:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var(--lift-3)} .ds-stk:focus-visible{outline:3px solid var(--sun);outline-offset:3px} .ds-stk-art{display:block;aspect-ratio:1;border-radius:7px;background:var(--team)} .ds-stk-no{position:absolute;z-index:2;top:-9px;left:-9px;min-width:44px;height:34px;padding:0 9px;display:grid;place-items:center;border-radius:8px;background:var(--azzurro);color:#fff;font-stretch:125%;font-weight:900;font-size:17px;box-shadow:var(--lift-1)} .ds-stk-cap{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:9px 6px 10px} .ds-stk-name{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:24px;line-height:1} .ds-stk-team{font-stretch:75%;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:14px;color:var(--muted)} .ds-stk-band{height:8px;margin:0 -7px;border-radius:0 0 var(--r-stk) var(--r-stk);background:var(--team)}"
+    },
+    {
+      "name": "Naklejka-folia",
+      "kind": "custom",
+      "refersTo": "sticker",
+      "description": "Wyróżniona naklejka (kolacja, Quo #00): złoty gradient zamiast bieli, bez paska drużyny.",
+      "html": "<a class=\"ds-foil\" href=\"#\" style=\"--tilt:-3deg\"><span class=\"ds-foil-no\">00</span><span class=\"ds-foil-art\"></span><span class=\"ds-foil-name\">Quo</span></a>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-foil{font-family:'Archivo',system-ui,sans-serif;position:relative;display:flex;flex-direction:column;width:200px;background:var(--foil);color:#3A2A00;text-decoration:none;border-radius:var(--r-stk);padding:9px 9px 0;box-shadow:var(--lift-2);transform:rotate(var(--tilt,0deg));transition:transform .35s var(--ease),box-shadow .35s var(--ease)} .ds-foil:hover{transform:rotate(0) translateY(-6px);box-shadow:var(--lift-3)} .ds-foil:focus-visible{outline:3px solid var(--azzurro);outline-offset:3px} .ds-foil-art{aspect-ratio:1;border-radius:7px;background:radial-gradient(circle at 50% 60%,#FFE9A8,#F7C948 70%)} .ds-foil-no{position:absolute;top:-9px;left:-9px;min-width:44px;height:34px;display:grid;place-items:center;border-radius:8px;background:var(--azzurro);color:#fff;font-stretch:125%;font-weight:900;font-size:17px} .ds-foil-name{padding:9px 6px 12px;font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:22px;line-height:1}"
+    },
+    {
+      "name": "Puste miejsce",
+      "kind": "custom",
+      "refersTo": "slot",
+      "description": "Miejsce na naklejkę jeszcze nie zebraną lub miasto „wkrótce”.",
+      "html": "<div class=\"ds-slot\"><span class=\"ds-slot-no\">07</span><span class=\"ds-slot-name\">Wkrótce</span></div>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-slot{font-family:'Archivo',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:180px;aspect-ratio:1/1.16;border:2.5px dashed var(--slot);border-radius:var(--r-stk);background:rgba(255,255,255,.45);color:var(--muted);text-align:center;padding:16px} .ds-slot-no{font-stretch:125%;font-weight:900;font-size:64px;line-height:1;color:var(--slot-ink)} .ds-slot-name{font-stretch:75%;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:15px}"
+    },
+    {
+      "name": "Karteczka misji",
+      "kind": "custom",
+      "refersTo": "mission-card",
+      "description": "Misja dziecka do zaliczenia; po zaznaczeniu obrys staje się ciągły verde.",
+      "html": "<label class=\"ds-task\"><span class=\"ds-task-label\"><input type=\"checkbox\"> Misja</span><p>Policz lwy na fontannie Maggiore.</p></label>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-task{font-family:'Archivo',system-ui,sans-serif;display:block;max-width:320px;padding:18px 20px;border-radius:14px;background:var(--azzurro-50);border:2.5px dashed #9DB6D8;color:var(--ink)} .ds-task:has(input:checked){border-style:solid;border-color:var(--verde);background:var(--verde-50)} .ds-task-label{display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;font-stretch:75%;font-weight:800;text-transform:uppercase;letter-spacing:.07em;font-size:15px;color:var(--azzurro-ink)} .ds-task input{appearance:none;-webkit-appearance:none;width:30px;height:30px;margin:0;border-radius:8px;border:2.5px solid currentColor;background:var(--card);display:grid;place-items:center;cursor:pointer} .ds-task input::after{content:\"\";width:8px;height:14px;margin-top:-3px;border:solid #fff;border-width:0 3.5px 3.5px 0;transform:rotate(45deg) scale(0);transition:transform .3s var(--ease)} .ds-task input:checked{background:var(--verde);border-color:var(--verde)} .ds-task input:checked::after{transform:rotate(45deg) scale(1)} .ds-task input:focus-visible{outline:3px solid var(--sun);outline-offset:2px} .ds-task p{margin:6px 0 0;font-size:19px;line-height:1.5}"
+    },
+    {
+      "name": "Zakładki strony miasta",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Sticky pasek sekcji karty miasta.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab\" aria-current=\"true\" href=\"#\">Trasa</a><a class=\"ds-tab\" href=\"#\">Plan dnia</a><a class=\"ds-tab\" href=\"#\">Telefony</a><a class=\"ds-tab ds-tab--sun\" href=\"#\">Wesprzyj</a></nav>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-tabs{font-family:'Archivo',system-ui,sans-serif;display:flex;gap:8px;padding:10px;background:rgba(234,240,248,.94);overflow-x:auto} .ds-tab{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:var(--r-btn);background:var(--card);font-size:17px;font-weight:700;color:var(--ink2);text-decoration:none;box-shadow:inset 0 0 0 2px var(--rule);white-space:nowrap} .ds-tab:hover{box-shadow:inset 0 0 0 2px var(--azzurro);color:var(--azzurro-ink)} .ds-tab:focus-visible{outline:3px solid var(--sun);outline-offset:3px} .ds-tab[aria-current=\"true\"]{background:var(--azzurro);color:#fff;box-shadow:none} .ds-tab--sun{background:var(--sun);color:var(--sun-ink);box-shadow:none}"
+    },
+    {
+      "name": "Chip filtra na pasie",
+      "kind": "chip",
+      "description": "Filtr czasu trwania na pasie regionu.",
+      "html": "<div class=\"ds-band\"><button class=\"ds-chip ds-chip--on\">Wszystkie</button><button class=\"ds-chip\">Pół dnia</button></div>",
+      "css": ":host{--page:#EAF0F8;--card:#FFFFFF;--ink:#0E1A2B;--ink2:#3E4C63;--muted:#5D6B82;--rule:#D3DDEA;--slot:#A9BBD3;--slot-ink:#B8C7DB;--azzurro:#0B4EA2;--azzurro-ink:#083D80;--azzurro-deep:#062A58;--azzurro-50:#E2EBF7;--sun:#FFC629;--sun-ink:#3B2A00;--sun-50:#FFF4CF;--verde:#1F7A48;--verde-50:#E1F2E7;--team:var(--azzurro);--foil:linear-gradient(135deg,#F7E08A 0%,#D9B44A 28%,#FFF1B8 48%,#C99A2E 70%,#F3D77A 100%);--r-stk:12px;--r-btn:10px;--lift-1:0 1px 2px rgba(14,26,43,.10),0 4px 10px rgba(14,26,43,.07);--lift-2:0 2px 4px rgba(14,26,43,.10),0 14px 30px rgba(14,26,43,.16);--lift-3:0 4px 8px rgba(6,42,88,.22),0 22px 44px rgba(6,42,88,.26);--ease:cubic-bezier(.16,1,.3,1)} .ds-band{display:flex;gap:8px;padding:20px;background:var(--azzurro)} .ds-chip{font-family:'Archivo',system-ui,sans-serif;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:var(--r-btn);border:2px solid rgba(255,255,255,.45);background:transparent;color:#fff;font-size:17px;font-weight:700;cursor:pointer} .ds-chip:hover{background:rgba(255,255,255,.12)} .ds-chip:focus-visible{outline:3px solid var(--sun);outline-offset:3px} .ds-chip--on{background:#fff;color:var(--azzurro-ink);border-color:#fff}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Album naklejek",
+    "overview": "**Creative North Star: „Album naklejek”**\n\nKażde miasto to strona albumu z naklejkami w tradycji Panini z Modeny. Przystanki są numerowanymi naklejkami do zebrania, a rodzinny dzień to kompletowanie strony: od parkingu (01) po kolację (złota naklejka-folia). Rodzic czyta tę stronę jak plan, dziecko na tej samej stronie wkleja naklejki, zaliczając misje. Jeden świat, dwie role.\n\nŚwiat jest zbudowany z trzech materiałów. **Okładka i pasy** w głębokim azzurro (kolor reprezentacji Włoch) zajmują duże, pełnoszerokie pola u góry i na końcu strony; na stronie miasta ten sam pas przyjmuje kolor „drużyny” miasta z bazy (`bandana_color`). **Strona albumu** to jasnoniebieski, drukowany papier z delikatnym rastrem kropek. **Naklejki** to białe kartoniki z zaokrąglonymi rogami, numerem w „kapslu” nachodzącym na róg, lekkim przechyłem i cienkim paskiem w kolorze drużyny u dołu. Puste miejsca na naklejki to przerywany obrys z wielkim, bladym numerem.\n\nTypografia to jedna rodzina, Archivo, rozciągana osią szerokości: wąskie czarne kapitaliki na nazwy, szerokie czarne cyfry na numery, zwykła szerokość na tekst. Gęstość jest umiarkowana i hojna dla palca: wszystko musi dać się czytać jedną ręką, w słońcu, na włoskiej uliczce. Świat odrzuca „kremowy papier + terakotę + zaokrąglone karty” typowe dla rodzinnych przewodników.\n\n**Odstępstwa od kontraktu kierunku (świadome, zatwierdzone w buildzie):**\n1. Grunt strony to nie biały gładki karton, tylko jasnoniebieska drukowana strona albumu (`page` z rastrem kropek). Białe są wyłącznie naklejki i panele, dzięki czemu naklejka zawsze odcina się od strony.\n2. Każda naklejka niesie cienki pasek w kolorze drużyny (8px na kafelkach, 12–14px na dużych naklejkach), którego kontrakt nie przewidywał. Pasek łączy naklejkę z jej miastem.",
+    "keyCharacteristics": [
+      "Pełnoszerokie pasy azzurro / koloru drużyny jako okładka albumu.",
+      "Jasnoniebieska strona z rastrem kropek jako tło wszystkiego.",
+      "Białe naklejki: przechył, numer w kapslu, pasek drużyny, uniesienie na hover.",
+      "Puste miejsca = przerywany obrys + duży blady numer.",
+      "Złota folia zarezerwowana dla wyróżnionych naklejek (kolacja, Quo #00).",
+      "Archivo w trzech szerokościach: 62% nazwy, 100% tekst, 125% cyfry.",
+      "Sygnaturowa interakcja „wklejenia” naklejki w widoku dziecka."
+    ],
+    "rules": [
+      {
+        "name": "The Team Colour Rule",
+        "body": "Kolor drużyny (`--team`) maluje tylko trzy rzeczy: pas nagłówka miasta, pasek u dołu naklejki i tło ilustracji, gdy brak zdjęcia. Nie trafia do tekstu ani przycisków. Gdy kolor drużyny jest jasny (np. żółte Urbino), pas przełącza się na ciemny atrament i przyciski azzurro.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Is Earned Rule",
+        "body": "Folia jest wyłącznie dla naklejek wyróżnionych: kolacji na stronie miasta i Quo #00 na okładce. Jedna folia na stronę (ostatni przystanek, jeśli to restauracja lub lody; jego mini-naklejka w pasku pod zdjęciem też jest złota).",
+        "section": "colors"
+      },
+      {
+        "name": "The Sun Means Go Rule",
+        "body": "Żółte tło niosą tylko akcje (trasa, wsparcie) i fokus. Żółty nie jest dekoracją.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Widths Rule",
+        "body": "Nazwy są wąskie (62%), cyfry szerokie (125%), tekst normalny. Nie mieszamy: liczba w nazwie dostaje szerokość cyfr, a akapit nigdy nie jest wąski.",
+        "section": "typography"
+      },
+      {
+        "name": "The 18px Floor Rule",
+        "body": "Tekst treści ma min 18px (body 19px). Poniżej 18px wolno zejść tylko z krótką etykietą lub metadaną.",
+        "section": "typography"
+      },
+      {
+        "name": "The 44px Rule",
+        "body": "Każdy cel dotykowy ma min 44×44px; przyciski główne 56px, drugorzędne 52px, kompaktowe 46px.",
+        "section": "layout"
+      },
+      {
+        "name": "The Lift On Touch Rule",
+        "body": "Naklejka unosi się (−6px, prostuje przechył, cień Lift 3) tylko jako odpowiedź na hover; w spoczynku ma swój przechył i Lift 2. Panele nie podskakują wyżej niż −3px.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** kłaść każdą treść na stronie `page` z rastrem kropek, a białe zostawiać naklejkom i panelom.",
+      "**Do** dawać każdej naklejce numer w kapslu nachodzącym na róg, przechył z zakresu −3°…+2° i pasek drużyny u dołu.",
+      "**Do** pokazywać brakujące elementy jako puste miejsca z przerywanym obrysem i dużym bladym numerem, nie jako wyszarzone karty.",
+      "**Do** malować pas nagłówka miasta kolorem `bandana_color` z bazy i przełączać na ciemny atrament, gdy kolor jest jasny.",
+      "**Do** pisać nazwy wąskimi kapitalikami Archivo 62%/900, a numery szerokimi cyframi 125%/900.",
+      "**Do** utrzymywać tekst treści ≥18px i cele dotykowe ≥44px.",
+      "**Do** pozwalać dużym naklejkom i siatkom nachodzić na krawędź pasa."
+    ],
+    "donts": [
+      "**Don't** wracać do kremowego papieru, terakoty i miękkich zaokrąglonych kart typowych dla rodzinnych przewodników.",
+      "**Don't** używać folii częściej niż raz na stronę ani dla zwykłych przystanków.",
+      "**Don't** używać koloru drużyny do tekstu lub przycisków.",
+      "**Don't** przechylać pustych miejsc, paneli treści ani przycisków; przechył mają tylko naklejki.",
+      "**Don't** stawiać żółtego tła pod czymś, co nie jest akcją lub fokusem.",
+      "**Don't** pokazywać w widoku dziecka cen, przycisków nawigacji ani wsparcia."
+    ]
+  }
+}

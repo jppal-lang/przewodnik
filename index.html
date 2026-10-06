@@ -27,8 +27,8 @@
 <link rel="alternate" hreflang="x-default" href="https://questini.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=8">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=9">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/quolino-logo.svg"}}}
 </script>
@@ -69,15 +69,15 @@
 </nav>
 
 <!-- Mobile drawer -->
-<div id="mobileDrawer" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(56,48,38,.4)" onclick="this.style.display='none'">
-  <div style="position:absolute;top:0;left:0;right:0;background:var(--parchment);border-radius:0 0 20px 20px;box-shadow:0 8px 32px rgba(60,42,20,.18);padding:0 20px 28px" onclick="event.stopPropagation()">
+<div id="mobileDrawer" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(6,42,88,.45)" onclick="this.style.display='none'">
+  <div style="position:absolute;top:0;left:0;right:0;background:var(--parchment);border-radius:0 0 20px 20px;box-shadow:var(--lift-3);padding:0 20px 28px" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px">
       <div class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
       <button onclick="document.getElementById('mobileDrawer').style.display='none'" aria-label="Zamknij" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
-    <a href="#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
+    <a href="#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
     <div style="font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
       <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
@@ -99,130 +99,135 @@
   </div>
 </div>
 
-<div class="wrap-wide">
-
-<div class="hero-split">
-  <div class="hero-left">
-    <div class="hero-chip" data-ui="home.chip">Gra terenowa w prawdziwym mieście</div>
-    <h1 data-ui="home.h1">Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
-    <p class="subtitle" data-ui="home.subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
-    <div class="btn-row">
-      <a class="cta-btn" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><span class="cta-arrow" aria-hidden="true">→</span></a>
-      <a class="btn btn--ghost" href="#jak">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg><span data-ui="home.cta_how">Jak to działa</span>
+<header class="band cover" id="top">
+  <div class="wrap-wide cover-inner">
+    <div class="cover-copy">
+      <h1 class="cover-title" data-ui="home.h1">Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
+      <p class="cover-sub" data-ui="home.subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
+      <div class="btn-row">
+        <a class="btn btn--sun" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn--ghost" href="#jak"><span data-ui="home.cta_how">Jak to działa</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
+      </div>
+    </div>
+    <div class="sheet" id="heroSheet">
+      <a class="sticker sticker--foil sticker--quo" href="#jak">
+        <span class="sticker-no">00</span>
+        <span class="sticker-art"><img src="media/icons/pose-05-curious-sitting-512.webp" alt="Quo, popielica z Quolino" width="512" height="512" decoding="async"></span>
+        <span class="sticker-cap"><span class="sticker-name">Quo</span><span class="sticker-team" data-ui="home.chip">Gra terenowa w prawdziwym mieście</span></span>
       </a>
+      <span class="slot"><span class="slot-no">01</span></span>
+      <span class="slot"><span class="slot-no">02</span></span>
+      <span class="slot"><span class="slot-no">03</span></span>
+      <span class="slot"><span class="slot-no">04</span></span>
+      <p class="sheet-caption" data-ui="home.hero_badge">7 miast · Marche &amp; Umbria</p>
     </div>
   </div>
-  <div class="hero-photo">
-    <video autoplay muted loop playsinline preload="metadata" poster="media/hero-poster.jpg" aria-hidden="true">
-      <source src="media/hero.mp4" type="video/mp4">
-    </video>
-    <div class="hero-badge" data-ui="home.hero_badge">7 miast · Marche &amp; Umbria</div>
-  </div>
-</div>
+</header>
 
-<!-- USP -->
-<div class="landing-section">
-  <p class="caps" data-ui="home.why_quolino">Dlaczego Quolino</p>
-  <div class="usp-grid">
-    <div class="usp">
-      <div class="usp-icon terra">🎯</div>
-      <div>
-        <div class="usp-title" data-ui="home.usp1_title">Dzieci grają, nie marudzą</div>
-        <div class="usp-text" data-ui="home.usp1_text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie zamienia się w quest.</div>
-      </div>
-    </div>
-    <div class="usp">
-      <div class="usp-icon olive">☀️</div>
-      <div>
-        <div class="usp-title" data-ui="home.usp2_title">Godziny pod klimat</div>
-        <div class="usp-text" data-ui="home.usp2_text">Trasa omija południowy upał. Start późnym popołudniem, finał kolacją przy zachodzie słońca.</div>
-      </div>
-    </div>
-    <div class="usp">
-      <div class="usp-icon sea">🅿️</div>
-      <div>
-        <div class="usp-title" data-ui="home.usp3_title">Zaczynasz od parkingu</div>
-        <div class="usp-text" data-ui="home.usp3_text">Przystanek nr 1 to zawsze parking: cena, nawigacja i ostrzeżenie o strefie ZTL. Bez krążenia i mandatów.</div>
-      </div>
-    </div>
-  </div>
-</div>
+<main class="wrap-wide">
 
-<!-- How it works -->
-<div class="landing-section" id="jak">
-  <p class="caps" data-ui="home.how_title">Jak to działa</p>
-  <div class="how-grid">
-    <div class="how-step"><strong data-ui="home.step1_title">Wybierz region i miasto</strong><p data-ui="home.step1_text">Lista miast z odległością i czasem dojazdu od waszej bazy.</p></div>
-    <div class="how-step"><strong data-ui="home.step2_title">Jedź: nawigacja z telefonu</strong><p data-ui="home.step2_text">Jeden przycisk prowadzi do parkingu w Google Maps.</p></div>
-    <div class="how-step"><strong data-ui="home.step3_title">Zwiedzaj przystanek po przystanku</strong><p data-ui="home.step3_text">Opisy, misje dla dzieci i zadania foto w kolejności trasy.</p></div>
-    <div class="how-step"><strong data-ui="home.step4_title">Zakończ kolacją</strong><p data-ui="home.step4_text">Ostatni przystanek to restauracja. Rezerwacja przez WhatsApp.</p></div>
+<section class="album-page" id="jak" aria-labelledby="jakTitle">
+  <div class="album-head">
+    <h2 id="jakTitle" data-ui="home.how_title">Jak to działa</h2>
   </div>
-</div>
+  <ol class="route" role="list">
+      <li class="route-step">
+        <span class="sticker"><span class="sticker-no">01</span><span class="sticker-art"><img src="media/icons/icon-parking-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async"></span><span class="sticker-band"></span></span>
+        <div><strong data-ui="home.step1_title">Wybierz region i miasto</strong><p data-ui="home.step1_text">Gotowe miasta w regionie: wybierz to, które zwiedzacie dziś.</p></div>
+      </li>
+      <li class="route-step">
+        <span class="sticker"><span class="sticker-no">02</span><span class="sticker-art"><img src="media/icons/icon-street-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async"></span><span class="sticker-band"></span></span>
+        <div><strong data-ui="home.step2_title">Jedź: nawigacja z telefonu</strong><p data-ui="home.step2_text">Jeden przycisk prowadzi do parkingu w Google Maps.</p></div>
+      </li>
+      <li class="route-step">
+        <span class="sticker"><span class="sticker-no">03</span><span class="sticker-art"><img src="media/icons/icon-photo-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async"></span><span class="sticker-band"></span></span>
+        <div><strong data-ui="home.step3_title">Zwiedzaj przystanek po przystanku</strong><p data-ui="home.step3_text">Opisy, misje dla dzieci i zadania foto w kolejności trasy.</p></div>
+      </li>
+      <li class="route-step">
+        <span class="sticker"><span class="sticker-no">04</span><span class="sticker-art"><img src="media/icons/icon-restaurant-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async"></span><span class="sticker-band"></span></span>
+        <div><strong data-ui="home.step4_title">Zakończ kolacją</strong><p data-ui="home.step4_text">Ostatni przystanek to restauracja. Rezerwacja przez WhatsApp.</p></div>
+      </li>
+  </ol>
+</section>
 
-<!-- O Quolino -->
-<div class="landing-section">
-  <div class="about-grid">
-    <div class="about-text">
-      <h2 data-ui="home.about_h2">Rodzinne przewodniki po miastach Europy: od parkingu do kolacji</h2>
-      <p data-ui="home.about_p1">Quolino to gotowe plany wycieczek jednodniowych dla rodzin z dziećmi, podróżujących autem po Europie. Każde miasto rozpisane godzina po godzinie: gdzie zaparkować, co zobaczyć, ile kosztują bilety i gdzie zjeść kolację.</p>
-      <p data-ui="home.about_p2">Ale Quolino to nie kolejny przewodnik z listą zabytków. To gra terenowa w prawdziwym mieście: każdy przystanek ma misję dla dzieci. Znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
-      <p data-ui="home.about_p3">Godziny dostosowane do klimatu. W ciepłych krajach trasa omija południowy upał. Zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
-      <p data-ui="home.about_p4">Zaczynasz od parkingu. Każde miasto otwiera się informacją, gdzie zostawić auto: z ceną, linkiem do nawigacji i ostrzeżeniem o strefie ZTL. Koniec z krążeniem po zakazanych strefach i mandatami z kamer.</p>
-      <p data-ui="home.about_p5">Aktualnie dostępny region: Marche i Umbria (Włochy). 7 miast, 46 przystanków, kompletne plany na 7 dni. W przygotowaniu: Toskania, Kraków i okolice.</p>
+<section class="album-page" aria-labelledby="whyTitle">
+  <div class="album-head">
+    <h2 id="whyTitle" data-ui="home.why_quolino">Dlaczego Quolino</h2>
+  </div>
+  <div class="why">
+    <div class="why-row">
+      <img src="media/icons/pose-13-celebration-jump-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <div><h3 data-ui="home.usp1_title">Dzieci grają, nie marudzą</h3><p data-ui="home.usp1_text">Każdy przystanek to misja: znajdź gryfa, policz gwiazdy, sfotografuj zamurowane okno. Zwiedzanie zamienia się w quest.</p></div>
     </div>
-    <div class="about-boxes">
-      <div class="about-box sea">
-        <h2 data-ui="home.who_h2">Dla kogo jest Quolino</h2>
-        <ul>
-          <li data-ui="home.who_li1">Rodziny z dziećmi 9–16 lat podróżujące autem po Europie</li>
-          <li data-ui="home.who_li2">Rodzice, którzy nie chcą planować: gotowy plan, otwierasz i jedziesz</li>
-          <li data-ui="home.who_li3">Rodziny szukające czegoś więcej niż plaża: kultura i zabawa zamiast leżaka</li>
-          <li data-ui="home.who_li4">Polscy turyści we Włoszech: przewodniki po polsku, z rozmówkami i WhatsAppem do restauracji</li>
-        </ul>
-      </div>
-      <div class="about-box parchment">
-        <h2 data-ui="home.what_h2">Co jest w każdym przewodniku</h2>
-        <ul>
-          <li data-ui="home.what_li1">Parking jako przystanek nr 1: z ceną, nawigacją i informacją o ZTL</li>
-          <li data-ui="home.what_li2">5–9 przystanków z cenami biletów i opisami</li>
-          <li data-ui="home.what_li3">Misje i zagadki dla dzieci przy każdym przystanku</li>
-          <li data-ui="home.what_li4">Zadania fotograficzne: album ze wspólnych zdjęć z podróży</li>
-          <li data-ui="home.what_li5">Ciekawostki historyczne dla dorosłych: daty, kontekst, anegdoty</li>
-          <li data-ui="home.what_li6">Kolacja jako ostatni przystanek: z linkiem do WhatsApp restauracji</li>
-          <li data-ui="home.what_li7">Plan awaryjny: apteka, toalety, plac zabaw, szpital</li>
-          <li data-ui="home.what_li8">Rozmówki w języku lokalnym</li>
-          <li data-ui="home.what_li9">Zdjęcia zabytków z Wikimedia Commons</li>
-        </ul>
-      </div>
+    <div class="why-row">
+      <img src="media/icons/icon-viewpoint-nature-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <div><h3 data-ui="home.usp2_title">Godziny pod klimat</h3><p data-ui="home.usp2_text">Trasa omija południowy upał. Start późnym popołudniem, finał kolacją przy zachodzie słońca.</p></div>
+    </div>
+    <div class="why-row">
+      <img src="media/icons/icon-parking-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <div><h3 data-ui="home.usp3_title">Zaczynasz od parkingu</h3><p data-ui="home.usp3_text">Przystanek nr 1 to zawsze parking: cena, nawigacja i ostrzeżenie o strefie ZTL. Bez krążenia i mandatów.</p></div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- Regions — rendered dynamically -->
-<div class="landing-section" id="regiony">
-  <p class="caps" data-ui="home.select_region">Wybierz region</p>
-  <div class="region-grid" id="regionGrid">
-    <!-- filled by JS -->
+<section class="album-page rules">
+  <div class="rules-text">
+    <h2 data-ui="home.about_h2">Rodzinne przewodniki po miastach Europy: od parkingu do kolacji</h2>
+    <p data-ui="home.about_p1">Quolino to gotowe plany wycieczek jednodniowych dla rodzin z dziećmi, podróżujących autem po Europie. Każde miasto rozpisane godzina po godzinie: gdzie zaparkować, co zobaczyć, ile kosztują bilety i gdzie zjeść kolację.</p>
+    <p data-ui="home.about_p2">Ale Quolino to nie kolejny przewodnik z listą zabytków. To gra terenowa w prawdziwym mieście: każdy przystanek ma misję dla dzieci. Znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
+    <p data-ui="home.about_p3">Godziny dostosowane do klimatu. W ciepłych krajach trasa omija południowy upał. Zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
+    <p data-ui="home.about_p4">Zaczynasz od parkingu. Każde miasto otwiera się informacją, gdzie zostawić auto: z ceną, linkiem do nawigacji i ostrzeżeniem o strefie ZTL. Koniec z krążeniem po zakazanych strefach i mandatami z kamer.</p>
+    <p data-ui="home.about_p5">Aktualnie dostępny region: Marche i Umbria (Włochy). 7 miast, 46 przystanków, kompletne plany na 7 dni. W przygotowaniu: Toskania, Kraków i okolice.</p>
   </div>
-</div>
-
-<!-- CTA -->
-<div class="cta-box">
-  <h2 data-ui="home.all_free_h2">Wszystkie przewodniki za darmo</h2>
-  <p data-ui="home.all_free_text">Otwórz region na telefonie, wybierz miasto na dziś i ruszaj. Nic nie trzeba pobierać ani zakładać.</p>
-  <a class="cta-btn" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><span class="cta-arrow" aria-hidden="true">→</span></a>
-  <p class="cta-note" data-ui="home.coffee_text">Podoba Ci się Quolino? Postaw nam kawę ☕</p>
-</div>
-
-<div class="footer">
-  <div class="logo">
-    <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
+  <div class="rules-lists">
+    <div class="rules-box rules-box--team">
+      <h3 data-ui="home.who_h2">Dla kogo jest Quolino</h3>
+      <ul>
+        <li data-ui="home.who_li1">Rodziny z dziećmi 9–16 lat podróżujące autem po Europie</li>
+        <li data-ui="home.who_li2">Rodzice, którzy nie chcą planować: gotowy plan, otwierasz i jedziesz</li>
+        <li data-ui="home.who_li3">Rodziny szukające czegoś więcej niż plaża: kultura i zabawa zamiast leżaka</li>
+        <li data-ui="home.who_li4">Polscy turyści we Włoszech: przewodniki po polsku, z rozmówkami i WhatsAppem do restauracji</li>
+      </ul>
+    </div>
+    <div class="rules-box">
+      <h3 data-ui="home.what_h2">Co jest w każdym przewodniku</h3>
+      <ul>
+        <li data-ui="home.what_li1">Parking jako przystanek nr 1: z ceną, nawigacją i informacją o ZTL</li>
+        <li data-ui="home.what_li2">5–9 przystanków z cenami biletów i opisami</li>
+        <li data-ui="home.what_li3">Misje i zagadki dla dzieci przy każdym przystanku</li>
+        <li data-ui="home.what_li4">Zadania fotograficzne: album ze wspólnych zdjęć z podróży</li>
+        <li data-ui="home.what_li5">Ciekawostki historyczne dla dorosłych: daty, kontekst, anegdoty</li>
+        <li data-ui="home.what_li6">Kolacja jako ostatni przystanek: z linkiem do WhatsApp restauracji</li>
+        <li data-ui="home.what_li7">Plan awaryjny: apteka, toalety, plac zabaw, szpital</li>
+        <li data-ui="home.what_li8">Rozmówki w języku lokalnym</li>
+        <li data-ui="home.what_li9">Zdjęcia zabytków z Wikimedia Commons</li>
+      </ul>
+    </div>
   </div>
+</section>
+
+<section class="album-page" id="regiony" aria-labelledby="regTitle">
+  <div class="album-head">
+    <h2 id="regTitle" data-ui="home.select_region">Wybierz region</h2>
+  </div>
+  <div class="region-grid" id="regionGrid"></div>
+</section>
+
+</main>
+
+<section class="band back-cover">
+  <div class="wrap-wide">
+    <h2 data-ui="home.all_free_h2">Wszystkie przewodniki za darmo</h2>
+    <p data-ui="home.all_free_text">Otwórz region na telefonie, wybierz miasto na dziś i ruszaj. Nic nie trzeba pobierać ani zakładać.</p>
+    <div class="btn-row"><a class="btn btn--sun" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+    <p class="cta-note"><a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" data-ui="home.coffee_text">Podoba Ci się Quolino? Postaw nam kawę ☕</a></p>
+  </div>
+</section>
+
+<footer class="footer">
+  <a href="./" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
   <span data-ui="home.footer">© 2026 · Rodzinne przewodniki wypadowe</span>
-</div>
-
-</div>
+</footer>
 
 <script>
 // ══════ CONFIG ══════
@@ -264,6 +269,7 @@ function loadPage(lang) {
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
     sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order&order=sort_order'),
+    sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,title'),
   ]).then(function(results) {
     langList        = results[0];
     var uiRows      = results[1];
@@ -272,6 +278,7 @@ function loadPage(lang) {
     var countries   = results[4];
     var countryTrs  = results[5];
     var cities      = results[6];
+    var cityTrs     = results[7] || [];
 
     // Build UI strings map
     uiStrings = {};
@@ -289,6 +296,7 @@ function loadPage(lang) {
 
     // Build region grid
     buildRegionGrid(regions, regionTrs, countries, countryTrs, cities);
+    buildHeroSheet(cities, cityTrs, regionTrs);
 
     // Build language popup
     buildLangPopup();
@@ -317,7 +325,7 @@ function imgBase(city) {
 function tileFallback(wrap, color, letter) {
   wrap.classList.remove('loading');
   if (wrap.querySelector('.rt-fallback')) return;
-  wrap.style.background = 'linear-gradient(135deg,' + (color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)';
+  wrap.style.background = color || '#0B4EA2';
   var d = document.createElement('div');
   d.className = 'rt-fallback';
   d.textContent = (letter || '?').charAt(0).toUpperCase();
@@ -339,6 +347,42 @@ function loadCover(wrap, city, letter) {
   img.onerror = function() { img.remove(); tileFallback(wrap, color, letter); };
   wrap.appendChild(img);
 }
+// ══════ ARKUSZ NAKLEJEK NA OKŁADCE ══════
+// Trzy pierwsze miasta z ilustracją trafiają na okładkę jako naklejki,
+// czwarte miejsce zostaje puste — „do zebrania wkrótce”.
+function buildHeroSheet(cities, cityTrs, regionTrs) {
+  var sheet = document.getElementById('heroSheet');
+  if (!sheet) return;
+  var slots = sheet.querySelectorAll('.slot');
+  var picked = cities.filter(function(c) { return imgBase(c); })
+    .sort(function(a, b) { return (b.hero_image ? 1 : 0) - (a.hero_image ? 1 : 0); })
+    .slice(0, Math.min(3, slots.length - 1));
+  picked.forEach(function(c, i) {
+    var tr = cityTrs.filter(function(t) { return t.city_slug === c.slug; })[0];
+    var rTr = regionTrs.filter(function(t) { return t.region_slug === c.region_slug; })[0];
+    var name = tr && tr.title ? tr.title : c.slug;
+    var a = document.createElement('a');
+    a.className = 'sticker';
+    a.href = 'city.html?c=' + encodeURIComponent(c.slug);
+    if (c.bandana_color) a.style.setProperty('--team', c.bandana_color);
+    var base = imgBase(c);
+    a.innerHTML = '<span class="sticker-no">' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<span class="sticker-art"><img src="' + base + '-tile-384.webp" srcset="' + base + '-tile-384.webp 384w, ' + base + '-tile-768.webp 768w" sizes="200px" alt="" width="384" height="384" decoding="async"></span>' +
+      '<span class="sticker-cap"><span class="sticker-name">' + esc(name) + '</span>' +
+      (rTr ? '<span class="sticker-team">' + esc(rTr.name) + '</span>' : '') + '</span>' +
+      '<span class="sticker-band"></span>';
+    var img = a.querySelector('img');
+    img.onerror = function() { img.remove(); a.querySelector('.sticker-art').insertAdjacentHTML('beforeend', '<span class="sticker-fallback">' + esc(name) + '</span>'); };
+    slots[i].replaceWith(a);
+  });
+  var last = sheet.querySelectorAll('.slot');
+  if (last.length) {
+    var s = last[0];
+    s.insertAdjacentHTML('beforeend', '<span class="slot-name">' + esc(ui('region.toskania', 'Toskania')) + ' · ' + esc(ui('chip.soon', 'Wkrótce')) + '</span>');
+    for (var k = 1; k < last.length; k++) last[k].remove();
+  }
+}
+
 // ══════ REGION GRID ══════
 function buildRegionGrid(regions, regionTrs, countries, countryTrs, cities) {
   var grid = document.getElementById('regionGrid');

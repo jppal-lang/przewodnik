@@ -7,8 +7,8 @@
 <meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=8">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=9">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z3YC8NF30B"></script>
 <script>
@@ -45,15 +45,15 @@
 </nav>
 
 <!-- Mobile drawer -->
-<div id="mobileDrawer" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(56,48,38,.4)" onclick="this.style.display='none'">
-  <div style="position:absolute;top:0;left:0;right:0;background:var(--parchment);border-radius:0 0 20px 20px;box-shadow:0 8px 32px rgba(60,42,20,.18);padding:0 20px 28px" onclick="event.stopPropagation()">
+<div id="mobileDrawer" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(6,42,88,.45)" onclick="this.style.display='none'">
+  <div style="position:absolute;top:0;left:0;right:0;background:var(--parchment);border-radius:0 0 20px 20px;box-shadow:var(--lift-3);padding:0 20px 28px" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px">
       <div class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></div>
       <button onclick="document.getElementById('mobileDrawer').style.display='none'" aria-label="Close" style="width:48px;height:48px;border:none;cursor:pointer;border-radius:12px;background:transparent;display:grid;place-items:center">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
-    <a href="./" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
+    <a href="./" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
     <div style="font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
       <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
@@ -78,7 +78,7 @@
 <div class="wrap-wide">
 
   <!-- Breadcrumbs -->
-  <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
+  <nav class="crumbs band" id="crumbs" aria-label="Breadcrumb"></nav>
 
   <!-- Region content -->
   <div id="regionContent">
@@ -147,7 +147,7 @@ function imgBase(city) {
 function showFallback(wrap, color, letter) {
   wrap.classList.remove('loading');
   if (wrap.querySelector('.city-fallback')) return;
-  wrap.style.background = 'linear-gradient(135deg,' + (color || '#B4502E') + ' 0%, rgba(56,48,38,.55) 100%)';
+  wrap.style.background = color || '#0B4EA2';
   var d = document.createElement('div');
   d.className = 'city-fallback';
   d.textContent = (letter || '?').charAt(0).toUpperCase();
@@ -278,13 +278,10 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
   var html = '';
 
   // ── Hero ──
-  html += '<div class="region-hero">';
-  html += '<div class="caps" style="font-size:14px">' + esc(countryName);
-  if (flagCode) html += ' <img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="" style="width:20px;height:14px;border-radius:3px;vertical-align:middle;margin-left:5px">';
-  html += '</div>';
+  html += '<div class="region-hero band page-band">';
   html += '<h1 class="region-name">' + esc(regionName) + '</h1>';
   if (rTr && rTr.description) html += '<p class="region-desc">' + esc(rTr.description) + '</p>';
-  html += '<div class="region-meta"><span>' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
+  html += '<div class="region-meta"><span>' + (flagCode ? '<img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="">' : '') + esc(countryName) + '</span><span>' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
   html += '</div>';
 
   // ── City tiles ──
@@ -306,11 +303,10 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
       var oCoun  = oCt ? oCt.name : '';
       var oFlag  = (countries.filter(function(c) { return c.slug === reg.country_slug; })[0] || {}).flag_code || reg.country_slug;
       html += '<a class="other-region-tile" href="region.html?r=' + encodeURIComponent(reg.slug) + '">';
-      html += '<div style="flex:1"><div style="font-size:13px;color:var(--label)">' + esc(oCoun);
-      if (oFlag) html += ' <img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="" style="width:16px;height:11px;border-radius:2px;vertical-align:middle;margin-left:3px">';
-      html += '</div><div style="font-size:19px;font-weight:800;letter-spacing:-.01em;margin-top:2px">' + esc(oName) + '</div>';
-      html += '<div style="font-size:14px;color:var(--label);margin-top:2px">' + published[reg.slug] + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
-      html += '<div style="font-size:19px;color:var(--terra)">&rarr;</div></a>';
+      html += '<div class="ort-body"><div class="ort-country">' + (oFlag ? '<img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="">' : '') + esc(oCoun) + '</div>';
+      html += '<div class="ort-name">' + esc(oName) + '</div>';
+      html += '<div class="ort-meta">' + published[reg.slug] + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
+      html += '<div class="ort-go" aria-hidden="true">&rarr;</div></a>';
     });
     html += '</div></div>';
   }
@@ -327,6 +323,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
     var card = document.createElement('a');
     card.className = 'city-card';
     card.href = 'city.html?c=' + encodeURIComponent(city.slug);
+    if (city.bandana_color) card.style.setProperty('--team', city.bandana_color);
 
     var wrap = document.createElement('div');
     wrap.className = 'city-img-wrap loading';
@@ -340,6 +337,10 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
         wrap.appendChild(b);
       }
     }
+    var no = document.createElement('span');
+    no.className = 'sticker-no';
+    no.textContent = String(grid.children.length + 1).padStart(2, '0');
+    card.appendChild(no);
     card.appendChild(wrap);
 
     var body = document.createElement('div');
