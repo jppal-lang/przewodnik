@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/quolino-logo.svg"}}}
 </script>
@@ -110,11 +110,19 @@
       </div>
     </div>
     <div class="sheet" id="heroSheet">
-      <a class="sticker sticker--foil sticker--quo" href="#jak">
+      <figure class="sticker sticker--foil sticker--video">
         <span class="sticker-no">00</span>
-        <span class="sticker-art"><img src="media/icons/pose-05-curious-sitting-512.webp" alt="Quo, popielica z Quolino" width="512" height="512" decoding="async"></span>
-        <span class="sticker-cap"><span class="sticker-name">Quo</span><span class="sticker-team" data-ui="home.chip">Gra terenowa w prawdziwym mieście</span></span>
-      </a>
+        <span class="sticker-art">
+          <video id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="media/hero-poster.jpg" aria-hidden="true">
+            <source src="media/hero.mp4" type="video/mp4">
+          </video>
+          <button class="video-toggle" type="button" data-video-toggle="heroVideo" aria-label="Zatrzymaj animację" aria-pressed="false">
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+          </button>
+        </span>
+        <figcaption class="sticker-cap"><span class="sticker-name">Quo</span><span class="sticker-team" data-ui="home.chip">Gra terenowa w prawdziwym mieście</span></figcaption>
+      </figure>
       <span class="slot"><span class="slot-no">01</span></span>
       <span class="slot"><span class="slot-no">02</span></span>
       <span class="slot"><span class="slot-no">03</span></span>
@@ -541,5 +549,6 @@ document.addEventListener('keydown', function(e) {
 // ══════ INIT ══════
 loadPage(currentLang);
 </script>
+<script src="motion.js?v=1" defer></script>
 </body>
 </html>

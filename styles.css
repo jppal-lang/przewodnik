@@ -611,3 +611,102 @@ body:has(.qc[data-view="kid"]) a[href*="buymeacoffee"]{display:none!important}
   .qc-stop__head{grid-template-columns:96px minmax(0,1fr) auto;grid-template-areas:"icon title chev" "meta meta meta"}
   .qc-stop-toggle{grid-area:chev;align-self:start;justify-self:end}
 }
+
+/* =====================================================================
+   v4.1 — RUCH: wideo na okładce, wklejanie naklejek, odklejany róg
+   ===================================================================== */
+/* arkusz okładki: wideo Quo jako duża naklejka-folia, pod nią rząd miast */
+.sheet{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:auto;gap:26px 16px;align-items:start}
+.sheet > :nth-child(1){grid-row:auto;grid-column:1/-1;--tilt:-1.6deg;align-self:auto}
+.sheet > :nth-child(2){--tilt:2.2deg}
+.sheet > :nth-child(3){--tilt:-1.8deg}
+.sheet > :nth-child(4){--tilt:1.4deg}
+.sheet > :nth-child(5){--tilt:-1deg}
+.sheet .slot{aspect-ratio:auto;align-self:stretch}
+.sticker--video{margin:0}
+.sticker--video .sticker-art{aspect-ratio:16/9;background:#F7C948}
+.sticker--video video{width:100%;height:100%;object-fit:cover;display:block}
+.sticker--video .sticker-art::after{display:none}
+.sticker--video .sticker-cap{flex-direction:row;align-items:baseline;justify-content:flex-start;gap:14px}
+.sticker--video .sticker-name{font-size:30px}
+.sticker--video .sticker-team{text-transform:none;letter-spacing:0;font-stretch:87%;font-size:17px;color:#4A3600}
+.video-toggle{position:absolute;right:12px;bottom:12px;z-index:3;width:44px;height:44px;border:0;border-radius:var(--r-btn);display:grid;place-items:center;background:rgba(6,42,88,.72);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s,transform .25s var(--ease)}
+.video-toggle:hover{background:var(--azzurro);transform:scale(1.06)}
+.video-toggle svg{width:18px;height:18px;fill:currentColor}
+.video-toggle .i-play,.video-toggle.is-paused .i-pause{display:none}
+.video-toggle.is-paused .i-play{display:block}
+@media(max-width:560px){
+  .sheet{grid-template-columns:1fr 1fr;gap:20px 14px}
+  .sheet > :nth-child(1){grid-column:1/-1;width:auto;justify-self:stretch}
+  .sticker--video .sticker-cap{flex-direction:column;gap:4px}
+  .sticker--video .sticker-name{font-size:26px}
+}
+
+/* odklejany róg naklejki przy najechaniu */
+.sticker::before,.region-tile::before,.city-card::before{content:"";position:absolute;z-index:3;right:0;bottom:0;width:0;height:0;border-radius:0 0 var(--r-stk) 0;background:linear-gradient(315deg,transparent 49%,rgba(14,26,43,.14) 50%,#F3F6FA 56%,#DCE4EF 100%);box-shadow:-2px -2px 6px rgba(14,26,43,.12);transition:width .35s var(--ease),height .35s var(--ease);pointer-events:none}
+a.sticker:hover::before,.region-tile:hover::before,.city-card:hover::before{width:30px;height:30px}
+.region-tile.soon::before{display:none}
+
+/* wklejenie na start: arkusz okładki i pasek przystanków */
+@keyframes slap{
+  0%{opacity:0;transform:rotate(calc(var(--tilt,0deg) - 14deg)) scale(1.28) translateY(-26px)}
+  55%{opacity:1;transform:rotate(calc(var(--tilt,0deg) + 1deg)) scale(.97)}
+  100%{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}
+}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.sheet > *{animation:slap .8s var(--ease) backwards}
+.sheet > :nth-child(1){animation-delay:.1s}
+.sheet > :nth-child(2){animation-delay:.45s}
+.sheet > :nth-child(3){animation-delay:.55s}
+.sheet > :nth-child(4){animation-delay:.65s}
+.sheet > :nth-child(5){animation-delay:.75s}
+.cover-copy > *{animation:rise .7s var(--ease) backwards}
+.cover-copy > :nth-child(2){animation-delay:.08s}
+.cover-copy > :nth-child(3){animation-delay:.16s}
+
+/* wklejanie przy przewijaniu (klasy nadaje motion.js; bez JS wszystko widoczne) */
+html.motion [data-rv]:not(.is-in){opacity:0}
+html.motion [data-rv].is-in{animation:rise .7s var(--ease) var(--rv-delay,0ms) backwards}
+html.motion .region-tile[data-rv].is-in,
+html.motion .city-card[data-rv].is-in,
+html.motion .qc-strip__stk[data-rv].is-in,
+html.motion .route-step[data-rv].is-in .sticker{animation:slap .8s var(--ease) var(--rv-delay,0ms) backwards}
+html.motion .route-step[data-rv].is-in{animation-name:rise}
+html.motion .qc-strip__stk:nth-child(odd){--tilt:-2deg}
+html.motion .qc-strip__stk:nth-child(even){--tilt:2deg}
+/* przerywana ścieżka „Jak to działa” rysuje się, gdy pierwsza naklejka wjedzie */
+html.motion .route::before{transform:scaleX(0);transform-origin:left center;transition:transform 1.4s var(--ease) .25s}
+html.motion .route:has(.is-in)::before{transform:scaleX(1)}
+@media(max-width:900px){
+  html.motion .route::before{transform:scaleY(0);transform-origin:center top}
+  html.motion .route:has(.is-in)::before{transform:scaleY(1)}
+}
+
+/* widok dziecka: wybuch gwiazdek i licznik przy wklejeniu */
+.qc-burst{position:absolute;z-index:4;left:50%;top:45%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;pointer-events:none;
+  background:var(--sun);animation:burst .9s var(--ease) forwards;
+  box-shadow:0 -46px 0 -1px var(--sun),40px -24px 0 -2px var(--azzurro),44px 22px 0 -1px var(--verde),0 48px 0 -2px var(--sun),-42px 24px 0 -1px var(--rosso),-40px -24px 0 -2px var(--azzurro)}
+@keyframes burst{0%{transform:scale(.2);opacity:1}70%{opacity:1}100%{transform:scale(1.5);opacity:0}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}
+.qc-album-count strong.pop{display:inline-block;animation:pop .5s var(--ease)}
+
+@media(prefers-reduced-motion:reduce){
+  .sheet > *,.cover-copy > *{animation:none}
+  .sticker::before,.region-tile::before,.city-card::before{display:none}
+}
+/* małe naklejki miast na okładce: nazwa nad regionem, bez nachodzenia */
+.sheet .sticker:not(.sticker--video) .sticker-cap{flex-direction:column;align-items:flex-start;gap:2px;padding:8px 4px 9px}
+.sheet .sticker:not(.sticker--video) .sticker-name{font-size:clamp(18px,1.7vw,24px)}
+.sheet .sticker:not(.sticker--video) .sticker-team{font-size:13px}
+/* telefon: wideo Quo otwiera okładkę, miasta jako rząd czterech małych naklejek */
+@media(max-width:560px){
+  .cover{padding-top:28px}
+  .cover-inner{gap:30px}
+  .sheet{order:-1;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 10px}
+  .sheet .sticker:not(.sticker--video){padding:4px 4px 0}
+  .sheet .sticker:not(.sticker--video) .sticker-cap{display:none}
+  .sheet .sticker:not(.sticker--video) .sticker-no{min-width:30px;height:24px;font-size:13px;top:-7px;left:-7px}
+  .sheet .slot{padding:6px}
+  .sheet .slot-no{font-size:28px}
+  .sheet .slot-name{display:none}
+}
