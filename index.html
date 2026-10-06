@@ -28,101 +28,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=8">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/quolino-logo.svg"}}}
 </script>
-<style>
-/* Sticky nav */
-.sticky-nav{position:sticky;top:0;z-index:100;background:rgba(255,252,245,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(231,219,198,.6);box-shadow:var(--sh1);padding:0 20px}
-.sticky-nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px}
-.nav-right{display:flex;align-items:center;gap:12px}
-.nav-lang-btn{height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:transparent;font-size:15px;font-weight:700;color:var(--ink)}
-.nav-lang-btn:hover{border-color:var(--terra)}
-.nav-lang-btn img{width:20px;height:14px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover}
-.bmc-link{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;background:#FFDD00;color:var(--ink);border-radius:999px;font-size:15px;font-weight:700;box-shadow:var(--sh1)}
-.bmc-link:hover{background:#F5D000}
-/* Lang popup */
-.lang-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(56,48,38,.4);place-items:center;padding:20px}
-.lang-overlay.open{display:grid}
-.lang-popup{background:var(--parchment);border-radius:24px;padding:28px;box-shadow:0 8px 48px rgba(60,42,20,.2);max-width:560px;width:100%;max-height:80vh;overflow-y:auto}
-.lang-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.lang-grid button{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;border:2px solid transparent;border-radius:14px;background:transparent;font-size:16px;font-weight:500;color:var(--ink)}
-.lang-grid button:hover{border-color:var(--terra);background:rgba(180,80,46,.04)}
-.lang-grid button.active{border-color:var(--terra);background:rgba(180,80,46,.06);font-weight:700;color:var(--terra)}
-.lang-grid button img{width:24px;height:17px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover}
-/* Landing sections */
-.landing-section{padding:48px 0 0}
-.usp-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px}
-.usp{background:var(--parchment);border-radius:20px;padding:24px;box-shadow:var(--sh2);display:flex;gap:18px;align-items:flex-start}
-.usp-icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px;font-weight:800;flex-shrink:0}
-.usp-icon.terra{background:rgba(180,80,46,.1);color:var(--terra)}
-.usp-icon.olive{background:var(--olive-bg);color:var(--olive)}
-.usp-icon.sea{background:var(--sea-bg);color:var(--sea)}
-.usp-title{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
-.usp-text{font-size:18px;color:var(--ink2);line-height:1.5}
-.how-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px;counter-reset:step}
-.how-step{background:var(--parchment);border-radius:16px;padding:20px 20px 20px 64px;box-shadow:var(--sh1);position:relative;counter-increment:step}
-.how-step::before{content:counter(step);position:absolute;left:20px;top:20px;width:32px;height:32px;border-radius:999px;background:var(--terra);color:var(--parchment);display:grid;place-items:center;font-size:16px;font-weight:800}
-.how-step strong{font-weight:700}
-.how-step p{font-size:18px;color:var(--ink2);margin-top:4px;line-height:1.5}
-.about-grid{display:grid;grid-template-columns:1fr;gap:24px;align-items:start;margin-top:20px}
-.about-text p{font-size:18px;line-height:1.6;color:var(--ink);margin-top:14px}
-.about-text p:first-child{margin-top:0}
-.about-boxes{display:flex;flex-direction:column;gap:20px}
-.about-box{border-radius:20px;padding:24px}
-.about-box.sea{background:var(--sea-bg)}
-.about-box.sea h2{color:var(--sea)}
-.about-box.parchment{background:var(--parchment);border:1px solid var(--line)}
-.about-box h2{margin:0 0 12px;font-size:22px;font-weight:800;letter-spacing:-.015em}
-.about-box ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.5}
-.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:32px 22px;margin-top:24px}
-.region-tile{display:block;color:var(--ink);border-radius:18px}
-.region-tile:focus-visible{outline:3px solid var(--terra);outline-offset:4px}
-.country-head{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 -8px}
-.country-head:not(:first-child){margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
-.country-head h3{display:flex;align-items:center;gap:9px;font-size:24px;font-weight:800;letter-spacing:-.015em}
-.country-head h3 img{width:26px;height:18px;border-radius:3px;object-fit:cover;border:1px solid rgba(56,48,38,.12)}
-.country-head a{display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:var(--terra)}
-.country-head a .arrow{transition:transform .2s ease}
-.country-head a:hover .arrow{transform:translateX(4px)}
-.rt-img-wrap{position:relative;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:var(--chip-bg,#F2EADC)}
-.rt-img-wrap::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(56,48,38,.07);pointer-events:none}
-.rt-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.02);transition:opacity .45s ease,transform .5s ease}
-.rt-img.loaded{opacity:1;transform:scale(1)}
-.region-tile:hover .rt-img.loaded{transform:scale(1.06)}
-.rt-img-wrap.loading::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(0,0,0,0) 20%,rgba(255,255,255,.55) 50%,rgba(0,0,0,0) 80%);background-size:220% 100%;animation:shimmer 1.4s infinite}
-@keyframes shimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}
-.rt-fallback{position:absolute;inset:0;display:grid;place-items:center;font-size:52px;font-weight:800;color:rgba(255,255,255,.92);text-shadow:0 2px 12px rgba(0,0,0,.18)}
-.rt-flag{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:7px;background:rgba(255,252,245,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink);font-size:13px;font-weight:700;padding:7px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(60,42,20,.14)}
-.rt-flag img{width:18px;height:13px;border-radius:2px;object-fit:cover}
-.rt-body{padding:14px 2px 0}
-.rt-name{font-size:20px;font-weight:700;letter-spacing:-.015em;line-height:1.25}
-.rt-meta{font-size:15px;color:var(--label);margin-top:4px}
-.rt-go{margin-top:10px;display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--terra)}
-.rt-go .arrow{transition:transform .2s ease}
-.region-tile:hover .rt-go .arrow{transform:translateX(4px)}
-.region-tile.soon{pointer-events:none}
-.region-tile.soon .rt-img-wrap{background:var(--chip-bg,#F2EADC)}
-.region-tile.soon .rt-name{color:var(--ink2)}
-@media(prefers-reduced-motion:reduce){
-  .rt-img,.region-tile:hover .rt-img.loaded,.rt-go .arrow{transition:none;transform:none}
-  .rt-img-wrap.loading::before{animation:none}
-}
-.cta-box{background:var(--parchment);border-radius:20px;padding:32px;margin-top:48px;box-shadow:var(--sh2);text-align:center}
-.cta-box h2{font-size:28px;font-weight:800;letter-spacing:-.015em}
-.cta-box p{font-size:18px;color:var(--ink2);margin:12px 0 20px;line-height:1.5}
-.cta-btn{display:inline-flex;align-items:center;gap:10px;background:var(--terra);color:var(--parchment);font-size:18px;font-weight:700;padding:16px 32px;border-radius:999px;transition:background .15s}
-.cta-btn:hover{background:var(--terra-h)}
-.cta-arrow{transition:transform .2s ease}
-.cta-btn:hover .cta-arrow{transform:translateX(4px)}
-@media(prefers-reduced-motion:reduce){.cta-arrow{transition:none}.cta-btn:hover .cta-arrow{transform:none}}
-.footer{margin-top:56px;padding:24px 0;border-top:1px solid var(--line);text-align:center;font-size:18px;color:var(--label)}
-@media(min-width:680px){.usp-grid{grid-template-columns:repeat(3,1fr)}.how-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:900px){.about-grid{grid-template-columns:1.2fr 1fr}}
-@media(max-width:799px){.nav-desktop{display:none!important}}
-@media(min-width:800px){.nav-mobile{display:none!important}}
-</style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z3YC8NF30B"></script>
 <script>
@@ -141,8 +50,8 @@
       <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
     </a>
     <div class="nav-right">
-      <div class="nav-desktop" style="display:flex;align-items:center;gap:12px">
-        <a href="#regiony" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1.5px solid var(--line);border-radius:999px;font-size:15px;font-weight:700;color:var(--ink)" data-ui="nav.select_region">Wybierz region</a>
+      <div class="nav-desktop">
+        <a href="#regiony" class="nav-pill" data-ui="nav.select_region">Wybierz region</a>
         <button class="nav-lang-btn" onclick="document.getElementById('langPopup').classList.add('open')" aria-label="Zmień język">
           <img src="https://flagcdn.com/w40/pl.png" alt="" id="activeFlagImg">
           <span id="activeLangCode">PL</span>
@@ -169,11 +78,11 @@
       </button>
     </div>
     <a href="#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
-    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
+    <div style="font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
       <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
     </button>
-    <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="height:52px;display:flex;align-items:center;justify-content:center;gap:10px;background:#FFDD00;color:var(--ink);border-radius:14px;font-size:18px;font-weight:700">☕ <span data-ui="nav.support_project">Wesprzyj projekt</span></a>
+    <a href="https://buymeacoffee.com/questini" target="_blank" rel="noopener" style="height:52px;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--terra);color:var(--parchment);border-radius:14px;font-size:18px;font-weight:700">☕ <span data-ui="nav.support_project">Wesprzyj projekt</span></a>
   </div>
 </div>
 
@@ -194,12 +103,12 @@
 
 <div class="hero-split">
   <div class="hero-left">
-    <div class="chip-soon" style="background:var(--olive-bg);color:var(--olive);display:inline-block;margin-bottom:4px" data-ui="home.chip">Gra terenowa w prawdziwym mieście</div>
+    <div class="hero-chip" data-ui="home.chip">Gra terenowa w prawdziwym mieście</div>
     <h1 data-ui="home.h1">Zwiedzanie z dziećmi, które dzieci naprawdę lubią</h1>
     <p class="subtitle" data-ui="home.subtitle">Gotowe plany wycieczek jednodniowych po miastach Europy: gdzie zaparkować, co zobaczyć godzina po godzinie, jaką misję dostaje dziecko na każdym przystanku i gdzie zjeść kolację o zachodzie słońca.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px">
+    <div class="btn-row">
       <a class="cta-btn" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><span class="cta-arrow" aria-hidden="true">→</span></a>
-      <a href="#jak" style="min-height:56px;display:inline-flex;align-items:center;gap:8px;background:var(--parchment);color:var(--terra);border:2px solid var(--terra);border-radius:999px;padding:16px 28px;font-size:18px;font-weight:700">
+      <a class="btn btn--ghost" href="#jak">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg><span data-ui="home.cta_how">Jak to działa</span>
       </a>
     </div>
@@ -255,7 +164,7 @@
 <div class="landing-section">
   <div class="about-grid">
     <div class="about-text">
-      <h2 style="margin:0 0 4px;font-size:28px;font-weight:800;letter-spacing:-.015em;line-height:1.15" data-ui="home.about_h2">Rodzinne przewodniki po miastach Europy: od parkingu do kolacji</h2>
+      <h2 data-ui="home.about_h2">Rodzinne przewodniki po miastach Europy: od parkingu do kolacji</h2>
       <p data-ui="home.about_p1">Quolino to gotowe plany wycieczek jednodniowych dla rodzin z dziećmi, podróżujących autem po Europie. Każde miasto rozpisane godzina po godzinie: gdzie zaparkować, co zobaczyć, ile kosztują bilety i gdzie zjeść kolację.</p>
       <p data-ui="home.about_p2">Ale Quolino to nie kolejny przewodnik z listą zabytków. To gra terenowa w prawdziwym mieście: każdy przystanek ma misję dla dzieci. Znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
       <p data-ui="home.about_p3">Godziny dostosowane do klimatu. W ciepłych krajach trasa omija południowy upał. Zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
@@ -303,11 +212,11 @@
   <h2 data-ui="home.all_free_h2">Wszystkie przewodniki za darmo</h2>
   <p data-ui="home.all_free_text">Otwórz region na telefonie, wybierz miasto na dziś i ruszaj. Nic nie trzeba pobierać ani zakładać.</p>
   <a class="cta-btn" href="#regiony"><span data-ui="home.cta_open">Zaczynamy!</span><span class="cta-arrow" aria-hidden="true">→</span></a>
-  <p style="margin-top:16px;font-size:18px;color:var(--ink2)" data-ui="home.coffee_text">Podoba Ci się Quolino? Postaw nam kawę ☕</p>
+  <p class="cta-note" data-ui="home.coffee_text">Podoba Ci się Quolino? Postaw nam kawę ☕</p>
 </div>
 
 <div class="footer">
-  <div class="logo" style="justify-content:center;margin-bottom:8px">
+  <div class="logo">
     <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
   </div>
   <span data-ui="home.footer">© 2026 · Rodzinne przewodniki wypadowe</span>
