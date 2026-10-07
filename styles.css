@@ -744,6 +744,10 @@ html.motion .route:has(.is-in)::before{transform:scaleX(1)}
 .atlas-c--live{fill:var(--azzurro);stroke:var(--azzurro-ink)}
 .atlas-map.is-country .atlas-c:not(.is-focus){fill:#F3F6FB}
 .atlas-map.is-country .atlas-c--soon:not(.is-focus){fill:#F3F6FB}
+.atlas-inner{fill:none;stroke:rgba(255,255,255,.6);stroke-width:1;stroke-dasharray:3 3;stroke-linecap:round;vector-effect:non-scaling-stroke;transition:opacity .6s ease}
+.atlas-map.is-country .atlas-inner{opacity:0}
+.atlas-map.is-country .atlas-inner.is-focus{opacity:1;stroke:rgba(255,255,255,.8);stroke-width:1.8;stroke-dasharray:7 6}
+html.motion .atlas-map:not(.is-in) .atlas-inner{opacity:0}
 .atlas-city{fill:#fff;stroke:var(--azzurro-deep);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:.9}
 .atlas-step{fill:none;stroke:var(--azzurro-deep);stroke-linecap:round;stroke-linejoin:round;transition:opacity 1.2s ease}
 .atlas-map.is-country .atlas-step{stroke:#fff}

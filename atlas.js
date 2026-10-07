@@ -19,7 +19,10 @@
   // Regiony zapowiedziane (klucz UI z nazwą, punkt na mapie: lon, lat)
   var PLANNED_REGIONS = [{ country: 'it', key: 'region.toskania', name: 'Toskania', at: [11.1, 43.4] }];
 
-  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // „Ogranicz animacje” (w Windows często włączone domyślnie): Quo dalej biega, bo ma przycisk
+  // pauzy (WCAG 2.2.2) — jak film na okładce; znikają tylko podskoki i skoki radości.
+  var soft = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = false;
 
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function svg(tag, attrs) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
@@ -119,6 +122,10 @@
       gLand.appendChild(p);
     });
     s.appendChild(gLand);
+    // granice regionów wewnątrz kraju (linia przerywana, widoczna po przybliżeniu)
+    var gInner = svg('g', { class: 'atlas-inner-g' });
+    Object.keys(E.inner || {}).forEach(function (c) { gInner.appendChild(svg('path', { d: E.inner[c], class: 'atlas-inner', 'data-c': c })); });
+    s.appendChild(gInner);
     var gDots = svg('g', { class: 'atlas-dots' });
     var gTrail = svg('g', { class: 'atlas-trail' });
     s.appendChild(gTrail);
@@ -234,7 +241,7 @@
       return { x: cx - w / 2, y: cy - h / 2, w: w, h: h };
     }
     function europeVB() { return fit([0, 0, E.w, E.h], 0, 0); }
-    function countryVB(code) { return fit(countryBox(code), 1.1, E.w * (map.clientWidth < 560 ? 0.11 : 0.14)); }
+    function countryVB(code) { return fit(countryBox(code), 1.1, E.w * (map.clientWidth < 560 ? 0.14 : 0.19)); }
 
     // ── piny ──
     function pin(stop) {
@@ -293,6 +300,7 @@
       back.hidden = true;
       map.classList.add('is-europe'); map.classList.remove('is-country');
       Array.prototype.forEach.call(gLand.children, function (p) { p.classList.remove('is-focus'); });
+      Array.prototype.forEach.call(gInner.children, function (p) { p.classList.remove('is-focus'); });
     }
     function buildCountry(code) {
       var co = countries[code];
@@ -313,6 +321,7 @@
       back.hidden = false;
       map.classList.remove('is-europe'); map.classList.add('is-country');
       Array.prototype.forEach.call(gLand.children, function (p) { p.classList.toggle('is-focus', p.getAttribute('data-c') === code); });
+      Array.prototype.forEach.call(gInner.children, function (p) { p.classList.toggle('is-focus', p.getAttribute('data-c') === code); });
     }
     // trasa Quo: od pierwszego gotowego punktu do najbliższego nieodwiedzonego
     function tour(list) {
@@ -399,7 +408,7 @@
       quoState.idx = i;
       var st = stops[i];
       placeQuo(standPt(st), 0, 1);
-      setPose(entrance && !reduce ? 'joy' : 'sit');
+      setPose(entrance && !soft ? 'joy' : 'sit');
       showQuo();
       arrive(st, entrance);
     }
@@ -407,12 +416,12 @@
       stops.forEach(function (x) { x.pin.classList.toggle('is-here', x === st); });
       quoState.at = st;
       showCallout(st);
-      if (!reduce) setPose(st.live ? 'joy' : 'sit');
+      setPose(st.live && !soft ? 'joy' : 'sit');
       clearTimeout(quoState.timer);
       quoState.timer = setTimeout(function () {
         setPose('sit');
         quoState.timer = setTimeout(next, st.live ? 1700 : 1100);
-      }, st.live && !reduce ? 650 : 0);
+      }, st.live && !soft ? 650 : 0);
     }
     function next() {
       if (!quoState.running || !quoState.onscreen || stops.length < 2) return;
@@ -456,7 +465,7 @@
         var p = [u * u * a[0] + 2 * u * e * c[0] + e * e * b[0], u * u * a[1] + 2 * u * e * c[1] + e * e * b[1]];
         var tx = 2 * u * (c[0] - a[0]) + 2 * e * (b[0] - c[0]);
         if (now - lastFrame > 125) { frameOn = !frameOn; lastFrame = now; setPose(frameOn ? 'run2' : 'run1'); }
-        var bob = -Math.abs(Math.sin(t * Math.PI * Math.max(3, Math.round(ms / 260)))) * 7;
+        var bob = soft ? 0 : -Math.abs(Math.sin(t * Math.PI * Math.max(3, Math.round(ms / 260)))) * 7;
         placeQuo(p, t < 1 ? bob : 0, tx > 0 ? -1 : 1);
         trail.add(p);
         if (t < 1) quoState.raf = requestAnimationFrame(step);
