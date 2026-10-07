@@ -14,7 +14,7 @@ docker exec "$H" sh -c 'chown -R $(stat -c %u:%g /opt/data/quolino/qdb.mjs) /opt
 
 # sekcja w instrukcji Hermesa (podmiana między znacznikami, bez ruszania reszty)
 docker cp "$SRC/hermes/trips-section.md" "$H:/tmp/trips-section.md"
-docker exec "$H" python3 - <<'PY'
+docker exec -i "$H" python3 - <<'PY'
 import re
 p = '/opt/data/skills/quolino/SKILL.md'
 s = open(p, encoding='utf-8').read()

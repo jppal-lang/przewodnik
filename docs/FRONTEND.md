@@ -81,7 +81,7 @@ uruchamiany ręcznie). Dane: `countries`, `regions`, `cities` (z `lat`, `lon`); 
 jego miast. Kraj bez gotowych miast z listy `PLANNED` w `atlas.js` (pl, cz, fr, gr) jest „wkrótce”;
 gdy dostanie miasta w bazie, sam przechodzi do gotowych. Regiony zapowiedziane: `PLANNED_REGIONS`
 (Toskania). Nazwy krajów: `country_translations`, zapasowo `Intl.DisplayNames` (wszystkie języki
-bez nowych kluczy). Kafle regionów ze zdjęciami zostały na stronie kraju.
+bez nowych kluczy). Strona kraju używa tego samego atlasu (`QuoAtlas.render({start: kod})`) zamiast kafli regionów. Kształty regionów (`areas`) i granice (`inner`) dla Włoch: `media/map/build-inner.mjs`; nowy kraj = nowy wpis w `SRC` tego skryptu.
 
 ## 3. KARTA MIASTA (city.html, dane z Supabase)
 

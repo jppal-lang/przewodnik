@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 <script src="i18n-ui.js?v=2"></script>
 </head>
 <body>
@@ -164,7 +164,7 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*&order=sort_order'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order&order=sort_order')
+    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order')
   ]).then(function(res) {
     langList        = res[0];
     var uiRows      = res[1];
@@ -265,8 +265,8 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
     return;
   }
 
-  // ── Kafle regionów ──
-  html += '<div class="city-grid" id="regionGrid"></div>';
+  // ── Mapa kraju z Quo + spis regionów (atlas.js) ──
+  html += '<div class="atlas-host" id="atlas"></div>';
 
   // ── Inne kraje ──
   var otherCountries = countries.filter(function(c) {
@@ -293,37 +293,8 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
 
   el.innerHTML = html;
 
-  var grid = document.getElementById('regionGrid');
-  regions.forEach(function(reg) {
-    var rTr        = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
-    var regionName = rTr ? rTr.name : reg.slug;
-    var regCities  = byRegion[reg.slug];
-
-    var card = document.createElement('a');
-    card.className = 'city-card';
-    card.href = 'region.html?r=' + encodeURIComponent(reg.slug);
-    if (regCities[0] && regCities[0].bandana_color) card.style.setProperty('--team', regCities[0].bandana_color);
-
-    var no = document.createElement('span');
-    no.className = 'sticker-no';
-    no.textContent = String(grid.children.length + 1).padStart(2, '0');
-    card.appendChild(no);
-    var wrap = document.createElement('div');
-    wrap.className = 'city-img-wrap loading';
-    card.appendChild(wrap);
-
-    var body = document.createElement('div');
-    body.className = 'city-body';
-    body.innerHTML =
-      '<div class="city-head"><div class="city-name">' + esc(regionName) + '</div></div>' +
-      (rTr && rTr.description ? '<div class="city-sub">' + esc(rTr.description) + '</div>' : '') +
-      '<div class="city-foot"><span>' + regCities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>' +
-      '<div class="city-go"><span>' + esc(ui('home.cta_open', 'Zaczynamy!')) + '</span><span class="arrow" aria-hidden="true">&rarr;</span></div>';
-    card.appendChild(body);
-
-    grid.appendChild(card);
-    loadCover(wrap, regCities[0], regionName);
-  });
+  if (window.QuoAtlas) QuoAtlas.render({ mount: 'atlas', start: country.slug, homeHref: './#regiony', lang: currentLang, ui: ui, imgBase: imgBase,
+    regions: allRegions, regionTrs: regionTrs, countries: countries, countryTrs: countryTrs, cities: allCities });
 }
 
 // ══════════════ LANGUAGE POPUP ══════════════
@@ -365,6 +336,8 @@ document.addEventListener('keydown', function(e) {
 // ══════════════ INIT ══════════════
 loadPage(currentLang);
 </script>
+<script src="media/map/europe.js?v=3"></script>
+<script src="atlas.js?v=5"></script>
 <script src="motion.js?v=4" defer></script>
 </body>
 </html>

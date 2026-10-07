@@ -17,7 +17,9 @@
   // Kraje zapowiedziane przez JP (2026-10-07). Gdy kraj dostanie miasta w bazie, sam przechodzi do „gotowych”.
   var PLANNED = ['pl', 'cz', 'fr', 'gr'];
   // Regiony zapowiedziane (klucz UI z nazwą, punkt na mapie: lon, lat)
-  var PLANNED_REGIONS = [{ country: 'it', key: 'region.toskania', name: 'Toskania', at: [11.1, 43.4] }];
+  // (slug = jak w bazie i w kształtach regionów media/map/europe.js; at = zapasowy punkt lon/lat)
+  var PLANNED_REGIONS = [{ country: 'it', slug: 'toscana', key: 'region.toskania', name: 'Toskania', at: [11.1, 43.4] }];
+  var touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
 
   // „Ogranicz animacje” (w Windows często włączone domyślnie): Quo dalej biega, bo ma przycisk
   // pauzy (WCAG 2.2.2) — jak film na okładce; znikają tylko podskoki i skoki radości.
@@ -79,7 +81,7 @@
       var tr = o.regionTrs.filter(function (t) { return t.region_slug === r.slug; })[0];
       var co = country(r.country_slug);
       co.live = true; co.plans += cs.length;
-      co.regions.push({ slug: r.slug, name: tr && tr.name ? tr.name : r.slug, cities: cs, lon: lon / cs.length, lat: lat / cs.length,
+      co.regions.push({ slug: r.slug, name: tr && tr.name ? tr.name : r.slug, desc: tr && tr.description, cities: cs, lon: lon / cs.length, lat: lat / cs.length,
         team: cs[0].bandana_color || '#0B4EA2', cover: cs[0] });
     });
     PLANNED.forEach(function (c) { country(c); });
@@ -89,12 +91,14 @@
     PLANNED_REGIONS.forEach(function (pr) {
       var co = countries[pr.country];
       if (!co || !co.live) return;
-      if (co.regions.some(function (r) { return r.name.toLowerCase() === ui(pr.key, pr.name).toLowerCase(); })) return;
-      co.soonRegions = (co.soonRegions || []).concat([{ name: ui(pr.key, pr.name), lon: pr.at[0], lat: pr.at[1], soon: true }]);
+      if (co.regions.some(function (r) { return r.slug === pr.slug; })) return;
+      var ar = ((E.areas || {})[pr.country] || []).filter(function (a) { return a.s === pr.slug; })[0];
+      co.soonRegions = (co.soonRegions || []).concat([{ slug: pr.slug, name: ui(pr.key, pr.name), pt: ar ? ar.a : proj(pr.at[0], pr.at[1]), soon: true }]);
     });
     // punkt kraju na mapie: środek gotowych miast, a dla „wkrótce” środek największego obszaru
     order.forEach(function (c) {
       var co = countries[c];
+      co.regions.forEach(function (r) { r.pt = proj(r.lon, r.lat); });
       if (co.live) {
         var lon = 0, lat = 0, n = 0;
         co.regions.forEach(function (r) { r.cities.forEach(function (x) { lon += +x.lon; lat += +x.lat; n++; }); });
@@ -113,6 +117,9 @@
     hatch.appendChild(svg('rect', { width: 7, height: 7, fill: '#FFFFFF' }));
     hatch.appendChild(svg('line', { x1: 0, y1: 0, x2: 0, y2: 7, stroke: '#B8C7DB', 'stroke-width': 2.4 }));
     defs.appendChild(hatch);
+    var hatchB = svg('pattern', { id: 'atlasHatchBlue', patternUnits: 'userSpaceOnUse', width: 4, height: 4, patternTransform: 'rotate(45)' });
+    hatchB.appendChild(svg('line', { x1: 0, y1: 0, x2: 0, y2: 4, stroke: 'rgba(255,255,255,.38)', 'stroke-width': 1.3 }));
+    defs.appendChild(hatchB);
     s.appendChild(defs);
     var gLand = svg('g', { class: 'atlas-land' });
     E.countries.forEach(function (c, i) {
@@ -122,6 +129,20 @@
       gLand.appendChild(p);
     });
     s.appendChild(gLand);
+    // regiony wewnątrz kraju: gotowe jaśniejsze, zapowiedziane zakreskowane, klik = strona regionu
+    var gArea = svg('g', { class: 'atlas-areas' });
+    var areaBy = {};
+    Object.keys(E.areas || {}).forEach(function (c) {
+      var co = countries[c], liveR = {}, soonR = {};
+      if (co) { co.regions.forEach(function (r) { liveR[r.slug] = r; }); (co.soonRegions || []).forEach(function (r) { soonR[r.slug] = r; }); }
+      E.areas[c].forEach(function (a) {
+        var st = liveR[a.s] ? 'live' : soonR[a.s] ? 'soon' : 'off';
+        var p = svg('path', { d: a.d, class: 'atlas-area atlas-area--' + st, 'data-c': c, 'data-r': a.s });
+        gArea.appendChild(p);
+        if (st !== 'off') areaBy[a.s] = p;
+      });
+    });
+    s.appendChild(gArea);
     // granice regionów wewnątrz kraju (linia przerywana, widoczna po przybliżeniu)
     var gInner = svg('g', { class: 'atlas-inner-g' });
     Object.keys(E.inner || {}).forEach(function (c) { gInner.appendChild(svg('path', { d: E.inner[c], class: 'atlas-inner', 'data-c': c })); });
@@ -152,7 +173,7 @@
       if (st.team) callout.style.setProperty('--team', st.team);
       callout.innerHTML = '<span class="atlas-pin__no">' + pad(st.no) + '</span><span class="atlas-callout__txt"><span class="atlas-callout__name">' + esc(st.label) + '</span>' +
         '<span class="atlas-callout__meta">' + esc(st.meta || '') + '</span></span>' +
-        (st.live ? '<span class="atlas-callout__go">' + esc(ui('home.cta_open', 'Zaczynamy!')) + ' <span aria-hidden="true">&rarr;</span></span>' : '');
+        (st.live ? '<span class="atlas-callout__go"><span class="atlas-callout__go-t">' + esc(ui('home.cta_open', 'Zaczynamy!')) + '</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' : '');
       callout.classList.remove('is-swap'); void callout.offsetWidth; callout.classList.add('is-swap');
     }
     var bar = el('div', 'atlas-bar');
@@ -175,11 +196,13 @@
 
     // ── spis obok mapy ──
     var no = 0;
-    live.forEach(function (code) {
+    var solo = o.start && countries[o.start] && countries[o.start].live ? o.start : null;
+    if (solo) { wrap.classList.add('atlas--solo'); map.classList.add('is-solo'); }
+    (solo ? [solo] : live).forEach(function (code) {
       var co = countries[code];
       var box = el('section', 'atlas-country');
       box.setAttribute('aria-label', co.name);
-      box.innerHTML = '<div class="atlas-country__head"><h3>' + esc(co.name) + '</h3>' +
+      box.innerHTML = solo ? '' : '<div class="atlas-country__head"><h3>' + esc(co.name) + '</h3>' +
         '<a href="country.html?k=' + encodeURIComponent(code) + '"><span>' + esc(ui('home.country_all', 'Zobacz cały kraj')) + '</span><span aria-hidden="true">&rarr;</span></a></div>';
       var ol = el('ol', 'atlas-regions');
       co.regions.forEach(function (r) {
@@ -193,7 +216,8 @@
         a.innerHTML = '<span class="atlas-region__no">' + pad(r.no) + '</span>' +
           '<span class="atlas-region__art" data-l="' + esc(r.name.charAt(0)) + '">' + (base ? '<img src="' + base + '-tile-384.webp" alt="" width="384" height="384" loading="lazy" decoding="async">' : '') + '</span>' +
           '<span class="atlas-region__txt"><span class="atlas-region__name">' + esc(r.name) + '</span>' +
-          '<span class="atlas-region__meta">' + r.cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></span>' +
+          '<span class="atlas-region__meta">' + r.cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span>' +
+          (solo && r.desc ? '<span class="atlas-region__desc">' + esc(r.desc) + '</span>' : '') + '</span>' +
           '<svg class="atlas-region__go" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
         var img = a.querySelector('img');
         if (img) img.onerror = function () { img.remove(); };
@@ -209,7 +233,7 @@
       box.appendChild(ol);
       index.appendChild(box);
     });
-    if (soon.length) {
+    if (soon.length && !solo) {
       var sb = el('section', 'atlas-soon');
       sb.innerHTML = '<h3>' + esc(ui('chip.soon', 'Wkrótce')) + '</h3><ul>' + soon.map(function (c) {
         return '<li data-country="' + c + '">' + esc(countries[c].name) + '</li>';
@@ -261,6 +285,7 @@
         if (stop.live) p.title = stop.label;
       } else if (!stop.live) p.setAttribute('aria-label', stop.label + ' · ' + ui('chip.soon', 'Wkrótce'));
       if (stop.action) p.addEventListener('click', stop.action);
+      else if (stop.href && touch) p.addEventListener('click', function (e) { if (quoState.at !== stop) { e.preventDefault(); goTo(stop); } });
       p.addEventListener('mouseenter', function () { goTo(stop); });
       p.addEventListener('focus', function () { goTo(stop); });
       stop.pin = p;
@@ -301,13 +326,14 @@
       map.classList.add('is-europe'); map.classList.remove('is-country');
       Array.prototype.forEach.call(gLand.children, function (p) { p.classList.remove('is-focus'); });
       Array.prototype.forEach.call(gInner.children, function (p) { p.classList.remove('is-focus'); });
+      Array.prototype.forEach.call(gArea.children, function (p) { p.classList.remove('is-focus'); });
     }
     function buildCountry(code) {
       var co = countries[code];
       pins.innerHTML = ''; gDots.innerHTML = ''; clearTrail();
       stops = [];
       co.regions.forEach(function (r) {
-        stops.push({ pt: proj(r.lon, r.lat), live: true, cap: true, no: r.no, label: r.name, meta: r.cities.length + ' ' + ui('home.region_ready', 'gotowe plany'),
+        stops.push({ pt: r.pt, live: true, cap: true, no: r.no, label: r.name, meta: r.cities.length + ' ' + ui('home.region_ready', 'gotowe plany'),
           href: 'region.html?r=' + encodeURIComponent(r.slug), region: r.slug, team: r.team });
         r.cities.forEach(function (c) {
           var p = proj(+c.lon, +c.lat);
@@ -315,13 +341,14 @@
         });
       });
       var sn = co.regions.length ? co.regions[co.regions.length - 1].no : 0;
-      (co.soonRegions || []).forEach(function (r) { stops.push({ pt: proj(r.lon, r.lat), live: false, cap: true, no: ++sn, label: r.name, meta: ui('chip.soon', 'Wkrótce') }); });
+      (co.soonRegions || []).forEach(function (r) { stops.push({ pt: r.pt, live: false, cap: true, no: ++sn, label: r.name, meta: ui('chip.soon', 'Wkrótce'), region: r.slug }); });
       stops.forEach(pin);
       title.textContent = co.name;
       back.hidden = false;
       map.classList.remove('is-europe'); map.classList.add('is-country');
       Array.prototype.forEach.call(gLand.children, function (p) { p.classList.toggle('is-focus', p.getAttribute('data-c') === code); });
       Array.prototype.forEach.call(gInner.children, function (p) { p.classList.toggle('is-focus', p.getAttribute('data-c') === code); });
+      Array.prototype.forEach.call(gArea.children, function (p) { p.classList.toggle('is-focus', p.getAttribute('data-c') === code); });
     }
     // trasa Quo: od pierwszego gotowego punktu do najbliższego nieodwiedzonego
     function tour(list) {
@@ -337,7 +364,7 @@
     function countryBox(code) {
       var co = countries[code], xs = [], ys = [];
       co.regions.forEach(function (r) { var p = proj(r.lon, r.lat); xs.push(p[0]); ys.push(p[1]); });
-      (co.soonRegions || []).forEach(function (r) { var p = proj(r.lon, r.lat); xs.push(p[0]); ys.push(p[1]); });
+      (co.soonRegions || []).forEach(function (r) { xs.push(r.pt[0]); ys.push(r.pt[1]); });
       return [Math.min.apply(0, xs), Math.min.apply(0, ys), Math.max.apply(0, xs), Math.max.apply(0, ys)];
     }
 
@@ -385,7 +412,19 @@
         startQuo(0, true);
       });
     }
-    back.addEventListener('click', zoomOut);
+    back.addEventListener('click', function () { if (solo) location.href = o.homeHref || './#regiony'; else zoomOut(); });
+    // obszar regionu działa jak jego naklejka (większy cel dla palca)
+    Object.keys(areaBy).forEach(function (slug) {
+      var p = areaBy[slug];
+      p.addEventListener('mouseenter', function () { if (level === 'country') goTo(stopBy('region', slug)); });
+      p.addEventListener('click', function () {
+        if (level !== 'country') { zoomTo(p.getAttribute('data-c')); return; }
+        var st = stopBy('region', slug);
+        if (!st) return;
+        if (touch && quoState.at !== st) { goTo(st); return; }
+        if (st.href) location.href = st.href;
+      });
+    });
 
     // ════════ Quo ════════
     var frames = {};
@@ -416,6 +455,7 @@
       stops.forEach(function (x) { x.pin.classList.toggle('is-here', x === st); });
       quoState.at = st;
       showCallout(st);
+      Object.keys(areaBy).forEach(function (k) { areaBy[k].classList.toggle('is-here', st.region === k); });
       setPose(st.live && !soft ? 'joy' : 'sit');
       clearTimeout(quoState.timer);
       quoState.timer = setTimeout(function () {
@@ -548,9 +588,17 @@
     document.addEventListener('visibilitychange', function () { if (document.hidden) stopQuo(); else if (quoState.at) arrive(quoState.at); });
 
     // ── start ──
-    setVB(europeVB());
-    buildEurope();
-    placePins();
+    if (solo) {
+      level = 'country'; current = solo;
+      requestAnimationFrame(function () { setVB(countryVB(solo)); placePins(); });
+      setVB(countryVB(solo));
+      buildCountry(solo);
+      placePins();
+    } else {
+      setVB(europeVB());
+      buildEurope();
+      placePins();
+    }
     var rz = 0;
     window.addEventListener('resize', function () {
       cancelAnimationFrame(rz);
