@@ -9,6 +9,7 @@ Sprawdza: te same klucze i kolejność, liczbę akapitów, null ↔ null, pola n
 zachowane liczby (ceny, daty, godziny), brak _notes, brak emoji, nieprzetłumaczone pola.
 """
 import json, re, sys
+from collections import Counter
 
 KEEP_STOP = ["stop_key", "stop_number", "category"]
 TEXT_STOP = ["name", "kids_box", "photo_task", "hint", "local_flavor", "dress_code", "practical_note"]
@@ -21,8 +22,12 @@ errors, warnings = [], []
 same = total = 0
 
 
+GROUP = re.compile(r"(?<=\d)[\s\u00a0\u202f.,'](?=\d{3}(?!\d))")
+
+
 def nums(s):
-    return sorted(re.sub(r"[.,]", "", n) for n in NUM.findall(s or ""))
+    """Liczby ze źródła; separator tysięcy nieistotny (220 000 = 220,000 = 220000)."""
+    return Counter(re.sub(r"[.,]", "", n) for n in NUM.findall(GROUP.sub("", s or "")))
 
 
 def text(where, a, b, long_check=True):
@@ -37,8 +42,10 @@ def text(where, a, b, long_check=True):
     if not isinstance(b, str):
         errors.append(f"{where}: oczekiwany tekst")
         return
-    if nums(a) != nums(b):
-        errors.append(f"{where}: liczby się nie zgadzają (źródło {nums(a)}, tłumaczenie {nums(b)}) — ceny, daty i godziny bez zmian")
+    # każda liczba ze źródła musi zostać (dodatkowe wolno: „XIII wiek” → „13th century”)
+    missing = nums(a) - nums(b)
+    if missing:
+        errors.append(f"{where}: brakuje liczb ze źródła {sorted(missing.elements())} — ceny, daty, godziny i liczby bez zmian")
     if EMOJI.search(b) and not EMOJI.search(a):
         errors.append(f"{where}: emoji w tłumaczeniu")
     if BANNED.search(b):
