@@ -74,6 +74,15 @@ naklejkę, gdy zaliczy misje przystanku.
 
 ---
 
+### Atlas na landingu (od 2026-10-07)
+`#regiony` = mapa Europy z Quo + spis regionów (`atlas.js`, kształty krajów w `media/map/europe.js`
+— Natural Earth 1:50m, rzut azymutalny równopowierzchniowy, generator `media/map/build-europe.mjs`
+uruchamiany ręcznie). Dane: `countries`, `regions`, `cities` (z `lat`, `lon`); punkt regionu = środek
+jego miast. Kraj bez gotowych miast z listy `PLANNED` w `atlas.js` (pl, cz, fr, gr) jest „wkrótce”;
+gdy dostanie miasta w bazie, sam przechodzi do gotowych. Regiony zapowiedziane: `PLANNED_REGIONS`
+(Toskania). Nazwy krajów: `country_translations`, zapasowo `Intl.DisplayNames` (wszystkie języki
+bez nowych kluczy). Kafle regionów ze zdjęciami zostały na stronie kraju.
+
 ## 3. KARTA MIASTA (city.html, dane z Supabase)
 
 - Pas w kolorze drużyny: okruszki, nazwa, lead, licznik „x/y naklejek”, fakty, przycisk trasy.

@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=14">
 <script src="i18n-ui.js?v=2"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://questini.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci, kolacja na koniec.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://questini.com/","logo":{"@type":"ImageObject","url":"https://questini.com/quolino-logo.svg"}}}
@@ -219,7 +219,7 @@
   <div class="album-head">
     <h2 id="regTitle" data-ui="home.select_region">Wybierz region</h2>
   </div>
-  <div class="region-grid" id="regionGrid"></div>
+  <div id="atlas"></div>
 </section>
 
 </main>
@@ -238,6 +238,8 @@
   <span data-ui="home.footer">© 2026 · Rodzinne przewodniki wypadowe</span>
 </footer>
 
+<script src="media/map/europe.js?v=1"></script>
+<script src="atlas.js?v=1"></script>
 <script>
 // ══════ CONFIG ══════
 var SB_URL = 'https://quolino-api.srv1984679.hstgr.cloud/rest/v1';
@@ -277,7 +279,7 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order&order=sort_order'),
+    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order'),
     sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,title'),
   ]).then(function(results) {
     langList        = results[0];
@@ -303,8 +305,9 @@ function loadPage(lang) {
     // Update page title
     if (uiStrings['home.title']) document.title = uiStrings['home.title'];
 
-    // Build region grid
-    buildRegionGrid(regions, regionTrs, countries, countryTrs, cities);
+    // Atlas: mapa Europy z Quo + spis regionów (atlas.js)
+    if (window.QuoAtlas) QuoAtlas.render({ mount: 'atlas', lang: lang, ui: ui, imgBase: imgBase,
+      regions: regions, regionTrs: regionTrs, countries: countries, countryTrs: countryTrs, cities: cities });
     buildHeroSheet(cities, cityTrs, regionTrs);
 
     // Build language popup
@@ -392,122 +395,6 @@ function buildHeroSheet(cities, cityTrs, regionTrs) {
   }
 }
 
-// ══════ REGION GRID ══════
-function buildRegionGrid(regions, regionTrs, countries, countryTrs, cities) {
-  var grid = document.getElementById('regionGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-
-  // Cities grouped per region (already ordered by sort_order)
-  var byRegion = {};
-  cities.forEach(function(c) {
-    if (!byRegion[c.region_slug]) byRegion[c.region_slug] = [];
-    byRegion[c.region_slug].push(c);
-  });
-
-  // ── Published regions, pogrupowane po kraju ──
-  // Hierarchia: kontynent > kraj > region > miasto > miejsce.
-  // Kontynent na razie pomijamy (jeden), kraj dostaje naglowek z linkiem do country.html.
-  var countryOrder = countries.slice().sort(function(a, b) {
-    return (a.sort_order || 0) - (b.sort_order || 0);
-  });
-  var ordered = [];
-  countryOrder.forEach(function(co) {
-    regions.forEach(function(reg) {
-      if (reg.country_slug === co.slug) ordered.push(reg);
-    });
-  });
-  regions.forEach(function(reg) {
-    if (ordered.indexOf(reg) === -1) ordered.push(reg);   // kraj spoza tabeli countries
-  });
-
-  var lastCountry = null;
-  ordered.forEach(function(reg) {
-    var regCities = byRegion[reg.slug];
-    if (!regCities || !regCities.length) return;
-
-    if (reg.country_slug !== lastCountry) {
-      lastCountry = reg.country_slug;
-      var hCo   = countries.filter(function(c) { return c.slug === reg.country_slug; })[0];
-      var hTr   = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
-      var coName = hTr ? hTr.name : (reg.country_slug || '');
-      var coFlag = hCo ? hCo.flag_code : reg.country_slug;
-      var head = document.createElement('div');
-      head.className = 'country-head';
-      head.innerHTML =
-        '<h3>' + (coFlag ? '<img src="https://flagcdn.com/w40/' + coFlag + '.png" alt="">' : '') + esc(coName) + '</h3>' +
-        '<a href="country.html?k=' + encodeURIComponent(reg.country_slug) + '">' +
-          '<span>' + esc(ui('home.country_all', 'Zobacz cały kraj')) + '</span>' +
-          '<span class="arrow" aria-hidden="true">&rarr;</span></a>';
-      grid.appendChild(head);
-    }
-
-    var rTr = regionTrs.filter(function(t) { return t.region_slug === reg.slug; })[0];
-    var regionName = rTr ? rTr.name : reg.slug;
-
-    var country = countries.filter(function(c) { return c.slug === reg.country_slug; })[0];
-    var cTr = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
-    var countryName = cTr ? cTr.name : (reg.country_slug || '');
-    var flagCode = country ? country.flag_code : reg.country_slug;
-
-    var tile = document.createElement('a');
-    tile.className = 'region-tile';
-    tile.href = 'region.html?r=' + encodeURIComponent(reg.slug);
-
-    var wrap = document.createElement('div');
-    wrap.className = 'rt-img-wrap loading';
-    tile.appendChild(wrap);
-
-    var body = document.createElement('div');
-    body.className = 'rt-body';
-    body.innerHTML =
-      '<div class="rt-name">' + esc(regionName) + '</div>' +
-      '<div class="rt-meta">' + regCities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div>' +
-      '<div class="rt-go"><span>' + esc(ui('home.cta_open', 'Zaczynamy!')) + '</span><span class="arrow" aria-hidden="true">&rarr;</span></div>';
-    tile.appendChild(body);
-
-    grid.appendChild(tile);
-    loadCover(wrap, regCities[0], regionName);
-  });
-
-  // ── "Coming soon" regions ──
-  var soonRegions = [
-    { key: 'region.toskania', country: 'label.country_italy',  flag: 'it' },
-    { key: 'region.krakow',   country: 'label.country_poland', flag: 'pl' },
-    { key: 'region.warszawa', country: 'label.country_poland', flag: 'pl' },
-    { key: 'region.gdansk',   country: 'label.country_poland', flag: 'pl' }
-  ];
-
-  soonRegions.forEach(function(sr) {
-    var name = ui(sr.key, sr.key.split('.')[1]);
-    var countryName = ui(sr.country, '');
-
-    var tile = document.createElement('div');
-    tile.className = 'region-tile soon';
-
-    var wrap = document.createElement('div');
-    wrap.className = 'rt-img-wrap';
-    if (countryName) {
-      var badge = document.createElement('div');
-      badge.className = 'rt-flag';
-      badge.innerHTML = '<img src="https://flagcdn.com/w40/' + sr.flag + '.png" alt="">' + esc(countryName);
-      wrap.appendChild(badge);
-    }
-    tileFallback(wrap, '#8A8377', name);
-    tile.appendChild(wrap);
-
-    var body = document.createElement('div');
-    body.className = 'rt-body';
-    body.innerHTML =
-      '<div class="rt-name">' + esc(name) + '</div>' +
-      '<div class="rt-meta"><span class="chip-soon">' + esc(ui('chip.soon', 'Wkrótce')) + '</span></div>';
-    tile.appendChild(body);
-
-    grid.appendChild(tile);
-  });
-}
-
-// ══════ LANGUAGE POPUP ══════
 function buildLangPopup() {
   var grid = document.getElementById('langGrid');
   if (!grid) return;
@@ -550,6 +437,6 @@ document.addEventListener('keydown', function(e) {
 // ══════ INIT ══════
 loadPage(currentLang);
 </script>
-<script src="motion.js?v=3" defer></script>
+<script src="motion.js?v=4" defer></script>
 </body>
 </html>

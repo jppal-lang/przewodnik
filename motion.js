@@ -11,7 +11,7 @@
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var SEL = '.route-step,.why-row,.rules-text,.rules-box,.region-tile,.country-head,' +
             '.city-card,.other-region-tile,.qc-stop,.qc-strip__stk,.qc-section__title,' +
-            '.qc-panel,.qc-card,.qc-tel,.qc-box,.album-head';
+            '.qc-panel,.qc-card,.qc-tel,.qc-box,.album-head,.atlas-country,.atlas-soon';
 
   // ── wideo na okładce ──
   function initVideo(btn) {

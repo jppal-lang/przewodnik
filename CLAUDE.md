@@ -84,6 +84,7 @@ przewodnik/
 ├── styles.css            # design system v4 „Album naklejek” — jedno źródło prawdy
 ├── legacy.css            # style starych stron /wlochy/
 ├── i18n-ui.js            # słownik UI (17 języków) + łańcuch języków dla danych
+├── atlas.js              # mapa Europy z Quo na landingu (#regiony); kształty: media/map/europe.js
 ├── motion.js             # animacje (wklejanie naklejek, pauza filmu)
 ├── app.js, kids-view.js, stop-toc.js, qr-share.js, qrcode.js, migrate-storage.js
 ├── PRODUCT.md, DESIGN.md # prawda o produkcie i opis systemu wizualnego

@@ -724,3 +724,154 @@ html.motion .route:has(.is-in)::before{transform:scaleX(1)}
 .qc-card__name{margin-top:2px!important;font-weight:700;color:var(--ink)!important}
 .qc-card--hospital .qc-card__title{color:var(--rosso)}
 .qc-card--pharmacy .qc-card__title{color:var(--verde)}
+
+/* =====================================================================
+   ATLAS — mapa Europy w sekcji #regiony (atlas.js + media/map/europe.js)
+   Kraje = wycinanki z kartonu na morzu z rastrem; gotowy kraj w azzurro,
+   „wkrótce” zakreskowany. Piny to naklejki z kapslem, Quo biega po mapie.
+   ===================================================================== */
+.atlas{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr);gap:clamp(22px,3vw,40px);align-items:start}
+@media(max-width:960px){.atlas{grid-template-columns:1fr}}
+
+.atlas-map{position:relative;aspect-ratio:1000/831;border-radius:16px;overflow:hidden;isolation:isolate;container-type:inline-size;
+  background-color:#D8E4F3;background-image:radial-gradient(rgba(11,78,162,.13) 1.1px,transparent 1.5px);background-size:13px 13px;
+  box-shadow:var(--lift-2),inset 0 0 0 1px rgba(11,78,162,.08)}
+@media(max-width:560px){.atlas-map{aspect-ratio:1/1;border-radius:14px;margin:0 calc(var(--gut) * -.4)}}
+.atlas-svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+.atlas-c{fill:#fff;stroke:#C4D2E4;stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .5s var(--ease),opacity .5s}
+.atlas-c--soon{fill:url(#atlasHatch);stroke:var(--slot)}
+.atlas-c--live{fill:var(--azzurro);stroke:var(--azzurro-ink)}
+.atlas-map.is-country .atlas-c:not(.is-focus){fill:#F3F6FB}
+.atlas-map.is-country .atlas-c--soon:not(.is-focus){fill:#F3F6FB}
+.atlas-city{fill:#fff;stroke:var(--azzurro-deep);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:.9}
+.atlas-step{fill:none;stroke:var(--azzurro-deep);stroke-linecap:round;stroke-linejoin:round;transition:opacity 1.2s ease}
+.atlas-map.is-country .atlas-step{stroke:#fff}
+.atlas-step.is-old{opacity:.3}
+
+/* wejście: kraje wskakują jak wycinanki, gotowy kraj „wkleja się” na końcu */
+@keyframes atlasPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes atlasSlap{0%{transform:scale(1.14) rotate(-3deg)}60%{transform:scale(.98) rotate(.5deg)}100%{transform:none}}
+html.motion .atlas-map:not(.is-in) .atlas-c,html.motion .atlas-map:not(.is-in) .atlas-pins{opacity:0}
+html.motion .atlas-map.is-in .atlas-c{transform-box:fill-box;transform-origin:center;animation:atlasPop .7s var(--ease) calc(var(--i) * 9ms) backwards}
+html.motion .atlas-map.is-in .atlas-c--live{animation:atlasPop .5s var(--ease) .2s backwards,atlasSlap .7s var(--ease) .75s backwards}
+html.motion .atlas-map.is-in .atlas-pins{animation:fadein .5s ease .7s backwards}
+
+/* piny */
+.atlas-pins{position:absolute;inset:0;z-index:2;pointer-events:none;transition:opacity .35s ease}
+.atlas-pins.is-hidden{opacity:0}
+.atlas-pins.is-hidden .atlas-pin{pointer-events:none}
+.atlas-pin{position:absolute;width:0;height:0;pointer-events:auto;color:var(--ink);font:inherit;border:0;background:none;padding:0;cursor:pointer}
+.atlas-pin.is-soon{cursor:default}
+.atlas-pin__dot{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 0 3.5px var(--azzurro),0 3px 6px rgba(14,26,43,.25)}
+.atlas-pin.is-soon .atlas-pin__dot{left:-6px;top:-6px;width:12px;height:12px;background:var(--slot);box-shadow:0 0 0 3px #fff}
+.atlas-pin__tag{position:absolute;left:24px;top:0;display:flex;align-items:center;gap:9px;min-height:46px;padding:6px 14px 6px 6px;border-radius:10px;background:var(--card);
+  box-shadow:inset 0 -4px 0 var(--team,var(--azzurro)),var(--lift-2);white-space:nowrap;transform:translateY(-50%) rotate(var(--tilt,-2deg));
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+.atlas-pin__tag::before{content:"";position:absolute;inset:-6px}
+.atlas-pin.is-flip .atlas-pin__tag{left:auto;right:24px;--tilt:2deg}
+.atlas-pin.is-live:hover .atlas-pin__tag,.atlas-pin.is-live:focus-visible .atlas-pin__tag,.atlas-pin.is-here .atlas-pin__tag{transform:translateY(-50%) translateY(-5px) rotate(0);box-shadow:inset 0 -4px 0 var(--team,var(--azzurro)),var(--lift-3)}
+.atlas-pin:focus-visible{outline:0}
+.atlas-pin:focus-visible .atlas-pin__tag{outline:3px solid var(--sun);outline-offset:3px}
+.atlas-pin__no{display:grid;place-items:center;min-width:36px;height:32px;padding:0 6px;border-radius:7px;background:var(--azzurro);color:#fff;font-stretch:125%;font-weight:900;font-size:15px}
+.atlas-pin__txt{display:flex;flex-direction:column;gap:2px;padding-left:6px}
+.atlas-pin__no + .atlas-pin__txt{padding-left:0}
+.atlas-pin__name{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:24px;line-height:.95;letter-spacing:.005em}
+.atlas-pin__meta{font-size:14px;font-weight:600;color:var(--muted);line-height:1.15}
+.atlas-pin.is-soon .atlas-pin__tag{background:rgba(255,255,255,.82);box-shadow:none;outline:2px dashed var(--slot);outline-offset:-2px;min-height:40px;padding:5px 12px}
+.atlas-pin.is-soon .atlas-pin__name{color:var(--muted);font-size:21px}
+.atlas-pin.is-soon.is-here .atlas-pin__tag{transform:translateY(-50%) rotate(0);background:#fff}
+/* poziom kraju: same kapsle z numerem (nazwy w spisie i w podpisie mapy) */
+.atlas-pin.is-cap .atlas-pin__dot{display:none}
+.atlas-pin.is-cap .atlas-pin__tag{left:0;min-height:0;padding:4px;border-radius:10px;transform:translate(-50%,-50%) rotate(var(--tilt,-3deg))}
+.atlas-pin.is-cap:nth-child(even) .atlas-pin__tag{--tilt:3deg}
+.atlas-pin.is-cap .atlas-pin__no{min-width:46px;height:42px;font-size:19px;border-radius:8px}
+.atlas-pin.is-cap.is-live:hover .atlas-pin__tag,.atlas-pin.is-cap.is-live:focus-visible .atlas-pin__tag,.atlas-pin.is-cap.is-here .atlas-pin__tag{transform:translate(-50%,-50%) translateY(-5px) rotate(0) scale(1.08)}
+.atlas-pin.is-cap.is-soon .atlas-pin__tag{background:rgba(255,255,255,.85)}
+.atlas-pin.is-cap.is-soon .atlas-pin__no{background:var(--slot)}
+
+/* podpis miejsca, przy którym stoi Quo */
+.atlas-callout{position:absolute;z-index:4;left:14px;bottom:14px;max-width:calc(100% - 28px);display:flex;align-items:center;gap:12px;padding:10px 16px 12px 10px;border-radius:12px;background:var(--card);color:var(--ink);
+  box-shadow:inset 0 -5px 0 var(--team,var(--azzurro)),var(--lift-3);transform:rotate(-1.2deg)}
+.atlas-callout[hidden]{display:none}
+.atlas-callout.is-swap{animation:atlasSwap .45s var(--ease)}
+@keyframes atlasSwap{from{opacity:0;transform:translateY(10px) rotate(-4deg)}to{opacity:1;transform:rotate(-1.2deg)}}
+.atlas-callout .atlas-pin__no{min-width:44px;height:40px;font-size:18px}
+.atlas-callout__txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.atlas-callout__name{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:clamp(26px,4.4cqw,38px);line-height:.92}
+.atlas-callout__meta{font-size:16px;color:var(--muted)}
+.atlas-callout__go{margin-left:6px;align-self:flex-end;white-space:nowrap;font-weight:800;font-size:17px;color:var(--azzurro)}
+a.atlas-callout[href]:hover{box-shadow:inset 0 -5px 0 var(--team,var(--azzurro)),var(--lift-3),0 0 0 3px var(--azzurro-50)}
+.atlas-callout.is-soon{box-shadow:var(--lift-2);background:rgba(255,255,255,.92)}
+.atlas-callout.is-soon .atlas-pin__no{background:var(--slot)}
+.atlas-callout.is-soon .atlas-callout__name{color:var(--muted)}
+
+@container (max-width:520px){
+  .atlas-callout__go{display:none}
+  .atlas-callout{left:10px;bottom:10px;padding:8px 12px 10px 8px}
+  .atlas-pin.is-cap .atlas-pin__no{min-width:42px;height:38px;font-size:17px}
+  .atlas-pin__meta{display:none}
+  .atlas-pin__name{font-size:19px}
+  .atlas-pin.is-soon .atlas-pin__name{font-size:17px}
+  .atlas-pin__tag{left:17px;min-height:38px;padding:4px 10px 4px 4px;gap:6px}
+  .atlas-pin.is-flip .atlas-pin__tag{right:17px}
+  .atlas-pin.is-soon .atlas-pin__tag{min-height:34px;padding:3px 9px}
+  .atlas-pin__no{min-width:30px;height:28px;font-size:14px}
+}
+
+/* Quo */
+.atlas-quo{position:absolute;z-index:3;left:0;top:0;width:clamp(60px,12cqw,112px);aspect-ratio:1;pointer-events:none;transform:translate(-50%,-90%);opacity:0;transition:opacity .4s ease}
+.atlas-quo.is-on{opacity:1}
+.atlas-quo img{position:relative;width:100%;height:100%;object-fit:contain;transform:translateY(var(--bob,0px)) scaleX(var(--face,1));filter:drop-shadow(0 5px 5px rgba(14,26,43,.22))}
+.atlas-quo[data-pose="sit"] img{transform:none}
+.atlas-quo[data-pose="joy"] img{transform:none;animation:atlasHop .6s var(--ease)}
+.atlas-quo__shadow{position:absolute;left:30%;right:30%;bottom:6%;height:8%;border-radius:50%;background:rgba(6,42,88,.28);filter:blur(1.5px)}
+@keyframes atlasHop{0%{transform:translateY(0) scale(1,1)}25%{transform:translateY(4%) scale(1.06,.92)}55%{transform:translateY(-16%) scale(.96,1.05)}100%{transform:none}}
+
+/* pasek nad mapą */
+.atlas-bar{position:absolute;z-index:4;left:12px;right:12px;top:12px;display:flex;align-items:flex-start;gap:10px;pointer-events:none}
+.atlas-bar > *{pointer-events:auto}
+.atlas-back{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 16px 0 12px;border:0;border-radius:var(--r-btn);background:var(--card);color:var(--azzurro-ink);font-weight:800;font-size:17px;box-shadow:inset 0 -3px 0 rgba(14,26,43,.08),var(--lift-1)}
+.atlas-back:hover{background:var(--azzurro-50)}
+.atlas-back[hidden]{display:none}
+.atlas-title{margin-right:auto;display:inline-flex;align-items:center;min-height:46px;padding:4px 14px 2px;border-radius:var(--r-btn);background:var(--card);box-shadow:var(--lift-1);font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:clamp(26px,4.4cqw,40px);line-height:.9;color:var(--ink);pointer-events:none}
+.atlas-title:empty{visibility:hidden}
+.atlas-pause{display:grid;place-items:center;width:46px;height:46px;border:0;border-radius:var(--r-btn);background:var(--card);color:var(--azzurro-ink);box-shadow:var(--lift-1)}
+.atlas-pause:hover{background:var(--azzurro-50)}
+.atlas-pause .i-play,.atlas-pause.is-paused .i-pause{display:none}
+.atlas-pause.is-paused .i-play{display:block}
+.atlas-pause[hidden]{display:none}
+
+/* spis obok mapy */
+.atlas-index{display:flex;flex-direction:column;gap:28px}
+.atlas-country__head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:6px 14px;padding-bottom:10px;border-bottom:2.5px solid var(--rule)}
+.atlas-country__head h3{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:clamp(38px,4vw,48px);line-height:.9}
+.atlas-country__head a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:800;font-size:17px;color:var(--azzurro)}
+.atlas-country__head a:hover{color:var(--azzurro-ink)}
+.atlas-regions{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.atlas-region{position:relative;display:grid;grid-template-columns:auto 60px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:76px;padding:8px 14px 10px 10px;border-radius:12px;background:var(--card);color:var(--ink);
+  box-shadow:inset 0 -4px 0 var(--team,var(--azzurro)),var(--lift-1);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+a.atlas-region:hover,a.atlas-region:focus-visible{transform:translateY(-3px);box-shadow:inset 0 -4px 0 var(--team,var(--azzurro)),var(--lift-2)}
+.atlas-region__no{display:grid;place-items:center;min-width:38px;height:32px;padding:0 6px;border-radius:7px;background:var(--azzurro);color:#fff;font-stretch:125%;font-weight:900;font-size:15px}
+.atlas-region__art{width:60px;height:60px;border-radius:8px;overflow:hidden;background:var(--team,var(--azzurro))}
+.atlas-region__art{display:grid;place-items:center}
+.atlas-region__art::after{content:attr(data-l);grid-area:1/1;font-stretch:62%;font-weight:900;font-size:36px;line-height:1;color:rgba(255,255,255,.92)}
+.atlas-region__art img{grid-area:1/1;position:relative;z-index:1;width:100%;height:100%;object-fit:cover}
+.atlas-region__txt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.atlas-region__name{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:30px;line-height:.92;overflow-wrap:anywhere}
+.atlas-region__meta{font-size:16px;color:var(--muted)}
+.atlas-region__go{color:var(--azzurro);transition:transform .25s var(--ease)}
+a.atlas-region:hover .atlas-region__go{transform:translateX(4px)}
+.atlas-region--soon{background:transparent;box-shadow:none;outline:2.5px dashed var(--slot);outline-offset:-2.5px;grid-template-columns:auto 60px minmax(0,1fr)}
+.atlas-region--soon .atlas-region__no{background:var(--slot)}
+.atlas-region--soon .atlas-region__art{background:transparent;outline:2px dashed var(--slot-ink);outline-offset:-2px}
+.atlas-region--soon .atlas-region__name{color:var(--muted)}
+.atlas-soon h3{font-stretch:75%;font-weight:800;font-size:15px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.atlas-soon ul{list-style:none;display:flex;flex-wrap:wrap;gap:10px}
+.atlas-soon li{display:inline-flex;align-items:center;min-height:46px;padding:0 16px;border-radius:10px;outline:2.5px dashed var(--slot);outline-offset:-2.5px;font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:24px;color:var(--muted);background:rgba(255,255,255,.5)}
+
+@media(prefers-reduced-motion:reduce){
+  html.motion .atlas-map.is-in .atlas-c,html.motion .atlas-map.is-in .atlas-c--live{animation:fadein .6s ease backwards}
+  .atlas-quo[data-pose="joy"] img{animation:none}
+  .atlas-pin__tag,.atlas-region{transition:none}
+}
