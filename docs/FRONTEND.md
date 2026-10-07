@@ -124,6 +124,19 @@ naklejkę, gdy zaliczy misje przystanku.
 
 ---
 
+## 6a. PANEL ADMINA (`_admin/`, od 2026-10-07)
+
+Kolejka szkiców wycieczek (`city_versions.status = 'draft'`) do zatwierdzenia przez JP:
+porównanie szkicu z wersją opublikowaną (opis miasta, przystanki nowe/zmienione/usunięte,
+języki, ostrzeżenia), decyzja „Zatwierdź i opublikuj” / „Odrzuć szkic” (dwa kliknięcia,
+bez okienek przeglądarki). Tylko PL, `noindex`.
+
+- Dostęp wyłącznie tunelem SSH do VPS (decyzja JP) — `http://localhost:8088/_admin/`.
+  Publicznie katalogu nie ma (ścieżki od `_` są pomijane przez nginx i GitHub Pages).
+- `?demo=1` — dane testowe z `_admin/demo.json`, nic się nie zapisuje.
+- API (`/api/admin_queue`, `/api/admin_versions`, `/api/rpc/admin_approve|admin_reject`)
+  i kontenery to zakres Backendu — kontrakt i szkic SQL w `_admin/README.md`.
+
 ## 7. CHECKLIST PRZED ODDANIEM
 
 - [ ] Min 18px tekst treści, min 44×44px dotyk

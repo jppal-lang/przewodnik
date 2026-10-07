@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Do zatwierdzenia · Quolino admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=13">
+<link rel="stylesheet" href="admin.css?v=1">
+</head>
+<body class="adm">
+
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <a href="./" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">admin</span></a>
+    <div class="adm-env" id="env" hidden></div>
+  </div>
+</nav>
+
+<header class="band adm-head">
+  <div class="wrap-wide">
+    <p class="label adm-head__eyebrow">Panel redakcji</p>
+    <h1 class="adm-head__title">Do zatwierdzenia <span class="adm-count" id="count">·</span></h1>
+    <p class="adm-head__sub">Szkice wycieczek czekające na publikację. Strona pokazuje zawsze wersję opublikowaną — szkic trafia na nią dopiero po zatwierdzeniu.</p>
+  </div>
+</header>
+
+<main class="wrap-wide adm-layout">
+  <section class="adm-queue" aria-labelledby="qh">
+    <h2 class="label" id="qh">Kolejka</h2>
+    <div id="queue" class="adm-queue__list" aria-live="polite"><p class="adm-empty">Ładuję…</p></div>
+  </section>
+
+  <section class="adm-detail" id="detail" aria-live="polite" tabindex="-1">
+    <div class="adm-placeholder">
+      <p>Wybierz szkic z kolejki, żeby zobaczyć, co się zmieni na stronie.</p>
+    </div>
+  </section>
+</main>
+
+<script src="admin.js?v=1"></script>
+</body>
+</html>
