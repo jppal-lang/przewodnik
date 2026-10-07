@@ -7,7 +7,7 @@
 web
 
 ## Users
-- Rodziny z dziećmi (głównie 9–16 lat) zwiedzające miasta Europy autem; dziś przede wszystkim polscy turyści we Włoszech (Marche, Umbria).
+- Rodziny z dziećmi (głównie 9–16 lat) zwiedzające miasta Europy autem; dziś przede wszystkim polscy turyści we Włoszech (Marche, Emilia-Romagna, Umbria).
 - Rodzic: dwie sceny po równo — planowanie w domu (wieczór, laptop/telefon na kanapie: wybór regionu i miasta na jutro) oraz teren (telefon w ręku, w słońcu na włoskiej uliczce, dziecko obok: karta miasta przystanek po przystanku).
 - Dziecko: ten sam przewodnik w „widoku dziecka” (QR / `?view=kid`) — misje, zagadki, checkboxy, bez komercji.
 
@@ -34,7 +34,7 @@ Jeden plan, dwa widoki: przewodnik dla dorosłego i gra terenowa dla dziecka nad
 - Slogan: Let's Explore!
 
 ## Evidence on Hand
-- 8 opublikowanych miast (Marche: Urbino, Ancona, Frasassi, Rimini, Rawenna; Umbria: Perugia, Spello, Asyż), 60+ przystanków z misjami w Supabase.
+- 8 opublikowanych miast (Marche: Urbino, Ancona, Frasassi; Emilia-Romagna: Rimini, Rawenna; Umbria: Perugia, Spello, Asyż), 60+ przystanków z misjami w Supabase.
 - Ilustracje: 15 póz Quo, 15 ikon kategorii przystanków, hero-ilustracje Perugii, Spello, Asyżu; wideo hero (media/hero.mp4).
 - Brak: opinii użytkowników, liczb użycia, partnerów — nie wolno ich wymyślać.
 

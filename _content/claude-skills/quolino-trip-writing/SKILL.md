@@ -16,7 +16,7 @@ Zasady JP mają pierwszeństwo przed starszymi dokumentami (`IMPORT.md`, `CHATGP
 
 Twarde zasady projektu (zawsze): zero kilometrów i czasów dojazdu, zero godzin wyjazdu/powrotu
 z bazy, punkt 01 = parking, nie wymyślać faktów (brak źródła → `null` / `unverified` / notatka),
-Marche ≠ Umbria ≠ Emilia-Romania (regiony osobno), widok dziecka bez komercji.
+Marche ≠ Umbria ≠ Emilia-Romagna (regiony osobno), widok dziecka bez komercji.
 
 ---
 

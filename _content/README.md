@@ -90,7 +90,8 @@ puste `city.local_food` — czyli gdy wytyczne §12–§15 mogły zostać pomini
 
 ## Miasta już w bazie
 
-`urbino`, `ancona`, `frasassi`, `rimini`, `rawenna` (marche) ·
+`urbino`, `ancona`, `frasassi` (marche) ·
+`rimini`, `rawenna` (emilia-romagna) ·
 `perugia`, `asyz` (umbria)
 
 Nie dublować slugów. Rozmówek nie generować — są wspólne dla kraju, Włochy już je mają.

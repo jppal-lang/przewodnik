@@ -686,4 +686,4 @@ brak godzin wyjazdu i powrotu z bazy
 | „Popraw {{miasto}}: {{zmiana}}" | `<slug>.patch.json` |
 
 Miasta już w bazie — nie dubluj slugów:
-`urbino`, `ancona`, `frasassi`, `rimini`, `rawenna` (marche) · `perugia`, `asyz` (umbria).
+`urbino`, `ancona`, `frasassi` (marche) · `rimini`, `rawenna` (emilia-romagna) · `perugia`, `asyz` (umbria).

@@ -92,7 +92,8 @@ przewodnik/
 ├── lang/*.json           # tłumaczenia statyczne (stare strony)
 ├── media/                # hero.mp4, hero-poster.jpg, icons/, tours/
 ├── video/                # storyboard-quolino-animacja.md (storyboard + prompty AI)
-├── wlochy/marche/        # stare strony: index + ancona, frasassi, urbino, rimini, rawenna
+├── wlochy/marche/        # stare strony: index + ancona, frasassi, urbino
+├── wlochy/emilia-romagna/ # stare strony: index + rimini, rawenna
 ├── wlochy/umbria/        # stare strony: index + perugia, asyz
 ├── supabase-schema.sql, supabase-i18n-2026-10-06.sql
 ├── CNAME                 # questini.com — NIE RUSZAĆ

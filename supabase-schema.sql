@@ -130,8 +130,8 @@ INSERT INTO cities (slug, country, region, lat, lon, bandana_color, duration_typ
   ('urbino',   'it', 'marche', 43.72260, 12.63570, '#FFD700', 'half_day', 4),
   ('ancona',   'it', 'marche', 43.61580, 13.51840, NULL,      'half_day', 4),
   ('frasassi', 'it', 'marche', 43.40090, 12.96540, NULL,      'half_day', 3),
-  ('rimini',   'it', 'marche', 44.05940, 12.56570, NULL,      'full_day', 7),
-  ('rawenna',  'it', 'marche', 44.41840, 12.20350, NULL,      'half_day', 5);
+  ('rimini',   'it', 'emilia-romagna', 44.05940, 12.56570, NULL,      'full_day', 7),
+  ('rawenna',  'it', 'emilia-romagna', 44.41840, 12.20350, NULL,      'half_day', 5);
 
 
 -- 4. TŁUMACZENIA MIAST (hero, lead, plan dnia)

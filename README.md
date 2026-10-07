@@ -1,7 +1,7 @@
-# Marche & Umbria — przewodniki rodzinne
+# Włochy — przewodniki rodzinne
 
 Statyczny serwis przewodników wypadowych z bazy w Montefelcino:
-Perugia, Asyż, Frasassi, Urbino, Rimini, Ancona, Rawenna.
+Perugia, Asyż, Frasassi, Urbino, Ancona, Rimini, Rawenna.
 
 - akordeonowe przystanki z cenami, datami budowy i akcjami w nagłówku (Nawiguj / Zadzwoń / WWW)
 - logika „najpierw parking" — przycisk nawigacji z bieżącej lokalizacji

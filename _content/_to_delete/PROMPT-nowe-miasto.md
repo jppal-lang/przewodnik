@@ -422,6 +422,6 @@ Slug bez polskich znaków, małe litery, myślniki: `Asyż → asyz`, `San Gimig
 Przy poprawkach podbij `doc.version` i `doc.generated_at`.
 
 Miasta już w bazie — nie dubluj slugów:
-`urbino`, `ancona`, `frasassi`, `rimini`, `rawenna` (marche) · `perugia`, `asyz` (umbria).
+`urbino`, `ancona`, `frasassi` (marche) · `rimini`, `rawenna` (emilia-romagna) · `perugia`, `asyz` (umbria).
 
 Rozmówek nie generuj — są wspólne dla kraju i Włochy już je mają.
