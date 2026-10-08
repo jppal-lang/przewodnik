@@ -72,4 +72,23 @@ Przed oddaniem sprawdź sam, a skrypt sprawdzi ponownie:
 python3 ~/.claude/skills/quolino-trip-translate/scripts/check_translation.py <źródło.json> <tłumaczenie.json>
 ```
 
-Błąd struktury = tłumaczenie odrzucone i ponowione z listą błędów.
+Kilka drobnych błędów (do 6) poprawia Claude w samych wskazanych polach; więcej albo błąd
+struktury = tłumaczenie ponowione innym modelem z listą błędów.
+
+## Kontrola jakości (Claude, decyzja JP 2026-10-08)
+
+Tłumaczą darmowe modele (OpenRouter), jakość sprawdza Claude (subskrypcja):
+
+| Zadanie | Modele (kolejność) | Kontrola Claude |
+|---|---|---|
+| PL → EN | Nemotron 3 Ultra → DeepSeek → Qwen → Gemma 4 31B → … | **pełna**: każde pole vs oryginał, poprawki `fixes` nanoszone od razu, ocena 1–5 |
+| EN → pozostałe | Gemma 4 31B → Gemma 4 → Nemotron 3 Ultra → Qwen → … | **próbka**: lead miasta + 2 losowe przystanki; ocena < 4 → ponowne tłumaczenie z uwagami; druga porażka = język nie trafia na stronę |
+
+- Gdy Claude jest niedostępny (limit sesji), nic nie trafia na stronę; tłumaczenie czeka w
+  `work/translate/<slug>/<lang>.json` i jest użyte przy kolejnym uruchomieniu.
+- Oceny: `public.translation_quality` (panel admina: `admin.translation_quality`).
+- Wymuszenie modelu: `QUOLINO_MODEL_TRANSLATE_EN=…` / `QUOLINO_MODEL_TRANSLATE_XX=…`.
+- Inkling (Thinking Machines) odrzuca zapytania spoza aplikacji agentowych (403) — pominięty.
+
+Jako kontroler odpowiadasz wyłącznie JSON-em w formacie podanym w poleceniu. Poprawiasz tylko
+to, co błędne lub nienaturalne; nie przepisujesz dobrych zdań po swojemu.
