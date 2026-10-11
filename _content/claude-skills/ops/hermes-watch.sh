@@ -35,7 +35,7 @@ if [ "$stage" = 0 ]; then
 fi
 if [ "$stage" = 1 ]; then
   log "restart samej bramki Hermesa"
-  X s6-svc -r /run/service/gateway-default && post "🟠 Hermes stracił połączenie z Discordem — restartuję samą bramkę (zadania liczą się dalej)"
+  X /package/admin/s6/command/s6-svc -r /run/service/gateway-default && post "🟠 Hermes stracił połączenie z Discordem — restartuję samą bramkę (zadania liczą się dalej)"
   echo "2 $since" > "$ST"; exit 0
 fi
 # etap 2+: bramka nie pomogła → cały kontener, ale nie w trakcie pracy (chyba że czekamy już 15 min)
