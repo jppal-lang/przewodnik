@@ -1,5 +1,7 @@
 # ── Quolino — zadania cykliczne na VPS (root). Instalacja: crontab -l > /tmp/c; cat crontab.txt >> /tmp/c; crontab /tmp/c
 H=hermes-quolino-hermes-agent-1
+# wdrażanie z repo (tryb bezpieczny): skrypty Hermesa same; ops/ssr/sql/install czekają na: deploy.sh approve <hash>
+*/2 * * * *  /root/quolino-web/ops/deploy.sh >> /root/quolino-web/deploy.log 2>&1
 # czuwanie: strona, API, Hermes, baza, dysk — alarm na Discord (ALERT_WEBHOOK) tylko przy zmianie stanu
 */5 * * * *  /root/quolino-web/ops/healthcheck.sh
 # kopia bazy co noc (14 dni na VPS + poza serwerem, gdy skonfigurowane)

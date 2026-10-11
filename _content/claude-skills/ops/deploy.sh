@@ -1,0 +1,121 @@
+#!/bin/sh
+# Quolino — wdrażanie z repo (cron roota co 2 min). Repo na VPS = katalog strony (synchronizacja z GitHub co 60 s).
+# Tryb bezpieczny (decyzja JP 2026-10-11):
+#   SAMO wchodzi: skrypty i instrukcje Hermesa (bin/*.mjs, bin/repo.sh, skille quolino-trip-*, hermes/*-section.md)
+#                 — działają tylko w kontenerze Hermesa. Pliki strony są widoczne od razu (bez tego skryptu).
+#   CZEKA NA ZGODĘ JP: wszystko, co działa jako root albo na bazie: ops/, cron/, ssr/, sql/, install.sh, inne pliki.
+#   sh /root/quolino-web/ops/deploy.sh pending          — co czeka (pliki + zmiany)
+#   sh /root/quolino-web/ops/deploy.sh approve <hash>   — wdróż to, co czeka (hash z komunikatu)
+# SQL: każdy NOWY plik sql/*.sql wykonuje się raz (rejestr /root/quolino-web/.sql-applied), w całości albo wcale.
+set -u
+V=/var/lib/docker/volumes/quolino-web_site/_data
+S=$V/_content/claude-skills
+P=_content/claude-skills
+W=/root/quolino-web
+PG=postgresql-5bap-postgresql-1
+H=hermes-quolino-hermes-agent-1
+LEDGER=$W/.sql-applied
+DEPLOYED=$W/.deployed      # ostatni commit wdrożony w części Hermesa
+APPROVED=$W/.approved      # ostatni commit zatwierdzony przez JP (część roota)
+ALERTED=$W/.pending-alerted
+SAFE='^_content/claude-skills/(bin/[A-Za-z0-9._-]+\.mjs|bin/repo\.sh|quolino-trip-[A-Za-z0-9_-]+/.+|hermes/[A-Za-z0-9_-]+-section\.md|[A-Za-z0-9_-]+\.md)$'
+exec 9>/tmp/quolino-deploy.lock; flock -n 9 || { echo "wdrożenie już trwa"; exit 0; }
+. $W/.env 2>/dev/null || true
+G() { git -c safe.directory='*' -C "$V" "$@"; }
+post() { [ -n "${ALERT_WEBHOOK:-}" ] && curl -s -m 20 -H 'Content-Type: application/json' -d "{\"content\":$(printf '%s' "$1" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()))')}" "$ALERT_WEBHOOK" >/dev/null; return 0; }
+tell_hermes() { printf '%s\n%s\n' "$(date -u '+%F %T UTC')" "$1" | docker exec -i -u hermes "$H" sh -c 'cat > /opt/data/quolino/work/deployed.txt' 2>/dev/null; }
+HEAD=$(G rev-parse HEAD) || exit 1
+short() { echo "$1" | cut -c1-8; }
+root_files() { G diff --name-only "$1" "$2" -- "$P" | grep -Ev "$SAFE" || true; }
+
+if [ ! -f "$DEPLOYED" ] || [ ! -f "$APPROVED" ]; then   # pierwszy raz: obecny stan uznajemy za wdrożony
+  echo "$HEAD" > "$DEPLOYED"; echo "$HEAD" > "$APPROVED"
+  [ -f "$LEDGER" ] || ls "$S/sql" 2>/dev/null | grep '\.sql$' > "$LEDGER"
+  echo "start: $(short "$HEAD")"; exit 0
+fi
+
+# ── zatwierdzenie przez JP: pełne install.sh + nowe SQL ──
+if [ "${1:-}" = approve ]; then
+  want=${2:-}; [ -n "$want" ] || { echo "Podaj hash z komunikatu: deploy.sh approve <hash>"; exit 1; }
+  want=$(G rev-parse --verify -q "$want^{commit}") || { echo "Nie znam commita $2"; exit 1; }
+  if [ -n "$(root_files "$want" "$HEAD")" ]; then
+    echo "Od $(short "$want") doszły kolejne zmiany wymagające zgody — sprawdź: deploy.sh pending"; exit 1
+  fi
+  ssr_before=$(md5sum $W/ssr/server.mjs 2>/dev/null | cut -d' ' -f1)
+  sh "$S/install.sh" || { post "🔴 Wdrożenie $(short "$HEAD"): install.sh nie przeszedł"; exit 1; }
+  msg="✅ zatwierdzone i wdrożone: $(G log -1 --format='%h %s')"
+  for f in $(ls "$S/sql" 2>/dev/null | grep '\.sql$' | sort); do
+    grep -qxF "$f" "$LEDGER" && continue
+    if r=$(docker exec -i "$PG" sh -c 'psql -U "$POSTGRES_USER" -d quolino -v ON_ERROR_STOP=1 -1 -q' < "$S/sql/$f" 2>&1); then
+      echo "$f" >> "$LEDGER"; msg="$msg · SQL $f"; echo "SQL OK: $f"
+    else
+      echo "SQL BŁĄD $f: $r"; msg="$msg · SQL $f BŁĄD (wycofany)"; post "🔴 SQL $f nie wszedł: $(echo "$r" | tail -2)"
+    fi
+  done
+  docker exec "$PG" sh -c 'psql -U "$POSTGRES_USER" -d quolino -qc "NOTIFY pgrst, '"'"'reload schema'"'"'"' >/dev/null 2>&1
+  [ "$ssr_before" != "$(md5sum $W/ssr/server.mjs | cut -d' ' -f1)" ] && (cd $W && docker compose restart ssr >/dev/null 2>&1) && msg="$msg · SSR zrestartowany"
+  echo "$HEAD" > "$APPROVED"; echo "$HEAD" > "$DEPLOYED"; rm -f "$ALERTED"
+  tell_hermes "$msg"; echo "$msg"; exit 0
+fi
+
+if [ "${1:-}" = pending ]; then
+  a=$(cat "$APPROVED"); f=$(root_files "$a" "$HEAD")
+  [ -z "$f" ] && { echo "Nic nie czeka na zgodę."; exit 0; }
+  echo "Czeka na zgodę (od $(short "$a") do $(short "$HEAD")):"; echo "$f"; echo
+  G log --format='%h %an: %s' "$a..$HEAD" -- $f | head -20; echo
+  G diff "$a" "$HEAD" -- $f | head -300
+  echo; echo "Zatwierdzenie: sh $W/ops/deploy.sh approve $(short "$HEAD")"; exit 0
+fi
+
+# ── cron: część Hermesa sama ──
+last=$(cat "$DEPLOYED")
+[ "$last" = "$HEAD" ] && exit 0
+safe=$(G diff --name-only --diff-filter=AMR "$last" "$HEAD" -- "$P" | grep -E "$SAFE" | grep -Ev '\.md$|^_content/claude-skills/hermes/' || true)
+secs=$(G diff --name-only --diff-filter=AMR "$last" "$HEAD" -- "$P/hermes" | grep -E "$SAFE" || true)
+msg=""
+if [ -n "$safe$secs" ]; then
+  U=$(docker exec "$H" stat -c %u:%g /opt/data/quolino/qdb.mjs)
+  for f in $safe; do
+    rel=${f#$P/}
+    case "$rel" in
+      bin/*) dst=/opt/data/quolino/${rel#bin/} ;;
+      quolino-trip-*) dst=/opt/data/home/.claude/skills/$rel ;;
+      *) continue ;;
+    esac
+    [ -f "$V/$f" ] && [ ! -L "$V/$f" ] || continue
+    docker exec "$H" mkdir -p "$(dirname "$dst")"
+    docker cp "$V/$f" "$H:$dst" && docker exec "$H" chown "$U" "$dst"
+  done
+  docker exec "$H" chmod 755 /opt/data/quolino/repo.sh 2>/dev/null
+  for f in $secs; do
+    [ -f "$V/$f" ] && [ ! -L "$V/$f" ] || continue
+    docker cp "$V/$f" "$H:/tmp/section.md"
+    docker exec -i "$H" python3 - <<'PY'
+import re
+p = '/opt/data/skills/quolino/SKILL.md'
+s = open(p, encoding='utf-8').read()
+sec = open('/tmp/section.md', encoding='utf-8').read().strip()
+m = re.match(r'<!-- (quolino-[a-z0-9-]+):start -->', sec)
+if m and sec.endswith('<!-- %s:end -->' % m.group(1)):
+    n = re.escape(m.group(1))
+    pat = re.compile(r'<!-- %s:start -->.*?<!-- %s:end -->' % (n, n), re.S)
+    s = pat.sub(lambda _: sec, s) if pat.search(s) else s.rstrip() + '\n\n' + sec + '\n'
+    open(p, 'w', encoding='utf-8').write(s)
+    print('instrukcja:', m.group(1))
+PY
+  done
+  bad=$(docker exec -w /opt/data/quolino "$H" sh -c 'for f in *.mjs; do node --check "$f" >/dev/null 2>&1 || echo "$f"; done')
+  msg="✅ Hermes: wdrożone $(G log -1 --format='%h %s')"
+  [ -n "$bad" ] && { msg="$msg · ⚠️ błąd składni: $bad"; post "⚠️ Quolino: skrypty Hermesa z błędem składni: $bad"; }
+fi
+echo "$HEAD" > "$DEPLOYED"
+
+root=$(root_files "$(cat "$APPROVED")" "$HEAD")
+if [ -n "$root" ]; then
+  wait="⏸ czeka na zgodę JP ($(echo "$root" | wc -l) plik.): $(echo "$root" | sed "s#^$P/##" | head -5 | tr '\n' ' ')— JP: sh $W/ops/deploy.sh pending, potem approve $(short "$HEAD")"
+  msg="${msg:+$msg
+}$wait"
+  [ "$(cat "$ALERTED" 2>/dev/null)" = "$HEAD" ] || { post "$wait"; echo "$HEAD" > "$ALERTED"; }
+fi
+[ -n "$msg" ] && { tell_hermes "$msg"; echo "$(date -u '+%F %T') $msg"; }
+exit 0
