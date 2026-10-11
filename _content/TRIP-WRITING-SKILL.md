@@ -76,7 +76,7 @@ Ma pomagać rozwiązać quest, ale nie powtarzać go. Wskazuje gdzie patrzeć, c
 Może zawierać legendę, zwyczaj, jedzenie, powiedzenie lub ciekawostkę. Nie twórz na siłę.
 
 ## Plan dnia
-Plan zaczyna się na parkingu i kończy na ostatnim przystanku. Pokazuje tylko czas na miejscu. `time_label` = godzina dotarcia; `opening_hours` = godziny otwarcia. Nie mieszaj pól. Jeśli główna atrakcja ma konkretny slot, buduj trasę wokół niego. Nie zakładaj automatycznie startu o 10:00.
+Plan zaczyna się na parkingu i kończy na ostatnim przystanku. Pokazuje tylko czas na miejscu. `time_label` = godzina dotarcia; `opening_hours` = godziny otwarcia. Nie mieszaj pól. `time_label` to wyłącznie godzina HH:MM — bez komentarzy typu „orientacyjnie po przejściu…”, „~21:30 (po kolacji)”, „opcjonalnie”; to pole nie jest tłumaczone. Brak godziny → `null`, uwaga do `practical_note`. Jeśli główna atrakcja ma konkretny slot, buduj trasę wokół niego. Nie zakładaj automatycznie startu o 10:00.
 
 ## Parking
 Punkt 01 musi być parkingiem. Zachowaj nazwę, lokalizację, koszt, ZTL, godziny, Maps i dojście do centrum.

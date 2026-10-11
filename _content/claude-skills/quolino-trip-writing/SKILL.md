@@ -69,6 +69,10 @@ Legenda, zwyczaj, jedzenie, powiedzenie lub ciekawostka. Nie na siłę.
 ### Plan dnia
 Zaczyna się na parkingu, kończy na ostatnim przystanku. Tylko czas na miejscu.
 `time_label` = godzina dotarcia; `opening_hours` = godziny otwarcia — nie mieszaj.
+`time_label` to **wyłącznie godzina** `HH:MM` (np. `16:40`) — bez słów, nawiasów, „ok.”, „~”, „orientacyjnie”,
+„po kolacji”, „w trakcie spaceru”. To pole nie jest tłumaczone i widać je w każdym języku. Nie znasz godziny →
+policz ją z planu (poprzedni przystanek + czas zwiedzania + przejście) albo zostaw `null`. Komentarz o kolejności,
+opcjonalności czy dniu tygodnia idzie do `practical_note` (lub `optional: true`), nie do godziny.
 Główna atrakcja z konkretnym slotem → trasa budowana wokół niego. Nie zakładaj startu o 10:00.
 
 ### Parking

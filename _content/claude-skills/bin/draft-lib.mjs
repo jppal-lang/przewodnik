@@ -164,6 +164,15 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
     ? v.replace(/\s*(<br\s*\/?>|<\/p>\s*<p[^>]*>)\s*/gi, '\n\n').replace(/<\/?[a-z][^>]*>/gi, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim()
     : Array.isArray(v) ? v.map(plain) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plain(x)])) : v;
   trip = { ...trip, meta: plain(trip.meta), content: plain(trip.content) };
+  // time_label = sama godzina HH:MM (decyzja JP 2026-10-11): komentarz typu „orientacyjnie po…” trafia na stronę
+  // we wszystkich językach bez tłumaczenia — zostawiamy tylko godzinę, a bez godziny pole jest puste
+  const hhmm = (o) => Array.isArray(o) ? o.forEach(hhmm) : o && typeof o === 'object' && Object.entries(o).forEach(([k, v]) => {
+    if (k === 'time_label' && typeof v === 'string' && !/^\d{1,2}:\d{2}$/.test(v.trim())) {
+      const m = v.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\b/);
+      o[k] = m ? `${m[1]}:${m[2]}` : null;
+    } else if (v && typeof v === 'object') hhmm(v);
+  });
+  hhmm(trip.meta); hhmm(trip.content);
   const [r] = await q('SELECT public.trip_draft_save($1::jsonb, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb) AS r',
     [JSON.stringify(trip.meta), JSON.stringify(trip.content), note ?? null, source, JSON.stringify(changes ?? []), review ? JSON.stringify(review) : null]);
   return r.r;
