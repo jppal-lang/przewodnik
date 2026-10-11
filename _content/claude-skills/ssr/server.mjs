@@ -54,7 +54,7 @@ const uiDict = (lang) => cached(`ui:${lang}`, async () => {
   const rows = await api(`ui_translations?select=key,value,lang&lang=in.(${lang},${FALLBACK})`);
   const d = {};
   for (const r of rows.filter(r => r.lang !== lang)) d[r.key] = r.value;   // najpierw polski
-  for (const r of rows) d[r.key] = r.value;                                 // nadpisany językiem strony
+  for (const r of rows) if (r.lang === lang) d[r.key] = r.value;            // nadpisany językiem strony
   return d;
 }).catch(() => ({}));
 
