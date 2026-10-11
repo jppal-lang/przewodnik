@@ -1,0 +1,12 @@
+# ── Quolino — zadania cykliczne na VPS (root). Instalacja: crontab -l > /tmp/c; cat crontab.txt >> /tmp/c; crontab /tmp/c
+H=hermes-quolino-hermes-agent-1
+# czuwanie: strona, API, Hermes, baza, dysk — alarm na Discord (ALERT_WEBHOOK) tylko przy zmianie stanu
+*/5 * * * *  /root/quolino-web/ops/healthcheck.sh
+# kopia bazy co noc (14 dni na VPS + poza serwerem, gdy skonfigurowane)
+41 3 * * *   /root/quolino-web/ops/backup-db.sh >> /root/quolino-web/backup.log 2>&1
+# zgłoszenia od rodzin → wątki miast
+*/10 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node reports-relay.mjs >> /root/quolino-web/reports.log 2>&1
+# 1. dnia miesiąca: lokale gastro (oceny Google), linki i godziny, koszty
+17 6 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node gastro-refresh.mjs >> /root/quolino-web/gastro.log 2>&1
+47 6 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node links-check.mjs >> /root/quolino-web/links.log 2>&1
+13 7 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node cost-report.mjs >> /root/quolino-web/costs.log 2>&1

@@ -172,14 +172,98 @@ async function saveQuality(lang, r, models) {
     [slug, lang, r.score ?? null, r.summary ?? null, JSON.stringify(r.fixes ?? r.issues ?? []), models.join(', ')]);
 }
 
+// ── tłumaczenie tylko zmienionych pól (decyzja JP 2026-10-11) ───────────────────────────────
+// Po każdym przyjętym języku zapisujemy źródło, z którego powstał (<lang>.base.json). Przy kolejnym
+// uruchomieniu porównujemy je z bieżącym źródłem: bez zmian → język pomijamy; zmienione pola → model
+// tłumaczy tylko je, reszta zostaje z poprzedniego tłumaczenia; zmiana układu (inne przystanki, inna liczba
+// punktów planu dnia) → pełne tłumaczenie tego języka.
+const INVARIANT = new Set(['stop_key', 'stop_number', 'category', 'sort_order', 'type', 'maps_query', 'lang', 'city_slug', 'id', 'stop_id']);
+function flatten(o, prefix = '', out = {}) {
+  if (typeof o === 'string') { if (o.trim()) out[prefix] = o; return out; }
+  if (Array.isArray(o)) {
+    o.forEach((v, i) => flatten(v, `${prefix}.${prefix === 'stops' && v?.stop_key ? v.stop_key : i}`, out));
+    return out;
+  }
+  if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) {
+    if (INVARIANT.has(k) || k.startsWith('_')) continue;
+    flatten(v, prefix ? `${prefix}.${k}` : k, out);
+  }
+  return out;
+}
+const shape = (t) => JSON.stringify([(t.stops ?? []).map(x => x.stop_key), (t.day_plan ?? []).length, (t.emergency_points ?? []).length]);
+function diffSource(base, src) {
+  if (shape(base) !== shape(src)) return { structural: true };
+  const a = flatten(base), b = flatten(src);
+  const changed = Object.keys(b).filter(k => a[k] !== b[k]);
+  const resized = [];
+  for (const s of src.stops ?? []) {
+    const old = (base.stops ?? []).find(x => x.stop_key === s.stop_key);
+    if ((old?.desc_paragraphs ?? []).length !== (s.desc_paragraphs ?? []).length) resized.push(s.stop_key);
+  }
+  for (const k of resized) for (const p of Object.keys(b)) if (p.startsWith(`stops.${k}.desc_paragraphs.`) && !changed.includes(p)) changed.push(p);
+  const removed = Object.keys(a).filter(k => !(k in b));
+  // akapity rosnąco — dopisywanie nowych wymaga kolejności (…1, …2)
+  changed.sort((x, y) => x.localeCompare(y, 'en', { numeric: true }));
+  return { structural: false, changed, resized, removed };
+}
+function plan(lang, src) {
+  if (FRESH) return { mode: 'full' };
+  const cacheF = `${WORK}/${lang}.json`, baseF = `${WORK}/${lang}.base.json`;
+  if (!existsSync(cacheF)) return { mode: 'full' };
+  if (!existsSync(baseF)) return { mode: 'legacy' };       // tłumaczenie sprzed 2026-10-11 — bez zapisanego źródła
+  const d = diffSource(JSON.parse(readFileSync(baseF, 'utf8')), src);
+  if (d.structural) return { mode: 'full', why: 'zmienił się układ wycieczki' };
+  if (!d.changed.length && !d.removed.length) return { mode: 'skip' };
+  return { mode: 'delta', ...d };
+}
+
+async function translateDelta(src, lang, changed, plMap, feedback, task) {
+  const srcMap = flatten(src);
+  const fields = Object.fromEntries(changed.map(p => [p, srcMap[p]]));
+  const prompt = `Przetłumacz ZMIENIONE pola wycieczki z języka "${src.lang}" na "${lang}" według umiejętności quolino-trip-translate.
+Reszta wycieczki jest już przetłumaczona i się nie zmienia — dopasuj styl i nazewnictwo do kontekstu.
+Odpowiedz wyłącznie JSON-em: {"<ścieżka>": "tłumaczenie", …} — dokładnie te same ścieżki.
+${feedback ? `\nPOPRZEDNIA PRÓBA ODRZUCONA — popraw:\n${feedback}\n` : ''}
+${src.lang !== 'pl' ? `Odniesienie znaczeniowe (polski oryginał tych pól):\n${JSON.stringify(Object.fromEntries(changed.map(p => [p, plMap[p] ?? null])))}\n` : ''}
+POLA DO TŁUMACZENIA:
+${JSON.stringify(fields)}`;
+  const { text, model } = await translator('quolino-trip-translate', prompt, task);
+  return { map: extractJson(text), model };
+}
+
+async function reviewDelta(lang, src, dst, changed, plMap) {
+  const s = flatten(src), d = flatten(dst);
+  const rows = changed.map(p => ({ path: p, pl: plMap[p] ?? null, source: s[p], translation: d[p] }));
+  const prompt = `KONTROLA JAKOŚCI — zmienione pola tłumaczenia ${src.lang} → ${lang} (reszta była już sprawdzona).
+Oceń: wierność sensu, naturalność języka ${lang}, quest dla dziecka zrozumiały i wykonalny, nazwy własne w oryginale,
+brak dopisków.${lang === 'en' ? ' Popraw to, co błędne lub nienaturalne.' : ''} Odpowiedz wyłącznie JSON-em:
+{"score": 1-5, "summary": "1–2 zdania po polsku", "issues": [{"path": "…", "problem": "…", "suggestion": "…"}]${lang === 'en' ? ', "fixes": [{"path": "…", "text": "poprawiony pełny tekst"}]' : ''}}
+
+POLA:
+${JSON.stringify(rows)}`;
+  return extractJson(await claude('quolino-trip-translate', prompt));
+}
+
 // ── jeden język: (cache | tłumaczenie) → kontrola mechaniczna → kontrola jakości → zapis ──
-async function one(src, lang, ref, pl) {
+async function one(src, lang, ref, pl, pln = { mode: 'full' }) {
   const task = lang === 'en' ? 'translate_en' : 'translate_xx';
   const cacheFile = `${WORK}/${lang}.json`;
   let feedback = '';
   for (let attempt = 1; attempt <= 2; attempt++) {
     let result, notes = [], models = [];
-    if (attempt === 1 && !FRESH && existsSync(cacheFile)) {
+    const delta = attempt === 1 && pln.mode === 'delta';
+    if (delta) {
+      result = JSON.parse(readFileSync(cacheFile, 'utf8'));
+      for (const k of pln.resized ?? []) {               // inna liczba akapitów: przycinamy, nowe dopisze tłumaczenie
+        const st = result.stops.find(x => x.stop_key === k), n = (src.stops.find(x => x.stop_key === k)?.desc_paragraphs ?? []).length;
+        if (st) st.desc_paragraphs = (st.desc_paragraphs ?? []).slice(0, n);
+      }
+      log(`  ${lang}: tylko zmienione pola (${pln.changed.length}) — tłumaczy ${await currentModel(task)}`);
+      const { map, model } = await translateDelta(src, lang, pln.changed, flatten(pl), feedback, task);
+      const miss = pln.changed.filter(p => typeof map[p] !== 'string' || !setPath(result, p, map[p]));
+      if (miss.length) log(`  ${lang}: brak tłumaczenia ${miss.length} pól — ${miss.slice(0, 3).join(', ')}`);
+      models = [model + ' (zmienione pola)'];
+    } else if (attempt === 1 && pln.mode !== 'full' && existsSync(cacheFile)) {
       result = JSON.parse(readFileSync(cacheFile, 'utf8'));
       models = ['(gotowe tłumaczenie z poprzedniego uruchomienia)'];
       log(`  ${lang}: używam gotowego tłumaczenia`);
@@ -205,7 +289,8 @@ async function one(src, lang, ref, pl) {
     }
     let review;
     try {
-      review = lang === 'en' ? await reviewFull(pl, result) : await reviewSample(pl, src, result, lang);
+      review = delta ? await reviewDelta(lang, src, result, pln.changed, flatten(pl))
+        : lang === 'en' ? await reviewFull(pl, result) : await reviewSample(pl, src, result, lang);
     } catch (e) {
       return { lang, ok: false, errors: [`kontrola jakości niedostępna (${e.message.slice(0, 120)}) — tłumaczenie czeka w ${cacheFile}, uruchom ponownie później`] };
     }
@@ -225,6 +310,7 @@ async function one(src, lang, ref, pl) {
     }
     if (!DRY) await q('SELECT public.trip_apply_translation($1, $2, $3::jsonb) AS r', [slug, lang, JSON.stringify(result)]);
     writeFileSync(cacheFile, JSON.stringify(result, null, 2));
+    writeFileSync(`${WORK}/${lang}.base.json`, JSON.stringify(src));      // źródło tej wersji — podstawa następnej różnicy
     log(`✓ ${lang}${DRY ? ' (bez zapisu)' : ' na stronie'} · ocena ${review.score}/5 · ${models.join(', ')}`);
     return { lang, ok: true, score: review.score, notes, models };
   }
@@ -245,15 +331,20 @@ try {
       JOIN public.city_translations t ON t.city_slug = q.city_slug AND t.lang = q.lang
      WHERE q.city_slug = $1 AND q.score >= $2`, [slug, MIN_SCORE])).map(r => r.lang)
     .filter(l => !opt('--langs') || !wanted.includes(l));
-  if (accepted.length) log(`${slug}: pomijam przyjęte wcześniej: ${accepted.join(', ')}`);
-  const order = ['en', ...wanted.filter(l => l !== 'en' && enabled.includes(l) && !accepted.includes(l))];
+  if (accepted.length) log(`${slug}: przyjęte wcześniej: ${accepted.join(', ')} (bez zmian w źródle albo starsze tłumaczenie — pomijane; całość: --fresh)`);
+  // języki z zapisanym źródłem decyduje plan() (bez zmian / zmienione pola / całość); „accepted” dotyczy tylko starszych
+  const order = ['en', ...wanted.filter(l => l !== 'en' && enabled.includes(l))];
   await job({ status: 'running' });
   log(`${slug}: ${order.join(' → ')} · modele: EN ${await currentModel('translate_en')}, pozostałe ${await currentModel('translate_xx')}`);
 
   const done = [];
   const enExists = (await q("SELECT 1 FROM public.city_translations WHERE city_slug = $1 AND lang = 'en'", [slug])).length > 0;
-  if (!accepted.includes('en') && (!opt('--langs') || wanted.includes('en') || !enExists)) {
-    const en = await one(pl, 'en', null, pl);
+  const pEn = plan('en', pl);
+  const skipEn = pEn.mode === 'skip' || (pEn.mode === 'legacy' && accepted.includes('en'));
+  if (skipEn) log(`EN: ${pEn.mode === 'skip' ? 'bez zmian w polskim — aktualne' : 'przyjęte wcześniej'}`);
+  if (!skipEn && (!opt('--langs') || wanted.includes('en') || !enExists)) {
+    if (pEn.why) log(`EN: ${pEn.why} — całość`);
+    const en = await one(pl, 'en', null, pl, pEn);
     done.push(en);
     if (!en.ok) throw new Error(`EN nie przeszedł kontroli — pozostałe języki wstrzymane:\n${en.errors.join('\n')}`);
   } else log('EN: używam wersji z bazy jako źródła');
@@ -263,7 +354,12 @@ try {
     ? { stops: part.stops.map(s => plByKey[s.stop_key]) }
     : { city: pl.city, day_plan: pl.day_plan, emergency_points: pl.emergency_points };
   for (const lang of order.slice(1)) {
-    try { done.push(await one(enSrc, lang, ref, pl)); }
+    const p = plan(lang, enSrc);
+    if (p.mode === 'skip' || (p.mode === 'legacy' && accepted.includes(lang))) {
+      log(`  ${lang}: ${p.mode === 'skip' ? 'bez zmian w źródle — aktualne' : 'przyjęte wcześniej'}`); continue;
+    }
+    if (p.why) log(`  ${lang}: ${p.why} — całość`);
+    try { done.push(await one(enSrc, lang, ref, pl, p)); }
     catch (e) { done.push({ lang, ok: false, errors: [e.message] }); log(`✗ ${lang}: ${e.message}`); }
   }
 

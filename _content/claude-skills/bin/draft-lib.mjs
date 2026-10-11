@@ -4,6 +4,7 @@
 import { writeFileSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { run, env, log, extractJson, openrouter } from './lib.mjs';
+import { rulesText, extraCheck, mergeReview } from './quality-lib.mjs';
 
 export const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.srv1984679.hstgr.cloud';
 export const WORK = '/opt/data/quolino/work/drafts';
@@ -28,6 +29,12 @@ export async function review(dir) {
     if (t.trim()) { const j = JSON.parse(t); return { verdict: j.verdict, summary: j.summary, errors: j.errors ?? [], warnings: j.warnings ?? [] }; }
   }
   throw new Error(`trip-review nie zwrócił raportu (kod ${r.code}): ${(r.err || r.out).slice(-400)}`);
+}
+
+// Pełna kontrola: trip-review (zasady umiejętności) + fakty z Wikipedią + zasady redakcyjne JP
+export async function fullReview(slug, trip) {
+  const rv = await review(writeTrip(slug, trip));
+  return mergeReview(rv, await extraCheck(slug, trip));
 }
 
 // ── operacje na szkicu ───────────────────────────────────────────────────────────────────────
@@ -142,6 +149,7 @@ ${reviewErrors.map(e => `- ${e.stop_key ?? 'miasto'} [${e.field ?? ''}]: ${e.pro
 ` : ''}
 ${OPS_FORMAT}
 
+${rulesText()}
 AKTUALNY SZKIC:
 ${JSON.stringify(trip)}`;
   const { text, model, cost } = await openrouter('quolino-trip-writing', prompt, 'draft');
@@ -157,9 +165,28 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
 }
 
 // ── powiadomienie w wątku Discorda (gdy Hermes uruchomił skrypt w tle) ──────────────────────
+// kanał po nazwie („#lokale”) → id; bot widzi kanały swoich serwerów
+const chanCache = {};
+async function resolveChannel(channel, token) {
+  if (!String(channel).startsWith('#')) return channel;
+  if (chanCache[channel]) return chanCache[channel];
+  const name = channel.slice(1).toLowerCase();
+  const H = { Authorization: `Bot ${token}` };
+  const guilds = await (await fetch('https://discord.com/api/v10/users/@me/guilds', { headers: H })).json().catch(() => []);
+  for (const g of Array.isArray(guilds) ? guilds : []) {
+    const chans = await (await fetch(`https://discord.com/api/v10/guilds/${g.id}/channels`, { headers: H })).json().catch(() => []);
+    const ch = (Array.isArray(chans) ? chans : []).find(c => c.type === 0 && c.name?.toLowerCase() === name);
+    if (ch) return (chanCache[channel] = ch.id);
+  }
+  log(`Discord: nie znalazłem kanału ${channel}`);
+  return null;
+}
+
 export async function notify(channel, text) {
   const token = env('DISCORD_BOT_TOKEN');
   if (!channel || !token) return false;
+  channel = await resolveChannel(channel, token);
+  if (!channel) return false;
   for (let i = 0; i < text.length; i += 1900) {
     const r = await fetch(`https://discord.com/api/v10/channels/${channel}/messages`, {
       method: 'POST', headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
@@ -173,4 +200,10 @@ export async function notify(channel, text) {
 export function verdictLine(rv) {
   if (!rv) return 'kontrola Claude: brak';
   return `Claude: ${rv.verdict}${rv.errors?.length ? ` · błędy ${rv.errors.length}` : ''}${rv.warnings?.length ? ` · uwagi ${rv.warnings.length}` : ''}`;
+}
+
+export function factsLine(rv) {
+  const f = rv?.facts;
+  if (!f) return '';
+  return `\nFakty (Wikipedia ${(f.langs ?? []).join('→')} + strony lokalne): ✓ ${f.confirmed}${f.contradicted ? ` · ✗ niezgodne ${f.contradicted}` : ''}${f.unverified ? ` · bez źródła ${f.unverified}` : ''}${f.added_sources ? ` · dopisane źródła ${f.added_sources}` : ''}\n`;
 }

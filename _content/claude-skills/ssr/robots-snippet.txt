@@ -1,0 +1,2 @@
+# dopisać do robots.txt w repo (adres zmienić na questini.com po przełączeniu DNS)
+Sitemap: https://quolino.srv1984679.hstgr.cloud/sitemap.xml

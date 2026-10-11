@@ -8,12 +8,17 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { log, db, spent } from './lib.mjs';
-import { WORK, writeTrip, review, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
+import { WORK, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
+import { loadRules, learn } from './quality-lib.mjs';
+import { readFileSync, existsSync } from 'node:fs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
 const say = opt('--say'), restore = opt('--restore'), channel = opt('--notify');
+// --context: ostatnie wiadomości z wątku (tekst albo ścieżka pliku) — Claude rozumie, skąd wzięła się poprawka
+const ctxArg = opt('--context');
+const context = ctxArg && existsSync(ctxArg) ? readFileSync(ctxArg, 'utf8') : ctxArg ?? '';
 if (!slug || (!say && !restore && !argv.includes('--show'))) {
   console.error('Użycie: trip-revise.mjs <slug> --say "polecenie" | --restore <wersja> | --show  [--notify kanał]');
   process.exit(2);
@@ -22,6 +27,7 @@ const c = await db();
 const q = async (sql, p) => (await c.query(sql, p)).rows;
 
 async function main() {
+  await loadRules(q);
   const [{ j: cur }] = await q('SELECT public.trip_draft_get($1) AS j', [slug]);
   if (!cur && !restore) throw new Error(`${slug}: nie ma szkicu — najpierw trip-draft.mjs`);
   const [tk] = await q('SELECT token FROM public.draft_previews WHERE city_slug = $1', [slug]);
@@ -49,7 +55,7 @@ async function main() {
   const all = [];
   const models = new Set();
   log(`${slug}: poprawka v${cur.version} → „${say.slice(0, 120)}”`);
-  const first = await gptOps(trip, say);
+  const first = await gptOps(trip, context ? `${say}\n\nKontekst z rozmowy:\n${context.slice(-3000)}` : say);
   models.add(first.model);
   let a = applyOps(trip, first.ops);
   if (!a.changes.length) throw new Error(`GPT nie zaproponował żadnej zmiany${a.skipped.length ? ' (odrzucone: ' + a.skipped.join(' | ') + ')' : ''} — doprecyzuj polecenie`);
@@ -58,7 +64,7 @@ async function main() {
 
   let rv;
   for (let round = 0; ; round++) {
-    rv = await review(writeTrip(slug, trip));
+    rv = await fullReview(slug, trip);
     log(`${slug}: kontrola ${round + 1}: ${verdictLine(rv)}`);
     if (rv.verdict === 'ok' || round >= 2) break;
     const fx = await gptOps(trip, `Poprzednie polecenie JP: ${say}`, { reviewErrors: rv.errors });
@@ -72,7 +78,9 @@ async function main() {
   const changes = mergeChanges(all);
   const saved = await saveDraft(q, trip, { note: say.slice(0, 300), source: 'revise', changes, review: rv });
   const url = previewUrl(saved.token);
-  const out = { slug, version: saved.version, from: cur.version, summary: first.summary, changes: changes.length, verdict: rv.verdict,
+  // pamięć redakcyjna: Claude czyta poprawkę w kontekście i zapisuje to, co jest zasadą na przyszłość
+  const learned = await learn(q, { slug, version: saved.version, say, context, changes, trip });
+  const out = { slug, version: saved.version, from: cur.version, learned, summary: first.summary, changes: changes.length, verdict: rv.verdict,
     errors: rv.errors, warnings: rv.warnings.length, skipped, preview: url, models: [...models], cost_usd: +spent.usd.toFixed(4) };
   writeFileSync(join(WORK, slug, 'last.json'), JSON.stringify(out, null, 2));
   const pretty = changes.slice(0, 8).map(ch => ch.op ? `• ${ch.op === 'add_stop' ? 'nowy przystanek' : ch.op === 'remove_stop' ? 'usunięty' : 'przeniesiony'}: ${ch.name ?? ch.stop_key}`
@@ -80,6 +88,8 @@ async function main() {
   await notify(channel, `✏️ **${slug} — szkic v${saved.version}** (z v${cur.version}) · ${verdictLine(rv)}\n${first.summary ? first.summary + '\n' : ''}${pretty}` +
     (changes.length > 8 ? `\n… i ${changes.length - 8} więcej` : '') +
     (rv.errors?.length ? `\nDo poprawy:\n${rv.errors.slice(0, 5).map(e => `• ${e.stop_key ?? 'miasto'}: ${e.problem}`).join('\n')}` : '') +
+    factsLine(rv) +
+    (learned.length ? `\n📌 Zapamiętane na przyszłe wycieczki:\n${learned.map(r => `• #${r.id} ${r.rule}`).join('\n')}\n(jeśli to było jednorazowe: „cofnij zasadę ${learned[0].id}”)` : '') +
     `\nPodgląd: ${url} (historia: dodaj &historia)`);
   console.log(JSON.stringify(out, null, 2));
 }

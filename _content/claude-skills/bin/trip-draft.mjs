@@ -9,7 +9,8 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { claude, openrouter, extractJson, log, db, spent } from './lib.mjs';
-import { WORK, writeTrip, review, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
+import { WORK, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
+import { loadRules, rulesText } from './quality-lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -53,6 +54,7 @@ async function main() {
   // 0) region i stan miasta
   const [reg] = await q('SELECT slug FROM public.regions WHERE slug = $1', [region]);
   if (!reg) throw new Error(`nie ma regionu ${region} w bazie`);
+  await loadRules(q);
   const [live] = await q('SELECT status FROM public.cities WHERE slug = $1', [slug]);
   if (live) log(`${slug}: miasto już istnieje (${live.status}) — szkic zastąpi je dopiero po zatwierdzeniu`);
   await notify(channel, `🔎 ${name}: zbieram materiał (research), potem pisze GPT i sprawdza Claude. Dam znać tutaj.`);
@@ -72,7 +74,10 @@ Zbierz materiał do rodzinnej wycieczki pieszej według zasad umiejętności (pr
 legendy, popkultura, parking 01, gastronomia z progiem 4,1/100). Dla każdego kandydata na przystanek podaj:
 nazwę oryginalną, kategorię, współrzędne, godziny i ceny (z datą/źródłem albo „niepotwierdzone”),
 historię, ludzi, detale do oglądania na miejscu (materiał na quest), legendy (oznaczone), popkulturę ze źródłem,
-link do weryfikacji. Parking: koszt, ZTL, dojście. Lokale: telefon, strona, ocena i liczba opinii.
+link do weryfikacji. Fakty historyczne opieraj na Wikipedii w języku kraju (${country === 'it' ? 'włoskiej' : 'lokalnej'},
+potem angielskiej) i na stronach lokalnych/oficjalnych (zabytek, gmina, diecezja, muzeum) — każdy fakt z linkiem.
+Parking: koszt, ZTL, dojście. Lokale (restauracje, lody, słodycze) NIE z Wikipedii: tylko polecane przez Google —
+ocena ≥ 4,1 i ponad 100 opinii; podaj ocenę, liczbę opinii, telefon, stronę.
 Punkty awaryjne: apteka, toaleta, plac zabaw. Zaproponuj logikę dnia (kolejność, przerwy, finał).
 Wynik: Markdown, każdy fakt ze źródłem (URL). Nic nie zmyślaj.`, { web: true });
     writeFileSync(join(dir, 'research.md'), research);
@@ -88,6 +93,7 @@ czego nie ma w researchu — null / unverified / notatka w _notes. Questy wynika
 
 ${SKELETON}
 
+${rulesText()}
 Odpowiedz WYŁĄCZNIE JSON-em {"meta": …, "content": …}.
 
 RESEARCH:
@@ -101,7 +107,7 @@ ${research}`, 'draft');
   // 3) kontrola + najwyżej 2 rundy poprawek
   let rv, changes = [];
   for (let round = 0; ; round++) {
-    rv = await review(writeTrip(slug, trip));
+    rv = await fullReview(slug, trip);
     log(`${slug}: kontrola ${round + 1}: ${verdictLine(rv)}`);
     if (rv.verdict === 'ok' || round >= 2) break;
     const fx = await gptOps(trip, null, { reviewErrors: rv.errors });
@@ -120,7 +126,7 @@ ${research}`, 'draft');
     summary: rv.summary, preview: url, models: [...models], cost_usd: +spent.usd.toFixed(4), fix_rounds_changes: mergeChanges(changes).length };
   writeFileSync(join(dir, 'last.json'), JSON.stringify(out, null, 2));
   await notify(channel, `📝 **${name} — szkic v${saved.version}** (${saved.stops} przystanków) · ${verdictLine(rv)}\n` +
-    (rv.summary ? `${rv.summary}\n` : '') +
+    (rv.summary ? `${rv.summary}\n` : '') + factsLine(rv) +
     (rv.errors?.length ? `Do poprawy:\n${rv.errors.slice(0, 6).map(e => `• ${e.stop_key ?? 'miasto'}: ${e.problem}`).join('\n')}\n` : '') +
     `Podgląd: ${url}\nNapisz, co zmienić — albo „zatwierdzam”.`);
   console.log(JSON.stringify(out, null, 2));

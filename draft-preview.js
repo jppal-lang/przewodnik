@@ -147,6 +147,10 @@
       '.qd-ch .qd-why{display:block;color:var(--muted,#5D6B82);font-style:italic;margin-top:3px}',
       '.qd-issues{margin:6px 0 0;padding-left:18px;font-size:13.5px}',
       '.qd-issues li{margin:4px 0}',
+      '.qd-rules{margin:8px 0 0;padding:8px 10px;list-style:none;font-size:13.5px;background:var(--sun-50,#FFF6D6);border-radius:8px}',
+      '.qd-rules li{margin:3px 0}.qd-pin{font-weight:800}',
+      '.qd-facts .qd-pill{margin:0 6px 4px 0}',
+      '.qd-v a{color:var(--blu,#0B4EA2)}',
       '.qd-shade{position:fixed;inset:0;z-index:2000;background:rgba(14,26,43,.35);display:none}',
       '.qd-shade.open{display:block}',
       '@media print{.qd-bar,.qd-drawer,.qd-shade{display:none}.qd-stamp{position:absolute}}'
@@ -163,6 +167,28 @@
   function drawerHtml() {
     var h = '<header><h2>Historia poprawek</h2><button class="qd-x" type="button" aria-label="Zamknij">×</button></header><div class="qd-list">';
     var r = info.review;
+    var f = r && r.facts;
+    if (f) {
+      h += '<div class="qd-v qd-facts"><h3>Fakty i źródła <small>v' + info.version + '</small></h3>' +
+        '<p><span class="qd-pill qd-pill--ok">✓ potwierdzone ' + (f.confirmed || 0) + '</span>' +
+        (f.contradicted ? '<span class="qd-pill qd-pill--fix">✗ niezgodne ' + f.contradicted + '</span>' : '') +
+        (f.unverified ? '<span class="qd-pill">bez źródła ' + f.unverified + '</span>' : '') + '</p>';
+      if (f.issues && f.issues.length) {
+        h += '<ul class="qd-issues">';
+        f.issues.forEach(function (x) {
+          h += '<li><b>' + esc(x.stop_key ? (names[x.stop_key] || x.stop_key) : 'Miasto') + ':</b> „' + esc(x.claim) + '” — ' + esc(x.evidence || '') +
+            (x.url ? ' <a href="' + esc(x.url) + '" target="_blank" rel="noopener">artykuł</a>' : '') + '</li>';
+        });
+        h += '</ul>';
+      }
+      if (f.sources && f.sources.length) {
+        h += '<p><small>Źródła potwierdzające (dopisane do przystanków): ' + f.sources.map(function (x) {
+          return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a>' +
+            (x.kind === 'local' ? ' (strona lokalna)' : ' (Wikipedia)');
+        }).join(' · ') + '</small></p>';
+      }
+      h += '</div>';
+    }
     if (r && ((r.errors && r.errors.length) || (r.warnings && r.warnings.length))) {
       h += '<div class="qd-v"><h3>Uwagi Claude do v' + info.version + '</h3>';
       if (r.summary) h += '<p>' + esc(r.summary) + '</p>';
@@ -195,6 +221,13 @@
           h += '</li>';
         });
         if (ch.length > 40) h += '<li>… i ' + (ch.length - 40) + ' więcej</li>';
+        h += '</ul>';
+      }
+      if (v.learned && v.learned.length) {
+        h += '<ul class="qd-rules">';
+        v.learned.forEach(function (x) {
+          h += '<li><span class="qd-pin">📌 Zasada #' + esc(x.id) + (x.action === 'update' ? ' (doprecyzowana)' : '') + '</span> ' + esc(x.rule) + '</li>';
+        });
         h += '</ul>';
       }
       if (!cur) h += '<p><a class="qd-btn" href="' + esc(link(v.version)) + '">Pokaż v' + v.version + '</a></p>';

@@ -1,5 +1,5 @@
 // Wspólne narzędzia skryptów wycieczek (VPS, kontener Hermesa).
-import { readFileSync } from 'node:fs';
+import { readFileSync, appendFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 const require = createRequire('/opt/data/quolino/package.json');
@@ -136,6 +136,11 @@ export async function openrouter(skillName, prompt, task = 'translate_en') {
       const cost = +(j.usage?.cost ?? 0);
       spent.usd += cost; spent.calls++; spent.byModel[model] = (spent.byModel[model] ?? 0) + cost;
       if (paid) log(`  ${model}: $${cost.toFixed(4)} (${j.usage?.prompt_tokens ?? '?'} → ${j.usage?.completion_tokens ?? '?'} tok.)`);
+      try {   // dziennik kosztów (raport miesięczny: cost-report.mjs)
+        appendFileSync('/opt/data/quolino/work/costs.jsonl', JSON.stringify({ at: new Date().toISOString(), task, model, usd: cost,
+          tin: j.usage?.prompt_tokens ?? null, tout: j.usage?.completion_tokens ?? null, script: process.argv[1]?.split('/').pop(),
+          city: process.argv[2] ?? null }) + '\n');
+      } catch {}
       return { text, model, cost };
     }
     const msg = JSON.stringify(j.error ?? j);

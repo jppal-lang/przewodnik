@@ -1,4 +1,4 @@
--- Szkice wycieczek prowadzone w rozmowie (Hermes) + podgląd szkicu na stronie. 2026-10-10.
+-- Szkice wycieczek prowadzone w rozmowie (Hermes) + podgląd szkicu na stronie. 2026-10-10, pamięć redakcyjna i fakty 2026-10-11.
 --   trip_draft_save()  — zapis szkicu z plików meta/pl.json jako nowej wersji (status draft),
 --                        bez dotykania tabel „na żywo” (import w podtransakcji, wycofany po migawce)
 --   draft_preview()    — podgląd dla strony (web_anon) wyłącznie z tajnym kluczem miasta
@@ -8,7 +8,32 @@ BEGIN;
 -- 1) Wersje szkicu pamiętają pliki źródłowe, listę zmian i werdykt Claude
 ALTER TABLE public.city_versions ADD COLUMN IF NOT EXISTS trip    jsonb;   -- {"meta": …, "content": …} (format quolino-trip-writing)
 ALTER TABLE public.city_versions ADD COLUMN IF NOT EXISTS changes jsonb;   -- [{"path","before","after","why"}] względem poprzedniej wersji
-ALTER TABLE public.city_versions ADD COLUMN IF NOT EXISTS review  jsonb;   -- werdykt trip-review: {"verdict","summary","errors","warnings"}
+ALTER TABLE public.city_versions ADD COLUMN IF NOT EXISTS review  jsonb;   -- werdykt: {"verdict","summary","errors","warnings","facts"}
+ALTER TABLE public.city_versions ADD COLUMN IF NOT EXISTS learned jsonb;   -- zasady zapisane z tej poprawki: [{"id","rule","scope","action"}]
+
+-- 1b) Pamięć redakcyjna: zasady nauczone z poprawek JP (Claude rozstrzyga, co jest ogólne)
+CREATE TABLE IF NOT EXISTS public.editorial_rules (
+  id             serial PRIMARY KEY,
+  scope          text NOT NULL DEFAULT 'inne',
+  rule           text NOT NULL,
+  bad            text,
+  good           text,
+  why            text,                       -- kontekst, który przesądził o zapisaniu
+  origin_city    text,
+  origin_version int,
+  origin_say     text,                       -- polecenie JP, z którego wyszła
+  active         boolean NOT NULL DEFAULT true,
+  history        jsonb NOT NULL DEFAULT '[]',
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.editorial_rules OWNER TO quolino;
+REVOKE ALL ON public.editorial_rules FROM PUBLIC;
+CREATE OR REPLACE VIEW admin.editorial_rules AS
+  SELECT id, active, scope, rule, bad, good, why, origin_city, origin_version, origin_say, created_at, updated_at
+    FROM public.editorial_rules;
+ALTER VIEW admin.editorial_rules OWNER TO quolino;
+GRANT SELECT ON admin.editorial_rules TO quolino_admin;
 ALTER TABLE public.city_versions DROP CONSTRAINT IF EXISTS city_versions_source_check;
 ALTER TABLE public.city_versions ADD CONSTRAINT city_versions_source_check
   CHECK (source IN ('manual', 'import', 'pipeline', 'restore', 'migration', 'draft', 'revise'));
@@ -101,7 +126,7 @@ BEGIN
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'version', h.version, 'status', h.status, 'source', h.source, 'note', h.note,
            'created_at', h.created_at, 'stops', h.stops_count, 'review_note', h.review_note,
-           'changes', coalesce(h.changes, '[]'),
+           'changes', coalesce(h.changes, '[]'), 'learned', coalesce(h.learned, '[]'),
            'verdict', h.review->>'verdict', 'summary', h.review->>'summary',
            'errors', coalesce(jsonb_array_length(h.review->'errors'), 0),
            'warnings', coalesce(jsonb_array_length(h.review->'warnings'), 0))
@@ -114,7 +139,8 @@ BEGIN
     'latest_draft', (SELECT max(version) FROM public.city_versions WHERE city_slug = v_slug AND status = 'draft'),
     'review', CASE WHEN cv.review IS NULL THEN NULL ELSE jsonb_build_object(
         'verdict', cv.review->'verdict', 'summary', cv.review->'summary',
-        'errors', coalesce(cv.review->'errors', '[]'), 'warnings', coalesce(cv.review->'warnings', '[]')) END,
+        'errors', coalesce(cv.review->'errors', '[]'), 'warnings', coalesce(cv.review->'warnings', '[]'),
+        'facts', cv.review->'facts') END,
     'content', c, 'history', hist);
 END $f$;
 

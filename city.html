@@ -106,8 +106,8 @@ var SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 var FALLBACK = 'pl';
 
 // ── State ──────────────────────────────────────────────
-var citySlug = new URLSearchParams(location.search).get('c');
-var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
+var citySlug = new URLSearchParams(location.search).get('c') || (window.QSSR && window.QSSR.slug) || null;
+var currentLang = new URLSearchParams(location.search).get('lang') || (window.QSSR && window.QSSR.lang) || readPref() || FALLBACK;
 var cityData = null;
 var langList = [];
 var uiStrings = {};
@@ -187,6 +187,8 @@ function loadPage(lang) {
   if (!citySlug && !window.QDraft) { showError('Brak parametru ?c= w adresie.'); return; }
   currentLang = lang;
   savePref(lang);
+  if (window.QSSR && history.replaceState && window.QSSR.langs && window.QSSR.langs.indexOf(lang) > -1)
+    history.replaceState(null, '', '/' + lang + '/' + window.QSSR.region + '/' + window.QSSR.slug + '/' + location.search + location.hash);
 
   var QD = window.QDraft;
   var core = QD ? QD.core(lang, SB_URL, SB_KEY, FALLBACK) : [
@@ -624,13 +626,13 @@ function ustawMeta(city, cityTr, stops) {
   meta('property', 'og:type', 'article');
   meta('property', 'og:title', tytul + ' — Quolino');
   meta('property', 'og:description', opis);
-  meta('property', 'og:url', location.href);
+  meta('property', 'og:url', window.QSSR ? location.origin + '/' + currentLang + '/' + city.region_slug + '/' + city.slug + '/' : location.href);
   if (obraz) meta('property', 'og:image', baza + obraz);
   meta('name', 'twitter:card', obraz ? 'summary_large_image' : 'summary');
 
   var kanon = document.head.querySelector('link[rel="canonical"]');
   if (!kanon) { kanon = document.createElement('link'); kanon.rel = 'canonical'; document.head.appendChild(kanon); }
-  kanon.href = location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);
+  kanon.href = window.QSSR ? location.origin + '/' + currentLang + '/' + city.region_slug + '/' + encodeURIComponent(city.slug) + '/' : location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);
 
   var punkty = stops.map(function(item, i) {
     var s = item.stop, t = item.tr || {};
@@ -925,5 +927,6 @@ loadPage(currentLang);
 })();
 </script>
 <script src="motion.js?v=4" defer></script>
+<script src="report-issue.js?v=1" defer></script>
 </body>
 </html>
