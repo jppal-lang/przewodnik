@@ -9,8 +9,8 @@ for s in quolino-trip-writing quolino-trip-translate; do
   docker exec "$H" mkdir -p /opt/data/home/.claude/skills/$s/scripts
   docker cp "$SRC/$s/." "$H:/opt/data/home/.claude/skills/$s/"
 done
-for f in lib.mjs trip-review.mjs trip-translate.mjs; do docker cp "$SRC/bin/$f" "$H:/opt/data/quolino/$f"; done
-docker exec "$H" sh -c 'chown -R $(stat -c %u:%g /opt/data/quolino/qdb.mjs) /opt/data/home/.claude/skills /opt/data/quolino/lib.mjs /opt/data/quolino/trip-*.mjs 2>/dev/null; ls /opt/data/home/.claude/skills; node --check /opt/data/quolino/trip-translate.mjs && echo "umiejętności i skrypty zainstalowane"'
+for f in lib.mjs draft-lib.mjs trip-review.mjs trip-translate.mjs trip-draft.mjs trip-revise.mjs trip-approve.mjs; do docker cp "$SRC/bin/$f" "$H:/opt/data/quolino/$f"; done
+docker exec "$H" sh -c 'chown -R $(stat -c %u:%g /opt/data/quolino/qdb.mjs) /opt/data/home/.claude/skills /opt/data/quolino/lib.mjs /opt/data/quolino/trip-*.mjs 2>/dev/null; ls /opt/data/home/.claude/skills; for f in /opt/data/quolino/trip-*.mjs /opt/data/quolino/draft-lib.mjs; do node --check $f || exit 1; done && echo "umiejętności i skrypty zainstalowane"'
 
 # sekcja w instrukcji Hermesa (podmiana między znacznikami, bez ruszania reszty)
 docker cp "$SRC/hermes/trips-section.md" "$H:/tmp/trips-section.md"

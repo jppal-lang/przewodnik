@@ -10,7 +10,7 @@
 // Gotowe tłumaczenia są w work/translate/<slug>/<lang>.json — ponowne uruchomienie ich nie tłumaczy
 // drugi raz (chyba że --fresh), tylko kończy kontrolę. Bez kontroli jakości nic nie trafia na stronę.
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
-import { SKILLS, run, claude, translator, currentModel, nextModel, env, extractJson, log, db } from './lib.mjs';
+import { SKILLS, run, claude, translator, currentModel, nextModel, env, extractJson, log, db, spent } from './lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -240,13 +240,19 @@ try {
 
   const enabled = (await q("SELECT code FROM public.languages WHERE enabled AND code <> 'pl' ORDER BY priority")).map(r => r.code);
   const wanted = opt('--langs') ? opt('--langs').split(',') : enabled;
-  const order = ['en', ...wanted.filter(l => l !== 'en' && enabled.includes(l))];
+  // języki już przyjęte (na stronie + ocena Claude ≥ MIN_SCORE) pomijamy, chyba że --fresh albo wskazane w --langs
+  const accepted = FRESH ? [] : (await q(`SELECT q.lang FROM public.translation_quality q
+      JOIN public.city_translations t ON t.city_slug = q.city_slug AND t.lang = q.lang
+     WHERE q.city_slug = $1 AND q.score >= $2`, [slug, MIN_SCORE])).map(r => r.lang)
+    .filter(l => !opt('--langs') || !wanted.includes(l));
+  if (accepted.length) log(`${slug}: pomijam przyjęte wcześniej: ${accepted.join(', ')}`);
+  const order = ['en', ...wanted.filter(l => l !== 'en' && enabled.includes(l) && !accepted.includes(l))];
   await job({ status: 'running' });
   log(`${slug}: ${order.join(' → ')} · modele: EN ${await currentModel('translate_en')}, pozostałe ${await currentModel('translate_xx')}`);
 
   const done = [];
   const enExists = (await q("SELECT 1 FROM public.city_translations WHERE city_slug = $1 AND lang = 'en'", [slug])).length > 0;
-  if (!opt('--langs') || wanted.includes('en') || !enExists) {
+  if (!accepted.includes('en') && (!opt('--langs') || wanted.includes('en') || !enExists)) {
     const en = await one(pl, 'en', null, pl);
     done.push(en);
     if (!en.ok) throw new Error(`EN nie przeszedł kontroli — pozostałe języki wstrzymane:\n${en.errors.join('\n')}`);
@@ -268,7 +274,9 @@ try {
   }
   const summary = { slug, ok: done.filter(d => d.ok).map(d => `${d.lang} ${d.score}/5`),
     failed: bad.map(b => ({ lang: b.lang, errors: b.errors.slice(0, 5) })),
-    translator_notes: done.flatMap(d => (d.notes ?? []).map(n => `${d.lang}: ${n}`)) };
+    translator_notes: done.flatMap(d => (d.notes ?? []).map(n => `${d.lang}: ${n}`)),
+    cost_usd: +spent.usd.toFixed(4), cost_by_model: spent.byModel };
+  log(`koszt modeli płatnych: $${spent.usd.toFixed(4)} (${spent.calls} zapytań)`);
   writeFileSync(`${WORK}/summary.json`, JSON.stringify(summary, null, 2));
   await job({ status: bad.length ? 'failed' : 'done', result: JSON.stringify(summary).slice(0, 4000), finished_at: new Date() });
   console.log(JSON.stringify(summary, null, 2));
