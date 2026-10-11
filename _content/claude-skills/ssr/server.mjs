@@ -35,7 +35,7 @@ async function cached(key, fn, ttl = CACHE_SECONDS) {
   return v;
 }
 const enabledLangs = () => cached('langs', async () =>
-  (await api('languages?select=code,name,priority&enabled=eq.true&order=priority')).map(l => l.code));
+  (await api('languages?select=code,priority&enabled=eq.true&order=priority')).map(l => l.code));
 const publishedCities = () => cached('cities', () =>
   api('cities?select=slug,region_slug,country,status&status=eq.published&order=sort_order'));
 // język miasta jest „gotowy”, gdy ma opis miasta i tłumaczenie KAŻDEGO przystanku — inaczej strona
