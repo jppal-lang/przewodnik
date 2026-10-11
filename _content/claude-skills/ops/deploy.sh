@@ -70,7 +70,7 @@ fi
 # ── cron: część Hermesa sama ──
 last=$(cat "$DEPLOYED")
 [ "$last" = "$HEAD" ] && exit 0
-safe=$(G diff --name-only --diff-filter=AMR "$last" "$HEAD" -- "$P" | grep -E "$SAFE" | grep -Ev '\.md$|^_content/claude-skills/hermes/' || true)
+safe=$(G diff --name-only --diff-filter=AMR "$last" "$HEAD" -- "$P" | grep -E "$SAFE" | grep -Ev '^_content/claude-skills/[A-Za-z0-9_-]+\.md$|^_content/claude-skills/hermes/' || true)
 secs=$(G diff --name-only --diff-filter=AMR "$last" "$HEAD" -- "$P/hermes" | grep -E "$SAFE" || true)
 msg=""
 if [ -n "$safe$secs" ]; then

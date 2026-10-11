@@ -6,7 +6,7 @@ set -e
 SRC="$(cd "$(dirname "$0")" && pwd)"
 H="$(docker ps --format '{{.Names}}' | grep -m1 'hermes-quolino.*agent')"
 [ -n "$H" ] || { echo "Nie znalazłem kontenera Hermesa"; exit 1; }
-for s in quolino-trip-writing quolino-trip-translate; do
+for s in $(cd "$SRC" && ls -d quolino-trip-*/ | tr -d /); do
   docker exec "$H" mkdir -p /opt/data/home/.claude/skills/$s/scripts
   docker cp "$SRC/$s/." "$H:/opt/data/home/.claude/skills/$s/"
 done
