@@ -17,3 +17,4 @@ post() { [ -n "${ALERT_WEBHOOK:-}" ] && curl -s -m 20 -H 'Content-Type: applicat
 if [ "$now" = fail ] && [ "$prev" = ok ]; then post "🔴 Quolino: problem —$fail"; fi
 if [ "$now" = ok ] && [ "$prev" = fail ]; then post "🟢 Quolino: wszystko znowu działa"; fi
 echo "$now" > "$STATE"
+# sprawdzone: wdrozenie za zgoda JP 2026-10-11

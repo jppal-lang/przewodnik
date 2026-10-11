@@ -36,4 +36,3 @@ case "$1" in
   discard)  git fetch -q origin; git reset -q --hard origin/main; git clean -qfd; echo "Lokalne zmiany odrzucone: $(git log --oneline -1)" ;;
   *) echo 'sh repo.sh status | pull | diff | publish "opis" | deployed | discard'; exit 1 ;;
 esac
-# test wdrozenia 2026-10-11
