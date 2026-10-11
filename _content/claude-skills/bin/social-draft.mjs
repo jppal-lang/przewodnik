@@ -82,7 +82,7 @@ ${JSON.stringify(src).slice(0, 60000)}`;
   }
   if (reel) {
     msgs.push(`🎬 **Rolka: animacja Quo — ${reel.title ?? slug}** · apaszka: ${reel.bandana ?? '?'} · ${reel.duration_s ?? '?'} s · 9:16 · kontrola: ${reel.check ?? '?'}\n` +
-      `Postać (wklejona w każdy prompt): ${reel.character ?? ''}`);
+      `Postać (wklejona w każdy prompt): ${reel.character ?? ''}\nStyl (kreskówka, w każdym prompcie): ${reel.style ?? ''}`);
     for (const sh of reel.shots ?? []) msgs.push(`**Ujęcie ${sh.n}** · ${sh.place} · ${sh.seconds ?? '?'} s · ${sh.camera ?? ''}\n${sh.action ?? ''}\n\`\`\`\n${sh.prompt ?? ''}\n\`\`\``);
     msgs.push(`Muzyka: ${reel.music ?? ''} · Plansza końcowa: ${reel.end_card ?? ''}\nJP: wygeneruj ujęcia w generatorze wideo i wrzuć klipy tutaj — Hermes pomoże w poprawkach promptów.`);
   }

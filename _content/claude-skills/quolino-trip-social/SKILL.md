@@ -29,12 +29,16 @@ Maskotka: Quo, popielica w apaszce w kolorze miasta. Domena: questini.com (przej
 `image_order`: wybierz z podanych zdjęć 1–5 najlepszych w kolejności karuzeli (najpierw najbardziej „rodzinne”).
 
 ## Rolka = animacja Quo w danym miejscu (decyzja JP 2026-10-11)
-Rolki (Reels / TikTok / Shorts) to krótka animacja maskotki Quo w prawdziwych miejscach wycieczki — nie zdjęcia z lektorem.
+Rolki (Reels / TikTok / Shorts) to w całości KRESKÓWKA (decyzja JP 2026-10-11): animowany jest cały kadr — Quo i tło,
+w jednym stylu. Żadnego fotorealizmu, zdjęć ani prawdziwego wideo; nie zdjęcia z lektorem.
 Jeden scenariusz na wycieczkę (obraz jest wspólny dla wszystkich języków); napisy i podpis — w każdym języku osobno (`reel_text`).
 - Quo: popielica (Glis glis), rysunkowa, ciepła, nie infantylna (6–12 lat); apaszka w kolorze miasta (podany w poleceniu).
   Wygląd postaci trzymaj ściśle według opisu maskotki z polecenia — w każdym prompcie ten sam opis postaci.
-- Miejsca: 3–5 przystanków z wycieczki, w kolejności trasy; architektura i krajobraz zgodne z rzeczywistością
-  (żadnych wymyślonych budowli). Dzieci i ludzie — tylko z daleka, bez twarzy.
+- Styl: kreskówka (cartoon animation, jak film animowany dla dzieci), ciepła paleta marki (terakota, oliwka, błękit),
+  miękkie światło, czytelne kształty. Ta sama fraza stylu w każdym prompcie (pole `style`) — rolki mają wyglądać jak jedna seria.
+- Miejsca: 3–5 przystanków z wycieczki, w kolejności trasy, narysowane jako kreskówka, ale rozpoznawalne: zachowaj
+  charakterystyczne cechy zabytku (bryła, materiał, kolor, układ), upraszczaj szczegóły; żadnych wymyślonych budowli.
+  Inne postacie (dzieci, rodzice) — też kreskówkowe, w tle, drugoplanowe.
 - Łuk: haczyk w 1–2 s (Quo coś odkrywa) → 2–3 miejsca → finał (Quo zadowolony, zaproszenie „zagraj z Quo”).
   9:16, 15–25 s, każde ujęcie 3–5 s. Bez tekstu i logo w samym obrazie (napisy dokładamy w montażu).
 - Generowanie jest ręczne (JP, generator wideo AI): prompt na ujęcie po angielsku, samodzielny (pełny opis postaci,
@@ -44,6 +48,7 @@ Format rolki (osobne polecenie „ROLKA”):
 ```json
 { "title": "robocza nazwa", "bandana": "kolor apaszki", "duration_s": 20,
   "character": "stały opis Quo po angielsku (wklejany do każdego promptu)",
+  "style": "stała fraza stylu kreskówki po angielsku (wklejana do każdego promptu)",
   "shots": [ { "n": 1, "place": "nazwa przystanku", "action": "co robi Quo (PL)", "seconds": 4,
                "camera": "ruch kamery", "prompt": "pełny prompt EN do generatora wideo" } ],
   "music": "nastrój muzyki", "end_card": "co na planszy końcowej (logo Quolino, link)" }
@@ -51,7 +56,7 @@ Format rolki (osobne polecenie „ROLKA”):
 
 ## Kontrola (Claude)
 Sprawdź każdy fakt w poście z danymi wycieczki. Popraw wszystko, czego nie ma w danych, zdradzone rozwiązania questów,
-ton, błędy językowe, długość. W rolce sprawdź dodatkowo: czy miejsca są z wycieczki i wyglądają w prompcie jak naprawdę
-(sprawdź w źródłach, jeśli masz dostęp do sieci), czy opis Quo jest identyczny w każdym ujęciu, czy apaszka ma kolor miasta,
+ton, błędy językowe, długość. W rolce sprawdź dodatkowo: czy każdy prompt wymusza kreskówkę w całym kadrze (zero fotorealizmu), czy fraza stylu
+jest identyczna w każdym ujęciu, czy miejsca są z wycieczki i rozpoznawalne (sprawdź w źródłach, jeśli masz dostęp do sieci), czy opis Quo jest identyczny w każdym ujęciu, czy apaszka ma kolor miasta,
 czy nie ma twarzy dzieci, tekstu ani logo w obrazie. Odpowiedz tym samym JSON-em, poprawionym, z polem `"check": "ok"` albo
 `"check": "poprawione: <co>"`.

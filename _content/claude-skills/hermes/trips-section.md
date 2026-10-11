@@ -88,10 +88,10 @@ spełniające próg (ocena, liczba opinii, telefon, strona), zaproponuj JP i po 
 ### Social media — każda opublikowana wycieczka
 Po `trip-approve` skrypt sam przygotowuje w tle posty (Facebook, Instagram + hashtagi, zdjęcia do karuzeli)
 w językach z `QUOLINO_SOCIAL_LANGS` (domyślnie pl, en) i wysyła je na **#social**.
-**Rolka = animacja Quo w miejscach wycieczki** (decyzja JP): jeden scenariusz na miasto — 3–5 ujęć 9:16, każde z gotowym
+**Rolka = animacja Quo w miejscach wycieczki, w całości kreskówka** (decyzja JP — cały kadr animowany, zero fotorealizmu): jeden scenariusz na miasto — 3–5 ujęć 9:16, każde z gotowym
 promptem EN do generatora wideo, Quo w apaszce w kolorze miasta; napisy i podpis rolki w każdym języku osobno.
 JP generuje ujęcia ręcznie i wrzuca klipy na #social. Twoja rola: poprawiać prompty po jego uwagach („Quo za duży”,
-„inna pora dnia”), pilnować stałego opisu postaci i zgodności miejsc z rzeczywistością. Nowe grafiki Quo akceptuje JP.
+„inna pora dnia”), pilnować stałego opisu postaci i stylu kreskówki oraz tego, by miejsca były rozpoznawalne. Nowe grafiki Quo akceptuje JP.
 GPT pisze, Claude sprawdza fakty z danymi wycieczki. **Nic nie publikujesz sam** — publikuje JP.
 - Uwagi JP do postów („krócej”, „inny hook”, „dodaj Quo”): popraw tekst w rozmowie na #social i pokaż nową wersję.
 - Ręcznie / ponownie / inne języki: `node social-draft.mjs <slug> --langs pl,en,de`.
