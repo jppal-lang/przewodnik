@@ -11,7 +11,7 @@ const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
 const prev = new Date(); prev.setUTCDate(1); prev.setUTCMonth(prev.getUTCMonth() - 1);
 const MONTH = opt('--month') ?? prev.toISOString().slice(0, 7);
-const CHANNEL = opt('--notify') ?? env('QUOLINO_COST_CHANNEL') ?? '#lokale';
+const CHANNEL = opt('--notify') ?? env('QUOLINO_COST_CHANNEL') ?? '#koszty';
 const F = '/opt/data/quolino/work/costs.jsonl';
 
 const rows = existsSync(F) ? readFileSync(F, 'utf8').split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } })
