@@ -13,6 +13,9 @@ const sessions = new Map();                       // id → { start, last }
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const cookie = (req) => ((req.headers.cookie || '').match(/(?:^|;\s*)qadm=([A-Za-z0-9_-]{40,})/) || [])[1];
 const log = (...a) => console.log(new Date().toISOString(), ...a);
+// bez ważnego linku/sesji: bez żadnych komunikatów — przekierowanie na stronę główną (decyzja JP 2026-10-11)
+const MAIN = process.env.MAIN_URL || 'https://quolino.srv1984679.hstgr.cloud/';
+const away = (res, extra = {}) => { res.writeHead(302, { Location: MAIN, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', ...extra }); res.end(); };
 
 function valid(id) {
   const s = id && sessions.get(id);
@@ -38,14 +41,14 @@ http.createServer(async (req, res) => {
 
   if (u.pathname === '/login') {
     const t = u.searchParams.get('t') || '';
-    if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return page(res, 400, 'Nieprawidłowy link.');
+    if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
     let ok = false;
     try {
       const r = await fetch(`${API}/rpc/redeem_link`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ p_hash: sha(t), p_ip: ip }) });
       ok = r.ok && (await r.json()) === true;
     } catch (e) { log('redeem error', e.message); }
-    if (!ok) { log('odrzucony link', ip); return page(res, 403, 'Ten link wygasł albo został już użyty. Poproś o nowy na Discordzie w kanale #admin.'); }
+    if (!ok) { log('odrzucony link', ip); return away(res); }
     const id = crypto.randomBytes(32).toString('base64url');
     sessions.set(id, { start: Date.now(), last: Date.now() });
     log('nowa sesja', ip);
@@ -55,13 +58,9 @@ http.createServer(async (req, res) => {
   }
   if (u.pathname === '/logout') {
     const id = cookie(req); if (id) sessions.delete(id);
-    res.writeHead(302, { 'Set-Cookie': 'qadm=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax', Location: '/wylogowano' });
-    return res.end();
+    return away(res, { 'Set-Cookie': 'qadm=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
   }
-  if (!valid(cookie(req))) {
-    return page(res, 401, u.pathname === '/wylogowano' ? 'Wylogowano.' :
-      'Brak aktywnej sesji. Napisz na Discordzie w kanale #admin „dostęp do panelu” — dostaniesz jednorazowy link w wiadomości prywatnej.');
-  }
+  if (!valid(cookie(req))) return away(res);
   const h = { ...req.headers, host: UP.host };
   delete h.cookie; delete h.authorization;
   const p = http.request({ hostname: UP.hostname, port: UP.port || 80, path: req.url, method: req.method, headers: h }, (r) => {
