@@ -392,6 +392,8 @@ function render(d) {
     var openAttr = idx === 0 ? ' open' : '';
 
     var collectable = !!(t.kids_box || t.photo_task);
+    // fakty: tłumaczenie, gdy jest; inaczej polski z tabeli stops
+    var f = function(k) { return t[k] || s[k]; };
     html += '<details class="qc-stop' + (isDinner ? ' qc-stop--dinner' : '') + '" id="p' + s.stop_number + '" data-stop-num="' + s.stop_number + '"' + (collectable ? ' data-collectable' : '') + openAttr + '>';
     html += '<summary class="qc-stop__head">';
     // Parent toggle switch (visible only in parent view)
@@ -411,13 +413,13 @@ function render(d) {
 
     // Meta column: pills + nav button
     html += '<span class="qc-stop__meta">';
-    if (s.year_built) html += '<span class="qc-pill"><small>' + esc(ui('label.year', 'Rok')) + '</small>' + esc(s.year_built) + '</span>';
-    if (s.price) {
+    if (f('year_built')) html += '<span class="qc-pill"><small>' + esc(ui('label.year', 'Rok')) + '</small>' + esc(f('year_built')) + '</span>';
+    if (f('price')) {
       var doSprawdzenia = ui('label.unverified', 'do sprawdzenia');
-      html += '<span class="qc-pill"><small>' + esc(ui('label.ticket', 'Bilet')) + '</small>' + esc(s.price) +
+      html += '<span class="qc-pill"><small>' + esc(ui('label.ticket', 'Bilet')) + '</small>' + esc(f('price')) +
               (s.price_status === 'unverified' ? ' <em>' + esc(doSprawdzenia) + '</em>' : '') + '</span>';
     }
-    if (s.visit_duration) html += '<span class="qc-pill"><small>' + esc(ui('label.visit_time', 'Czas zwiedzania')) + '</small>' + esc(s.visit_duration) + '</span>';
+    if (f('visit_duration')) html += '<span class="qc-pill"><small>' + esc(ui('label.visit_time', 'Czas zwiedzania')) + '</small>' + esc(f('visit_duration')) + '</span>';
     if (s.maps_query) {
       html += '<a class="qc-btn qc-btn--primary qc-btn--sm" href="https://www.google.com/maps/search/?api=1&query=' +
               encodeURIComponent(s.maps_query) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(ui('btn.navigate', 'Nawiguj')) + '</a>';
@@ -452,9 +454,9 @@ function render(d) {
     }
 
     // Opening hours chip
-    if (s.opening_hours) {
+    if (f('opening_hours')) {
       var doSpr = ui('label.unverified', 'do sprawdzenia');
-      html += '<p class="qc-note qc-note--hours"><b>' + esc(ui('label.hours', 'Godziny')) + '</b><span>' + esc(s.opening_hours) +
+      html += '<p class="qc-note qc-note--hours"><b>' + esc(ui('label.hours', 'Godziny')) + '</b><span>' + esc(f('opening_hours')) +
               (s.hours_status === 'unverified' ? ' · ' + esc(doSpr) : '') + '</span></p>';
     }
 
@@ -927,7 +929,7 @@ loadPage(currentLang);
 })();
 </script>
 <script src="motion.js?v=4" defer></script>
-<script src="report-issue.js?v=1" defer></script>
-<script src="opinion.js?v=1" defer></script>
+<script src="report-issue.js?v=2" defer></script>
+<script src="opinion.js?v=2" defer></script>
 </body>
 </html>

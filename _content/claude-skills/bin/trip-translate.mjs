@@ -95,7 +95,8 @@ function setPath(obj, path, value) {
   }
   const last = keys.at(-1);
   const appendable = Array.isArray(o) && +last === o.length;   // brakujący akapit na końcu listy
-  if (!appendable && typeof (Array.isArray(o) ? o[+last] : o[last]) !== 'string') return false;
+  const newKey = !Array.isArray(o) && !(last in o);                // nowe pole (np. fakty przystanku w starym tłumaczeniu)
+  if (!appendable && !newKey && typeof (Array.isArray(o) ? o[+last] : o[last]) !== 'string') return false;
   if (Array.isArray(o)) o[+last] = value; else o[last] = value;
   return true;
 }

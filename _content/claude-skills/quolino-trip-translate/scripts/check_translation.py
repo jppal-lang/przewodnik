@@ -13,6 +13,7 @@ from collections import Counter
 
 KEEP_STOP = ["stop_key", "stop_number", "category"]
 TEXT_STOP = ["name", "kids_box", "photo_task", "hint", "local_flavor", "dress_code", "practical_note"]
+FACT_STOP = ["year_built", "price", "visit_duration", "opening_hours"]   # krótkie fakty; brak klucza w starym źródle = pomijamy
 TEXT_CITY = ["title", "region_label", "subtitle", "lead", "good_to_know", "hero_note", "local_food"]
 EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿]")
 NUM = re.compile(r"\d+(?:[.,:]\d+)*")
@@ -90,6 +91,12 @@ def main():
                 errors.append(f"{k}.{f}: brak klucza")
             else:
                 text(f"{k}.{f}", a.get(f), b.get(f), f != "name")
+        for f in FACT_STOP:
+            if f in a:
+                if f not in b:
+                    errors.append(f"{k}.{f}: brak klucza")
+                else:
+                    text(f"{k}.{f}", a.get(f), b.get(f), False)
         pa, pb = a.get("desc_paragraphs") or [], b.get("desc_paragraphs") or []
         if not isinstance(pb, list):
             errors.append(f"{k}.desc_paragraphs: musi być listą")

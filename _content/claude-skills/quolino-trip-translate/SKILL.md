@@ -26,7 +26,8 @@ Dostajesz i oddajesz ten sam JSON (eksport `trip_export(slug, lang)`):
 {"city_slug": "spello", "lang": "en",
  "city": {"title", "region_label", "subtitle", "lead", "good_to_know", "hero_note", "local_food"},
  "stops": [{"stop_key", "stop_number", "category", "name", "desc_paragraphs": [], "kids_box",
-            "photo_task", "hint", "local_flavor", "dress_code", "practical_note"}],
+            "photo_task", "hint", "local_flavor", "dress_code", "practical_note",
+            "year_built", "price", "visit_duration", "opening_hours"}],
  "day_plan": [{"sort_order", "time_label", "stop_key", "description"}],
  "emergency_points": [{"sort_order", "type", "maps_query", "label", "description"}]}
 ```
@@ -42,6 +43,10 @@ Odpowiadasz **wyłącznie JSON-em** w tym kształcie, z `lang` ustawionym na ję
 - **Bez zmian** (kopiuj dosłownie): `stop_key`, `stop_number`, `category`, `sort_order`,
   `time_label`, `type`, `maps_query`, ceny, godziny, daty, liczby, telefony, linki, kody,
   waluty i ich zapis.
+- **Fakty przystanku** (`year_built`, `price`, `visit_duration`, `opening_hours`) tłumaczysz
+  krótko, w formie etykiety: liczby, waluty, godziny i zakresy bez zmian, słowa w języku docelowym
+  („I w. p.n.e.” → „1st century BC”, „bezpłatnie” → „free”, „do weryfikacji” → „to be verified”).
+  Brak klucza w źródle = nie dodajesz go.
 - **Nazwy własne w oryginale**: zabytki, kościoły, restauracje, ulice, place, bramy
   (`Porta Consolare`, `Piazza della Repubblica`, `Osteria del Buchetto`). Tłumaczysz tylko
   opisowe części nazw: „Kolacja przy Corso Vannucci” → „Dinner on Corso Vannucci”.

@@ -111,10 +111,11 @@ function publicLayer(d, lang, ui) {
     h += `<li id="p${esc(s.stop_number)}"><h3>${esc(t.name ?? s.stop_key)}</h3>`;
     for (const p of (t.desc_paragraphs ?? []).slice(0, 2)) h += `<p>${esc(p)}</p>`;
     const facts = [];
+    const f = (k) => t[k] || s[k];   // fakt w języku strony, gdy przetłumaczony
     if (s.time_label) facts.push(esc(s.time_label));
-    if (s.visit_duration) facts.push(`${esc(u('label.visit_time', 'Czas zwiedzania'))}: ${esc(s.visit_duration)}`);
-    if (s.opening_hours) facts.push(`${esc(u('label.hours', 'Godziny'))}: ${esc(s.opening_hours)}`);
-    if (s.price && s.price_status !== 'unverified') facts.push(`${esc(u('label.ticket', 'Bilet'))}: ${esc(s.price)}`);
+    if (f('visit_duration')) facts.push(`${esc(u('label.visit_time', 'Czas zwiedzania'))}: ${esc(f('visit_duration'))}`);
+    if (f('opening_hours')) facts.push(`${esc(u('label.hours', 'Godziny'))}: ${esc(f('opening_hours'))}`);
+    if (f('price') && s.price_status !== 'unverified') facts.push(`${esc(u('label.ticket', 'Bilet'))}: ${esc(f('price'))}`);
     if (s.parking_cost) facts.push(`${esc(u('label.parking', 'Parking'))}: ${esc(s.parking_cost)}`);
     if (t.practical_note) facts.push(esc(t.practical_note));
     if (facts.length) h += `<p class="ssr-facts">${facts.join(' · ')}</p>`;
