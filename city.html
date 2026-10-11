@@ -477,7 +477,7 @@ function render(d) {
         var taskKey = (s.stop_key || s.slug || id) + '-mission';
         html += '<div class="qc-task">';
         html += '<label class="qc-task__label"><input type="checkbox" data-qc-task="' + esc(taskKey) + '">' + esc(ui('label.mission', 'Misja')) + '</label>';
-        html += '<p>' + esc(t.kids_box) + '</p>';
+        html += '<p>' + esc(t.kids_box).replace(/\n\s*\n/g, '</p><p>') + '</p>';
         if (t.hint) html += '<p class="qc-task__hint">' + esc(ui('label.hint', 'Wskazówka')) + ': ' + esc(t.hint) + '</p>';
         html += '</div>';
       }
