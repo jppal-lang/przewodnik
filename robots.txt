@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /_admin/
+Disallow: /_content/
+Disallow: /_to_delete/
+Disallow: /city.html?draft=
+
+Sitemap: https://quolino.srv1984679.hstgr.cloud/sitemap.xml

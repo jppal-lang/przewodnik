@@ -113,6 +113,11 @@ function sb(table, params) {
   return fetch(url, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } })
     .then(function(r) { if (!r.ok) throw new Error(r.status + ' ' + table); return r.json(); });
 }
+// Adres strony miasta renderowanej z bazy (SSR): /{lang}/{region}/{miasto}/
+function cityHref(c) {
+  if (!c.region_slug) return 'city.html?c=' + encodeURIComponent(c.slug);
+  return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(c.region_slug) + '/' + encodeURIComponent(c.slug) + '/';
+}
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
 function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -323,7 +328,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
 
     var card = document.createElement('a');
     card.className = 'city-card';
-    card.href = 'city.html?c=' + encodeURIComponent(city.slug);
+    card.href = cityHref(city);
     if (city.bandana_color) card.style.setProperty('--team', city.bandana_color);
 
     var wrap = document.createElement('div');

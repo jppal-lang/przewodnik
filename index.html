@@ -262,6 +262,11 @@ function sb(table, params) {
     return r.json();
   });
 }
+// Adres strony miasta renderowanej z bazy (SSR): /{lang}/{region}/{miasto}/
+function cityHref(c) {
+  if (!c.region_slug) return 'city.html?c=' + encodeURIComponent(c.slug);
+  return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(c.region_slug) + '/' + encodeURIComponent(c.slug) + '/';
+}
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
 function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -375,7 +380,7 @@ function buildHeroSheet(cities, cityTrs, regionTrs) {
     var name = tr && tr.title ? tr.title : c.slug;
     var a = document.createElement('a');
     a.className = 'sticker';
-    a.href = 'city.html?c=' + encodeURIComponent(c.slug);
+    a.href = cityHref(c);
     if (c.bandana_color) a.style.setProperty('--team', c.bandana_color);
     var base = imgBase(c);
     a.innerHTML = '<span class="sticker-no">' + String(i + 1).padStart(2, '0') + '</span>' +
