@@ -39,8 +39,21 @@ http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
 
-  if (u.pathname === '/login') {
+  // /login: GET niczego nie zużywa (podglądy linków Discorda/komunikatorów odwiedzają adres automatycznie);
+  // przeglądarka sama odsyła formularz (POST) skryptem — dopiero POST zużywa jednorazowy link.
+  if (u.pathname === '/login' && req.method === 'GET') {
     const t = u.searchParams.get('t') || '';
+    if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow',
+      'Referrer-Policy': 'no-referrer' });
+    return res.end(`<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Quolino</title><body style="font:16px system-ui,sans-serif;margin:20vh auto;max-width:20em;text-align:center">
+<form method="post" action="/login"><input type="hidden" name="t" value="${t}"><button type="submit" style="font:600 16px system-ui;padding:10px 22px">Wejdź</button></form>
+<script>document.forms[0].submit()</script></body></html>`);
+  }
+  if (u.pathname === '/login' && req.method === 'POST') {
+    let body = ''; for await (const ch of req) { body += ch; if (body.length > 2000) break; }
+    const t = new URLSearchParams(body).get('t') || '';
     if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
     let ok = false;
     try {
@@ -52,7 +65,7 @@ http.createServer(async (req, res) => {
     const id = crypto.randomBytes(32).toString('base64url');
     sessions.set(id, { start: Date.now(), last: Date.now() });
     log('nowa sesja', ip);
-    res.writeHead(302, { 'Set-Cookie': `qadm=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: '/_admin/',
+    res.writeHead(303, { 'Set-Cookie': `qadm=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: '/_admin/',
       'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
     return res.end();
   }

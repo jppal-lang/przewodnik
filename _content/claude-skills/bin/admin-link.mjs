@@ -48,7 +48,7 @@ try {
     [crypto.createHash('sha256').update(t).digest('hex'), by2]);
   const dm = await api('/users/@me/channels', { method: 'POST', body: JSON.stringify({ recipient_id: owner }) });
   await api(`/channels/${dm.id}/messages`, { method: 'POST', body: JSON.stringify({
-    content: `🔐 Jednorazowy link do panelu Quolino (prośba: ${by2}). Ważny 10 minut, działa raz — nie przekazuj dalej.\n${BASE}/login?t=${t}\n` +
+    content: `🔐 Jednorazowy link do panelu Quolino (prośba: ${by2}). Ważny 10 minut, działa raz — nie przekazuj dalej.\n<${BASE}/login?t=${t}>\n` +
       `Sesja wygaśnie po 30 min bez ruchu albo po 2 h. Jeśli to nie Ty prosiłeś — zignoruj i daj znać.`,
     allowed_mentions: { parse: [] } }) });
   await c.query("UPDATE ops.admin_link_requests SET result = 'wysłany' WHERE id = $1", [req.id]);
