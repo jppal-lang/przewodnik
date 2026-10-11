@@ -51,4 +51,10 @@ mkdir -p /root/quolino-web/ops /root/quolino-web/ssr
 # kopia przez plik tymczasowy + mv: deploy.sh może właśnie działać z tego katalogu
 for f in "$SRC"/ops/*.sh; do cp "$f" "/root/quolino-web/ops/.$(basename "$f").new" && chmod +x "/root/quolino-web/ops/.$(basename "$f").new" && mv -f "/root/quolino-web/ops/.$(basename "$f").new" "/root/quolino-web/ops/$(basename "$f")"; done
 cmp -s "$SRC/ssr/server.mjs" /root/quolino-web/ssr/server.mjs || cp "$SRC/ssr/server.mjs" /root/quolino-web/ssr/server.mjs
+# bramka panelu admina (jednorazowe linki z Discorda)
+mkdir -p /root/quolino-web/gate
+if ! cmp -s "$SRC/gate/admin-gate.mjs" /root/quolino-web/gate/admin-gate.mjs; then
+  cp "$SRC/gate/admin-gate.mjs" /root/quolino-web/gate/admin-gate.mjs
+  docker ps --format '{{.Names}}' | grep -q '^quolino-web-admin-gate-1$' && docker restart quolino-web-admin-gate-1 >/dev/null && echo "bramka admina: zrestartowana"
+fi
 echo "ops i SSR: OK"

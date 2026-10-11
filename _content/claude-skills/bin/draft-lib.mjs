@@ -159,6 +159,11 @@ ${JSON.stringify(trip)}`;
 
 // ── zapis szkicu w bazie (nowa wersja draft; tabele na żywo nietknięte) ──────────────────────
 export async function saveDraft(q, trip, { note, source, changes, review }) {
+  // teksty wycieczek są czystym tekstem (strona je escapuje) — HTML z modelu zamieniamy na akapity / zwykły tekst
+  const plain = (v) => typeof v === 'string'
+    ? v.replace(/\s*(<br\s*\/?>|<\/p>\s*<p[^>]*>)\s*/gi, '\n\n').replace(/<\/?[a-z][^>]*>/gi, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim()
+    : Array.isArray(v) ? v.map(plain) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plain(x)])) : v;
+  trip = { ...trip, meta: plain(trip.meta), content: plain(trip.content) };
   const [r] = await q('SELECT public.trip_draft_save($1::jsonb, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb) AS r',
     [JSON.stringify(trip.meta), JSON.stringify(trip.content), note ?? null, source, JSON.stringify(changes ?? []), review ? JSON.stringify(review) : null]);
   return r.r;
