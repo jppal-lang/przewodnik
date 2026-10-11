@@ -1,5 +1,5 @@
 // Wspólne narzędzia skryptów wycieczek (VPS, kontener Hermesa).
-import { readFileSync, appendFileSync } from 'node:fs';
+import { readFileSync, appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 const require = createRequire('/opt/data/quolino/package.json');
@@ -63,8 +63,8 @@ export const PAID = ['openai/gpt-6-luna', 'deepseek/deepseek-v3.2'];
 export const TASKS = {
   translate_en: ['nemotron-3-ultra', 'qwen', 'gemma-4-31b', 'nemotron-3-super', 'gemma-4', ...PAID],
   translate_xx: ['gemma-4-31b', 'gemma-4', 'nemotron-3-ultra', 'qwen', 'nemotron-3-super', ...PAID],
-  // szkic i poprawki wycieczek pisze GPT (decyzja JP 2026-10-10: GPT pisze, Claude sprawdza, JP zatwierdza)
-  draft: [...PAID, 'nemotron-3-ultra', 'qwen', 'nemotron-3-super'],
+  // szkic, poprawki, posty: darmowe najpierw, płatne tylko awaryjnie (JP 2026-10-11)
+  draft: ['nemotron-3-ultra', 'qwen', 'nemotron-3-super', 'gemma-4-31b', ...PAID],
 };
 // Ustawienia płatnych: tłumaczenie nie potrzebuje długiego rozumowania; najtańszy dostawca.
 const PAID_OPTS = {
@@ -78,6 +78,29 @@ let FREE;
 const state = {};
 const dead = new Set();          // modele niedostępne do końca uruchomienia (brak środków, limit dzienny, 403)
 export const spent = { usd: 0, calls: 0, byModel: {} };
+
+// ── Dzienny limit płatnych zapytań (JP 2026-10-11) ────────────────────────────────────────
+// Suma z work/costs.jsonl za dziś (UTC). Po przekroczeniu: płatne modele odcięte, jeden alert dziennie.
+const COSTS = '/opt/data/quolino/work/costs.jsonl';
+export const DAILY_USD = +(env('QUOLINO_DAILY_USD') ?? 0.5);
+export function paidToday() {
+  const day = new Date().toISOString().slice(0, 10);
+  try {
+    return readFileSync(COSTS, 'utf8').split('\n').reduce((sum, l) => {
+      if (!l.includes(day)) return sum;
+      try { const j = JSON.parse(l); return j.at?.startsWith(day) ? sum + (+j.usd || 0) : sum; } catch { return sum; }
+    }, 0);
+  } catch { return 0; }
+}
+async function budgetAlert(used) {
+  const flag = `/opt/data/quolino/work/budget-${new Date().toISOString().slice(0, 10)}.flag`;
+  if (existsSync(flag)) return;
+  try { writeFileSync(flag, String(used)); } catch {}
+  const msg = `💸 Dzienny limit płatnych modeli osiągnięty: $${used.toFixed(2)} / $${DAILY_USD.toFixed(2)}. Płatne zapytania wstrzymane do północy UTC (${process.argv[1]?.split('/').pop()} ${process.argv[2] ?? ''}). Limit: QUOLINO_DAILY_USD w /opt/data/.env.`;
+  log(msg);
+  const hook = env('ALERT_WEBHOOK');
+  if (hook) await fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msg }) }).catch(() => {});
+}
 async function freeIds() {
   if (!FREE) FREE = (await (await fetch('https://openrouter.ai/api/v1/models')).json()).data
     .map(m => m.id).filter(id => id.endsWith(':free') && !SKIP.some(s => id.includes(s)));
@@ -122,12 +145,22 @@ export async function openrouter(skillName, prompt, task = 'translate_en') {
   for (let attempt = 0; attempt < models.length * 2 && alive(task).length; attempt++) {
     const model = await currentModel(task);
     const paid = !model.endsWith(':free');
+    if (paid) {
+      const used = paidToday();
+      if (used >= DAILY_USD) {
+        for (const m of models) if (!m.endsWith(':free')) dead.add(m);
+        await budgetAlert(used);
+        lastErr = `dzienny limit płatnych $${DAILY_USD} osiągnięty`;
+        if (!alive(task).length) break;
+        nextModel(task); continue;
+      }
+    }
     const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: AbortSignal.timeout(10 * 60_000),
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'X-Title': 'Quolino' },
       body: JSON.stringify({ model, temperature: 0.2, usage: { include: true },
         ...(paid ? { provider: { sort: 'price' }, ...(PAID_OPTS[model] ?? {}),
-          ...(task === 'draft' && model.includes('gpt-6-luna') ? { reasoning: { effort: 'medium' } } : {}) } : {}),
+        } : {}),
         messages: [{ role: 'system', content: skill }, { role: 'user', content: prompt }] }),
     }).catch(e => ({ ok: false, status: 0, json: async () => ({ error: { message: e.message } }) }));
     const j = await r.json().catch(() => ({}));
