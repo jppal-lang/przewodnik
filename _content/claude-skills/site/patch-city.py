@@ -13,9 +13,9 @@ if 'window.QSSR' not in s:
     r1("var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;",
        "var currentLang = new URLSearchParams(location.search).get('lang') || (window.QSSR && window.QSSR.lang) || readPref() || FALLBACK;")
     r1("  kanon.href = location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);",
-       "  kanon.href = window.QSSR ? location.origin + '/' + currentLang + '/' + city.region_slug + '/' + encodeURIComponent(city.slug) + '/' : location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);")
+       "  kanon.href = location.origin + '/' + currentLang + '/' + city.region_slug + '/' + encodeURIComponent(city.slug) + '/';")
     r1("  meta('property', 'og:url', location.href);",
-       "  meta('property', 'og:url', window.QSSR ? location.origin + '/' + currentLang + '/' + city.region_slug + '/' + city.slug + '/' : location.href);")
+       "  meta('property', 'og:url', location.origin + '/' + currentLang + '/' + city.region_slug + '/' + city.slug + '/');")
     r1("  currentLang = lang;\n  savePref(lang);",
        "  currentLang = lang;\n  savePref(lang);\n"
        "  if (window.QSSR && history.replaceState && window.QSSR.langs && window.QSSR.langs.indexOf(lang) > -1)\n"
@@ -26,6 +26,9 @@ if 'report-issue.js' not in s:
     t = '<script src="motion.js?v=4" defer></script>'
     assert s.count(t) == 1, 'nie znalazłem motion.js'
     s = s.replace(t, t + '\n<script src="report-issue.js?v=1" defer></script>')
+# opinie rodzin na końcu wycieczki (2026-10-11)
+if 'opinion.js' not in s:
+    s = s.replace('<script src="report-issue.js?v=1" defer></script>', '<script src="report-issue.js?v=1" defer></script>\n<script src="opinion.js?v=1" defer></script>')
 if 'draft-preview.js' in s:
     open(p, 'w', encoding='utf-8').write(s)
     print('podgląd już był; SSR i zgłoszenia dodane'); sys.exit(0)
