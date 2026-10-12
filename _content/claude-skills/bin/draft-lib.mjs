@@ -172,8 +172,17 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
     } else if (v && typeof v === 'object') hhmm(v);
   });
   hhmm(trip.meta); hhmm(trip.content);
-  const [r] = await q('SELECT public.trip_draft_save($1::jsonb, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb) AS r',
-    [JSON.stringify(trip.meta), JSON.stringify(trip.content), note ?? null, source, JSON.stringify(changes ?? []), review ? JSON.stringify(review) : null]);
+  let r;
+  try {
+    [r] = await q('SELECT public.trip_draft_save($1::jsonb, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb) AS r',
+      [JSON.stringify(trip.meta), JSON.stringify(trip.content), note ?? null, source, JSON.stringify(changes ?? []), review ? JSON.stringify(review) : null]);
+  } catch (e) {
+    // zapisz niezapisany szkic na dysk, żeby nie przepadł 20-minutowy wysiłek, i pokaż kontekst błędu SQL (JP 2026-10-12)
+    const slug = trip.meta?.city?.slug ?? 'unknown';
+    const f = join(WORK, `${slug}-unsaved.json`);
+    try { writeFileSync(f, JSON.stringify({ trip, review, error: String(e.message), where: e.where ?? null }, null, 2)); log(`szkic nie zapisał się w bazie — kopia: ${f}; SQL: ${e.where ?? e.message}`); } catch {}
+    throw e;
+  }
   return r.r;
 }
 
