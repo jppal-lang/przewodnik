@@ -16,7 +16,10 @@ Zasady JP mają pierwszeństwo przed starszymi dokumentami (`IMPORT.md`, `CHATGP
 
 Twarde zasady projektu (zawsze): zero kilometrów i czasów dojazdu, zero godzin wyjazdu/powrotu
 z bazy, punkt 01 = parking, nie wymyślać faktów (brak źródła → `null` / `unverified` / notatka),
-Marche ≠ Umbria ≠ Emilia-Romania (regiony osobno), widok dziecka bez komercji.
+Marche ≠ Umbria ≠ Emilia-Romagna (regiony osobno), widok dziecka bez komercji.
+**Treść uniwersalna** (decyzja JP, 2026-10-12): wycieczki są tłumaczone na 17 języków, więc nigdy nie odwołujemy się do
+narodowości czytelnika ani innych nacji („dla Polaków…, dla Włochów…”, „Niemcy…”) i nie zakładamy, skąd czytelnik przyjechał
+(„w Polsce”, „spod naszego domu”). Każde zdanie ma być prawdziwe dla rodziny z dowolnego kraju.
 
 ---
 
