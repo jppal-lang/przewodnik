@@ -433,6 +433,14 @@ function render(d) {
     // ── Stop body ──
     html += '<div class="qc-stop__body">';
 
+    // Zdjęcie przystanku (z Discorda, media.mjs) — kadr 16:9
+    if (s.hero_image) {
+      var sImg = 'media/tours/' + s.hero_image;
+      html += '<figure class="qc-stop__photo"><img src="' + esc(sImg) + '-800.webp" srcset="' + esc(sImg) + '-480.webp 480w, ' + esc(sImg) + '-800.webp 800w"' +
+              ' sizes="(max-width:760px) 100vw, 720px" width="800" height="450" alt="' + esc(t.name || '') + '" loading="lazy" decoding="async"' +
+              ' onerror="this.parentNode.style.display=\'none\'"></figure>';
+    }
+
     // Warning note
     if (t.practical_note) {
       html += '<p class="qc-note"><b>' + esc(ui('label.practical', 'Praktycznie')) + '</b><span>' + esc(t.practical_note) + '</span></p>';

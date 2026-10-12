@@ -378,6 +378,8 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .qc-hero{position:relative;z-index:2;margin:clamp(-150px,-12vw,-96px) auto 0;width:min(100%,960px);background:var(--card);padding:10px 10px 0;border-radius:16px;box-shadow:var(--lift-3);transform:rotate(-1.2deg)}
 .qc-hero img{width:100%;aspect-ratio:16/7;height:auto;object-fit:cover;border-radius:9px}
 .qc-hero::after{content:"";display:block;height:12px;margin:10px -10px 0;border-radius:0 0 16px 16px;background:var(--team)}
+.qc-stop__photo{margin:0 0 16px}
+.qc-stop__photo img{display:block;width:100%;aspect-ratio:16/9;height:auto;object-fit:cover;border-radius:12px;background:var(--card)}
 
 /* zakładki */
 .qc-tabs{position:sticky;top:64px;z-index:20;display:flex;gap:8px;margin:36px calc(var(--gut) * -1) 0;padding:10px var(--gut);overflow-x:auto;scrollbar-width:none;background:rgba(234,240,248,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
