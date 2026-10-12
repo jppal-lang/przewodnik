@@ -20,6 +20,9 @@ Marche ≠ Umbria ≠ Emilia-Romagna (regiony osobno), widok dziecka bez komercj
 **Treść uniwersalna** (decyzja JP, 2026-10-12): wycieczki są tłumaczone na 17 języków, więc nigdy nie odwołujemy się do
 narodowości czytelnika ani innych nacji („dla Polaków…, dla Włochów…”, „Niemcy…”) i nie zakładamy, skąd czytelnik przyjechał
 („w Polsce”, „spod naszego domu”). Każde zdanie ma być prawdziwe dla rodziny z dowolnego kraju.
+**Bez porównań do innych krajów i nacji** (JP, 2026-10-12): zamiast „holenderski klimat”, „jak w Wenecji”, „włoska Szwajcaria”,
+„jeżdżą rowerami jak Holendrzy” opisujemy miejsce samo w sobie („rowery są tu wszędzie — rodzice jeżdżą nimi do pracy, dzieci do szkoły”).
+**Każda wycieczka stoi sama**: bez odwołań do serii, listy ani innych tras („nasze miasto”, „z całej listy”, „na tym wyjeździe”, „kolejny punkt naszej trasy”).
 
 ---
 
@@ -155,6 +158,9 @@ Kategorie wyłącznie z listy w `IMPORT.md §2a`.
    - quest wynika z konkretnego detalu z researchu, jest wykonalny na miejscu, nie jest quizem,
    - wskazówka pomaga, nie powtarza questu,
    - plan dnia = tylko czas na miejscu, od parkingu do ostatniego punktu,
+   - **BŁĄD KRYTYCZNY: czas dojazdu** („dziesięć minut autem”, „kwadrans jazdy”) w jakimkolwiek polu — zawsze `verdict: fix`,
+   - **BŁĄD: porównanie do innego kraju lub nacji** albo odwołanie do narodowości czytelnika („holenderski klimat”, „jak w Wenecji”,
+     „włoska Szwajcaria”, „jak Holendrzy”) oraz odwołanie do serii/innych tras („nasze miasto”, „z całej listy”) — zgłoś jako błąd z poprawką,
    - brak konfabulacji: fakty, ceny, godziny, telefony mają źródło albo są `null`/`unverified`;
      sprawdź w sieci fakty, które budzą wątpliwość, i podaj, co znalazłeś,
    - poprawne `maps_query` (nazwa + miasto, kraj), lat/lon w mieście,
