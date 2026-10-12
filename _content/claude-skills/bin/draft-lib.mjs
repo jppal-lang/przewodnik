@@ -173,6 +173,9 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
   });
   hhmm(trip.meta); hhmm(trip.content);
   let r;
+  // rola `quolino` ma search_path = ops, public, a funkcje importu (import_city…) nie ustawiają własnej ścieżki,
+  // więc `cities` trafiało do ops.cities (bez sort_order). Na czas zapisu wymuszamy public (JP 2026-10-12).
+  await q('SET search_path = public, pg_temp');
   try {
     [r] = await q('SELECT public.trip_draft_save($1::jsonb, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb) AS r',
       [JSON.stringify(trip.meta), JSON.stringify(trip.content), note ?? null, source, JSON.stringify(changes ?? []), review ? JSON.stringify(review) : null]);
@@ -182,6 +185,8 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
     const f = join(WORK, `${slug}-unsaved.json`);
     try { writeFileSync(f, JSON.stringify({ trip, review, error: String(e.message), where: e.where ?? null }, null, 2)); log(`szkic nie zapisał się w bazie — kopia: ${f}; SQL: ${e.where ?? e.message}`); } catch {}
     throw e;
+  } finally {
+    await q('SET search_path = ops, public').catch(() => {});
   }
   return r.r;
 }
