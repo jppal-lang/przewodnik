@@ -105,10 +105,13 @@ GPT pisze, Claude sprawdza fakty z danymi wycieczki. **Nic nie publikujesz sam**
 ### 4. Opis przysłany z zewnątrz (pliki `*.meta.json` + `*.pl.json`)
 `node trip-review.mjs <katalog miasta>`. `verdict: ok` → szkic do decyzji JP. `fix` → błędy wracają do autora.
 
-### 5. Tłumaczenie (po zatwierdzeniu)
+### 5. Tłumaczenie (po zatwierdzeniu) — AUTOMATYCZNE (od 2026-10-12)
+`trip-approve` wrzuca zlecenie do kolejki, a cron co 20 min uruchamia `translate-queue.mjs`:
+jedno tłumaczenie naraz, tylko zmienione pola, w dziennym limicie wydatków; wynik sam pisze w wątku miasta.
+Ty NIE uruchamiasz `trip-translate` po zatwierdzeniu. Gdy JP pyta o stan: `qdb jobs`.
+Ręcznie (tylko na wyraźną prośbę JP, np. inne języki albo od nowa):
 ```bash
-qdb jobs                                     # zlecenia translate ze statusem queued
-node trip-translate.mjs <slug> --job <id>    # PL → EN → pozostałe, każdy język z kontrolą jakości Claude
+node trip-translate.mjs <slug> [--langs en,de] [--fresh]
 ```
-Wynik i uwagi tłumacza wklej krótko w wątku miasta. Szkiców nie tłumaczymy.
+Szkiców nie tłumaczymy.
 <!-- quolino-trips:end -->

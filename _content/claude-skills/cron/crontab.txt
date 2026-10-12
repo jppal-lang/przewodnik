@@ -11,6 +11,8 @@ H=hermes-quolino-hermes-agent-1
 */10 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node reports-relay.mjs >> /root/quolino-web/reports.log 2>&1
 # jednorazowe linki do panelu admina: prośby z Discorda (#admin) → DM do JP
 * * * * *    docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node admin-link.mjs --process >> /root/quolino-web/admin-link.log 2>&1
+# kolejka tłumaczeń: zatwierdzone wycieczki → pozostałe języki (jedno naraz, w limicie wydatków)
+*/20 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node translate-queue.mjs >> /root/quolino-web/translate.log 2>&1
 # 1. dnia miesiąca: lokale gastro (oceny Google), linki i godziny, koszty
 17 6 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node gastro-refresh.mjs >> /root/quolino-web/gastro.log 2>&1
 47 6 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node links-check.mjs >> /root/quolino-web/links.log 2>&1
