@@ -192,6 +192,22 @@ export async function openrouter(skillName, prompt, task = 'translate_en') {
   throw new Error(`OpenRouter: żaden model nie odpowiedział (${lastErr})`);
 }
 
+// OpenRouter + JSON: gdy model zwróci uszkodzony JSON (częste przy długich szkicach na darmowych modelach),
+// przełącz na następny model i spróbuj ponownie (JP 2026-10-12). Zwraca { text, model, cost, json }.
+export async function openrouterJson(skillName, prompt, task = 'draft', tries = 5) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    const r = await openrouter(skillName, prompt, task);
+    try { return { ...r, json: extractJson(r.text) }; }
+    catch (e) {
+      lastErr = e;
+      log(`  ${r.model}: uszkodzony JSON (${String(e.message).slice(0, 80)}) — próba ${i + 1}/${tries}, następny model`);
+      nextModel(task);
+    }
+  }
+  throw new Error(`OpenRouter: ${tries} odpowiedzi bez poprawnego JSON (${lastErr?.message})`);
+}
+
 // Tłumacz: OpenRouter, gdy jest klucz; inaczej Claude (subskrypcja).
 export async function translator(skillName, prompt, task) {
   if (env('OPENROUTER_API_KEY')) return openrouter(skillName, prompt, task);

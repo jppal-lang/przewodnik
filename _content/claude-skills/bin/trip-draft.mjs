@@ -8,7 +8,7 @@
 // 4) ZAPIS    — nowa wersja „draft” w historii (tabele na żywo nietknięte) + link podglądu
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { claude, openrouter, extractJson, log, db, spent } from './lib.mjs';
+import { claude, openrouter, openrouterJson, extractJson, log, db, spent } from './lib.mjs';
 import { WORK, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
 import { loadRules, rulesText } from './quality-lib.mjs';
 
@@ -85,7 +85,7 @@ Wynik: Markdown, każdy fakt ze źródłem (URL). Nic nie zmyślaj.`, { web: tru
 
   // 2) pisanie (GPT)
   log(`${slug}: pisanie szkicu (GPT)`);
-  const { text, model } = await openrouter('quolino-trip-writing', `Tryb A — PISANIE nowej wycieczki.
+  const { model, json: parsed } = await openrouterJson('quolino-trip-writing', `Tryb A — PISANIE nowej wycieczki.
 Miasto: ${name}, slug "${slug}", region "${region}", kraj "${country}", ${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}.
 Życzenia JP: ${brief || 'brak szczególnych'}.
 Pisz po polsku według WSZYSTKICH zasad umiejętności. Korzystaj wyłącznie z faktów z researchu poniżej;
@@ -98,7 +98,7 @@ Odpowiedz WYŁĄCZNIE JSON-em {"meta": …, "content": …}.
 
 RESEARCH:
 ${research}`, 'draft');
-  let trip = extractJson(text);
+  let trip = parsed;
   if (!trip?.meta?.stops?.length || !trip?.content?.stops) throw new Error(`${model}: szkic bez przystanków albo w złym formacie`);
   Object.assign(trip.meta.city, { slug, region_slug: region, country, status: 'draft' });
   trip.content.lang = 'pl';

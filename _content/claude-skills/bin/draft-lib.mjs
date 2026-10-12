@@ -3,7 +3,7 @@
 // Zmiany zawsze jako lista operacji na ścieżkach — model zmienia tylko to, o co go poproszono.
 import { writeFileSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { run, env, log, extractJson, openrouter } from './lib.mjs';
+import { run, env, log, extractJson, openrouter, openrouterJson } from './lib.mjs';
 import { rulesText, extraCheck, mergeReview } from './quality-lib.mjs';
 
 export const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.srv1984679.hstgr.cloud';
@@ -152,8 +152,7 @@ ${OPS_FORMAT}
 ${rulesText()}
 AKTUALNY SZKIC:
 ${JSON.stringify(trip)}`;
-  const { text, model, cost } = await openrouter('quolino-trip-writing', prompt, 'draft');
-  const j = extractJson(text);
+  const { model, cost, json: j } = await openrouterJson('quolino-trip-writing', prompt, 'draft');
   return { ops: Array.isArray(j.ops) ? j.ops : [], summary: j.summary ?? '', model, cost };
 }
 
