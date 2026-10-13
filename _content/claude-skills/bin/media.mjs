@@ -19,7 +19,7 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, appendFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { db, env, log, run } from './lib.mjs';
-import { notify } from './draft-lib.mjs';
+import { notify, cityPageUrl } from './draft-lib.mjs';
 
 const [cmd, SLUG, ...rest] = process.argv.slice(2);
 const argv = rest;
@@ -325,7 +325,7 @@ try {
     appendFileSync(join(WORK, 'log.jsonl'), JSON.stringify({ ...p, action: 'accept', accepted_at: new Date().toISOString(),
       previous: t.current ?? null, commit: (pub.out.match(/Wysłano: (\w+)/) || [])[1] ?? null }) + '\n');
     rmSync(join(dir, 'pending.json'));
-    const url = `${SITE}/pl/${t.city.region_slug}/${SLUG}/`;
+    const url = await cityPageUrl(q, SLUG);
     await say(`✅ ${t.city.name}: ${what} zapisana. Strona pokaże ją za ~1–3 min (synchronizacja repo): ${url}\n` +
       `${(pub.out.match(/Wysłano: .*/) || [''])[0]}`);
   } else {

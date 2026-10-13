@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Pierwszy szkic nowej wycieczki — rozmowa z JP w wątku miasta (Hermes).
 //   node trip-draft.mjs <slug> --name "Gubbio" --region umbria [--country it] [--duration full_day|half_day]
-//        [--brief "co JP chce: tempo, must-see, kolejka…"] [--research <plik.md>] [--notify <id kanału>]
+//        [--url-slug <adres>] [--brief "co JP chce: tempo, must-see, kolejka…"] [--research <plik.md>] [--notify <id kanału>]
 // 1) RESEARCH — Claude z dostępem do sieci (fakty ze źródłami; umiejętność quolino-trip-writing)
 // 2) PISANIE  — GPT (OpenRouter, zadanie „draft”) pisze meta + pl według umiejętności
 // 3) KONTROLA — walidator + Claude (trip-review); błędy wracają do GPT, najwyżej 2 rundy
@@ -16,6 +16,7 @@ const argv = process.argv.slice(2);
 const slug = argv[0];
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
 const name = opt('--name'), region = opt('--region'), country = opt('--country') ?? 'it';
+const urlSlugOpt = opt('--url-slug');
 const duration = opt('--duration') ?? 'full_day', brief = opt('--brief') ?? '', channel = opt('--notify');
 if (!slug || !/^[a-z0-9-]+$/.test(slug) || !name || !region) {
   console.error('Użycie: trip-draft.mjs <slug> --name "Nazwa" --region <region_slug> [--country it] [--duration full_day|half_day] [--brief "…"] [--research plik] [--notify kanał]');
@@ -28,7 +29,7 @@ const q = async (sql, p) => (await c.query(sql, p)).rows;
 const SKELETON = `FORMAT (dwa obiekty w jednym JSON-ie: {"meta": …, "content": …}). Każdy klucz obecny; brak danych = null.
 meta = {
  "doc": {"version": "v1", "generated_at": "<ISO>"},
- "city": {"slug": "${slug}", "country": "${country}", "region_slug": "${region}", "lat": 0, "lon": 0,
+ "city": {"slug": "${slug}", "country": "${country}", "region_slug": "${region}", "url_slug": "<adres strony: oryginalna nazwa lokalna, małe litery, bez znaków diakrytycznych, myślniki (assisi, san-gimignano); alfabet nielaciński → nazwa angielska>", "lat": 0, "lon": 0,
           "duration_type": "${duration}", "duration_hours": 0, "bandana_color": "#RRGGBB", "wiki_article": "…",
           "wiki_lang": "it", "sort_order": 1, "status": "draft"},
  "stops": [ {"stop_key": "parking-…", "stop_number": 1, "category": "parking", "optional": false, "sunset_spot": false,
@@ -136,6 +137,11 @@ ${research}`, 'draft');
   let trip = parsed;
   if (!trip?.meta?.stops?.length || !trip?.content?.stops) throw new Error(`${model}: szkic bez przystanków albo w złym formacie`);
   Object.assign(trip.meta.city, { slug, region_slug: region, country, status: 'draft' });
+  // adres strony (cities.url_slug): --url-slug, inaczej propozycja modelu, inaczej nazwa bez diakrytyków; zawsze sprawdzony wzorcem
+  const clean = (x) => String(x ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const urlSlug = clean(urlSlugOpt) || clean(trip.meta.city.url_slug) || clean(name);
+  trip.meta.city.url_slug = urlSlug;
   trip.content.lang = 'pl';
   const models = new Set([model]);
 
@@ -165,7 +171,11 @@ ${research}`, 'draft');
   const saved = await saveDraft(q, trip, { note: `pierwszy szkic${brief ? ': ' + brief.slice(0, 140) : ''}`, source: 'draft',
     changes: [], review: rv });
   const url = previewUrl(saved.token);
-  const out = { slug, version: saved.version, stops: saved.stops, verdict: rv.verdict, errors: rv.errors, warnings: rv.warnings.length,
+  try {   // adres strony miasta; import_city go nie zna, więc zapisujemy osobno (NULL → SSR użyje wewnętrznego sluga)
+    const u = await q('UPDATE public.cities SET url_slug = $2 WHERE slug = $1 RETURNING url_slug', [slug, urlSlug]);
+    log(`${slug}: adres strony /${country}/${region}/${urlSlug}/ ${u.length ? 'zapisany' : '(brak wiersza miasta — ustaw po zatwierdzeniu)'}`);
+  } catch (e) { log(`${slug}: url_slug nie zapisany (${e.message}) — ustaw ręcznie: UPDATE public.cities SET url_slug='${urlSlug}' WHERE slug='${slug}'`); }
+  const out = { url_slug: urlSlug, slug, version: saved.version, stops: saved.stops, verdict: rv.verdict, errors: rv.errors, warnings: rv.warnings.length,
     summary: rv.summary, preview: url, models: [...models], cost_usd: +spent.usd.toFixed(4), fix_rounds_changes: mergeChanges(changes).length };
   writeFileSync(join(dir, 'last.json'), JSON.stringify(out, null, 2));
   await notify(channel, `📝 **${name} — szkic v${saved.version}** (${saved.stops} przystanków) · ${verdictLine(rv)}\n` +

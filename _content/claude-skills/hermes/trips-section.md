@@ -18,6 +18,10 @@ Zanim uruchomisz, ustal (dopytaj tylko o brakujące; reszta ma domyślne):
 nohup node trip-draft.mjs gubbio --name "Gubbio" --region umbria --duration full_day \
   --brief "kolejka na Monte Ingino, finał z widokiem" --notify <id wątku> > work/drafts/gubbio.log 2>&1 &
 ```
+Adres strony to `/{lang}/{kraj}/{region}/{miasto}/` z kolumn `url_slug` (nie ze sluga wewnętrznego): oryginalna nazwa lokalna, małe litery,
+bez diakrytyków, myślniki (Asyż → `assisi`, Rawenna → `ravenna`, San Gimignano → `san-gimignano`; alfabet nielaciński → nazwa angielska).
+`trip-draft` bierze go z `--url-slug`, inaczej z propozycji modelu, i zapisuje w `cities.url_slug`. **Nowy region** dostaje `regions.url_slug` przy
+dodawaniu wiersza (Toskania → `toscana`). Wewnętrzne slugi, wątki Discorda, pliki mediów i `work/` zostają bez zmian.
 
 ### 2. Rozmowa o szkicu (każda uwaga JP)
 1. Zrozum uwagę i przełóż ją na konkret: który przystanek, które pole (opis, quest, wskazówka, godziny,

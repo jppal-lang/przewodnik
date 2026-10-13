@@ -6,7 +6,7 @@
 // Języki: domyślnie QUOLINO_SOCIAL_LANGS albo „pl,en”. Wynik zapisany też w work/social/<slug>-<data>.json.
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { db, env, log, openrouter, claude, extractJson } from './lib.mjs';
-import { notify, SITE } from './draft-lib.mjs';
+import { notify, SITE, cityPageUrl } from './draft-lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -51,7 +51,7 @@ ${JSON.stringify(pl).slice(0, 50000)}`;
   const out = [];
   for (const lang of LANGS) {
     const src = lang !== 'pl' && have.has(lang) ? (await q('SELECT public.trip_export($1, $2) AS j', [slug, lang]))[0].j : pl;
-    const url = `${SITE}/${lang}/${city.region_slug}/${slug}/`;
+    const url = await cityPageUrl(q, slug, lang);
     const data = `JĘZYK POSTA: ${lang}${src === pl && lang !== 'pl' ? ' (dane wycieczki po polsku — napisz natywnie w języku posta)' : ''}
 LINK DO WYCIECZKI: ${url}
 ROLKA (napisz napisy do tych ujęć, po jednym na ujęcie): ${reel?.shots ? reel.shots.map(x => `${x.n}. ${x.place} — ${x.action}`).join('; ') : 'brak rolki — reel_text pomiń'}

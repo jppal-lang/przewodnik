@@ -8,6 +8,13 @@ import { rulesText, extraCheck, mergeReview } from './quality-lib.mjs';
 
 export const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.com';
 export const WORK = '/opt/data/quolino/work/drafts';
+// Adres strony miasta: /{lang}/{kraj}/{region}/{miasto}/ (kraj ISO, region i miasto = url_slug; brak url_slug → wewnętrzny slug)
+export async function cityPageUrl(q, slug, lang = 'pl') {
+  let r = null;
+  try { r = (await q('SELECT c.country, COALESCE(c.url_slug, c.slug) AS u, COALESCE(r.url_slug, r.slug) AS rurl FROM public.cities c LEFT JOIN public.regions r ON r.slug = c.region_slug WHERE c.slug = $1', [slug]))[0]; }
+  catch { /* kolumny url_slug jeszcze nie ma (SQL czeka na zgodę) */ }
+  return r ? `${SITE}/${lang}/${String(r.country).toLowerCase()}/${r.rurl}/${r.u}/` : `${SITE}/city.html?c=${slug}`;   // ostatni wariant: 301 z SSR
+}
 export const previewUrl = (token, v) => `${SITE}/city.html?draft=${token}${v ? `&v=${v}` : ''}`;
 const clone = (o) => JSON.parse(JSON.stringify(o));
 

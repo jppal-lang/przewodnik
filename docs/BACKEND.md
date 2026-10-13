@@ -104,3 +104,16 @@ Dane nie opuszczają urządzenia (poza dobrowolnymi ocenami/zgłoszeniami w f. 2
 cookie-policy.html — wielojęzyczna, treść: "Zero trackerów, zero reklam
 śledzących. Preferencje i zdjęcia zapisujemy lokalnie w przeglądarce."
 Baner przy pierwszym wejściu, link w footerze każdej strony.
+
+---
+
+## 8. ADRESY STRON MIAST (od 2026-10-13)
+
+Strona miasta: `https://quolino.com/{lang}/{kraj}/{region}/{miasto}/`, np. `/pl/it/umbria/assisi/`.
+- `{kraj}` = kod ISO 3166-1 alfa-2 małymi literami (`cities.country`), `{region}` = `regions.url_slug`, `{miasto}` = `cities.url_slug`.
+- `url_slug` = oryginalna nazwa lokalna, małe litery, bez znaków diakrytycznych, myślniki (`assisi`, `san-gimignano`, `toscana`);
+  alfabet nielaciński → nazwa angielska. Ten sam adres we wszystkich językach, język tylko w pierwszym segmencie.
+- Wewnętrzne slugi (`cities.slug`, `regions.slug`), wątki Discorda, pliki mediów i `work/` zostają bez zmian.
+- Stare adresy dają 301 (jeden skok, z zachowaniem `?k=` i innych parametrów): `/{lang}/{region}/{miasto}/`, `city.html?c=…[&lang=…]`,
+  `/wlochy/<region>/<miasto>.html`. `city.html?draft=…` (podgląd szkicu) działa bez zmian. Regiony i kraje zostają pod `region.html?r=`, `country.html?k=`.
+- Router, sitemap, canonical, hreflang, og:url i JSON-LD (TouristTrip, BreadcrumbList): `ssr/server.mjs`. Reguła Traefika: `ssr/compose-ssr.yml`.

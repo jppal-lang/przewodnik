@@ -41,6 +41,7 @@ if [ "${1:-}" = approve ]; then
   if [ -n "$(root_files "$want" "$HEAD")" ]; then
     echo "Od $(short "$want") doszły kolejne zmiany wymagające zgody — sprawdź: deploy.sh pending"; exit 1
   fi
+  prev_ok=$(cat "$APPROVED" 2>/dev/null)
   ssr_before=$(md5sum $W/ssr/server.mjs 2>/dev/null | cut -d' ' -f1)
   sh "$S/install.sh" || { post "🔴 Wdrożenie $(short "$HEAD"): install.sh nie przeszedł"; exit 1; }
   msg="✅ zatwierdzone i wdrożone: $(G log -1 --format='%h %s')"
@@ -53,7 +54,20 @@ if [ "${1:-}" = approve ]; then
     fi
   done
   docker exec "$PG" sh -c 'psql -U "$POSTGRES_USER" -d quolino -qc "NOTIFY pgrst, '"'"'reload schema'"'"'"' >/dev/null 2>&1
-  [ "$ssr_before" != "$(md5sum $W/ssr/server.mjs | cut -d' ' -f1)" ] && (cd $W && docker compose restart ssr >/dev/null 2>&1) && msg="$msg · SSR zrestartowany"
+  # SSR: restart, gdy zmienił się plik serwera ALBO commity od ostatniego approve ruszały ssr/ (sam md5 nie wystarcza: plik mógł być
+  # skopiowany wcześniej ręcznie, a kontener nadal ma stary kod). `up -d` stosuje też zmienione etykiety Traefika z compose.
+  # Błędy NIE są wyciszane: trafiają do komunikatu i na alert.
+  ssr_changed=0
+  [ "$ssr_before" != "$(md5sum $W/ssr/server.mjs 2>/dev/null | cut -d' ' -f1)" ] && ssr_changed=1
+  [ -n "$prev_ok" ] && [ -n "$(G diff --name-only "$prev_ok" "$HEAD" -- "$P/ssr" 2>/dev/null)" ] && ssr_changed=1
+  if [ "$ssr_changed" = 1 ]; then
+    if out=$(cd $W && docker compose up -d --no-deps ssr 2>&1 && docker compose restart ssr 2>&1); then
+      msg="$msg · SSR zrestartowany"
+    else
+      msg="$msg · SSR NIE zrestartowany: $(echo "$out" | tail -1 | cut -c1-160)"
+      post "🔴 Wdrożenie $(short "$HEAD"): restart SSR nie powiódł się: $(echo "$out" | tail -2 | tr '\n' ' ' | cut -c1-300)"
+    fi
+  fi
   echo "$HEAD" > "$APPROVED"; echo "$HEAD" > "$DEPLOYED"; rm -f "$ALERTED"
   tell_hermes "$msg"; echo "$msg"; exit 0
 fi

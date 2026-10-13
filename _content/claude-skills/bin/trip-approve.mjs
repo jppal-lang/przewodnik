@@ -7,7 +7,7 @@
 import { spawn } from 'node:child_process';
 import { openSync, mkdirSync } from 'node:fs';
 import { db } from './lib.mjs';
-import { SITE } from './draft-lib.mjs';
+import { cityPageUrl } from './draft-lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -23,7 +23,7 @@ try {
   const [{ r }] = reject
     ? await q('SELECT admin.admin_reject($1, $2, $3) AS r', [slug, v, reject])
     : await q('SELECT admin.admin_approve($1, $2, $3) AS r', [slug, v, opt('--note') ?? 'zatwierdzone w rozmowie (Discord)']);
-  console.log(JSON.stringify({ ...r, page: reject ? null : `${SITE}/city.html?c=${slug}` }, null, 2));
+  console.log(JSON.stringify({ ...r, page: reject ? null : await cityPageUrl(q, slug) }, null, 2));
   // po publikacji: szkic postów do mediów społecznościowych na #social (w tle; publikuje JP)
   if (!reject && !argv.includes('--no-social')) {
     mkdirSync('/opt/data/quolino/work/social', { recursive: true });

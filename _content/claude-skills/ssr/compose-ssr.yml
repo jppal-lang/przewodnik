@@ -1,5 +1,7 @@
 # Dopisać do /root/quolino-web/docker-compose.override.yml (sekcja services:).
-# Strony miast z bazy: /{lang}/{region}/{miasto}/ i /sitemap.xml — reszta strony bez zmian (kontener web).
+# Strony miast z bazy: /{lang}/{kraj}/{region}/{miasto}/ (nowy schemat), 301 ze starych adresów (/{lang}/{region}/{miasto}/, /city.html, /wlochy/*.html)
+# oraz skróty /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ (302 na country.html / region.html) i /sitemap.xml — reszta strony bez zmian (kontener web). Zmiana etykiet = `docker compose up -d ssr` (deploy.sh approve robi to sam).
+# UWAGA: w pliku compose „$” trzeba pisać jako „$$” (poniżej już tak jest).
 # Etykiety Traefika: skopiować nazwy entrypoint/certresolver z istniejącej usługi „web” (te same wartości).
   ssr:
     image: node:22-alpine
@@ -21,7 +23,7 @@
       interval: 60s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.quolino-ssr.rule=Host(`quolino.com`) && (PathRegexp(`^/[a-z]{2}(-[a-z]{2})?/[a-z0-9-]+/[a-z0-9-]+/?$`) || Path(`/sitemap.xml`))
+      - traefik.http.routers.quolino-ssr.rule=Host(`quolino.com`) && (PathRegexp(`^/[a-z]{2}(-[a-z]{2})?(/[a-z0-9-]+){1,3}/?$$`) || Path(`/sitemap.xml`) || Path(`/city.html`) || PathRegexp(`^/wlochy/[a-z0-9-]+/(ancona|asyz|frasassi|perugia|rawenna|rimini|urbino)\.html$$`))
       - traefik.http.routers.quolino-ssr.priority=100
       - traefik.http.routers.quolino-ssr.entrypoints=websecure          # jak w usłudze web
       - traefik.http.routers.quolino-ssr.tls.certresolver=letsencrypt   # jak w usłudze web
