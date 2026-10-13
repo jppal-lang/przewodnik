@@ -1,3 +1,46 @@
+# Quolino — robots.txt (trzy grupy, decyzja JP 2026-10-13)
+# Publicznie tylko opowieść; pełna wycieczka wymaga klucza dostępu. Roboty szkolące modele nie wchodzą.
+
+# 1) Wyszukiwarki — indeksowanie dozwolone
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Applebot
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /_admin/
+Disallow: /_content/
+Disallow: /_to_delete/
+Disallow: /city.html?draft=
+
+# 2) Pobieranie na prośbę użytkownika i podglądy linków — dozwolone
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+User-agent: facebookexternalhit
+User-agent: Twitterbot
+User-agent: LinkedInBot
+User-agent: WhatsApp
+User-agent: Discordbot
+Allow: /
+Disallow: /_admin/
+Disallow: /_content/
+Disallow: /_to_delete/
+Disallow: /city.html?draft=
+
+# 3) Roboty szkolące modele AI — zablokowane
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: CCBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: meta-externalagent
+User-agent: Bytespider
+Disallow: /
+
+# Pozostałe roboty (jak dotychczas)
 User-agent: *
 Allow: /
 Disallow: /_admin/
