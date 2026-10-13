@@ -82,6 +82,19 @@ async function cityData(slug, lang) {
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cityUrl = (lang, region, slug) => `${SITE}/${lang}/${region}/${slug}/`;
 let tpl = { mtime: 0, html: '' };
+// Bez <base href="/">: <base> przestawia też kotwice (href="#p1" → strona główna) i psuje zakładki oraz pasek naklejek (JP 2026-10-13).
+// Zamiast tego adresy względne w statycznym HTML szablonu (link/script/img/a: href, src, poster) zamieniamy na bezwzględne od korzenia
+// (/styles.css, /i18n-ui.js, /media/…). Kotwice „#…”, „?…”, adresy z schematem i „//host” zostają. Skrypty w treści (JS budujący HTML)
+// są pomijane — adresy w city.html budowane w JS są już od korzenia.
+const REL = /(\s(?:href|src|poster)=")(?![a-z][a-z0-9+.-]*:|\/|#|\?)([^"]*)"/gi;
+function absolutize(html) {
+  const keep = [];
+  const protect = html.replace(/<(script|style)\b([^>]*)>([\s\S]*?)<\/\1>/gi, (m, tag, attrs, body) => {
+    keep.push(`<${tag}${attrs.replace(REL, (x, a, v) => `${a}/${v.replace(/^\.\//, '')}"`)}>${body}</${tag}>`);
+    return `\u0000${keep.length - 1}\u0000`;
+  });
+  return protect.replace(REL, (x, a, v) => `${a}/${v.replace(/^\.\//, '')}"`).replace(/\u0000(\d+)\u0000/g, (m, i) => keep[+i]);
+}
 function template() {
   const m = statSync(TEMPLATE).mtimeMs;
   if (m !== tpl.mtime) tpl = { mtime: m, html: readFileSync(TEMPLATE, 'utf8') };
@@ -173,9 +186,8 @@ async function renderCity(lang, region, slug) {
   if (!d) return { status: 404 };
   const ui = await uiDict(lang);
   const { title, head } = headExtra(d, lang, langs, ui);
-  let html = template()
+  let html = absolutize(template())
     .replace(/<html lang="[^"]*">/, `<html lang="${esc(lang)}">`)
-    .replace(/<head>/, '<head>\n<base href="/">')        // przed wszystkimi względnymi adresami (style, skrypty)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
     .replace('</head>', head + '</head>');
   // treść publiczna w miejscu „Ładowanie wycieczki…” — skrypt strony podmieni ją pełną, interaktywną wersją
