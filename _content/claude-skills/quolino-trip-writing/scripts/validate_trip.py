@@ -24,12 +24,12 @@ import sys
 from pathlib import Path
 
 CATEGORIES = {"parking", "monument", "church", "museum", "house", "viewpoint",
-              "restaurant", "icecream", "sweets", "photo", "street", "castle", "synagogue"}
+              "restaurant", "icecream", "sweets", "photo", "street", "castle", "synagogue", "park"}
 EMERGENCY  = {"pharmacy", "hospital", "toilet", "playground"}
 DURATIONS  = {"half_day", "full_day"}
 STATUSES   = {"draft", "published"}
 VERIF      = {"confirmed", "unverified"}
-ICONS      = {"🅿️", "🏛️", "✝️", "✡️", "⭐", "🏰", "🏞️", "🍦", "🍰", "🍽️", "📷"}
+ICONS      = {"🅿️", "🏛️", "✝️", "✡️", "⭐", "🏰", "🏞️", "🍦", "🍰", "🍽️", "📷", "🌳"}
 LANGS      = {"pl","en","de","it","es","fr","nl","cs","sk","uk","hr","hu","ro","pt","sv","da","no"}
 
 STOP_TEXT  = ["name", "desc_paragraphs", "kids_box", "hint", "local_flavor",
@@ -57,8 +57,10 @@ SIGHTS = {"monument", "church", "museum", "castle", "house", "synagogue"}
 NOTE_FIELDS = set("abcdefg")
 # minimum głębokości opisu rodzica: kategoria → (akapity, słowa). Dolna granica, nie cel.
 SIGHT_MIN = (4, 300)          # monument, church, museum, castle, house, synagogue
-PLACE_MIN = (2, 120)          # street, viewpoint, photo
-PLACE = {"street", "viewpoint", "photo"}
+PLACE_MIN = (2, 120)          # street, viewpoint, photo, park
+PLACE = {"street", "viewpoint", "photo", "park"}
+PARA_MIN_WORDS, PARA_MIN_SENTENCES = 40, 2   # akapit zabytku: min. ok. 40 słów i 2+ zdania (nie tnij tekstu na jednozdaniowe „akapity”)
+SENTENCE_END = re.compile(r"[.!?…]+[\"”»)]*(?=\s|$)")
 FILLERS = re.compile(
     r"\b(zachwyc\w*|warto (zobaczyć|odwiedzić|zwrócić uwagę|się tu zatrzymać)|bogat\w+ (historia|historię|historii|dziedzictw\w+)"
     r"|tętni\w* życiem|pełn\w+ (uroku|historii|życia)|nie sposób (pominąć|przegapić)|magiczn\w+ (atmosfer\w+|miejsc\w+)"
@@ -298,6 +300,16 @@ def validate_city(folder: Path):
                         err(slug, f"{code}: {key} — opis rodzica poniżej minimum ({cat}: {n_par} akap., {words} słów; "
                                   f"minimum {need[0]} akapity i {need[1]} słów). Rozbuduj z researchu wg szkieletu: hak, "
                                   f"historia i ludzie, „Kim był…”, co oglądać, legenda, ciekawostka")
+                    if cat in SIGHTS:
+                        short = []
+                        for i, ptxt in enumerate(paras, 1):
+                            w, sn = len(WORD.findall(ptxt)), len(SENTENCE_END.findall(ptxt))
+                            if w < PARA_MIN_WORDS or sn < PARA_MIN_SENTENCES:
+                                short.append(f"{i} ({w} słów, {sn} zd.)")
+                        if short:
+                            err(slug, f"{code}: {key} — akapity za krótkie: {', '.join(short)}. Akapit zabytku ma mieć min. "
+                                      f"{PARA_MIN_WORDS} słów i {PARA_MIN_SENTENCES}+ zdania; jednozdaniowe „akapity” (cięcie tekstu, "
+                                      f"by zaliczyć próg) to błąd — połącz je w pełne akapity")
                     for i, ptxt in enumerate(paras):
                         m = FILLERS.search(ptxt)
                         if m:

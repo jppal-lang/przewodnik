@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 CATEGORIES = {"parking", "monument", "church", "museum", "house", "viewpoint",
-              "restaurant", "icecream", "sweets", "photo", "street", "castle", "synagogue"}
+              "restaurant", "icecream", "sweets", "photo", "street", "castle", "synagogue", "park"}
 EMERGENCY  = {"pharmacy", "hospital", "toilet", "playground"}
 DURATIONS  = {"half_day", "full_day"}
 STATUSES   = {"draft", "published"}

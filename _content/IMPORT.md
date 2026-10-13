@@ -120,6 +120,7 @@ Nie wymyślaj własnych emoji — walidator odrzuci kategorię spoza listy.
 | `street` | 🛣️ | Ulica, rzymska droga lub trakt jako osobny punkt. |
 | `house` | 🏠 | Dom znanej osoby, kamienica z historią. |
 | `photo` | 📷 | Punkt szczególnie fotograficzny. |
+| `park` | 🌳 | Park, ogród, plac zabaw, zieleń do odpoczynku z dziećmi (JP 2026-10-13). Opis: min. 2 akapity i 120 słów. |
 | `icecream` | 🍦 | Lodziarnia. Zwykle punkt opcjonalny. |
 | `sweets` | 🍰 | Cukiernia, lokalne słodycze. Zwykle opcjonalny. |
 | `restaurant` | 🍽️ | Restauracja, kolacja, finał dnia. Próg 4,1 / 100 opinii. |

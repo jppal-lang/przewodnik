@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { claude, openrouter, openrouterJson, extractJson, log, db, spent } from './lib.mjs';
-import { WORK, DEPTH_TEXT, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
+import { WORK, DEPTH_TEXT, fullReview, fixRound, describeOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
 import { loadRules, rulesText } from './quality-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -48,7 +48,7 @@ content = {
  "_notes": [ {"stop_key": "…", "field": "a|b|c|d|e|f|g", "note": "…"} ]
 }
 Wzór desc_paragraphs pokazuje szkielet zabytku (6 elementów); ulica/punkt widokowy/zdjęcie — 2 akapity, parking i lokale — 1 (patrz GŁĘBOKOŚĆ OPISU).
-Kategorie: parking, monument, museum, church, synagogue, castle, viewpoint, street, house, photo, icecream, sweets, restaurant.
+Kategorie: parking, monument, museum, church, synagogue, castle, viewpoint, street, house, photo, park, icecream, sweets, restaurant.
 Przystanek 01 = parking. 6–11 przystanków. Restauracja (finał): ocena ≥ 4,1 i > 100 opinii, telefon i strona obowiązkowe.`;
 
 async function main() {
@@ -64,7 +64,27 @@ async function main() {
   let research;
   const rf = opt('--research');
   if (rf) research = readFileSync(rf, 'utf8');
-  else if (existsSync(join(dir, 'research.md')) && !argv.includes('--fresh')) research = readFileSync(join(dir, 'research.md'), 'utf8');
+  else if (existsSync(join(dir, 'research.md')) && !argv.includes('--fresh')) {
+    research = readFileSync(join(dir, 'research.md'), 'utf8');
+    // --enrich: uzupełnij istniejący research o narrację (500–800 słów na duży zabytek), nie zaczynaj od zera (JP 2026-10-13)
+    if (argv.includes('--enrich') && !/^## NARRACJE/m.test(research)) {
+      log(`${slug}: uzupełniam research o narrację (Claude + sieć)`);
+      writeFileSync(join(dir, 'research.pre-enrich.md'), research);
+      const add = await claude('quolino-trip-writing', `Tryb A — UZUPEŁNIENIE RESEARCHU (bez pisania wycieczki).
+Miasto: ${name} (${region}, ${country}). Poniżej istniejący research (lista faktów). To za mało, żeby napisać opis rodzica bez zmyślania.
+Dla KAŻDEGO dużego zabytku z researchu (monument, church, museum, castle, house, synagogue) napisz NARRACJĘ na ok. 500–800 słów — ciągły
+tekst, nie wypunktowanie: kto to zbudował/założył i po co; co się tu wydarzyło (daty, osoby, wydarzenia); „kim był/była…” — bohater miejsca
+wyjaśniony od podstaw; PEŁNA TREŚĆ LEGENDY z przebiegiem i zakończeniem (osobno: co wiadomo historycznie); detale do oglądania z dokładnym
+miejscem; ciekawostka/popkultura/znaczenie dziś. Dla ulicy, punktu widokowego, zdjęcia i parku: ok. 200–300 słów. Fakty dopisz z Wikipedii
+w języku kraju (${country === 'it' ? 'włoskiej' : 'lokalnej'}, potem angielskiej) i ze stron lokalnych/oficjalnych; KAŻDY fakt z linkiem (URL).
+Nic nie zmyślaj: czego nie znajdziesz, napisz „brak w źródłach”. Zachowaj nazwy przystanków z researchu.
+Wynik: Markdown zaczynający się od linii „## NARRACJE”, potem „### <nazwa przystanku>” i tekst.
+
+ISTNIEJĄCY RESEARCH:\n${research}`, { web: true });
+      research = `${research}\n\n${add.includes('## NARRACJE') ? add.slice(add.indexOf('## NARRACJE')) : '## NARRACJE\n' + add}`;
+      writeFileSync(join(dir, 'research.md'), research);
+    }
+  }
   else {
     log(`${slug}: research (Claude + sieć)`);
     research = await claude('quolino-trip-writing', `Tryb A — etap RESEARCH (bez pisania wycieczki).
@@ -75,9 +95,13 @@ Zbierz materiał do rodzinnej wycieczki pieszej według zasad umiejętności (pr
 legendy, popkultura, parking 01, gastronomia z progiem 4,1/100). Dla każdego kandydata na przystanek podaj:
 nazwę oryginalną, kategorię, współrzędne, godziny i ceny (z datą/źródłem albo „niepotwierdzone”),
 historię, ludzi, detale do oglądania na miejscu (materiał na quest), legendy (oznaczone), popkulturę ze źródłem,
-link do weryfikacji. Materiał ma wystarczyć na 5–8 akapitów opisu rodzica przy każdym zabytku (minimum 4 akapity i 300 słów):
-(1) hak — dlaczego warto tu stanąć, (2) historia i ludzie (daty, fundatorzy, architekci, artyści), (3) „Kim był/była…” —
-bohater miejsca od podstaw, (4) co oglądać — dokładne miejsce detali, (5) legenda, (6) ciekawostka/popkultura/znaczenie dziś.
+link do weryfikacji. RESEARCH TO MATERIAŁ DO OPOWIEŚCI, NIE LISTA PUNKTÓW. Przy każdym dużym zabytku (monument, church, museum, castle,
+house, synagogue) napisz NARRACJĘ na ok. 500–800 słów (ciągły tekst, nie wypunktowanie): kto to zbudował/założył i po co, co się tu
+wydarzyło (daty, osoby, wydarzenia), „kim był/była…” — bohater miejsca wyjaśniony od podstaw (święty, władca, artysta),
+PEŁNA TREŚĆ LEGENDY z przebiegiem i zakończeniem (osobno: co wiadomo historycznie), detale do oglądania z dokładnym miejscem
+(„nad drzwiami po lewej”, „w drugiej kaplicy od wejścia”), ciekawostka/popkultura/znaczenie dziś. Z tej narracji powstanie
+opis rodzica (min. 4 akapity i 300 słów, zwykle 5–8). Ulica, punkt widokowy, zdjęcie, park: ok. 200–300 słów narracji.
+Każdy fakt dalej ze źródłem (URL).
 OBOWIĄZKOWO przy każdym zabytku (monument, church, museum, castle, house, synagogue) osobna linijka „Legendy: …”
 ze źródłem (URL) — albo „Legendy: brak — sprawdzono: <gdzie szukano>”. Legendę oddziel od faktu historycznego. Fakty historyczne opieraj na Wikipedii w języku kraju (${country === 'it' ? 'włoskiej' : 'lokalnej'},
 potem angielskiej) i na stronach lokalnych/oficjalnych (zabytek, gmina, diecezja, muzeum) — każdy fakt z linkiem.
@@ -96,6 +120,9 @@ Miasto: ${name}, slug "${slug}", region "${region}", kraj "${country}", ${durati
 Pisz po polsku według WSZYSTKICH zasad umiejętności. Korzystaj wyłącznie z faktów z researchu poniżej;
 każda legenda z researchu („Legendy: …”) trafia do opisu w osobnym, oznaczonym akapicie;
 czego nie ma w researchu — null / unverified / notatka w _notes. Questy wynikają z detali z researchu.
+OPISY RODZICA (desc_paragraphs) ZABYTKÓW I MIEJSC (monument, church, museum, castle, house, synagogue, viewpoint, street, photo, park)
+w tej odpowiedzi wpisz tylko ROBOCZO (2 akapity po 2–3 zdania, hak i historia) — pełne opisy powstaną zaraz potem, osobno dla każdego
+przystanku, z całego researchu. Dzięki temu masz miejsce na szkielet, questy, wskazówki, plan dnia i dane. Parking i lokale: 1 akapit docelowo.
 
 ${SKELETON}
 
@@ -112,13 +139,21 @@ ${research}`, 'draft');
   trip.content.lang = 'pl';
   const models = new Set([model]);
 
+  // 2b) pełne opisy rodzica — jedno wywołanie na przystanek, z całym researchem (JP 2026-10-13)
+  log(`${slug}: opisy rodzica przystanek po przystanku`);
+  const d = await describeOps(trip, null);
+  d.models.forEach(m => models.add(m));
+  const da = applyOps(trip, d.ops);
+  if (da.skipped.length) log('pominięte operacje (opisy):', da.skipped.join(' | '));
+  trip = da.trip;
+
   // 3) kontrola + najwyżej 2 rundy poprawek
   let rv, changes = [];
   for (let round = 0; ; round++) {
     rv = await fullReview(slug, trip);
     log(`${slug}: kontrola ${round + 1}: ${verdictLine(rv)}`);
     if (rv.verdict === 'ok' || round >= 2) break;
-    const fx = await gptOps(trip, null, { reviewErrors: rv.errors });
+    const fx = await fixRound(trip, null, rv.errors);
     models.add(fx.model);
     const a = applyOps(trip, fx.ops);
     if (a.skipped.length) log('pominięte operacje:', a.skipped.join(' | '));

@@ -8,7 +8,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { log, db, spent } from './lib.mjs';
-import { WORK, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
+import { WORK, fullReview, gptOps, fixRound, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
 import { loadRules, learn } from './quality-lib.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 
@@ -67,7 +67,7 @@ async function main() {
     rv = await fullReview(slug, trip);
     log(`${slug}: kontrola ${round + 1}: ${verdictLine(rv)}`);
     if (rv.verdict === 'ok' || round >= 2) break;
-    const fx = await gptOps(trip, `Poprzednie polecenie JP: ${say}`, { reviewErrors: rv.errors });
+    const fx = await fixRound(trip, `Poprzednie polecenie JP: ${say}`, rv.errors);
     models.add(fx.model);
     a = applyOps(trip, fx.ops);
     skipped.push(...a.skipped);

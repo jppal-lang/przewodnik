@@ -257,6 +257,7 @@ Wybierasz **kategorię**. Ikona idzie z niej automatycznie — nie wpisujesz emo
 | `street` | 🛣️ | Ulica, rzymska droga lub trakt jako osobny punkt. |
 | `house` | 🏠 | Dom znanej osoby, kamienica z historią. |
 | `photo` | 📷 | Punkt szczególnie fotograficzny. |
+| `park` | 🌳 | Park, ogród, plac zabaw, zieleń do odpoczynku z dziećmi. Opis: min. 2 akapity i 120 słów. |
 | `icecream` | 🍦 | Lodziarnia. Zwykle punkt opcjonalny. |
 | `sweets` | 🍰 | Cukiernia, lokalne słodycze. Zwykle opcjonalny. |
 | `restaurant` | 🍽️ | Restauracja, kolacja, finał dnia. |

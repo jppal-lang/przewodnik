@@ -42,8 +42,14 @@ Quolino jest dla całej rodziny: **rodzic ma się dowiedzieć czegoś, czego nie
 długości, ale ma **dolną granicę**. To minimum, nie cel — poniżej niego walidator zgłasza **błąd**, nie uwagę:
 
 - zabytek, kościół, muzeum, zamek, synagoga, dom: **4 akapity i 300 słów** (zwykle 5–8 akapitów);
-- ulica, punkt widokowy, miejsce na zdjęcie: **2 akapity i 120 słów**;
+- ulica, punkt widokowy, miejsce na zdjęcie, park: **2 akapity i 120 słów**;
 - parking i lokale (restauracja, lody, słodycze): 1 akapit.
+
+**Akapit to akapit** (JP, 2026-10-13): przy zabytku każdy akapit ma **min. 40 słów i 2+ zdania**. Cięcie tekstu na jednozdaniowe
+„akapity”, żeby zaliczyć próg liczby akapitów, to błąd walidatora. Opis zabytku powstaje **osobno dla każdego przystanku**
+(jedno wywołanie na zabytek, z jego sekcją `research.md`), a nie razem z całą wycieczką w jednej odpowiedzi. Research ma być
+**materiałem do opowieści, nie listą punktów**: przy dużym zabytku narracja ok. 500–800 słów (kto, po co, co się wydarzyło,
+„kim był…”, pełna legenda z przebiegiem i zakończeniem, detale do oglądania z miejscem).
 
 **Szkielet opisu zabytku** (każdy element = osobny akapit lub jego część; kolejność można dostosować do tematu):
 1. **hak** — dlaczego warto tu stanąć;

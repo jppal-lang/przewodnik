@@ -62,8 +62,10 @@ export function applyOps(trip, ops) {
   const t = clone(trip);
   const changes = [];
   const skipped = [];
-  for (const op of ops ?? []) {
+  for (let op of ops ?? []) {
     try {
+      // modele zapisują ścieżki jako desc_paragraphs[2] albo _notes[0].note — normalizujemy do formy z kropką
+      if (typeof op.path === 'string') op = { ...op, path: op.path.replace(/\[(\d+)\]/g, '.$1') };
       if (op.op === 'set' || (!op.op && op.path)) {
         const { parent, key } = resolve(t, op.path);
         if (Array.isArray(parent)) {
@@ -148,7 +150,8 @@ Szkielet zabytku: (1) hak — dlaczego warto tu stanąć; (2) historia i ludzie;
 (5) legenda — akapit zaczyna się od „Legenda mówi…” albo „Według tradycji…” i kończy tym, co wiadomo historycznie;
 (6) ciekawostka, popkultura albo znaczenie dziś. Każdy akapit wnosi nową treść; bez wypełniaczy („zachwyca”, „warto zobaczyć”,
 „bogata historia”) — zamiast przymiotnika fakt. Legenda z researchu MUSI trafić do opisu i nigdy nie jest podana jako fakt.
-Rozbudowując opis, bierz fakty WYŁĄCZNIE z researchu; czego tam nie ma — nie wymyślaj, dodaj notatkę w content._notes.`;
+Rozbudowując opis, bierz fakty WYŁĄCZNIE z researchu; czego tam nie ma — nie wymyślaj, dodaj notatkę w content._notes.
+AKAPIT TO AKAPIT: przy zabytku min. 40 słów i 2+ zdania. Jednozdaniowe „akapity” (cięcie tekstu, by zaliczyć próg) to błąd walidatora.`;
 
 // research.md szkicu (z trip-draft) — kontrola i poprawki sprawdzają, czy opis go wykorzystał
 export function loadResearch(slug) {
@@ -175,6 +178,95 @@ ${research}
 ${JSON.stringify(trip)}`;
   const { model, cost, json: j } = await openrouterJson('quolino-trip-writing', prompt, 'draft');
   return { ops: Array.isArray(j.ops) ? j.ops : [], summary: j.summary ?? '', model, cost };
+}
+
+// ── Opis rodzica przystanek po przystanku (JP 2026-10-13) ────────────────────────────────────────
+// Cała wycieczka w jednej odpowiedzi kończyła się skracaniem: model ciął tekst na jednozdaniowe „akapity”.
+// Dlatego opis każdego zabytku/miejsca powstaje w osobnym wywołaniu, z całym research.md i sprawdzeniem lokalnym
+// (te same progi co walidator), a szkielet, questy i plan dnia powstają osobno.
+export const SIGHT_CATS = new Set(['monument', 'church', 'museum', 'castle', 'house', 'synagogue']);
+export const PLACE_CATS = new Set(['viewpoint', 'street', 'photo', 'park']);
+export const DESCRIBE_CATS = new Set([...SIGHT_CATS, ...PLACE_CATS]);
+const wordsOf = (s) => (String(s).match(/[\p{L}\p{N}]+/gu) ?? []).length;
+const sentencesOf = (s) => (String(s).match(/[.!?…]+(?:["”»)]*)(?=\s|$)/g) ?? []).length;
+
+// problemy opisu wg progów JP: zabytek 4 akap./300 słów, miejsce 2 akap./120 słów, akapit zabytku min. 40 słów i 2+ zdania
+export function descProblems(category, paras) {
+  const p = Array.isArray(paras) ? paras.filter(x => typeof x === 'string') : [];
+  const [minPar, minWords] = SIGHT_CATS.has(category) ? [4, 300] : PLACE_CATS.has(category) ? [2, 120] : [1, 0];
+  const out = [];
+  const words = p.reduce((n, x) => n + wordsOf(x), 0);
+  if (p.length < minPar || words < minWords) out.push(`${p.length} akapitów i ${words} słów — minimum ${minPar} akapity i ${minWords} słów`);
+  if (SIGHT_CATS.has(category)) {
+    const bad = p.map((x, i) => ({ i: i + 1, w: wordsOf(x), s: sentencesOf(x) })).filter(x => x.w < 40 || x.s < 2);
+    if (bad.length) out.push(`akapity ${bad.map(b => `${b.i} (${b.w} słów, ${b.s} zd.)`).join(', ')} za krótkie — akapit ma mieć min. 40 słów i 2+ zdania; nie tnij tekstu na jednozdaniowe akapity, łącz je`);
+  }
+  return out;
+}
+
+export async function describeStop(trip, stopKey, { errors = [], instruction = '' } = {}) {
+  const slug = trip.meta.city.slug;
+  const s = trip.meta.stops.find(x => x.stop_key === stopKey);
+  const pl = trip.content.stops[stopKey] ?? {};
+  const research = (loadResearch(slug) ?? '').slice(0, 70_000);
+  let feedback = errors.map(e => `- ${e.problem}${e.fix ? ' → ' + e.fix : ''}`).join('\n');
+  let last = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const prompt = `Tryb A — OPIS RODZICA jednego przystanku (pole desc_paragraphs). Wycieczka: ${trip.content.city?.title ?? slug}.
+PRZYSTANEK: ${pl.name ?? stopKey} (stop_key \"${stopKey}\", kategoria ${s?.category}, rok/okres: ${s?.year_built ?? 'brak'}).
+${instruction ? `POLECENIE: ${instruction}\n` : ''}${feedback ? `POPRAW (uwagi kontroli):\n${feedback}\n` : ''}
+${DEPTH_TEXT}
+AKAPIT to akapit: min. 40 słów i co najmniej 2 zdania (zabytek). Nigdy nie dziel tekstu na jednozdaniowe „akapity” — to obejście progu
+i jest błędem. Pisz opowieść, nie listę faktów: kto, po co, co się wydarzyło, „kim był…”, pełna legenda z przebiegiem i zakończeniem
+(oznaczona „Legenda mówi…” / „Według tradycji…”), detale do oglądania z dokładnym miejscem. Używaj WYŁĄCZNIE faktów z researchu
+(sekcje o tym przystanku); czego brakuje — nie wymyślaj, opisz w polu \"gap\".
+${rulesText()}
+AKTUALNY OPIS:\n${JSON.stringify(pl.desc_paragraphs ?? [])}\n
+RESEARCH:\n${research}\n
+Odpowiedz WYŁĄCZNIE JSON-em: {"desc_paragraphs": ["…", …], "gap": null albo "czego zabrakło w researchu do pełnego opisu"}`;
+    const { model, json: j } = await openrouterJson('quolino-trip-writing', prompt, 'draft');
+    const paras = Array.isArray(j.desc_paragraphs) ? j.desc_paragraphs.filter(x => typeof x === 'string' && x.trim()) : [];
+    const probs = descProblems(s?.category, paras);
+    last = { paragraphs: paras, gap: j.gap ?? null, model, problems: probs };
+    if (!probs.length) return last;
+    log(`  ${stopKey}: opis nie spełnia progów (${probs.join('; ')}) — próba ${attempt + 1}/3`);
+    feedback = `Poprzednia wersja nie spełniła progów: ${probs.join('; ')}. Napisz opis od nowa, dłuższy, z materiału researchu.\n${feedback}`;
+  }
+  return last;
+}
+
+// opisy wszystkich przystanków zwiedzania (pierwszy szkic) albo wskazanych kluczy; zwraca operacje „set”
+export async function describeOps(trip, keys) {
+  const ops = []; const models = new Set();
+  const notes = [...(trip.content._notes ?? [])];
+  for (const s of trip.meta.stops) {
+    if (!DESCRIBE_CATS.has(s.category) || (keys && !keys.includes(s.stop_key))) continue;
+    const r = await describeStop(trip, s.stop_key, {});
+    models.add(r.model);
+    if (r.paragraphs.length) ops.push({ op: 'set', path: `content.stops.${s.stop_key}.desc_paragraphs`, value: r.paragraphs, why: 'opis rodzica (osobne wywołanie)' });
+    if (r.gap) notes.push({ stop_key: s.stop_key, field: 'b', note: `Research nie wystarczył do pełnego opisu: ${r.gap}` });
+  }
+  if (notes.length !== (trip.content._notes ?? []).length) ops.push({ op: 'set', path: 'content._notes', value: notes, why: 'luki w researchu' });
+  return { ops, models: [...models] };
+}
+
+// runda poprawek po kontroli: błędy opisu rodzica → osobne wywołanie na przystanek, reszta → zwykłe gptOps
+export async function fixRound(trip, instruction, reviewErrors) {
+  const isDesc = (e) => e.stop_key && DESCRIBE_CATS.has(trip.meta.stops.find(s => s.stop_key === e.stop_key)?.category) &&
+    (/^(b|desc)/i.test(e.field ?? '') || /akapit|minimum|legend|opis rodzica|research/i.test(e.problem ?? ''));
+  const descErrs = (reviewErrors ?? []).filter(isDesc), rest = (reviewErrors ?? []).filter(e => !isDesc(e));
+  const ops = []; const models = []; let summary = '';
+  for (const key of [...new Set(descErrs.map(e => e.stop_key))]) {
+    const r = await describeStop(trip, key, { errors: descErrs.filter(e => e.stop_key === key), instruction: instruction ?? '' });
+    models.push(r.model);
+    if (r.paragraphs.length) ops.push({ op: 'set', path: `content.stops.${key}.desc_paragraphs`, value: r.paragraphs, why: 'opis rodzica poprawiony po kontroli' });
+  }
+  if (descErrs.length) summary = `przepisane opisy: ${[...new Set(descErrs.map(e => e.stop_key))].join(', ')}`;
+  if (rest.length || !descErrs.length) {
+    const g = await gptOps(trip, instruction, { reviewErrors: rest });
+    ops.push(...g.ops); models.push(g.model); summary = [summary, g.summary].filter(Boolean).join('; ');
+  }
+  return { ops, summary, model: models.filter(Boolean).join('+') };
 }
 
 // ── zapis szkicu w bazie (nowa wersja draft; tabele na żywo nietknięte) ──────────────────────
