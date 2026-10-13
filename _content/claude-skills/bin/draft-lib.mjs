@@ -1,7 +1,7 @@
 // Wspólne narzędzia szkiców wycieczek prowadzonych w rozmowie (trip-draft, trip-revise, trip-approve).
 // Szkic = para plików w formacie quolino-trip-writing: meta (dane maszynowe) + content (proza PL).
 // Zmiany zawsze jako lista operacji na ścieżkach — model zmienia tylko to, o co go poproszono.
-import { writeFileSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readdirSync, readFileSync, unlinkSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { run, env, log, extractJson, openrouter, openrouterJson } from './lib.mjs';
 import { rulesText, extraCheck, mergeReview } from './quality-lib.mjs';
@@ -141,7 +141,23 @@ Operacje:
 Zmieniaj tylko to, czego dotyczy polecenie. Nie przepisuj pól, które są dobre. stop_key nigdy się nie zmienia.
 Bez emoji w wartościach. Fakty, godziny i ceny tylko pewne — inaczej null / "unverified" / notatka w content._notes.`;
 
+// Minimum głębokości opisu rodzica (JP, 2026-10-13) — wspólny tekst dla pisania i poprawek
+export const DEPTH_TEXT = `GŁĘBOKOŚĆ OPISU RODZICA (dolna granica, nie cel; poniżej = błąd walidatora): zabytek/kościół/muzeum/zamek/synagoga/dom —
+4 akapity i 300 słów (zwykle 5–8); ulica/punkt widokowy/zdjęcie — 2 akapity i 120 słów; parking i lokale — 1 akapit.
+Szkielet zabytku: (1) hak — dlaczego warto tu stanąć; (2) historia i ludzie; (3) „Kim był/była…”; (4) co oglądać, z dokładnym miejscem;
+(5) legenda — akapit zaczyna się od „Legenda mówi…” albo „Według tradycji…” i kończy tym, co wiadomo historycznie;
+(6) ciekawostka, popkultura albo znaczenie dziś. Każdy akapit wnosi nową treść; bez wypełniaczy („zachwyca”, „warto zobaczyć”,
+„bogata historia”) — zamiast przymiotnika fakt. Legenda z researchu MUSI trafić do opisu i nigdy nie jest podana jako fakt.
+Rozbudowując opis, bierz fakty WYŁĄCZNIE z researchu; czego tam nie ma — nie wymyślaj, dodaj notatkę w content._notes.`;
+
+// research.md szkicu (z trip-draft) — kontrola i poprawki sprawdzają, czy opis go wykorzystał
+export function loadResearch(slug) {
+  const f = join(WORK, slug, 'research.md');
+  return existsSync(f) ? readFileSync(f, 'utf8') : null;
+}
+
 export async function gptOps(trip, instruction, { reviewErrors } = {}) {
+  const research = loadResearch(trip.meta.city.slug);
   const prompt = `Tryb A — POPRAWKI WYCIECZKI ${trip.meta.city.slug}.
 ${instruction ? `POLECENIE (od JP, przez Hermesa):\n${instruction}\n` : ''}${reviewErrors?.length ? `
 BŁĘDY Z KONTROLI (Claude + walidator) — popraw każdy:
@@ -149,8 +165,13 @@ ${reviewErrors.map(e => `- ${e.stop_key ?? 'miasto'} [${e.field ?? ''}]: ${e.pro
 ` : ''}
 ${OPS_FORMAT}
 
+${DEPTH_TEXT}
+
 ${rulesText()}
-AKTUALNY SZKIC:
+${research ? `RESEARCH (jedyne źródło nowych faktów przy rozbudowie opisu):
+${research}
+
+` : ''}AKTUALNY SZKIC:
 ${JSON.stringify(trip)}`;
   const { model, cost, json: j } = await openrouterJson('quolino-trip-writing', prompt, 'draft');
   return { ops: Array.isArray(j.ops) ? j.ops : [], summary: j.summary ?? '', model, cost };

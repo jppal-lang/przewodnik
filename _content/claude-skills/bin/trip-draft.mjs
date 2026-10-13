@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { claude, openrouter, openrouterJson, extractJson, log, db, spent } from './lib.mjs';
-import { WORK, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
+import { WORK, DEPTH_TEXT, fullReview, gptOps, applyOps, mergeChanges, saveDraft, previewUrl, notify, verdictLine, factsLine } from './draft-lib.mjs';
 import { loadRules, rulesText } from './quality-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -41,12 +41,13 @@ meta = {
 content = {
  "lang": "pl",
  "city": {"title": "…", "region_label": "<sama nazwa regionu>", "subtitle": "…", "lead": "…", "good_to_know": "…", "hero_note": null, "local_food": "…"},
- "stops": { "<stop_key>": {"name": "…", "desc_paragraphs": ["…", "…"], "kids_box": "…", "hint": "…", "local_flavor": "…",
+ "stops": { "<stop_key>": {"name": "…", "desc_paragraphs": ["1 hak: dlaczego warto tu stanąć", "2 historia i ludzie", "3 Kim był/była…", "4 co oglądać (dokładne miejsce)", "5 Legenda mówi… / Według tradycji… (na końcu: co wiadomo historycznie)", "6 ciekawostka / popkultura / znaczenie dziś"], "kids_box": "…", "hint": "…", "local_flavor": "…",
             "practical_note": null, "dress_code": null, "photo_task": "…"}, … },
  "day_plan": { "<stop_key>": "HH:MM — co się dzieje na miejscu", … },
  "emergency": { "1": {"label": "…", "description": "…"}, … },
  "_notes": [ {"stop_key": "…", "field": "a|b|c|d|e|f|g", "note": "…"} ]
 }
+Wzór desc_paragraphs pokazuje szkielet zabytku (6 elementów); ulica/punkt widokowy/zdjęcie — 2 akapity, parking i lokale — 1 (patrz GŁĘBOKOŚĆ OPISU).
 Kategorie: parking, monument, museum, church, synagogue, castle, viewpoint, street, house, photo, icecream, sweets, restaurant.
 Przystanek 01 = parking. 6–11 przystanków. Restauracja (finał): ocena ≥ 4,1 i > 100 opinii, telefon i strona obowiązkowe.`;
 
@@ -74,7 +75,11 @@ Zbierz materiał do rodzinnej wycieczki pieszej według zasad umiejętności (pr
 legendy, popkultura, parking 01, gastronomia z progiem 4,1/100). Dla każdego kandydata na przystanek podaj:
 nazwę oryginalną, kategorię, współrzędne, godziny i ceny (z datą/źródłem albo „niepotwierdzone”),
 historię, ludzi, detale do oglądania na miejscu (materiał na quest), legendy (oznaczone), popkulturę ze źródłem,
-link do weryfikacji. Fakty historyczne opieraj na Wikipedii w języku kraju (${country === 'it' ? 'włoskiej' : 'lokalnej'},
+link do weryfikacji. Materiał ma wystarczyć na 5–8 akapitów opisu rodzica przy każdym zabytku (minimum 4 akapity i 300 słów):
+(1) hak — dlaczego warto tu stanąć, (2) historia i ludzie (daty, fundatorzy, architekci, artyści), (3) „Kim był/była…” —
+bohater miejsca od podstaw, (4) co oglądać — dokładne miejsce detali, (5) legenda, (6) ciekawostka/popkultura/znaczenie dziś.
+OBOWIĄZKOWO przy każdym zabytku (monument, church, museum, castle, house, synagogue) osobna linijka „Legendy: …”
+ze źródłem (URL) — albo „Legendy: brak — sprawdzono: <gdzie szukano>”. Legendę oddziel od faktu historycznego. Fakty historyczne opieraj na Wikipedii w języku kraju (${country === 'it' ? 'włoskiej' : 'lokalnej'},
 potem angielskiej) i na stronach lokalnych/oficjalnych (zabytek, gmina, diecezja, muzeum) — każdy fakt z linkiem.
 Parking: koszt, ZTL, dojście. Lokale (restauracje, lody, słodycze) NIE z Wikipedii: tylko polecane przez Google —
 ocena ≥ 4,1 i ponad 100 opinii; podaj ocenę, liczbę opinii, telefon, stronę.
@@ -89,9 +94,12 @@ Wynik: Markdown, każdy fakt ze źródłem (URL). Nic nie zmyślaj.`, { web: tru
 Miasto: ${name}, slug "${slug}", region "${region}", kraj "${country}", ${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}.
 Życzenia JP: ${brief || 'brak szczególnych'}.
 Pisz po polsku według WSZYSTKICH zasad umiejętności. Korzystaj wyłącznie z faktów z researchu poniżej;
+każda legenda z researchu („Legendy: …”) trafia do opisu w osobnym, oznaczonym akapicie;
 czego nie ma w researchu — null / unverified / notatka w _notes. Questy wynikają z detali z researchu.
 
 ${SKELETON}
+
+${DEPTH_TEXT}
 
 ${rulesText()}
 Odpowiedz WYŁĄCZNIE JSON-em {"meta": …, "content": …}.

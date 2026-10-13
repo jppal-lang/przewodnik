@@ -115,3 +115,10 @@ node trip-translate.mjs <slug> [--langs en,de] [--fresh]
 ```
 Szkiców nie tłumaczymy.
 <!-- quolino-trips:end -->
+
+### Głębokość opisów i legendy (od 2026-10-13, dla wszystkich wycieczek)
+Quolino jest dla całej rodziny — rodzic ma się dowiedzieć czegoś, czego nie wiedział. Minimum opisu rodzica (poniżej = błąd walidatora):
+zabytek/kościół/muzeum/zamek/synagoga/dom 4 akapity i 300 słów; ulica/punkt widokowy/zdjęcie 2 akapity i 120 słów; parking i lokale 1 akapit.
+Research ma przy każdym zabytku linijkę „Legendy: …”; legenda z researchu trafia do opisu („Legenda mówi…” / „Według tradycji…”).
+Gdy kontrola zgłasza „poniżej minimum” albo pominiętą legendę, poprawka (`trip-revise`) rozbudowuje opis wyłącznie z `research.md` —
+nic nie wymyślasz i nie dopisujesz sam. Brak researchu dla starej wycieczki = najpierw research, potem rozbudowa.

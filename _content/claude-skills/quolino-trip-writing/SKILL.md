@@ -37,13 +37,28 @@ lub weryfikacja danych to osobny etap, wyraźnie oddzielony od materiału źród
 detalu/faktu/symbolu/dzieła/legendy, 5. quest, 6. wskazówka.
 **Quest wynika z researchu, nie research z questu. Nigdy questu przed pełnym researchem.**
 
-### B — RODZIC: bez limitu długości
-Opis tak długi, jak wymaga temat (duży zabytek: 5, 8, 10+ akapitów). Uwzględniaj, gdy dotyczy:
-historię i datowanie; fundatorów, architektów, artystów; fazy budowy, przebudowy, restauracji;
-funkcję i znaczenie (polityczne, religijne, społeczne, militarne, gospodarcze); architekturę
-i konkretne detale do oglądania; dzieła sztuki, symbole, inskrypcje, relikwie; osoby i wydarzenia;
-legendy i tradycje; niezwykłe historie; współczesne znaczenie; potwierdzone związki z popkulturą.
-Nie skracaj wartościowego materiału tylko dlatego, że tekst jest długi.
+### B — RODZIC: minimum głębokości (JP, 2026-10-13)
+Quolino jest dla całej rodziny: **rodzic ma się dowiedzieć czegoś, czego nie wiedział.** Opis nie ma górnego limitu
+długości, ale ma **dolną granicę**. To minimum, nie cel — poniżej niego walidator zgłasza **błąd**, nie uwagę:
+
+- zabytek, kościół, muzeum, zamek, synagoga, dom: **4 akapity i 300 słów** (zwykle 5–8 akapitów);
+- ulica, punkt widokowy, miejsce na zdjęcie: **2 akapity i 120 słów**;
+- parking i lokale (restauracja, lody, słodycze): 1 akapit.
+
+**Szkielet opisu zabytku** (każdy element = osobny akapit lub jego część; kolejność można dostosować do tematu):
+1. **hak** — dlaczego warto tu stanąć;
+2. **historia i ludzie** — fundatorzy, architekci, artyści, fazy budowy, znaczenie;
+3. **„Kim był/była…”** — bohater miejsca wyjaśniony od podstaw (święty, władca, artysta);
+4. **co oglądać** — konkretne detale z dokładnym miejscem („nad drzwiami po lewej”, „w drugiej kaplicy”);
+5. **legenda** — wyraźnie oznaczona jako legenda (zob. „Legendy”);
+6. **ciekawostka, popkultura albo znaczenie dziś** — tylko potwierdzone źródłem.
+
+**Każdy akapit wnosi nową treść.** Bez zdań-wypełniaczy („zachwyca”, „warto zobaczyć”, „bogata historia”, „tętni życiem”):
+zamiast przymiotnika podaj fakt (kto, kiedy, ile, gdzie). Wypełniacze zgłasza walidator jako uwagę.
+Uwzględniaj też, gdy dotyczy: fazy budowy i restauracji, funkcję (polityczną, religijną, społeczną, militarną,
+gospodarczą), dzieła sztuki, symbole, inskrypcje, relikwie, współczesne znaczenie, potwierdzone związki z popkulturą.
+Rozbudowa opisu bierze fakty **wyłącznie z researchu** (`research.md`) — niczego nie zmyślamy; brakujący materiał
+= notatka w `_notes`, nie wymyślony akapit.
 
 ### Zasada zagranicznego turysty
 Wyjaśniaj od podstaw: **święty** (kim był, kiedy żył, dlaczego ważny, dlaczego tutaj),
@@ -52,8 +67,13 @@ Wyjaśniaj od podstaw: **święty** (kim był, kiedy żył, dlaczego ważny, dla
 (co znaczy, dlaczego tutaj). Nie zakładaj wiedzy lokalnej.
 
 ### Legendy
-Opowiedz w całości: bohaterowie, miejsce, przebieg, zakończenie, znaczenie lokalne.
-Zawsze oddziel **FAKT HISTORYCZNY** od **LEGENDY/TRADYCJI**. Legenda nigdy jako fakt.
+**Research (obowiązkowo):** przy każdym zabytku (monument, church, museum, castle, house, synagogue) w researchu stoi
+linijka **„Legendy: …”** ze źródłem (URL) albo **„Legendy: brak — sprawdzono: …”** (gdzie szukano: Wikipedia w języku kraju,
+strona gminy/diecezji/muzeum, lokalne przewodniki). Bez tej linijki research jest niekompletny.
+
+**Opis:** legenda znaleziona w researchu **musi trafić do opisu**. Opowiedz ją w całości (bohaterowie, miejsce, przebieg,
+zakończenie, znaczenie lokalne). Akapit zaczyna się od **„Legenda mówi…”** albo **„Według tradycji…”**, a kończy tym, co
+wiadomo historycznie (FAKT oddzielony od LEGENDY). Legenda nigdy nie jest podana jako fakt.
 
 ### Popkultura — obowiązkowy research
 Szukaj: filmy, seriale, teledyski, piosenki o mieście/miejscu, muzycy, artyści, pisarze i książki,
@@ -147,11 +167,17 @@ Kategorie wyłącznie z listy w `IMPORT.md §2a`.
    ```bash
    python3 ~/.claude/skills/quolino-trip-writing/scripts/validate_trip.py <katalog miasta>
    ```
-   Kod wyjścia 1 = błędy formatu. Walidator sprawdza m.in. parking 01, unikalne `stop_key`,
+   Kod wyjścia 1 = błędy formatu. Walidator sprawdza m.in. minimum głębokości opisu (akapity i słowa wg kategorii — poniżej = błąd), wypełniacze (uwaga), parking 01, unikalne `stop_key`,
    kolejność `stop_number`, komplet kluczy, emoji w JSON, `time_label` jako godzinę, rozdzielenie
    parkingu i ceny, strukturę `_notes`, kilometry i czasy dojazdu, quest/wskazówkę przy zabytkach.
 2. **Ocena merytoryczna** — przejdź przez listę i przy każdym punkcie zapisz, co nie spełnia zasad:
-   - bogaty opis rodzica (nie skrócony; historia, ludzie, detale do oglądania),
+   - opis rodzica spełnia minimum głębokości (4 akapity i 300 słów dla zabytku; 2 akapity i 120 słów dla ulicy,
+     punktu widokowego, zdjęcia), ma elementy szkieletu (hak, historia i ludzie, „Kim był…”, co oglądać z miejscem,
+     legenda, ciekawostka/popkultura/znaczenie dziś), a każdy akapit wnosi nową treść,
+   - **research.md** (gdy jest dołączony): czy opis wykorzystał jego materiał — ludzi, detale do oglądania, popkulturę
+     i **legendy**. Zgłoś jako **BŁĄD**: legendę z researchu pominiętą w opisie, legendę podaną jako fakt, legendę bez
+     oznaczenia „Legenda mówi…”/„Według tradycji…”. Brak linijki „Legendy:” przy zabytku w researchu = uwaga.
+     Rozbudowa opisu może brać fakty wyłącznie z researchu; fakt spoza researchu bez źródła = błąd,
    - wyjaśnieni święci, bóstwa, artyści, terminy architektoniczne, symbole (zasada turysty),
    - legendy opowiedziane i oznaczone jako legenda, nie fakt,
    - popkultura wykorzystana, gdy potwierdzona — i tylko ze źródłem,

@@ -2,7 +2,9 @@
 """
 Walidator wycieczek Quolino dla umiejętności Claude „quolino-trip-writing”.
 Bazuje na _content/validate.py; reguły zaktualizowane wg TRIP-WRITING-SKILL.md (JP, 2026-10-07):
-  - brak limitu 2–4 akapitów opisu rodzica (zostaje: co najmniej 1, uwaga przy < 2 dla zabytków),
+  - opis rodzica: brak górnego limitu, ale MINIMUM głębokości (JP, 2026-10-13) — poniżej = błąd:
+    zabytek 4 akapity i 300 słów; ulica/punkt widokowy/zdjęcie 2 akapity i 120 słów; parking i lokale 1 akapit,
+  - wypełniacze („zachwyca”, „warto zobaczyć”, „bogata historia”) = uwaga; legenda bez oznaczenia = uwaga,
   - bez emoji w wartościach JSON (poza polem `icon`),
   - time_label = godzina dotarcia HH:MM, nie godziny otwarcia,
   - parking_cost ≠ price,
@@ -53,6 +55,17 @@ HHMM = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")
 NO_QUEST = {"parking", "restaurant", "icecream", "sweets"}
 SIGHTS = {"monument", "church", "museum", "castle", "house", "synagogue"}
 NOTE_FIELDS = set("abcdefg")
+# minimum głębokości opisu rodzica: kategoria → (akapity, słowa). Dolna granica, nie cel.
+SIGHT_MIN = (4, 300)          # monument, church, museum, castle, house, synagogue
+PLACE_MIN = (2, 120)          # street, viewpoint, photo
+PLACE = {"street", "viewpoint", "photo"}
+FILLERS = re.compile(
+    r"\b(zachwyc\w*|warto (zobaczyć|odwiedzić|zwrócić uwagę|się tu zatrzymać)|bogat\w+ (historia|historię|historii|dziedzictw\w+)"
+    r"|tętni\w* życiem|pełn\w+ (uroku|historii|życia)|nie sposób (pominąć|przegapić)|magiczn\w+ (atmosfer\w+|miejsc\w+)"
+    r"|niepowtarzaln\w+ (atmosfer\w+|klimat\w*)|obowiązkow\w+ punkt)\b", re.I)
+LEGEND_WORD = re.compile(r"\b(legend\w*|podani\w+|według tradycji)\b", re.I)
+LEGEND_OPEN = re.compile(r"^\s*(Legenda mówi|Według tradycji)", re.I)
+WORD = re.compile(r"\w+", re.UNICODE)
 
 errors, warnings = [], []
 def err(c, m):  errors.append(f"  [BŁĄD] {c}: {m}")
@@ -277,8 +290,21 @@ def validate_city(folder: Path):
             if code == "pl":
                 if n_par < 1:
                     err(slug, f"{code}: {key} — brak opisu rodzica (desc_paragraphs)")
-                elif n_par < 2 and cat in SIGHTS:
-                    warn(slug, f"{code}: {key} — 1 akapit przy zabytku; opis rodzica nie ma limitu, czy nic nie zostało pominięte?")
+                else:
+                    paras = [x for x in (st.get("desc_paragraphs") or []) if isinstance(x, str)]
+                    words = sum(len(WORD.findall(x)) for x in paras)
+                    need = SIGHT_MIN if cat in SIGHTS else PLACE_MIN if cat in PLACE else None
+                    if need and (n_par < need[0] or words < need[1]):
+                        err(slug, f"{code}: {key} — opis rodzica poniżej minimum ({cat}: {n_par} akap., {words} słów; "
+                                  f"minimum {need[0]} akapity i {need[1]} słów). Rozbuduj z researchu wg szkieletu: hak, "
+                                  f"historia i ludzie, „Kim był…”, co oglądać, legenda, ciekawostka")
+                    for i, ptxt in enumerate(paras):
+                        m = FILLERS.search(ptxt)
+                        if m:
+                            warn(slug, f"{code}: {key} desc[{i}] — zdanie-wypełniacz „{m.group(0)}”: podaj fakt zamiast przymiotnika")
+                        if LEGEND_WORD.search(ptxt) and not LEGEND_OPEN.match(ptxt):
+                            warn(slug, f"{code}: {key} desc[{i}] — wzmianka o legendzie/tradycji w akapicie, który nie zaczyna się od "
+                                       f"„Legenda mówi…” / „Według tradycji…” (legenda ma mieć własny, oznaczony akapit)")
                 if cat not in NO_QUEST:
                     if not st.get("kids_box"):
                         err(slug, f"{code}: {key} — brak questu (kids_box) przy punkcie zwiedzania")
