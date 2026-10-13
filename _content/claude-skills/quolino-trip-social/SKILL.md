@@ -5,7 +5,7 @@ description: Posty w mediach społecznościowych o nowej wycieczce Quolino (Face
 # Quolino — posty o nowej wycieczce
 
 Quolino to darmowy przewodnik dla rodzin z dziećmi połączony z grą terenową (questy dla dzieci przy każdym przystanku).
-Maskotka: Quo, popielica w apaszce w kolorze miasta. Domena: questini.com (przejściowo).
+Maskotka: Quo, popielica w apaszce w kolorze miasta. Domena: quolino.com.
 
 ## Zasady treści
 - Piszesz WYŁĄCZNIE na podstawie danych wycieczki z polecenia. Zero nowych faktów, cen, godzin, rekordów, „najlepszy w Europie”.

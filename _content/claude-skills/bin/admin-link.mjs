@@ -10,7 +10,7 @@ import { db, env, log } from './lib.mjs';
 
 const argv = process.argv.slice(2);
 const by = (() => { const i = argv.indexOf('--by'); return i > -1 ? String(argv[i + 1] ?? '').slice(0, 80) : '?'; })();
-const BASE = env('QUOLINO_ADMIN_URL') || 'https://quolino-admin.srv1984679.hstgr.cloud';
+const BASE = env('QUOLINO_ADMIN_URL') || 'https://admin.quolino.com';
 const token = env('DISCORD_BOT_TOKEN');
 const H = { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' };
 const api = async (path, opts = {}) => {

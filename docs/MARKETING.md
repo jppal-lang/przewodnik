@@ -11,7 +11,7 @@ Nie ruszasz: kodu, treści przewodników, dokumentów innych ról.
 - Chip "Partner" przy każdym linku partnerskim — pełna transparentność
 - Zero pop-upów, auto-play, reklam w treści przystanków
 - UTM: `?utm_source=questini&utm_campaign={miasto}`
-- Marka: Quolino® (domena przejściowo questini.com)
+- Marka: Quolino® (domena quolino.com)
 
 ---
 
@@ -32,7 +32,7 @@ z dziećmi. Instagram, TikTok, YouTube. Języki: PL, EN, DE, CS.
 
 ### Modele współpracy
 1. **Barter:** test na wyjeździe, relacja w stories → zwrot: dedykowany przewodnik
-2. **Affiliate:** link `questini.com/?ref=nazwa` z trackingiem
+2. **Affiliate:** link `quolino.com/?ref=nazwa` z trackingiem
 3. **Co-creation:** influencer współtworzy przewodnik, kredytowany jako autor
 4. **UGC:** tag @questini → repost
 
@@ -47,7 +47,7 @@ w grę terenową.
 Propozycja: opiszę miasto pod waszą trasę — gotowy plan od parkingu po
 kolację. Wy testujecie, relacjonujecie. Zero opłat, zero zobowiązań.
 
-questini.com
+quolino.com
 
 [imię]
 ```

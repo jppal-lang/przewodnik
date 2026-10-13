@@ -12,7 +12,7 @@ import { db, env, log } from './lib.mjs';
 const argv = process.argv.slice(2);
 const cmd = argv[0] === '--process' ? '--process' : argv[0];
 const opt = (n, d) => { const i = argv.indexOf(n); return i > -1 ? String(argv[i + 1] ?? d) : d; };
-const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.srv1984679.hstgr.cloud';
+const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.com';
 const token = env('DISCORD_BOT_TOKEN');
 const api = async (path, opts = {}) => {
   const r = await fetch(`https://discord.com/api/v10${path}`, { headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' }, ...opts });

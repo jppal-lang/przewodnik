@@ -14,7 +14,7 @@ const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const cookie = (req) => ((req.headers.cookie || '').match(/(?:^|;\s*)qadm=([A-Za-z0-9_-]{40,})/) || [])[1];
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 // bez ważnego linku/sesji: bez żadnych komunikatów — przekierowanie na stronę główną (decyzja JP 2026-10-11)
-const MAIN = process.env.MAIN_URL || 'https://quolino.srv1984679.hstgr.cloud/';
+const MAIN = process.env.MAIN_URL || 'https://quolino.com/';
 const away = (res, extra = {}) => { res.writeHead(302, { Location: MAIN, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', ...extra }); res.end(); };
 
 function valid(id) {

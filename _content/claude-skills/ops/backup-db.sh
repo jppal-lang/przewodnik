@@ -24,6 +24,6 @@ if [ -n "${BACKUP_GIT_REMOTE:-}" ] && [ -f /root/quolino-web/keys/backup_key ]; 
   [ -d "$R/.git" ] || git clone -q "$BACKUP_GIT_REMOTE" "$R" || { mkdir -p "$R" && git -C "$R" init -q && git -C "$R" remote add origin "$BACKUP_GIT_REMOTE"; }
   cp "$OUT" "$R/quolino-latest.sql.gz"
   git -C "$R" add quolino-latest.sql.gz
-  git -C "$R" -c user.name="quolino-backup" -c user.email="backup@questini.com" commit -q -m "kopia $STAMP" || true
+  git -C "$R" -c user.name="quolino-backup" -c user.email="backup@quolino.com" commit -q -m "kopia $STAMP" || true
   git -C "$R" push -q origin HEAD:main && echo "wysłano poza VPS"
 fi

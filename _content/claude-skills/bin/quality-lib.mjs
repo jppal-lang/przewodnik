@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { claude, extractJson, log } from './lib.mjs';
 
 const WORK = '/opt/data/quolino/work/drafts';
-const UA = 'QuolinoFactCheck/1.0 (https://questini.com)';
+const UA = 'QuolinoFactCheck/1.0 (https://quolino.com)';
 const NO_WIKI = ['parking', 'restaurant', 'icecream', 'sweets'];   // Wikipedia ich nie opisuje (BACKLOG: wyjątek)
 const sha = (o) => createHash('sha1').update(JSON.stringify(o)).digest('hex').slice(0, 16);
 

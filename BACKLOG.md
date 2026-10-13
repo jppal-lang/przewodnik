@@ -269,7 +269,7 @@ Wszystkie na jedną skrzynkę do czasu, aż wolumen wymusi podział.
 
 ## DECYZJE, KTÓRE MUSISZ PODJĄĆ SAM
 
-1. **Czy questini.com zostaje** jako przekierowanie 301, czy wygasa? *(wpływa na E1)*
+1. **Czy questini.com zostaje** jako przekierowanie 301, czy wygasa? *(wpływa na E1)* — ROZSTRZYGNIĘTE (JP 2026-10-13): questini.com i www.questini.com → 301 na quolino.com.
 2. **Kto rysuje maskotkę finalnie** — generator, ty, czy grafik? Jeśli grafik,
    potrzebna umowa z przeniesieniem praw. *(blokuje E2 i A4)*
 3. **Ile miast przed pierwszym testem** — testujemy na samej Perugii, czy

@@ -1,4 +1,4 @@
-# CLAUDE.md — Quolino (questini.com) — rdzeń projektu
+# CLAUDE.md — Quolino (quolino.com) — rdzeń projektu
 
 > Ten plik czyta KAŻDA rola. Zawiera tylko to, co wspólne.
 > Szczegóły kompetencji są w `docs/` — czytaj WYŁĄCZNIE plik swojej roli.
@@ -16,7 +16,7 @@ dziecko dostaje misje i zagadki. Dwa widoki, jedno zwiedzanie.
 - **Maskotka:** Quo — imię postaci chronione w ramach znaku Quolino® (bez osobnej rejestracji)
 - **Slogan:** Let's Explore!
 - **Model:** wszystko za darmo, wsparcie przez Buy Me a Coffee
-- **Domena:** questini.com (OVH, DNS → GitHub Pages) — do czasu rejestracji quolino.com
+- **Domena:** quolino.com (strona i SSR z VPS przez Traefik; API: api.quolino.com, panel: admin.quolino.com). questini.com i www → 301 na quolino.com. Plik CNAME usunięty 2026-10-13 (GitHub Pages już nie obsługuje domeny).
 - **Repo:** github.com/jppal-lang/przewodnik, branch `main`
 - **Hosting treści:** GitHub Pages (statyczny HTML/CSS/JS)
 - **Hosting interakcji:** Supabase (faza 2)
@@ -46,7 +46,7 @@ obszarze — zgłoś JP, on przekaże właściwej roli.
    z bazy, "Wyjazd z Montefelcino" itp. Pokazujemy TYLKO: czas zwiedzania na
    miejscu, godziny otwarcia, kolejność przystanków. Rodzina sama decyduje
    kiedy jedzie.
-3. **CNAME nie ruszać** — zostaje `questini.com` do rejestracji quolino.com.
+3. **Domena quolino.com działa z VPS** — plik `CNAME` usunięty (2026-10-13), nie dodawać z powrotem.
 4. **Tekst min 18px, cele dotykowe min 44×44px.**
 5. **Zero trackingu** — bez GA, pixeli, cookies śledzących. Tylko localStorage
    ze zdefiniowanymi kluczami (lista w `docs/BACKEND.md`).
@@ -95,7 +95,6 @@ przewodnik/
 ├── wlochy/marche/        # stare strony: index + ancona, frasassi, urbino, rimini, rawenna
 ├── wlochy/umbria/        # stare strony: index + perugia, asyz
 ├── supabase-schema.sql, supabase-i18n-2026-10-06.sql
-├── CNAME                 # questini.com — NIE RUSZAĆ
 ├── push.bat              # commit+push jednym klikiem (JP)
 ├── CLAUDE.md             # ten plik
 ├── docs/                 # instrukcje per rola

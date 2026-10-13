@@ -42,7 +42,7 @@
     } catch (e) { return null; }
   }
   // konfiguracja strony jest w zamkniętym zakresie city.html — bierzemy ją z dokumentu, z bezpiecznym zapasem
-  var API = window.SB_URL || 'https://quolino-api.srv1984679.hstgr.cloud/rest/v1';
+  var API = window.SB_URL || 'https://api.quolino.com/rest/v1';
   var KEY = window.SB_KEY || null;
   if (!KEY) { var m = (document.documentElement.innerHTML.match(/SB_KEY\s*=\s*'([^']+)'/) || [])[1]; KEY = m || null; }
   function city() { return new URLSearchParams(location.search).get('c') || window.citySlug || document.body.getAttribute('data-city'); }

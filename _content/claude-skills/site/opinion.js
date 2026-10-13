@@ -25,7 +25,7 @@
       return id;
     } catch (e) { return null; }
   }
-  var API = window.SB_URL || 'https://quolino-api.srv1984679.hstgr.cloud/rest/v1';
+  var API = window.SB_URL || 'https://api.quolino.com/rest/v1';
   var KEY = window.SB_KEY || null;
   if (!KEY) { var m = (document.documentElement.innerHTML.match(/SB_KEY\s*=\s*'([^']+)'/) || [])[1]; KEY = m || null; }
   function city() { return (window.QSSR && window.QSSR.slug) || new URLSearchParams(location.search).get('c') || window.citySlug; }

@@ -13,8 +13,8 @@ import http from 'node:http';
 import { readFileSync, statSync } from 'node:fs';
 
 const PORT = +(process.env.PORT ?? 8080);
-const API = (process.env.API_URL ?? 'https://quolino-api.srv1984679.hstgr.cloud/rest/v1').replace(/\/$/, '');
-const SITE = (process.env.SITE_URL ?? 'https://quolino.srv1984679.hstgr.cloud').replace(/\/$/, '');
+const API = (process.env.API_URL ?? 'https://api.quolino.com/rest/v1').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL ?? 'https://quolino.com').replace(/\/$/, '');
 const TEMPLATE = process.env.TEMPLATE ?? '/site/city.html';
 const CACHE_SECONDS = +(process.env.CACHE_SECONDS ?? 300);
 const FALLBACK = 'pl';

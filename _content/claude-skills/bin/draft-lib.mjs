@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { run, env, log, extractJson, openrouter, openrouterJson } from './lib.mjs';
 import { rulesText, extraCheck, mergeReview } from './quality-lib.mjs';
 
-export const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.srv1984679.hstgr.cloud';
+export const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.com';
 export const WORK = '/opt/data/quolino/work/drafts';
 export const previewUrl = (token, v) => `${SITE}/city.html?draft=${token}${v ? `&v=${v}` : ''}`;
 const clone = (o) => JSON.parse(JSON.stringify(o));

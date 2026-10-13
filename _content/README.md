@@ -4,7 +4,7 @@ Tu leżą treści przewodników: polskie źródło i tłumaczenia, jako JSON.
 To jest **jedyne źródło prawdy**. Baza Supabase jest kopią, którą można odtworzyć z tych plików.
 
 Folder zaczyna się od `_`, więc **Jekyll (GitHub Pages) go nie publikuje**.
-Pliki siedzą w repo i są wersjonowane, ale nie trafiają na questini.com.
+Pliki siedzą w repo i są wersjonowane, ale nie trafiają na quolino.com.
 ⚠️ Nie dodawajcie do repo pliku `.nojekyll` — wtedy ten folder stałby się publiczny.
 
 ## Struktura

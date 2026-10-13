@@ -8,7 +8,7 @@
     command: ["node", "server.mjs"]
     environment:
       API_URL: http://api:3000            # PostgREST w tej samej sieci (nazwa usługi z docker-compose.yml)
-      SITE_URL: https://quolino.srv1984679.hstgr.cloud   # po przełączeniu DNS: https://questini.com
+      SITE_URL: https://quolino.com   # po przełączeniu DNS: https://quolino.com
       TEMPLATE: /site/city.html
       CACHE_SECONDS: "300"
     volumes:
@@ -21,7 +21,7 @@
       interval: 60s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.quolino-ssr.rule=Host(`quolino.srv1984679.hstgr.cloud`) && (PathRegexp(`^/[a-z]{2}(-[a-z]{2})?/[a-z0-9-]+/[a-z0-9-]+/?$`) || Path(`/sitemap.xml`))
+      - traefik.http.routers.quolino-ssr.rule=Host(`quolino.com`) && (PathRegexp(`^/[a-z]{2}(-[a-z]{2})?/[a-z0-9-]+/[a-z0-9-]+/?$`) || Path(`/sitemap.xml`))
       - traefik.http.routers.quolino-ssr.priority=100
       - traefik.http.routers.quolino-ssr.entrypoints=websecure          # jak w usłudze web
       - traefik.http.routers.quolino-ssr.tls.certresolver=letsencrypt   # jak w usłudze web

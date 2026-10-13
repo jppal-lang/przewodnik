@@ -42,7 +42,7 @@ if [ -f /root/quolino-web/keys/deploy_key ] && ! docker exec "$H" test -d /opt/d
     K="ssh -i /opt/data/home/.ssh/quolino_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
     GIT_SSH_COMMAND="$K" git clone -q git@github.com:jppal-lang/przewodnik.git /opt/data/repo/przewodnik &&
     cd /opt/data/repo/przewodnik && git config core.sshCommand "$K" &&
-    git config user.name "Hermes" && git config user.email "hermes@questini.com" && git config pull.rebase true &&
+    git config user.name "Hermes" && git config user.email "hermes@quolino.com" && git config pull.rebase true &&
     echo "repo Hermesa: sklonowane ($(git log --oneline -1))"'
 fi
 

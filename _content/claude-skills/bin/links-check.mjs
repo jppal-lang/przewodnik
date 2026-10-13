@@ -15,7 +15,7 @@ const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : un
 const DRY = argv.includes('--dry');
 const CITY = opt('--city');
 const SUMMARY = opt('--notify') ?? env('QUOLINO_REVIEW_CHANNEL') ?? '#lokale';
-const UA = 'QuolinoLinkCheck/1.0 (https://questini.com)';
+const UA = 'QuolinoLinkCheck/1.0 (https://quolino.com)';
 
 async function check(url) {
   const t0 = Date.now();

@@ -25,7 +25,7 @@ Jeden plan, dwa widoki: przewodnik dla dorosłego i gra terenowa dla dziecka nad
 ## Capabilities and Constraints
 - Statyczny HTML/CSS/JS na GitHub Pages, zero frameworków i build stepu; dane i tłumaczenia z Supabase; 13+ języków (layout musi znieść +30% dłuższy tekst).
 - Twarde zasady (CLAUDE.md): nigdy km/czasów dojazdu; tekst min 18px, dotyk min 44×44px; zero trackingu; widok dziecka bez cen, BMC, ocen, partnerów; Marche ≠ Umbria; zero pop-upów i auto-play reklam; nie wymyślać faktów.
-- Nazwa: Quolino®, domena questini.com (do czasu quolino.com). Maskotka: popielica Quo.
+- Nazwa: Quolino®, domena quolino.com (questini.com → 301). Maskotka: popielica Quo.
 
 ## Brand Commitments
 - Nienaruszalne: grafiki maskotki Quo (media/icons/pose-*) i ikony przystanków (media/icons/icon-*), zdjęcia tras z Quo (media/tours).
