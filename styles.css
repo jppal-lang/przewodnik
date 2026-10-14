@@ -984,3 +984,15 @@ body:has(.qc[data-view="kid"]) .qc-pager__btn--next{background:var(--card);color
   .qc-pin.is-next span,.qc-go-next{animation:none!important}
 }
 @media print{.qc-pager,.qc-overview,.qc-go-next{display:none!important}.qc-tabpanel{display:block!important}}
+/* telefon: zakładki i pasek przystanków mieszczą się w 360 px */
+@media(max-width:767px){
+  .qc-tabs__list{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .qc-tabs .qc-tab--support{display:none}
+  .qc-tabs__list .qc-tab{justify-content:center;text-align:center;white-space:normal;line-height:1.1;padding:4px 6px;min-height:48px}
+  .qc-pager{grid-template-columns:auto minmax(0,1fr) auto}
+  .qc-pager__btn--prev{min-width:52px;padding:0 14px}
+  .qc-pager__btn--prev .qc-pager__lbl{display:none}
+  .qc-pager__btn--next{padding:0 16px}
+  .qc-pin{width:36px;height:36px;margin:-18px 0 0 -18px}
+  .qc-pin span{min-width:28px;height:28px;font-size:14px;border-radius:8px}
+}

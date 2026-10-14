@@ -187,7 +187,7 @@
     bar.hidden = true;
     bar.setAttribute('aria-label', t('tab.route', 'Trasa'));
     bar.innerHTML =
-      '<button type="button" class="qc-pager__btn" data-pg="prev"><span aria-hidden="true">←</span> <span>' + esc(t('btn.prev_stop', 'Poprzedni')) + '</span></button>' +
+      '<button type="button" class="qc-pager__btn qc-pager__btn--prev" data-pg="prev" aria-label="' + esc(t('btn.prev_stop', 'Poprzedni')) + '"><span aria-hidden="true">←</span> <span class="qc-pager__lbl" aria-hidden="true">' + esc(t('btn.prev_stop', 'Poprzedni')) + '</span></button>' +
       '<div class="qc-pager__mid"><span class="qc-pager__count" aria-hidden="true"></span>' +
       '<button type="button" class="qc-pager__all" data-pg="all">' + esc(t('btn.whole_route', 'Cała trasa')) + '</button></div>' +
       '<button type="button" class="qc-pager__btn qc-pager__btn--next" data-pg="next"><span>' + esc(t('btn.next_stop', 'Następny')) + '</span> <span aria-hidden="true">→</span></button>';
@@ -405,13 +405,22 @@
     }
     $('.qc-map__tiles', map).innerHTML = tiles;
     var xy = P.map(function (p) { return [Math.round(p[0] - ox), Math.round(p[1] - oy)]; });
+    // punkty bliżej niż szerokość znacznika rozsuwamy po spirali (linia trasy zostaje w prawdziwych miejscach)
+    var minD = isMobile() ? 30 : 34, placed = [];
+    var at = xy.map(function (p) {
+      var q = p.slice(), k = 0;
+      var near = function (a) { return placed.some(function (b) { return Math.abs(a[0] - b[0]) < minD && Math.abs(a[1] - b[1]) < minD; }); };
+      while (near(q) && k < 24) { k++; var ang = k * 2.4, r = minD * (0.8 + k * 0.12); q = [Math.round(p[0] + r * Math.cos(ang)), Math.round(p[1] + r * Math.sin(ang))]; }
+      q[0] = Math.max(18, Math.min(W - 18, q[0])); q[1] = Math.max(18, Math.min(H - 18, q[1]));
+      placed.push(q); return q;
+    });
     var svg = $('.qc-map__line', map);
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svg.innerHTML = '<polyline points="' + xy.map(function (p) { return p.join(','); }).join(' ') + '"/>';
     var pins = '';
     pts.forEach(function (s, i) {
       var kind = (i === 0 && s.cat === 'parking') ? ' is-start' : (s.dinner ? ' is-finish' : '');
-      pins += '<a class="qc-pin' + kind + '" href="#p' + esc(s.num) + '" data-go="' + esc(s.num) + '" style="left:' + xy[i][0] + 'px;top:' + xy[i][1] + 'px" ' +
+      pins += '<a class="qc-pin' + kind + '" href="#p' + esc(s.num) + '" data-go="' + esc(s.num) + '" style="left:' + at[i][0] + 'px;top:' + at[i][1] + 'px" ' +
               'aria-label="' + esc(pad(s.num) + ' ' + (s.name || '')) + '"><span>' + (kind === ' is-start' ? 'P' : pad(s.num)) + '</span></a>';
     });
     $('.qc-map__pins', map).innerHTML = pins;
