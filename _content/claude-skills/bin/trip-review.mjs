@@ -5,7 +5,7 @@
 // do weryfikacji faktów; gdy obok jest research.md — sprawdza też, czy opis go wykorzystał, w tym legendy), 3) raport review-<data>.json w katalogu miasta. Kod 1 = do poprawy.
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
-import { SKILLS, run, claude, extractJson, log } from './lib.mjs';
+import { SKILLS, run, claudeJson, JSON_QUOTE_RULE, log } from './lib.mjs';
 
 const dir = resolve(process.argv[2] ?? '');
 if (!process.argv[2]) { console.error('Użycie: trip-review.mjs <katalog miasta> [--no-ai]'); process.exit(2); }
@@ -37,8 +37,10 @@ ${research}
 Pliki wycieczki:
 ${body}
 
-Odpowiedz wyłącznie JSON-em werdyktu.`;
-  review = extractJson(await claude('quolino-trip-writing', prompt, { web: true }));
+Odpowiedz wyłącznie JSON-em werdyktu. ${JSON_QUOTE_RULE}`;
+  try {
+    review = await claudeJson('quolino-trip-writing', prompt, { web: true, rawFile: join(dir, `review-raw-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`) });
+  } catch (e) { console.error(`BŁĄD kontroli: ${e.message}`); process.exit(3); }
   review.validator_exit = v.code;
   if (v.code !== 0) review.verdict = 'fix';
 }

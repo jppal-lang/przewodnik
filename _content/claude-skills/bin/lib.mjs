@@ -44,6 +44,27 @@ export function extractJson(text) {
   return JSON.parse(raw);
 }
 
+// Odpowiedź Claude jako JSON z jedną ponowną prośbą (Piza 2026-10-14: model wstawił prosty " w tekście i JSON.parse padł).
+// 1) zwykłe parsowanie, 2) przy błędzie: jedna prośba o SAM poprawny JSON z tym samym werdyktem (bez nowego researchu),
+// 3) gdy i to zawiedzie: surowa odpowiedź do pliku (rawFile) i czytelny błąd z jego ścieżką.
+export const JSON_QUOTE_RULE = 'W tekstach wewnątrz JSON-a używaj wyłącznie typograficznych cudzysłowów „…” — nigdy prostego znaku ". Odpowiedz wyłącznie poprawnym JSON-em.';
+export async function claudeJson(skillName, prompt, { web = false, rawFile = null } = {}) {
+  const raw = await claude(skillName, prompt, { web });
+  try { return extractJson(raw); } catch (e1) {
+    log(`claudeJson: błąd parsowania (${e1.message.slice(0, 120)}) — ponawiam prośbą o sam poprawny JSON`);
+    let raw2 = '';
+    try {
+      raw2 = await claude(skillName, `Poniższa odpowiedź miała być JSON-em, ale nie da się jej sparsować (${e1.message.slice(0, 200)}). Zwróć TEN SAM werdykt ` +
+        `(te same błędy, uwagi i podsumowanie, bez nowej oceny i bez zmian merytorycznych) jako poprawny JSON. ${JSON_QUOTE_RULE} Zamień każdy prosty " wewnątrz tekstu na „ lub ”.\n\n=== ODPOWIEDŹ ===\n${raw}`, { web: false });
+      return extractJson(raw2);
+    } catch (e2) {
+      let where = '';
+      if (rawFile) { try { writeFileSync(rawFile, `--- odpowiedź 1 (${e1.message}) ---\n${raw}\n\n--- odpowiedź 2 (${e2.message}) ---\n${raw2}\n`); where = ` Surowa odpowiedź: ${rawFile}`; } catch {} }
+      throw new Error(`kontrola Claude zwróciła niepoprawny JSON także po ponownej prośbie (${e2.message.slice(0, 120)}).${where}`);
+    }
+  }
+}
+
 export async function db() {
   const c = new Client({ connectionString: env('QUOLINO_DATABASE_URL') });
   await c.connect();
