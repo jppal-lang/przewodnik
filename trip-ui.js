@@ -310,9 +310,9 @@
       var tag = i === 0 && s.cat === 'parking' ? t('label.start', 'Start') : (s.dinner ? t('label.finish', 'Meta') : '');
       html += '<li><a class="qc-ov__item" href="#p' + esc(s.num) + '" data-go="' + esc(s.num) + '">' +
               '<span class="qc-ov__no">' + pad(s.num) + '</span>' +
-              '<span class="qc-ov__time">' + esc(s.time || '') + '</span>' +
+              '<span class="qc-ov__txt"><span class="qc-ov__time">' + esc(s.time || '') + '</span>' +
               '<span class="qc-ov__name">' + esc(s.name || '') + '</span>' +
-              (tag ? '<span class="qc-ov__tag' + (s.dinner ? ' is-finish' : '') + '">' + esc(tag) + '</span>' : '') +
+              (tag ? '<span class="qc-ov__tag' + (s.dinner ? ' is-finish' : '') + '">' + esc(tag) + '</span>' : '') + '</span>' +
               '<span class="qc-ov__check" aria-hidden="true">✓</span></a></li>';
     });
     html += '</ol>';
@@ -449,6 +449,11 @@
     });
 
     renderOverview();
+    // motion.js chowa elementy do pierwszego pojawienia się w oknie (opacity 0 → animacja). W panelach i pagerze
+    // to daje „lag” przy każdym przełączeniu, więc oznaczamy je jako już pokazane, zanim motion.js je złapie.
+    $$('#trasa > .qc-stop, #qcOverview .qc-section__title, #awaryjne .qc-section__title, #awaryjne .qc-card, #qr').forEach(function (el) {
+      el.setAttribute('data-rv', ''); el.classList.add('is-in', 'qc-no-rv');
+    });
     buildBar();
     addGoNext();
     bindSwipe();
