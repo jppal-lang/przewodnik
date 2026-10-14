@@ -254,10 +254,12 @@ function sb(table, params) {
     return r.json();
   });
 }
-// Adres strony miasta renderowanej z bazy (SSR): /{lang}/{region}/{miasto}/
+// Adres strony miasta renderowanej z bazy (SSR): /{lang}/{kraj}/{region}/{miasto}/
+var REGION_URL = {};   // regions.slug → regions.url_slug (adres regionu); brak → wewnętrzny slug
 function cityHref(c) {
   if (!c.region_slug) return 'city.html?c=' + encodeURIComponent(c.slug);
-  return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(c.region_slug) + '/' + encodeURIComponent(c.slug) + '/';
+  return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(String(c.country || 'it').toLowerCase()) + '/' +
+    encodeURIComponent(REGION_URL[c.region_slug] || c.region_slug) + '/' + encodeURIComponent(c.url_slug || c.slug) + '/';
 }
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
@@ -276,12 +278,13 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order'),
+    sb('cities', 'status=eq.published&select=slug,url_slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order'),
     sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,title'),
   ]).then(function(results) {
     langList        = results[0];
     var uiRows      = results[1];
     var regions     = results[2];
+    regions.forEach(function(r) { REGION_URL[r.slug] = r.url_slug || r.slug; });
     var regionTrs   = results[3];
     var countries   = results[4];
     var countryTrs  = results[5];

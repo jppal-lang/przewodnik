@@ -100,6 +100,8 @@ var FALLBACK = 'pl';
 
 // ── State ──────────────────────────────────────────────
 var citySlug = new URLSearchParams(location.search).get('c') || (window.QSSR && window.QSSR.slug) || null;
+// adres strony miasta z SSR: /{lang}/{kraj}/{region}/{miasto}/ (kraj ISO, region i miasto = url_slug; wstrzykuje SSR w window.QSSR)
+function ssrPath(lang) { var q = window.QSSR; return '/' + lang + '/' + q.country + '/' + q.rurl + '/' + q.uslug + '/'; }
 var currentLang = new URLSearchParams(location.search).get('lang') || (window.QSSR && window.QSSR.lang) || readPref() || FALLBACK;
 var cityData = null;
 var langList = [];
@@ -181,7 +183,7 @@ function loadPage(lang) {
   currentLang = lang;
   savePref(lang);
   if (window.QSSR && history.replaceState && window.QSSR.langs && window.QSSR.langs.indexOf(lang) > -1)
-    history.replaceState(null, '', '/' + lang + '/' + window.QSSR.region + '/' + window.QSSR.slug + '/' + location.search + location.hash);
+    history.replaceState(null, '', ssrPath(lang) + location.search + location.hash);
 
   var QD = window.QDraft;
   var core = QD ? QD.core(lang, SB_URL, SB_KEY, FALLBACK) : [
@@ -296,8 +298,8 @@ function render(d) {
 
   var levels = [
     { label: ui('continent.' + (d.continent || 'europe'), 'Europa'), href: '/#regiony' },
-    { label: d.countryName, href: city.country ? '/country.html?k=' + encodeURIComponent(city.country) : null },
-    { label: d.regionName,  href: city.region_slug ? '/region.html?r=' + encodeURIComponent(city.region_slug) : null },
+    { label: d.countryName, href: window.QSSR ? '/' + currentLang + '/' + window.QSSR.country + '/' : (city.country ? '/country.html?k=' + encodeURIComponent(city.country) : null) },
+    { label: d.regionName,  href: window.QSSR ? '/' + currentLang + '/' + window.QSSR.country + '/' + window.QSSR.rurl + '/' : (city.region_slug ? '/region.html?r=' + encodeURIComponent(city.region_slug) : null) },
     { label: tr.title || city.slug, href: null }
   ];
   levels.forEach(function(l) {
@@ -629,13 +631,13 @@ function ustawMeta(city, cityTr, stops) {
   meta('property', 'og:type', 'article');
   meta('property', 'og:title', tytul + ' — Quolino');
   meta('property', 'og:description', opis);
-  meta('property', 'og:url', window.QSSR ? location.origin + '/' + currentLang + '/' + city.region_slug + '/' + city.slug + '/' : location.href);
+  meta('property', 'og:url', window.QSSR ? location.origin + ssrPath(currentLang) : location.href);
   if (obraz) meta('property', 'og:image', baza + obraz);
   meta('name', 'twitter:card', obraz ? 'summary_large_image' : 'summary');
 
   var kanon = document.head.querySelector('link[rel="canonical"]');
   if (!kanon) { kanon = document.createElement('link'); kanon.rel = 'canonical'; document.head.appendChild(kanon); }
-  kanon.href = window.QSSR ? location.origin + '/' + currentLang + '/' + city.region_slug + '/' + encodeURIComponent(city.slug) + '/' : location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);
+  kanon.href = window.QSSR ? location.origin + ssrPath(currentLang) : location.origin + location.pathname + '?c=' + encodeURIComponent(city.slug);
 
   var punkty = stops.map(function(item, i) {
     var s = item.stop, t = item.tr || {};
