@@ -84,26 +84,34 @@ autodetekcja `navigator.language` → zapis `questini_lang` → DOM swap po
 
 ## 6. POSTĘP UŻYTKOWNIKA / localStorage (jedyne dozwolone klucze)
 
-| Klucz                          | Cel                    |
-|--------------------------------|------------------------|
-| `questini_lang`                | wybrany język          |
-| `questini_view`                | rodzic / dziecko       |
-| `questini_cookie_consent`      | zgoda na localStorage  |
-| `album:{strona}:{przystanek}`  | zdjęcia użytkownika    |
-| `questini_missions:{miasto}`   | ukończone misje        |
+Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-policy.html`.
+
+| Klucz                             | Cel                                                         |
+|-----------------------------------|-------------------------------------------------------------|
+| `quolino_lang`                    | wybrany język                                               |
+| `qc.task.<klucz zadania>`         | odhaczone misje i zadania foto (album naklejek, `city.html`)|
+| `quolino_missions:<miasto>`       | ukończone misje (starsze strony, `kids-view.js`)            |
+| `quolino_family`, `quolino_active_player` | pseudonimy graczy (starsze strony, bez wieku i zdjęć) |
+| `quolino_album:<strona>:<nr>`     | zdjęcia użytkownika, tylko na urządzeniu                    |
+| `quolino_client`                  | losowy numer przeglądarki przy wysyłaniu oceny (`opinion.js`)|
+| `quolino_rated_<miasto>`          | wycieczka już oceniona                                      |
+| `quolino_nostats`                 | `1` = statystyki wyłączone (JP, testerzy); `?nostats=1/0` w adresie przełącza |
+| `quolino_migrated`, `quolino_migration_expiry` | jednorazowa migracja z `questini_*` (`migrate-storage.js`) |
+| `qc.pager.<slug>`                 | ostatni przystanek w widoku mobilnym wycieczki (pager ≤767 px, `trip-ui.js`) |
+| sessionStorage `quolino_kidmode`  | widok dziecka na czas sesji                                 |
 
 Punkty dziecka: `punkty = round((ukończone_misje / misje_w_planie) * 10)`, max 10.
 
-**Zakaz:** tracking, GA, pixele, cookies śledzące, klucze spoza tabeli.
-Dane nie opuszczają urządzenia (poza dobrowolnymi ocenami/zgłoszeniami w f. 2).
+**Zakaz:** tracking osób, GA, piksele, cookies śledzące, klucze spoza tabeli.
+Statystyki: wyłącznie Umami na własnym serwerze, bez ciasteczek (`docs/STATYSTYKI.md`).
+Dane nie opuszczają urządzenia (poza dobrowolnymi ocenami/zgłoszeniami).
 
 ---
 
 ## 7. COOKIE POLICY
 
-cookie-policy.html — wielojęzyczna, treść: "Zero trackerów, zero reklam
-śledzących. Preferencje i zdjęcia zapisujemy lokalnie w przeglądarce."
-Baner przy pierwszym wejściu, link w footerze każdej strony.
+cookie-policy.html (PL; pozostałe języki później): zero trackerów i reklam, lista kluczy z §6, statystyki Umami bez ciasteczek
+i bez zapisu IP, zewnętrzne zasoby (Google Fonts, flagcdn). Bez baneru zgody (nic, co wymagałoby zgody). Link w stopce stron.
 
 ---
 
