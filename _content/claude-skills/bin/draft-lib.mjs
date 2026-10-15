@@ -292,6 +292,25 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
     } else if (v && typeof v === 'object') hhmm(v);
   });
   hhmm(trip.meta); hhmm(trip.content);
+  // punkty awaryjne: tylko znane typy i z adresem. Rundy poprawek potrafiły zostawić puste wpisy (type: null)
+  // albo wymyślone typy („alarm”) i cały zapis padał na NOT NULL w emergency_points (Arezzo, JP 2026-10-15).
+  // Zachowujemy zgodność numerów: content.emergency (obiekt „1”,„2”… albo tablica) przesuwamy razem z meta.
+  if (Array.isArray(trip.meta?.emergency)) {
+    const OK = new Set(['pharmacy', 'hospital', 'toilet', 'playground']);
+    const keep = trip.meta.emergency.map(e => !!(e && OK.has(e.type) && e.maps_query));
+    if (keep.some(k => !k)) {
+      const dropped = trip.meta.emergency.filter((_, i) => !keep[i]);
+      trip.meta.emergency = trip.meta.emergency.filter((_, i) => keep[i]);
+      const ce = trip.content?.emergency;
+      if (Array.isArray(ce)) trip.content.emergency = ce.filter((_, i) => keep[i]);
+      else if (ce && typeof ce === 'object') {
+        const out = {}; let n = 0;
+        keep.forEach((k, i) => { if (k && ce[String(i + 1)] !== undefined) out[String(++n)] = ce[String(i + 1)]; else if (k) n++; });
+        trip.content.emergency = out;
+      }
+      console.error(`punkty awaryjne: pominięto ${dropped.length} wpis(y) bez poprawnego typu/adresu: ${JSON.stringify(dropped)}`);
+    }
+  }
   let r;
   // rola `quolino` ma search_path = ops, public, a funkcje importu (import_city…) nie ustawiają własnej ścieżki,
   // więc `cities` trafiało do ops.cities (bez sort_order). Na czas zapisu wymuszamy public (JP 2026-10-12).
