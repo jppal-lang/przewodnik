@@ -1234,3 +1234,7 @@ html.qk-lock{overflow:hidden}
 .qc-map__ctl button[disabled]{opacity:.4;cursor:default}
 .qc-map__ctl button[hidden]{display:none}
 @media print{.qc-map__ctl{display:none}}
+
+/* ── Strona główna: „Jak działa zwiedzanie z Quolino” — 6 kroków w 3 kolumnach (2026-10-16) ── */
+@media(min-width:901px){.route--6{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:44px}.route--6::before{display:none}}
+.route-sos{margin:28px 0 0;padding:14px 18px;border-radius:12px;background:var(--sun-50);color:#5A3E00;font-size:18px;max-width:72ch}

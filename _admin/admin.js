@@ -29,7 +29,7 @@
   var CITY_TR = [['title', 'Tytuł'], ['subtitle', 'Podtytuł'], ['lead', 'Wstęp'], ['good_to_know', 'Dobrze wiedzieć'], ['local_food', 'Lokalne jedzenie']];
   var STOP_TR = [['name', 'Nazwa'], ['desc_paragraphs', 'Opis'], ['kids_box', 'Misja dla dzieci'], ['hint', 'Podpowiedź'], ['local_flavor', 'Ciekawostka']];
   var STOP_FIELDS = [['category', 'Kategoria'], ['time_label', 'Godzina'], ['visit_duration', 'Czas zwiedzania', minLabel],
-    ['price', 'Cena'], ['year_built', 'Rok'], ['maps_query', 'Mapa'], ['optional', 'Opcjonalny', yesNo], ['sunset_spot', 'Na zachód słońca', yesNo]];
+    ['price', 'Cena'], ['year_built', 'Rok'], ['maps_query', 'Mapa'], ['optional', 'Opcjonalny', yesNo], ['sunset_spot', 'Na zachód słońca', yesNo], ['lat', 'Szerokość geogr.'], ['lon', 'Długość geogr.']];
   var VER_FIELDS = [['stop_number', 'Numer']].concat(STOP_FIELDS);   // do liczenia wersji punktu liczy się też numer
 
   var state = { queue: [], demo: null, current: null, comments: [], ctx: null, poll: null };
