@@ -120,7 +120,7 @@
       <span class="slot"><span class="slot-no">02</span></span>
       <span class="slot"><span class="slot-no">03</span></span>
       <span class="slot"><span class="slot-no">04</span></span>
-      <p class="sheet-caption" data-ui="home.hero_badge">7 miast · Marche &amp; Umbria</p>
+      <p class="sheet-caption" data-ui="home.hero_badge">Miasta: 8 · Umbria · Marche · Emilia-Romania</p>
     </div>
   </div>
 </header>
@@ -188,7 +188,7 @@
     <p data-ui="home.about_p2">Ale Quolino to nie kolejny przewodnik z listą zabytków. To gra terenowa w prawdziwym mieście: każdy przystanek ma misję dla dzieci. Znajdź gryfa na fasadzie, policz gwiazdy na mozaice, sfotografuj zamurowane okno. Dziecko nie marudzi „kiedy wracamy", bo jest zajęte questem. Rodzice zwiedzają w spokoju.</p>
     <p data-ui="home.about_p3">Godziny dostosowane do klimatu. W ciepłych krajach trasa omija południowy upał. Zwiedzanie zaczyna się późnym popołudniem, kończy kolacją przy zachodzie słońca. Zero bitew z trzydziestopięciostopniowym skwarem i skwierczącym dzieckiem.</p>
     <p data-ui="home.about_p4">Zaczynasz od parkingu. Każde miasto otwiera się informacją, gdzie zostawić auto: z ceną, linkiem do nawigacji i ostrzeżeniem o strefie ZTL. Koniec z krążeniem po zakazanych strefach i mandatami z kamer.</p>
-    <p data-ui="home.about_p5">Aktualnie dostępny region: Marche i Umbria (Włochy). 7 miast, 46 przystanków, kompletne plany na 7 dni. W przygotowaniu: Toskania, Kraków i okolice.</p>
+    <p data-ui="home.about_p5">Dostępne regiony: Umbria, Marche, Emilia-Romania. Miasta: 8. Kolejne miasta dochodzą na bieżąco.</p>
   </div>
   <div class="rules-lists">
     <div class="rules-box rules-box--team">
@@ -319,6 +319,7 @@ function loadPage(lang) {
     if (window.QuoAtlas) QuoAtlas.render({ mount: 'atlas', lang: lang, ui: ui, imgBase: imgBase,
       regions: regions, regionTrs: regionTrs, countries: countries, countryTrs: countryTrs, cities: cities });
     buildHeroSheet(cities, cityTrs, regionTrs);
+    updateCounts(cities, regionTrs);
 
     // Build language popup
     buildLangPopup();
@@ -372,6 +373,22 @@ function loadCover(wrap, city, letter) {
 // ══════ ARKUSZ NAKLEJEK NA OKŁADCE ══════
 // Trzy pierwsze miasta z ilustracją trafiają na okładkę jako naklejki,
 // czwarte miejsce zostaje puste — „do zebrania wkrótce”.
+// Liczby na stronie głównej z bazy, nie na sztywno (miasta dochodzą na bieżąco)
+function updateCounts(cities, regionTrs) {
+  if (!cities || !cities.length) return;
+  var by = {};
+  cities.forEach(function(c) { by[c.region_slug] = (by[c.region_slug] || 0) + 1; });
+  var names = Object.keys(by).sort(function(a, b) { return by[b] - by[a]; }).map(function(slug) {
+    var t = regionTrs.filter(function(x) { return x.region_slug === slug; })[0];
+    return t && t.name ? t.name : slug;
+  });
+  var label = ui('home.badge_cities', 'Miasta') + ': ' + cities.length;
+  var badge = document.querySelector('[data-ui="home.hero_badge"]');
+  if (badge) badge.textContent = label + ' · ' + names.slice(0, 3).join(' · ') + (names.length > 3 ? ' +' + (names.length - 3) : '');
+  var p5 = document.querySelector('[data-ui="home.about_p5"]');
+  if (p5) p5.textContent = ui('home.avail_regions', 'Dostępne regiony') + ': ' + names.join(', ') + '. ' + label + '. ' + ui('home.more_soon', 'Kolejne miasta dochodzą na bieżąco.');
+}
+
 function buildHeroSheet(cities, cityTrs, regionTrs) {
   var sheet = document.getElementById('heroSheet');
   if (!sheet) return;
