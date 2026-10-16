@@ -217,12 +217,15 @@
     if (!ctr.title) warn.push(['', 'Brak tytułu miasta po polsku.']);
 
     var title = ctr.title || it.city_name || it.city_slug;
+    var route = routeUrl(c, newStops, draft.stop_translations, title);
     var html = '<article class="adm-sheet" style="--team:' + esc(team) + '">' +
       '<header class="adm-sheet__head' + (isLight(team) ? ' is-light' : '') + '"><div>' +
       '<p class="label" style="color:inherit;opacity:.8">' + esc(it.city_slug) + ' · szkic v' + it.version + (it.published_version != null ? ' zamiast v' + it.published_version : ' · pierwsza publikacja') + '</p>' +
       '<h2 class="adm-sheet__title">' + esc(title) + '</h2>' +
       (it.note ? '<p class="adm-sheet__sub">' + esc(it.note) + '</p>' : '') + '</div>' +
-      '<span class="adm-chip">' + esc(SRC[it.source] || it.source) + ' · ' + esc(when(it.created_at)) + '</span></header>';
+      '<div class="adm-sheet__acts">' +
+      (route ? '<a class="qc-btn qc-btn--sm adm-route" href="' + esc(route) + '" target="_blank" rel="noopener">' + PIN + ' Cała trasa w Google Maps</a>' : '') +
+      '<span class="adm-chip">' + esc(SRC[it.source] || it.source) + ' · ' + esc(when(it.created_at)) + '</span></div></header>';
 
     html += '<section class="adm-sheet__sec"><h3>Podsumowanie</h3><div class="adm-sum">' +
       stat('Przystanki', newStops.length, pub ? oldStops.length : null) +
@@ -248,6 +251,23 @@
       '<span class="adm-msg" id="msg" role="status"></span></div></form></article>';
 
     $d.innerHTML = html;
+  }
+
+  // link do całej trasy w Mapach Google (pieszo): route_url > współrzędne > maps_query > nazwa PL + miasto
+  var PIN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+  function routeUrl(c, stops, trs, town) {
+    if (c && c.route_url) return c.route_url;
+    var pts = (stops || []).slice().sort(function (a, b) { return a.stop_number - b.stop_number; }).map(function (s) {
+      if (s.lat != null && s.lon != null && s.lat !== '' && s.lon !== '') return s.lat + ',' + s.lon;
+      if (s.maps_query) return s.maps_query;
+      var n = trOf(trs, 'pl', 'stop_id', s.id).name;
+      return n ? n + (town ? ', ' + town : '') : '';
+    }).filter(Boolean);
+    if (!pts.length) return '';
+    if (pts.length === 1) return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(pts[0]);
+    var way = pts.slice(1, -1).slice(0, 9);
+    return 'https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=' + encodeURIComponent(pts[0]) +
+      '&destination=' + encodeURIComponent(pts[pts.length - 1]) + (way.length ? '&waypoints=' + encodeURIComponent(way.join('|')) : '');
   }
 
   function stat(label, now, before) {

@@ -111,3 +111,9 @@
 
 .adm-done{padding:40px 24px;text-align:center}
 .adm-done h3{font-stretch:62%;font-weight:900;font-size:40px;text-transform:uppercase;margin-bottom:8px}
+
+/* nagłówek szkicu: link do całej trasy w Mapach Google */
+.adm-sheet__acts{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.adm-route{background:var(--sun,#FFC629);color:var(--sun-ink,#3B2A00);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)}
+.adm-route:hover{background:#FFD45A}
+@media(max-width:640px){.adm-sheet__acts{align-items:flex-start}}
