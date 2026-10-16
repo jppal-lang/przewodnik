@@ -153,9 +153,9 @@
 
   // ── album ────────────────────────────────────────────
   function renderAlbum() {
-    var got = {}; album.forEach(function (e) { got[e.slug] = e; });
+    var got = {}; album.forEach(function (e) { got[e.slug] = e; got['n:' + String(e.city).toLowerCase()] = e; });
     var all = album.slice();
-    catalog.forEach(function (c) { if (!got[c.slug]) all.push(Object.assign({ todo: true }, c)); });
+    catalog.forEach(function (c) { if (!got[c.slug] && !got['n:' + String(c.city).toLowerCase()]) all.push(Object.assign({ todo: true }, c)); });
     var groups = {};
     all.forEach(function (e) { var k = e.country + '|' + (e.region || ''); (groups[k] = groups[k] || []).push(e); });
     var keys = Object.keys(groups).sort(function (a, b) {
