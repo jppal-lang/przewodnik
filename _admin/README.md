@@ -89,7 +89,13 @@ Jeden wiersz na szkic czekający na decyzję, od najnowszego.
 | `published_stops_count` | int / null | |
 | `published_duration` | text / null | |
 
-### `GET /api/admin_versions?city_slug=eq.X&version=in.(N,M)&select=city_slug,version,status,content`
+### `GET /api/admin_versions?city_slug=eq.X&select=city_slug,version,status,source,note,created_at,content&order=version.asc`
+
+Od v3 panel pobiera **wszystkie** wersje miasta — z nich liczy wersję każdego przystanku
+(„punkt v3” = trzecia zmiana tego przystanku; klucz: `stop_key`, a bez niego nazwa PL).
+Widok `admin.admin_versions` już ma te kolumny, nic do zmiany w bazie.
+
+(starsza postać zapytania:)
 
 Pełne migawki (`content` = `city_snapshot()`): szkic i wersja opublikowana do porównania.
 Front porównuje przystanki po `stop_key` (gdy pusty — po `id`), teksty po `lang = 'pl'`,
@@ -113,6 +119,76 @@ Zwraca `{ city_slug, version, status: 'rejected' }`.
 Błędy: zwykły format PostgREST (`message`) — front pokazuje go pod przyciskami.
 
 ---
+
+---
+
+## Uwagi do szkiców → Hermes (od v3, 2026-10-16)
+
+Przy każdym polu szkicu (opis miasta, każde pole każdego przystanku, „cały przystanek”, „cała
+wycieczka”) JP wpisuje uwagę i wysyła ją Enterem. Uwaga trafia do tabeli, z której Hermes ją odbiera,
+poprawia szkic i odpisuje. Panel odświeża uwagi co 30 s i pokazuje odpowiedź Hermesa przy polu.
+Przyklejone menu przystanków liczy otwarte uwagi (`new`, `seen`) per przystanek.
+
+Gdy tabeli jeszcze nie ma, panel zapisuje uwagi w przeglądarce (`localStorage` klucz `adm.outbox`)
+i wysyła je sam przy następnym otwarciu szkicu, kiedy API zacznie je przyjmować.
+
+### `GET /api/draft_comments?city_slug=eq.X&order=created_at.asc`
+### `POST /api/draft_comments` — `{ city_slug, city_version, stop_key, stop_version, field, field_label, body }`
+
+| Pole | Znaczenie |
+|---|---|
+| `city_version` | wersja szkicu, przy której JP napisał uwagę |
+| `stop_key` | przystanek (`null` = miasto / cała wycieczka) |
+| `stop_version` | „punkt vN” w chwili pisania uwagi |
+| `field` | `city.<kolumna>`, `stop.<kolumna>` albo `null` (uwaga ogólna) |
+| `status` | `new` → `seen` (Hermes czyta) → `done` (poprawione) albo `rejected` (z powodem w `hermes_reply`) |
+| `hermes_reply`, `resolved_in_version` | odpowiedź Hermesa i wersja szkicu z poprawką |
+
+### SQL (rola Backend, wdraża Hermes po `approve` JP)
+
+```sql
+BEGIN;
+CREATE TABLE IF NOT EXISTS public.draft_comments (
+  id bigserial PRIMARY KEY,
+  city_slug text NOT NULL,
+  city_version int NOT NULL,
+  stop_key text,
+  stop_version int,
+  field text,
+  field_label text,
+  body text NOT NULL CHECK (length(body) BETWEEN 1 AND 4000),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'seen', 'done', 'rejected')),
+  hermes_reply text,
+  resolved_in_version int,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS draft_comments_city ON public.draft_comments (city_slug, status);
+ALTER TABLE public.draft_comments OWNER TO quolino;
+
+CREATE OR REPLACE VIEW admin.draft_comments AS SELECT * FROM public.draft_comments;
+ALTER VIEW admin.draft_comments OWNER TO quolino;
+GRANT SELECT ON admin.draft_comments TO quolino_admin;
+GRANT INSERT (city_slug, city_version, stop_key, stop_version, field, field_label, body) ON admin.draft_comments TO quolino_admin;
+
+-- Hermes nasłuchuje (LISTEN draft_comment) albo odpytuje co minutę status = 'new'
+CREATE OR REPLACE FUNCTION public.draft_comments_notify() RETURNS trigger LANGUAGE plpgsql AS $f$
+BEGIN PERFORM pg_notify('draft_comment', NEW.city_slug || ':' || NEW.id); RETURN NEW; END $f$;
+DROP TRIGGER IF EXISTS draft_comments_notify ON public.draft_comments;
+CREATE TRIGGER draft_comments_notify AFTER INSERT ON public.draft_comments FOR EACH ROW EXECUTE FUNCTION public.draft_comments_notify();
+COMMIT;
+```
+
+### Jak Hermes obsługuje uwagi
+
+1. Nowe uwagi → `status='seen'`, krótka informacja w wątku miasta na Discordzie (przystanek, pole, treść).
+2. Czeka ok. 5 min od ostatniej uwagi JP do tego miasta (JP zwykle pisze kilka naraz), potem robi
+   **jedną** nową wersję szkicu z poprawkami wszystkich uwag (`city_version_save(..., 'draft', 'uwagi #12, #13', 'pipeline')`).
+   Poprzedni szkic tego miasta odrzuca z notatką „zastąpiony przez vN”.
+3. Każdą uwagę zamyka: `status='done'`, `hermes_reply` (co zmienił, jednym zdaniem), `resolved_in_version`.
+   Gdy się nie zgadza albo nie może poprawić (np. brak źródła) — `status='rejected'` i powód w `hermes_reply`.
+4. Uwaga, która dotyczy zasady, a nie jednego miejsca (np. „misje za trudne dla 6-latka”), trafia też jako
+   reguła do TRIP-WRITING-SKILL, żeby błąd nie wracał w kolejnych wycieczkach.
 
 ## SQL — szkic dla roli Backend (nie uruchamiać bez przeglądu)
 
