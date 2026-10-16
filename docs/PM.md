@@ -5,6 +5,25 @@ Backlog szczegółowy: `BACKLOG.md` (root repo).
 
 ---
 
+## 0. KAMIEŃ MILOWY — 1 CZERWCA 2027: PLANY PŁATNE
+
+Decyzja JP 2026-10-16. Od tego dnia Quolino sprzedaje plany; pierwsza wycieczka po rejestracji zostaje darmowa.
+Musi być gotowe przed 1 czerwca 2027 (terminy pośrednie — propozycja do akceptacji JP):
+
+| Do | Co | Gdzie |
+|----|----|-------|
+| 31 sty 2027 | Konta: Google + e-mail, sesje, token QR dla dziecka (etap B) | `docs/DOSTEP-I-KONTA.md` §4, §6 |
+| 31 sty 2027 | API zamknięte: anonimowo tylko 1–2 akapity na przystanek | `docs/DOSTEP-I-KONTA.md` §3 |
+| 31 mar 2027 | Panel rodzica na koncie: album, wyzwania, kody, prywatność | `konto.html`, `docs/KONTO-RODZICA.md` |
+| 31 mar 2027 | Kody na darmowe trasy i rabaty (`QUO-XXXX-XXXX`), wydawanie przez Hermesa | `docs/KONTO-RODZICA.md` §2 |
+| 30 kwi 2027 | Płatności w trybie testowym (Dodo Payments, MoR), webhooki, ceny | `docs/DOSTEP-I-KONTA.md` §6 etap C |
+| 15 maj 2027 | Regulamin, polityka prywatności, teksty o braku prawa odstąpienia PL/EN — sprawdzone przez prawnika | `docs/PLATNOSCI-ODSTAPIENIE.md` |
+| 1 cze 2027 | **Start sprzedaży** | — |
+
+Zasada sprzedaży: treść cyfrowa z natychmiastowym dostępem — po zgodzie klienta brak prawa odstąpienia
+(teksty PL/EN: `docs/PLATNOSCI-ODSTAPIENIE.md`).
+Wyzwanie dla rodziców: 5 udostępnionych wycieczek → 5% zniżki na kolejny zakup.
+
 ## 1. CELE PROJEKTU (DO UZUPEŁNIENIA PRZEZ JP)
 
 | Cel | Metryka | Wartość docelowa | Termin |

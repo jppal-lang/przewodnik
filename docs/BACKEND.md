@@ -101,7 +101,8 @@ Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-polic
 | `qc.kid.avatar`                   | awatar dziecka na dziś `{date,pose,color,nick}` (`kid-reward.js`) |
 | `qc.kid.nicks`                    | zapisane nicki dzieci, max 8 (bez imion i wieku)            |
 | `qc.album`                        | zdobyte miejsca na tym urządzeniu (zapis po ostatniej misji; czyta `konto.html`) |
-| `qc.parent.shares`                | licznik udostępnień albumu (wyzwania w `konto.html`)        |
+| `qc.parent.shared`                | lista slugów udostępnionych wycieczek (wyzwanie 5 → 5%, `konto.html`) |
+| `qc.parent.codes`                 | wpisane kody `QUO-XXXX-XXXX` (na razie tylko podgląd, `konto.html`) |
 | `qc.parent.news`                  | zgoda na newsletter (`konto.html`)                          |
 | `adm.outbox`                      | panel admina: uwagi do szkiców, których API jeszcze nie przyjęło (`_admin/`, nie strona publiczna) |
 | sessionStorage `quolino_kidmode`  | widok dziecka na czas sesji                                 |
