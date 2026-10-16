@@ -997,3 +997,5 @@ body:has(.qc[data-view="kid"]) .qc-pager__btn--next{background:var(--card);color
   .qc-pin span{min-width:28px;height:28px;font-size:14px;border-radius:8px}
 }
 html.motion .qc-no-rv[data-rv].is-in{animation:none}
+.qc-ov__head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.qc-ov__gmaps svg{flex:none}

@@ -21,25 +21,25 @@
   // ── teksty: Supabase/i18n-ui (przez ui() z city.html) > ten słownik [język] > en > pl ──
   var K = ['tab.route', 'btn.prev_stop', 'btn.next_stop', 'btn.go_next', 'btn.whole_route', 'label.whole_route',
            'btn.open_gmaps', 'btn.start_route', 'btn.resume_stop', 'label.start', 'label.finish', 'label.stop_of',
-           'label.map', 'label.collected'];
+           'label.map', 'label.collected', 'btn.route_all'];
   var RAW = {
-    pl: 'Trasa|Poprzedni|Następny|Idziemy dalej|Cała trasa|Cała trasa|Otwórz trasę w Mapach Google|Zaczynamy|Wróć do przystanku {n}|Start|Meta|Przystanek {n} z {t}|Mapa trasy|zdobyte',
-    en: 'Route|Previous|Next|Let\'s go on|Whole route|Whole route|Open the route in Google Maps|Let\'s start|Back to stop {n}|Start|Finish|Stop {n} of {t}|Route map|collected',
-    de: 'Route|Zurück|Weiter|Weiter geht\'s|Ganze Route|Ganze Route|Route in Google Maps öffnen|Los geht\'s|Zurück zu Stopp {n}|Start|Ziel|Stopp {n} von {t}|Routenkarte|gesammelt',
-    it: 'Percorso|Precedente|Successiva|Andiamo avanti|Tutto il percorso|Tutto il percorso|Apri il percorso in Google Maps|Si parte|Torna alla tappa {n}|Partenza|Arrivo|Tappa {n} di {t}|Mappa del percorso|conquistata',
-    cs: 'Trasa|Předchozí|Další|Jdeme dál|Celá trasa|Celá trasa|Otevřít trasu v Mapách Google|Jdeme na to|Zpět na zastávku {n}|Start|Cíl|Zastávka {n} z {t}|Mapa trasy|získáno',
-    da: 'Rute|Forrige|Næste|Videre|Hele ruten|Hele ruten|Åbn ruten i Google Maps|Lad os starte|Tilbage til stop {n}|Start|Mål|Stop {n} af {t}|Rutekort|samlet',
-    es: 'Ruta|Anterior|Siguiente|¡Seguimos!|Toda la ruta|Toda la ruta|Abrir la ruta en Google Maps|¡Empezamos!|Volver a la parada {n}|Salida|Llegada|Parada {n} de {t}|Mapa de la ruta|conseguida',
-    fr: 'Parcours|Précédent|Suivant|On continue|Tout le parcours|Tout le parcours|Ouvrir le parcours dans Google Maps|C\'est parti|Revenir à l\'étape {n}|Départ|Arrivée|Étape {n} sur {t}|Carte du parcours|gagnée',
-    hr: 'Ruta|Prethodno|Sljedeće|Idemo dalje|Cijela ruta|Cijela ruta|Otvori rutu u Google kartama|Krećemo|Natrag na stajalište {n}|Start|Cilj|Stajalište {n} od {t}|Karta rute|osvojeno',
-    hu: 'Útvonal|Előző|Következő|Menjünk tovább|Teljes útvonal|Teljes útvonal|Útvonal megnyitása a Google Térképben|Indulás|Vissza a(z) {n}. megállóhoz|Start|Cél|{n}. megálló / {t}|Útvonaltérkép|megszerezve',
-    nl: 'Route|Vorige|Volgende|We gaan verder|Hele route|Hele route|Route openen in Google Maps|We beginnen|Terug naar stop {n}|Start|Finish|Stop {n} van {t}|Routekaart|verzameld',
-    no: 'Rute|Forrige|Neste|Videre|Hele ruten|Hele ruten|Åpne ruten i Google Maps|Vi starter|Tilbake til stopp {n}|Start|Mål|Stopp {n} av {t}|Rutekart|samlet',
-    pt: 'Percurso|Anterior|Seguinte|Vamos em frente|Percurso completo|Percurso completo|Abrir o percurso no Google Maps|Vamos começar|Voltar à paragem {n}|Partida|Chegada|Paragem {n} de {t}|Mapa do percurso|conquistada',
-    ro: 'Traseu|Înapoi|Următoarea|Mergem mai departe|Tot traseul|Tot traseul|Deschide traseul în Google Maps|Pornim|Înapoi la oprirea {n}|Start|Final|Oprirea {n} din {t}|Harta traseului|câștigată',
-    sk: 'Trasa|Predchádzajúca|Ďalšia|Ideme ďalej|Celá trasa|Celá trasa|Otvoriť trasu v Mapách Google|Ideme na to|Späť na zastávku {n}|Štart|Cieľ|Zastávka {n} z {t}|Mapa trasy|získané',
-    sv: 'Rutt|Föregående|Nästa|Vi går vidare|Hela rutten|Hela rutten|Öppna rutten i Google Maps|Nu kör vi|Tillbaka till stopp {n}|Start|Mål|Stopp {n} av {t}|Ruttkarta|samlad',
-    uk: 'Маршрут|Попередня|Наступна|Ідемо далі|Увесь маршрут|Увесь маршрут|Відкрити маршрут у Google Картах|Починаємо|Назад до зупинки {n}|Старт|Фініш|Зупинка {n} з {t}|Карта маршруту|здобуто'
+    pl: 'Trasa|Poprzedni|Następny|Idziemy dalej|Cała trasa|Cała trasa|Otwórz trasę w Mapach Google|Zaczynamy|Wróć do przystanku {n}|Start|Meta|Przystanek {n} z {t}|Mapa trasy|zdobyte|Cała trasa w Google Maps',
+    en: 'Route|Previous|Next|Let\'s go on|Whole route|Whole route|Open the route in Google Maps|Let\'s start|Back to stop {n}|Start|Finish|Stop {n} of {t}|Route map|collected|Whole route in Google Maps',
+    de: 'Route|Zurück|Weiter|Weiter geht\'s|Ganze Route|Ganze Route|Route in Google Maps öffnen|Los geht\'s|Zurück zu Stopp {n}|Start|Ziel|Stopp {n} von {t}|Routenkarte|gesammelt|Ganze Route in Google Maps',
+    it: 'Percorso|Precedente|Successiva|Andiamo avanti|Tutto il percorso|Tutto il percorso|Apri il percorso in Google Maps|Si parte|Torna alla tappa {n}|Partenza|Arrivo|Tappa {n} di {t}|Mappa del percorso|conquistata|Tutto il percorso su Google Maps',
+    cs: 'Trasa|Předchozí|Další|Jdeme dál|Celá trasa|Celá trasa|Otevřít trasu v Mapách Google|Jdeme na to|Zpět na zastávku {n}|Start|Cíl|Zastávka {n} z {t}|Mapa trasy|získáno|Celá trasa v Mapách Google',
+    da: 'Rute|Forrige|Næste|Videre|Hele ruten|Hele ruten|Åbn ruten i Google Maps|Lad os starte|Tilbage til stop {n}|Start|Mål|Stop {n} af {t}|Rutekort|samlet|Hele ruten i Google Maps',
+    es: 'Ruta|Anterior|Siguiente|¡Seguimos!|Toda la ruta|Toda la ruta|Abrir la ruta en Google Maps|¡Empezamos!|Volver a la parada {n}|Salida|Llegada|Parada {n} de {t}|Mapa de la ruta|conseguida|Toda la ruta en Google Maps',
+    fr: 'Parcours|Précédent|Suivant|On continue|Tout le parcours|Tout le parcours|Ouvrir le parcours dans Google Maps|C\'est parti|Revenir à l\'étape {n}|Départ|Arrivée|Étape {n} sur {t}|Carte du parcours|gagnée|Tout le parcours dans Google Maps',
+    hr: 'Ruta|Prethodno|Sljedeće|Idemo dalje|Cijela ruta|Cijela ruta|Otvori rutu u Google kartama|Krećemo|Natrag na stajalište {n}|Start|Cilj|Stajalište {n} od {t}|Karta rute|osvojeno|Cijela ruta u Google kartama',
+    hu: 'Útvonal|Előző|Következő|Menjünk tovább|Teljes útvonal|Teljes útvonal|Útvonal megnyitása a Google Térképben|Indulás|Vissza a(z) {n}. megállóhoz|Start|Cél|{n}. megálló / {t}|Útvonaltérkép|megszerezve|Teljes útvonal a Google Térképen',
+    nl: 'Route|Vorige|Volgende|We gaan verder|Hele route|Hele route|Route openen in Google Maps|We beginnen|Terug naar stop {n}|Start|Finish|Stop {n} van {t}|Routekaart|verzameld|Hele route in Google Maps',
+    no: 'Rute|Forrige|Neste|Videre|Hele ruten|Hele ruten|Åpne ruten i Google Maps|Vi starter|Tilbake til stopp {n}|Start|Mål|Stopp {n} av {t}|Rutekart|samlet|Hele ruten i Google Maps',
+    pt: 'Percurso|Anterior|Seguinte|Vamos em frente|Percurso completo|Percurso completo|Abrir o percurso no Google Maps|Vamos começar|Voltar à paragem {n}|Partida|Chegada|Paragem {n} de {t}|Mapa do percurso|conquistada|Percurso completo no Google Maps',
+    ro: 'Traseu|Înapoi|Următoarea|Mergem mai departe|Tot traseul|Tot traseul|Deschide traseul în Google Maps|Pornim|Înapoi la oprirea {n}|Start|Final|Oprirea {n} din {t}|Harta traseului|câștigată|Tot traseul în Google Maps',
+    sk: 'Trasa|Predchádzajúca|Ďalšia|Ideme ďalej|Celá trasa|Celá trasa|Otvoriť trasu v Mapách Google|Ideme na to|Späť na zastávku {n}|Štart|Cieľ|Zastávka {n} z {t}|Mapa trasy|získané|Celá trasa v Mapách Google',
+    sv: 'Rutt|Föregående|Nästa|Vi går vidare|Hela rutten|Hela rutten|Öppna rutten i Google Maps|Nu kör vi|Tillbaka till stopp {n}|Start|Mål|Stopp {n} av {t}|Ruttkarta|samlad|Hela rutten i Google Maps',
+    uk: 'Маршрут|Попередня|Наступна|Ідемо далі|Увесь маршрут|Увесь маршрут|Відкрити маршрут у Google Картах|Починаємо|Назад до зупинки {n}|Старт|Фініш|Зупинка {n} з {t}|Карта маршруту|здобуто|Увесь маршрут у Google Картах'
   };
   var DICT = {};
   Object.keys(RAW).forEach(function (l) {
@@ -48,6 +48,7 @@
     DICT[l] = d;
   });
 
+  var PIN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
   var S = { opts: null, root: null, cur: null, bound: false, mapW: 0, bar: null, live: null };
 
   function t(key, fb, vars) {
@@ -302,7 +303,10 @@
     if (!box) return;
     var pts = points();
     var withGeo = pts.filter(function (s) { return isFinite(s.lat) && isFinite(s.lon) && s.lat !== null && s.lon !== null; });
-    var html = '<h2 class="qc-section__title">' + esc(t('label.whole_route', 'Cała trasa')) + '</h2>';
+    var gm = gmapsUrl();
+    var html = '<div class="qc-ov__head"><h2 class="qc-section__title">' + esc(t('label.whole_route', 'Cała trasa')) + '</h2>';
+    if (gm) html += '<a class="qc-btn qc-btn--sm qc-ov__gmaps" href="' + esc(gm) + '" target="_blank" rel="noopener">' + PIN + ' ' + esc(t('btn.open_gmaps', 'Otwórz trasę w Mapach Google')) + '</a>';
+    html += '</div>';
     if (withGeo.length >= 2) {
       html += '<div class="qc-map" role="img" aria-label="' + esc(t('label.map', 'Mapa trasy')) + '"><div class="qc-map__tiles"></div>' +
               '<svg class="qc-map__line" aria-hidden="true"></svg><div class="qc-map__pins"></div>' +
@@ -319,10 +323,8 @@
               '<span class="qc-ov__check" aria-hidden="true">✓</span></a></li>';
     });
     html += '</ol>';
-    var gm = gmapsUrl();
     html += '<div class="qc-ov__actions">';
     html += '<button type="button" class="qc-btn qc-btn--primary qc-ov__start" data-ov="start">' + esc(t('btn.start_route', 'Zaczynamy')) + ' <span aria-hidden="true">→</span></button>';
-    if (gm) html += '<a class="qc-btn qc-ov__gmaps" href="' + esc(gm) + '" target="_blank" rel="noopener">' + esc(t('btn.open_gmaps', 'Otwórz trasę w Mapach Google')) + '</a>';
     html += '</div>';
     box.innerHTML = html;
     S.mapW = 0;
@@ -343,12 +345,14 @@
     refreshCollected();
     // przycisk w nagłówku miasta: gdy strona nie ma ani route_url, ani maps_query startu (np. podgląd szkicu), dajemy „Cała trasa”
     var acts = $('.qc-intro__actions');
-    if (gm && acts && !$('a', acts)) {
+    if (gm && acts && !(S.opts.city || {}).route_url && !$('[data-qc-route]', acts)) {
       var a = document.createElement('a');
       a.className = 'qc-btn qc-btn--primary';
+      a.setAttribute('data-qc-route', '');
       a.href = gm; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = t('btn.open_gmaps', 'Otwórz trasę w Mapach Google');
-      acts.appendChild(a);
+      a.innerHTML = PIN + ' ' + esc(t('btn.route_all', 'Cała trasa w Google Maps'));
+      $$('a', acts).forEach(function (x) { x.classList.remove('qc-btn--primary'); x.classList.add('qc-btn--ghost'); });
+      acts.insertBefore(a, acts.firstChild);
     }
   }
 
