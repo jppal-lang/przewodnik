@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twoje konto · Quolino</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=21">
+<script src="/kid-reward.js?v=1"></script>
+</head>
+<body class="acc">
+<!--
+  Panel zalogowanego rodzica — projekt działający (2026-10-16).
+  Konta to etap B (docs/DOSTEP-I-KONTA.md), płatności i album na serwerze — etap C.
+  Dziś: album z tego urządzenia (localStorage qc.album, zapisuje go widok dziecka po ostatniej misji),
+  nicki dzieci (qc.kid.nicks), licznik udostępnień (qc.parent.shares). Gdy album jest pusty albo ?demo=1 —
+  przykładowe dane z wyraźnym oznaczeniem. Kontrakt backendu: docs/KONTO-RODZICA.md.
+-->
+
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+    <div class="acc-nav__me" id="accMe"><span class="acc-nav__dot" aria-hidden="true"></span><span>Konto rodzica</span></div>
+  </div>
+</nav>
+
+<header class="band acc-head">
+  <div class="wrap-wide">
+    <p class="label acc-head__eyebrow">Twoje konto</p>
+    <h1 class="acc-head__title">Album rodziny</h1>
+    <p class="acc-head__sub" id="accSum">Ładuję…</p>
+    <nav class="acc-jump" aria-label="Sekcje konta">
+      <a href="#album">Album</a><a href="#wyzwania">Wyzwania</a><a href="#dzieci">Dzieci</a><a href="#plan">Plan</a><a href="#prywatnosc">Prywatność</a>
+    </nav>
+  </div>
+</header>
+
+<p class="acc-preview" id="accPreview" hidden></p>
+
+<main class="wrap-wide acc-layout">
+  <div class="acc-main">
+    <section class="acc-sec" id="album" aria-labelledby="hAlbum">
+      <div class="acc-sec__head">
+        <h2 id="hAlbum">Zdobyte miejsca</h2>
+        <button type="button" class="qc-btn qc-btn--primary" data-act="share-album">Udostępnij album</button>
+      </div>
+      <div class="acc-stats" id="accStats"></div>
+      <div id="accAlbum"><p class="acc-empty">Ładuję album…</p></div>
+    </section>
+
+    <section class="acc-sec" id="wyzwania" aria-labelledby="hCh">
+      <div class="acc-sec__head"><h2 id="hCh">Wyzwania dla rodzica</h2></div>
+      <p class="acc-sec__sub">Za wspólne wyprawy i polecanie Quolino znajomym. Kody rabatowe wydamy, gdy ruszą płatności.</p>
+      <div class="acc-ch" id="accCh"></div>
+    </section>
+  </div>
+
+  <aside class="acc-aside">
+    <section class="acc-sec acc-box" id="dzieci" aria-labelledby="hKids">
+      <h2 id="hKids">Dzieci</h2>
+      <p class="acc-sec__sub">Tylko nicki — bez imion, wieku i zdjęć. Dziecko wybiera nick i swojego Quo po zeskanowaniu QR.</p>
+      <ul class="acc-kids" id="accKids"></ul>
+      <form class="acc-add" id="accAdd" autocomplete="off">
+        <label class="acc-vh" for="accNick">Nowy nick</label>
+        <input id="accNick" maxlength="20" placeholder="Nowy nick">
+        <button type="submit" class="qc-btn">Dodaj</button>
+      </form>
+    </section>
+
+    <section class="acc-sec acc-box" id="plan" aria-labelledby="hPlan">
+      <h2 id="hPlan">Plan</h2>
+      <div class="acc-plan" id="accPlan"></div>
+    </section>
+
+    <section class="acc-sec acc-box" id="prywatnosc" aria-labelledby="hPriv">
+      <h2 id="hPriv">Prywatność</h2>
+      <ul class="acc-priv">
+        <li><b>Logowanie</b><span>Google albo e-mail i hasło. Nie pobieramy imienia ani zdjęcia z konta Google.</span></li>
+        <li><b>Zdjęcia z zadań foto</b><span>Zostają w telefonie dziecka, nie wysyłamy ich na serwer.</span></li>
+        <li><label class="acc-check"><input type="checkbox" id="accNews"> <span>Newsletter o nowych wycieczkach (raz w miesiącu)</span></label></li>
+      </ul>
+      <div class="acc-priv__acts">
+        <button type="button" class="qc-btn" data-act="export">Pobierz moje dane (JSON)</button>
+        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Działa po uruchomieniu kont">Usuń konto</button>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var API = 'https://api.quolino.com/rest/v1';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+  var LANG = 'pl';
+  var COUNTRY = { it: 'Włochy', gr: 'Grecja', fr: 'Francja', pl: 'Polska', cz: 'Czechy', es: 'Hiszpania', hr: 'Chorwacja' };
+  // wyzwania: progi i nagrody do decyzji JP (dziś przykład z rozmowy 2026-10-16)
+  var CHALLENGES = [
+    { id: 'trips5', title: '5 wycieczek', reward: '−10% na kolejny zakup', of: 5, metric: 'places', icon: 'pose-13-celebration-jump' },
+    { id: 'share3', title: 'Pochwal się 3 razy', reward: 'odznaka Ambasadora i −10%', of: 3, metric: 'shares', icon: 'pose-08-running' },
+    { id: 'regions2', title: 'Dwa regiony', reward: 'odznaka Podróżnika', of: 2, metric: 'regions', icon: 'pose-11-leaping-forward' },
+    { id: 'trips10', title: '10 wycieczek', reward: 'złoty Quo w albumie i −15%', of: 10, metric: 'places', icon: 'pose-15-gold-medal' }
+  ];
+  var DEMO_ALBUM = [
+    { slug: 'spello', city: 'Spello', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-spello', pieces: 7, date: '2026-08-12', nick: 'Zosia', pose: 4, color: 5 },
+    { slug: 'assisi', city: 'Asyż', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-assisi', pieces: 9, date: '2026-08-13', nick: 'Zosia', pose: 1, color: 0 },
+    { slug: 'perugia', city: 'Perugia', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-perugia', pieces: 8, date: '2026-08-14', nick: 'Kuba', pose: 3, color: 2 },
+    { slug: 'ancona', city: 'Ankona', country: 'it', region: 'marche', hero: '/media/tours/quolino-it-ancona', pieces: 6, date: '2026-08-17', nick: 'Kuba', pose: 6, color: 3 }
+  ];
+
+  var forceDemo = /[?&]demo=1\b/.test(location.search);
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* prywatne okno */ } }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function dateLabel(iso) { var d = new Date(iso + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString(LANG, { day: 'numeric', month: 'long', year: 'numeric' }); }
+  function plural(n, one, few, many) { var m10 = n % 10, m100 = n % 100; return n === 1 ? one : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? few : many; }
+
+  var local = lsGet('qc.album') || [];
+  var demo = forceDemo || !local.length;
+  var album = demo ? DEMO_ALBUM : local;
+  var shares = demo ? 1 : (lsGet('qc.parent.shares') || 0);
+  var catalog = [];
+
+  if (demo) {
+    var pv = document.getElementById('accPreview');
+    pv.hidden = false;
+    pv.innerHTML = '<b>Podgląd na przykładowych danych.</b> Konta ruszą zimą — wtedy album zapisze się na koncie. ' +
+      (local.length ? 'Masz już ' + local.length + ' miejsc na tym urządzeniu: <a href="konto.html">pokaż moje</a>.' : 'Prawdziwe miejsca pojawią się tu, gdy dziecko odsłoni cały obrazek w widoku dziecka.');
+  }
+
+  // ── katalog opublikowanych miast (do pustych slotów „do zdobycia”) ──
+  function loadCatalog() {
+    var h = { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } };
+    return Promise.all([
+      fetch(API + '/cities?select=slug,country,region_slug,hero_image,bandana_color&status=eq.published', h).then(function (r) { return r.ok ? r.json() : []; }),
+      fetch(API + '/city_translations?select=city_slug,title&lang=eq.' + LANG, h).then(function (r) { return r.ok ? r.json() : []; })
+    ]).then(function (r) {
+      var titles = {}; r[1].forEach(function (t) { titles[t.city_slug] = t.title; });
+      catalog = r[0].map(function (c) {
+        return { slug: c.slug, city: titles[c.slug] || cap(c.slug), country: c.country, region: c.region_slug, color: c.bandana_color,
+          hero: c.hero_image ? '/media/tours/' + c.hero_image : '/media/tours/quolino-' + c.country + '-' + c.slug };
+      });
+    }).catch(function () { catalog = []; });
+  }
+
+  function regionsOf(list) { var s = {}; list.forEach(function (e) { s[e.country + '/' + e.region] = 1; }); return Object.keys(s); }
+  function countriesOf(list) { var s = {}; list.forEach(function (e) { s[e.country] = 1; }); return Object.keys(s); }
+  function metric(m) { return m === 'places' ? album.length : m === 'shares' ? shares : regionsOf(album).length; }
+
+  // ── album ────────────────────────────────────────────
+  function renderAlbum() {
+    var got = {}; album.forEach(function (e) { got[e.slug] = e; });
+    var all = album.slice();
+    catalog.forEach(function (c) { if (!got[c.slug]) all.push(Object.assign({ todo: true }, c)); });
+    var groups = {};
+    all.forEach(function (e) { var k = e.country + '|' + (e.region || ''); (groups[k] = groups[k] || []).push(e); });
+    var keys = Object.keys(groups).sort(function (a, b) {
+      var ga = groups[a].filter(function (e) { return !e.todo; }).length, gb = groups[b].filter(function (e) { return !e.todo; }).length;
+      return gb - ga || a.localeCompare(b);
+    });
+    var html = keys.map(function (k) {
+      var p = k.split('|'), list = groups[k], n = list.filter(function (e) { return !e.todo; }).length;
+      list.sort(function (a, b) { return (a.todo ? 1 : 0) - (b.todo ? 1 : 0) || String(a.date || '').localeCompare(String(b.date || '')); });
+      return '<div class="acc-group"><h3 class="acc-group__h">' + esc(COUNTRY[p[0]] || p[0].toUpperCase()) + ' · ' + esc(cap(p[1])) +
+        ' <span>' + n + ' / ' + list.length + '</span></h3><div class="acc-grid">' + list.map(stk).join('') + '</div></div>';
+    }).join('');
+    document.getElementById('accAlbum').innerHTML = html || '<p class="acc-empty">Album jest pusty.</p>';
+    var regs = regionsOf(album).length, ctr = countriesOf(album).length;
+    document.getElementById('accStats').innerHTML =
+      stat(album.length, plural(album.length, 'miejsce', 'miejsca', 'miejsc')) + stat(regs, plural(regs, 'region', 'regiony', 'regionów')) +
+      stat(ctr, plural(ctr, 'kraj', 'kraje', 'krajów')) + stat(album.reduce(function (s, e) { return s + (e.pieces || 0); }, 0), 'misji');
+    document.getElementById('accSum').textContent = album.length
+      ? 'Zdobyliście ' + album.length + ' ' + plural(album.length, 'miejsce', 'miejsca', 'miejsc') + '. Każde to obrazek odsłonięty przez dziecko misja po misji.'
+      : 'Tu zbierają się miejsca, które dziecko zdobyło w widoku dziecka.';
+  }
+  function stat(n, l) { return '<div class="acc-stat"><b>' + n + '</b><span>' + esc(l) + '</span></div>'; }
+  function stk(e) {
+    if (e.todo) {
+      return '<a class="acc-stk is-todo" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '" style="--team:' + esc(e.color || '#8794A8') + '">' +
+        '<span class="acc-stk__img"><img src="' + esc(e.hero) + '-hero-480.webp" alt="" loading="lazy" onerror="this.remove()"></span>' +
+        '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">do zdobycia</span></a>';
+    }
+    var C = window.QReward ? window.QReward.colors : ['#0B4EA2'];
+    return '<button type="button" class="acc-stk" data-slug="' + esc(e.slug) + '" style="--ava:' + esc(C[e.color] || C[0]) + '">' +
+      '<span class="acc-stk__img"><img src="' + esc(e.hero) + '-hero-480.webp" alt="" loading="lazy">' +
+      '<span class="acc-stk__ava"><img src="/media/icons/pose-' + ['05-curious-sitting', '07-ready-to-spring', '08-running', '09-sprint', '11-leaping-forward', '12-high-jump', '13-celebration-jump', '15-gold-medal'][e.pose || 0] + '-128.webp" alt="" width="40" height="40"></span></span>' +
+      '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">' + esc([e.nick, dateLabel(e.date)].filter(Boolean).join(' · ')) + '</span></button>';
+  }
+
+  // ── wyzwania ─────────────────────────────────────────
+  function renderChallenges() {
+    document.getElementById('accCh').innerHTML = CHALLENGES.map(function (c) {
+      var n = Math.min(metric(c.metric), c.of), done = n >= c.of, pct = Math.round(n / c.of * 100);
+      return '<article class="acc-chc' + (done ? ' is-done' : '') + '"><img src="/media/icons/' + c.icon + '-128.webp" alt="" width="64" height="64">' +
+        '<div class="acc-chc__body"><h3>' + esc(c.title) + '</h3><p>' + esc(c.reward) + '</p>' +
+        '<div class="acc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + c.of + '" aria-valuenow="' + n + '" aria-label="' + esc(c.title) + '"><span style="width:' + pct + '%"></span></div>' +
+        '<small>' + n + ' / ' + c.of + (done ? ' · zdobyte' : '') + '</small></div>' +
+        (done ? '<button type="button" class="qc-btn qc-btn--sm" disabled title="Kody wydamy po starcie płatności">Odbierz</button>' :
+          c.metric === 'shares' ? '<button type="button" class="qc-btn qc-btn--sm" data-act="share-album">Udostępnij</button>' : '') + '</article>';
+    }).join('');
+  }
+
+  // ── dzieci (nicki) ───────────────────────────────────
+  function kids() {
+    var nicks = lsGet('qc.kid.nicks') || [];
+    album.forEach(function (e) { if (e.nick && nicks.indexOf(e.nick) < 0) nicks.push(e.nick); });
+    return nicks;
+  }
+  function renderKids() {
+    var list = kids(), C = window.QReward ? window.QReward.colors : ['#0B4EA2'];
+    document.getElementById('accKids').innerHTML = list.length ? list.map(function (n) {
+      var mine = album.filter(function (e) { return e.nick === n; }), last = mine[mine.length - 1] || {};
+      return '<li><span class="acc-kid__ava" style="--ava:' + esc(C[last.color || 0]) + '"><img src="/media/icons/pose-' + ['05-curious-sitting', '07-ready-to-spring', '08-running', '09-sprint', '11-leaping-forward', '12-high-jump', '13-celebration-jump', '15-gold-medal'][last.pose || 1] + '-128.webp" alt="" width="44" height="44"></span>' +
+        '<span class="acc-kid__txt"><b>' + esc(n) + '</b><small>' + mine.length + ' ' + plural(mine.length, 'miejsce', 'miejsca', 'miejsc') + '</small></span>' +
+        '<button type="button" class="acc-kid__x" data-del="' + esc(n) + '" aria-label="Usuń nick ' + esc(n) + '">×</button></li>';
+    }).join('') : '<li class="acc-empty">Brak zapisanych nicków.</li>';
+  }
+  document.getElementById('accAdd').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var inp = document.getElementById('accNick'), n = inp.value.trim().slice(0, 20);
+    if (!n) return;
+    lsSet('qc.kid.nicks', [n].concat((lsGet('qc.kid.nicks') || []).filter(function (x) { return x !== n; })).slice(0, 8));
+    inp.value = ''; renderKids();
+  });
+
+  // ── plan ─────────────────────────────────────────────
+  function renderPlan() {
+    document.getElementById('accPlan').innerHTML =
+      '<p class="acc-plan__now"><b>Darmowa wycieczka</b><span>1 z 1 wykorzystana</span></p>' +
+      '<p class="acc-sec__sub">Pakiety (jedno miasto, 7 i 30 dni) ruszą przed sezonem 2027. Rabaty z wyzwań odejmiemy automatycznie przy zakupie.</p>' +
+      '<button type="button" class="qc-btn" disabled>Wybierz pakiet — wkrótce</button>';
+  }
+
+  // ── udostępnianie ────────────────────────────────────
+  function shareImage() {
+    var list = album.slice(-6), W = 1200, H = 1200, cols = list.length > 4 ? 3 : 2, rows = Math.ceil(list.length / cols) || 1;
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var x = cv.getContext('2d');
+    x.fillStyle = '#0B4EA2'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#FFFFFF'; x.font = '900 72px Archivo, system-ui, sans-serif'; x.fillText('Nasz album Quolino', 60, 120);
+    x.font = '600 40px Archivo, system-ui, sans-serif'; x.fillStyle = '#C9DAF2';
+    x.fillText(album.length + ' ' + plural(album.length, 'zdobyte miejsce', 'zdobyte miejsca', 'zdobytych miejsc') + ' · ' + regionsOf(album).length + ' ' + plural(regionsOf(album).length, 'region', 'regiony', 'regionów'), 60, 180);
+    var gx = 60, gy = 230, gw = W - 120, gh = H - gy - 120, cw = (gw - (cols - 1) * 24) / cols, ch = (gh - (rows - 1) * 24) / rows;
+    return Promise.all(list.map(function (e) {
+      return new Promise(function (res) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = function () { res(null); }; i.src = e.hero + '-hero-800.webp'; });
+    })).then(function (imgs) {
+      imgs.forEach(function (img, k) {
+        var cx = gx + (k % cols) * (cw + 24), cy = gy + Math.floor(k / cols) * (ch + 24);
+        x.fillStyle = '#FFFFFF'; x.fillRect(cx, cy, cw, ch);
+        if (img) { var ih = ch - 70, sc = Math.max((cw - 16) / img.width, ih / img.height), sw = (cw - 16) / sc, sh = ih / sc;
+          x.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, cx + 8, cy + 8, cw - 16, ih - 8); }
+        x.fillStyle = '#0E1A2B'; x.font = '900 36px Archivo, system-ui, sans-serif'; x.fillText(list[k].city, cx + 14, cy + ch - 20);
+      });
+      x.fillStyle = '#FFC629'; x.font = '900 44px Archivo, system-ui, sans-serif'; x.textAlign = 'right'; x.fillText('quolino.com', W - 60, H - 50);
+      return new Promise(function (res) { cv.toBlob(res, 'image/png'); });
+    });
+  }
+  function countShare() { if (demo) return; shares += 1; lsSet('qc.parent.shares', shares); renderChallenges(); }
+  function shareAlbum() {
+    var text = 'Zdobyliśmy z dziećmi ' + album.length + ' ' + plural(album.length, 'miejsce', 'miejsca', 'miejsc') + ' z Quolino — zwiedzanie jako gra terenowa dla rodzin.';
+    var url = 'https://quolino.com/';
+    shareImage().then(function (blob) {
+      var file = blob && typeof File === 'function' ? new File([blob], 'quolino-album.png', { type: 'image/png' }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: 'Quolino', text: text + ' ' + url }).then(countShare).catch(function () {});
+      }
+      openShareSheet(text, url, blob);
+    });
+  }
+  function openShareSheet(text, url, blob) {
+    var img = blob ? URL.createObjectURL(blob) : '';
+    var w = document.createElement('div');
+    w.className = 'qk-sheet';
+    w.innerHTML = '<div class="qk-sheet__box" role="dialog" aria-modal="true" aria-labelledby="shT" tabindex="-1"><button type="button" class="qk-x" aria-label="Zamknij">×</button>' +
+      '<h2 class="qk-sheet__title" id="shT">Udostępnij album</h2><p class="qk-sheet__sub">Obrazek do wrzucenia na Facebooka lub Instagram i gotowy tekst.</p>' +
+      (img ? '<img class="acc-shareimg" src="' + img + '" alt="Album Quolino">' : '') +
+      '<div class="qk-acts">' + (img ? '<a class="qc-btn qc-btn--primary" href="' + img + '" download="quolino-album.png" data-count>Pobierz obrazek</a>' : '') +
+      '<a class="qc-btn" target="_blank" rel="noopener" data-count href="https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) + '">Facebook</a>' +
+      '<a class="qc-btn" target="_blank" rel="noopener" data-count href="https://wa.me/?text=' + encodeURIComponent(text + ' ' + url) + '">WhatsApp</a>' +
+      '<button type="button" class="qc-btn" data-copy>Kopiuj tekst</button></div></div>';
+    document.body.appendChild(w); document.documentElement.classList.add('qk-lock');
+    w.querySelector('.qk-sheet__box').focus();
+    function close() { w.remove(); document.documentElement.classList.remove('qk-lock'); }
+    w.addEventListener('click', function (e) {
+      if (e.target === w || e.target.closest('.qk-x')) close();
+      if (e.target.closest('[data-count]')) countShare();
+      var cp = e.target.closest('[data-copy]');
+      if (cp && navigator.clipboard) navigator.clipboard.writeText(text + ' ' + url).then(function () { cp.textContent = 'Skopiowano'; countShare(); });
+    });
+    document.addEventListener('keydown', function esc1(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc1); } });
+  }
+
+  // ── naklejka: podgląd, pobranie, kolorowanka ─────────
+  function openSticker(slug) {
+    var e = album.filter(function (x) { return x.slug === slug; })[0];
+    if (!e || !window.QReward) return;
+    window.QReward.use(e, LANG);
+    var w = document.createElement('div');
+    w.className = 'qk-sheet';
+    w.innerHTML = '<div class="qk-sheet__box" role="dialog" aria-modal="true" aria-labelledby="stT" tabindex="-1"><button type="button" class="qk-x" aria-label="Zamknij">×</button>' +
+      '<h2 class="qk-sheet__title" id="stT">' + esc(e.city) + '</h2><p class="qk-sheet__sub">' + esc([e.nick, dateLabel(e.date), e.pieces ? e.pieces + ' misji' : ''].filter(Boolean).join(' · ')) + '</p>' +
+      '<div class="qk-puzzle is-done"><img src="' + esc(e.hero) + '-hero-1200.webp" alt="' + esc(e.city) + '" width="1200" height="675"></div>' +
+      '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-x="dl">Pobierz obrazek</button><button type="button" class="qc-btn" data-x="col">Kolorowanka do druku</button>' +
+      '<a class="qc-btn" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">Wycieczka</a></div></div>';
+    document.body.appendChild(w); document.documentElement.classList.add('qk-lock');
+    w.querySelector('.qk-sheet__box').focus();
+    w.addEventListener('click', function (ev) {
+      if (ev.target === w || ev.target.closest('.qk-x')) { w.remove(); document.documentElement.classList.remove('qk-lock'); }
+      if (ev.target.closest('[data-x="dl"]')) window.QReward.picture();
+      if (ev.target.closest('[data-x="col"]')) { w.remove(); window.QReward.coloring(); }
+    });
+  }
+
+  // ── eksport danych ───────────────────────────────────
+  function exportData() {
+    var out = { exported_at: new Date().toISOString(), note: 'Dane z tego urządzenia (konta jeszcze nie działają).', album: local,
+      kid_nicks: lsGet('qc.kid.nicks') || [], shares: lsGet('qc.parent.shares') || 0, newsletter: !!lsGet('qc.parent.news') };
+    var url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })), a = document.createElement('a');
+    a.href = url; a.download = 'quolino-moje-dane.json'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+  }
+
+  document.addEventListener('click', function (e) {
+    var s = e.target.closest('.acc-stk[data-slug]'); if (s) openSticker(s.getAttribute('data-slug'));
+    var a = e.target.closest('[data-act]'); if (!a) return;
+    var act = a.getAttribute('data-act');
+    if (act === 'share-album') shareAlbum();
+    if (act === 'export') exportData();
+  });
+  document.getElementById('accKids').addEventListener('click', function (e) {
+    var d = e.target.closest('[data-del]'); if (!d) return;
+    lsSet('qc.kid.nicks', (lsGet('qc.kid.nicks') || []).filter(function (x) { return x !== d.getAttribute('data-del'); }));
+    renderKids();
+  });
+  var news = document.getElementById('accNews');
+  news.checked = !!lsGet('qc.parent.news');
+  news.addEventListener('change', function () { lsSet('qc.parent.news', news.checked); });
+
+  renderAlbum(); renderChallenges(); renderKids(); renderPlan();
+  loadCatalog().then(renderAlbum);
+})();
+</script>
+</body>
+</html>

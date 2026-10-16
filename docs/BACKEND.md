@@ -98,6 +98,12 @@ Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-polic
 | `quolino_nostats`                 | `1` = statystyki wyłączone (JP, testerzy); `?nostats=1/0` w adresie przełącza |
 | `quolino_migrated`, `quolino_migration_expiry` | jednorazowa migracja z `questini_*` (`migrate-storage.js`) |
 | `qc.pager.<slug>`                 | ostatni przystanek w widoku mobilnym wycieczki (pager ≤767 px, `trip-ui.js`) |
+| `qc.kid.avatar`                   | awatar dziecka na dziś `{date,pose,color,nick}` (`kid-reward.js`) |
+| `qc.kid.nicks`                    | zapisane nicki dzieci, max 8 (bez imion i wieku)            |
+| `qc.album`                        | zdobyte miejsca na tym urządzeniu (zapis po ostatniej misji; czyta `konto.html`) |
+| `qc.parent.shares`                | licznik udostępnień albumu (wyzwania w `konto.html`)        |
+| `qc.parent.news`                  | zgoda na newsletter (`konto.html`)                          |
+| `adm.outbox`                      | panel admina: uwagi do szkiców, których API jeszcze nie przyjęło (`_admin/`, nie strona publiczna) |
 | sessionStorage `quolino_kidmode`  | widok dziecka na czas sesji                                 |
 
 Punkty dziecka: `punkty = round((ukończone_misje / misje_w_planie) * 10)`, max 10.
