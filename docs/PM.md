@@ -17,6 +17,7 @@ Musi być gotowe przed 1 czerwca 2027 (terminy pośrednie — propozycja do akce
 | 31 mar 2027 | Panel rodzica na koncie: album, wyzwania, kody, prywatność | `konto.html`, `docs/KONTO-RODZICA.md` |
 | 31 mar 2027 | Kody na darmowe trasy i rabaty (`QUO-XXXX-XXXX`), wydawanie przez Hermesa | `docs/KONTO-RODZICA.md` §2 |
 | 30 kwi 2027 | Płatności w trybie testowym (Dodo Payments, MoR), webhooki, ceny | `docs/DOSTEP-I-KONTA.md` §6 etap C |
+| 30 kwi 2027 | Mapy: płatny dostawca kafelków zamiast `tile.openstreetmap.org` (Stadia Starter 20 $/mies. albo MapTiler Flex 30 $/mies.), obrazek startowy mapy per miasto, podmiana `TILE_URL` w `trip-ui.js` | — |
 | 15 maj 2027 | Regulamin, polityka prywatności, teksty o braku prawa odstąpienia PL/EN — sprawdzone przez prawnika | `docs/PLATNOSCI-ODSTAPIENIE.md` |
 | 1 cze 2027 | **Start sprzedaży** | — |
 

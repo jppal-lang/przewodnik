@@ -21,25 +21,25 @@
   // ── teksty: Supabase/i18n-ui (przez ui() z city.html) > ten słownik [język] > en > pl ──
   var K = ['tab.route', 'btn.prev_stop', 'btn.next_stop', 'btn.go_next', 'btn.whole_route', 'label.whole_route',
            'btn.open_gmaps', 'btn.start_route', 'btn.resume_stop', 'label.start', 'label.finish', 'label.stop_of',
-           'label.map', 'label.collected', 'btn.route_all'];
+           'label.map', 'label.collected', 'btn.route_all', 'btn.zoom_in', 'btn.zoom_out', 'btn.zoom_fit'];
   var RAW = {
-    pl: 'Trasa|Poprzedni|Następny|Idziemy dalej|Cała trasa|Cała trasa|Otwórz trasę w Mapach Google|Zaczynamy|Wróć do przystanku {n}|Start|Meta|Przystanek {n} z {t}|Mapa trasy|zdobyte|Cała trasa w Google Maps',
-    en: 'Route|Previous|Next|Let\'s go on|Whole route|Whole route|Open the route in Google Maps|Let\'s start|Back to stop {n}|Start|Finish|Stop {n} of {t}|Route map|collected|Whole route in Google Maps',
-    de: 'Route|Zurück|Weiter|Weiter geht\'s|Ganze Route|Ganze Route|Route in Google Maps öffnen|Los geht\'s|Zurück zu Stopp {n}|Start|Ziel|Stopp {n} von {t}|Routenkarte|gesammelt|Ganze Route in Google Maps',
-    it: 'Percorso|Precedente|Successiva|Andiamo avanti|Tutto il percorso|Tutto il percorso|Apri il percorso in Google Maps|Si parte|Torna alla tappa {n}|Partenza|Arrivo|Tappa {n} di {t}|Mappa del percorso|conquistata|Tutto il percorso su Google Maps',
-    cs: 'Trasa|Předchozí|Další|Jdeme dál|Celá trasa|Celá trasa|Otevřít trasu v Mapách Google|Jdeme na to|Zpět na zastávku {n}|Start|Cíl|Zastávka {n} z {t}|Mapa trasy|získáno|Celá trasa v Mapách Google',
-    da: 'Rute|Forrige|Næste|Videre|Hele ruten|Hele ruten|Åbn ruten i Google Maps|Lad os starte|Tilbage til stop {n}|Start|Mål|Stop {n} af {t}|Rutekort|samlet|Hele ruten i Google Maps',
-    es: 'Ruta|Anterior|Siguiente|¡Seguimos!|Toda la ruta|Toda la ruta|Abrir la ruta en Google Maps|¡Empezamos!|Volver a la parada {n}|Salida|Llegada|Parada {n} de {t}|Mapa de la ruta|conseguida|Toda la ruta en Google Maps',
-    fr: 'Parcours|Précédent|Suivant|On continue|Tout le parcours|Tout le parcours|Ouvrir le parcours dans Google Maps|C\'est parti|Revenir à l\'étape {n}|Départ|Arrivée|Étape {n} sur {t}|Carte du parcours|gagnée|Tout le parcours dans Google Maps',
-    hr: 'Ruta|Prethodno|Sljedeće|Idemo dalje|Cijela ruta|Cijela ruta|Otvori rutu u Google kartama|Krećemo|Natrag na stajalište {n}|Start|Cilj|Stajalište {n} od {t}|Karta rute|osvojeno|Cijela ruta u Google kartama',
-    hu: 'Útvonal|Előző|Következő|Menjünk tovább|Teljes útvonal|Teljes útvonal|Útvonal megnyitása a Google Térképben|Indulás|Vissza a(z) {n}. megállóhoz|Start|Cél|{n}. megálló / {t}|Útvonaltérkép|megszerezve|Teljes útvonal a Google Térképen',
-    nl: 'Route|Vorige|Volgende|We gaan verder|Hele route|Hele route|Route openen in Google Maps|We beginnen|Terug naar stop {n}|Start|Finish|Stop {n} van {t}|Routekaart|verzameld|Hele route in Google Maps',
-    no: 'Rute|Forrige|Neste|Videre|Hele ruten|Hele ruten|Åpne ruten i Google Maps|Vi starter|Tilbake til stopp {n}|Start|Mål|Stopp {n} av {t}|Rutekart|samlet|Hele ruten i Google Maps',
-    pt: 'Percurso|Anterior|Seguinte|Vamos em frente|Percurso completo|Percurso completo|Abrir o percurso no Google Maps|Vamos começar|Voltar à paragem {n}|Partida|Chegada|Paragem {n} de {t}|Mapa do percurso|conquistada|Percurso completo no Google Maps',
-    ro: 'Traseu|Înapoi|Următoarea|Mergem mai departe|Tot traseul|Tot traseul|Deschide traseul în Google Maps|Pornim|Înapoi la oprirea {n}|Start|Final|Oprirea {n} din {t}|Harta traseului|câștigată|Tot traseul în Google Maps',
-    sk: 'Trasa|Predchádzajúca|Ďalšia|Ideme ďalej|Celá trasa|Celá trasa|Otvoriť trasu v Mapách Google|Ideme na to|Späť na zastávku {n}|Štart|Cieľ|Zastávka {n} z {t}|Mapa trasy|získané|Celá trasa v Mapách Google',
-    sv: 'Rutt|Föregående|Nästa|Vi går vidare|Hela rutten|Hela rutten|Öppna rutten i Google Maps|Nu kör vi|Tillbaka till stopp {n}|Start|Mål|Stopp {n} av {t}|Ruttkarta|samlad|Hela rutten i Google Maps',
-    uk: 'Маршрут|Попередня|Наступна|Ідемо далі|Увесь маршрут|Увесь маршрут|Відкрити маршрут у Google Картах|Починаємо|Назад до зупинки {n}|Старт|Фініш|Зупинка {n} з {t}|Карта маршруту|здобуто|Увесь маршрут у Google Картах'
+    pl: 'Trasa|Poprzedni|Następny|Idziemy dalej|Cała trasa|Cała trasa|Otwórz trasę w Mapach Google|Zaczynamy|Wróć do przystanku {n}|Start|Meta|Przystanek {n} z {t}|Mapa trasy|zdobyte|Cała trasa w Google Maps|Przybliż|Oddal|Pokaż całą trasę',
+    en: 'Route|Previous|Next|Let\'s go on|Whole route|Whole route|Open the route in Google Maps|Let\'s start|Back to stop {n}|Start|Finish|Stop {n} of {t}|Route map|collected|Whole route in Google Maps|Zoom in|Zoom out|Show whole route',
+    de: 'Route|Zurück|Weiter|Weiter geht\'s|Ganze Route|Ganze Route|Route in Google Maps öffnen|Los geht\'s|Zurück zu Stopp {n}|Start|Ziel|Stopp {n} von {t}|Routenkarte|gesammelt|Ganze Route in Google Maps|Vergrößern|Verkleinern|Ganze Route zeigen',
+    it: 'Percorso|Precedente|Successiva|Andiamo avanti|Tutto il percorso|Tutto il percorso|Apri il percorso in Google Maps|Si parte|Torna alla tappa {n}|Partenza|Arrivo|Tappa {n} di {t}|Mappa del percorso|conquistata|Tutto il percorso su Google Maps|Ingrandisci|Riduci|Mostra tutto il percorso',
+    cs: 'Trasa|Předchozí|Další|Jdeme dál|Celá trasa|Celá trasa|Otevřít trasu v Mapách Google|Jdeme na to|Zpět na zastávku {n}|Start|Cíl|Zastávka {n} z {t}|Mapa trasy|získáno|Celá trasa v Mapách Google|Přiblížit|Oddálit|Zobrazit celou trasu',
+    da: 'Rute|Forrige|Næste|Videre|Hele ruten|Hele ruten|Åbn ruten i Google Maps|Lad os starte|Tilbage til stop {n}|Start|Mål|Stop {n} af {t}|Rutekort|samlet|Hele ruten i Google Maps|Zoom ind|Zoom ud|Vis hele ruten',
+    es: 'Ruta|Anterior|Siguiente|¡Seguimos!|Toda la ruta|Toda la ruta|Abrir la ruta en Google Maps|¡Empezamos!|Volver a la parada {n}|Salida|Llegada|Parada {n} de {t}|Mapa de la ruta|conseguida|Toda la ruta en Google Maps|Acercar|Alejar|Ver toda la ruta',
+    fr: 'Parcours|Précédent|Suivant|On continue|Tout le parcours|Tout le parcours|Ouvrir le parcours dans Google Maps|C\'est parti|Revenir à l\'étape {n}|Départ|Arrivée|Étape {n} sur {t}|Carte du parcours|gagnée|Tout le parcours dans Google Maps|Zoom avant|Zoom arrière|Voir tout le parcours',
+    hr: 'Ruta|Prethodno|Sljedeće|Idemo dalje|Cijela ruta|Cijela ruta|Otvori rutu u Google kartama|Krećemo|Natrag na stajalište {n}|Start|Cilj|Stajalište {n} od {t}|Karta rute|osvojeno|Cijela ruta u Google kartama|Približi|Udalji|Prikaži cijelu rutu',
+    hu: 'Útvonal|Előző|Következő|Menjünk tovább|Teljes útvonal|Teljes útvonal|Útvonal megnyitása a Google Térképben|Indulás|Vissza a(z) {n}. megállóhoz|Start|Cél|{n}. megálló / {t}|Útvonaltérkép|megszerezve|Teljes útvonal a Google Térképen|Nagyítás|Kicsinyítés|Teljes útvonal',
+    nl: 'Route|Vorige|Volgende|We gaan verder|Hele route|Hele route|Route openen in Google Maps|We beginnen|Terug naar stop {n}|Start|Finish|Stop {n} van {t}|Routekaart|verzameld|Hele route in Google Maps|Inzoomen|Uitzoomen|Hele route tonen',
+    no: 'Rute|Forrige|Neste|Videre|Hele ruten|Hele ruten|Åpne ruten i Google Maps|Vi starter|Tilbake til stopp {n}|Start|Mål|Stopp {n} av {t}|Rutekart|samlet|Hele ruten i Google Maps|Zoom inn|Zoom ut|Vis hele ruten',
+    pt: 'Percurso|Anterior|Seguinte|Vamos em frente|Percurso completo|Percurso completo|Abrir o percurso no Google Maps|Vamos começar|Voltar à paragem {n}|Partida|Chegada|Paragem {n} de {t}|Mapa do percurso|conquistada|Percurso completo no Google Maps|Aproximar|Afastar|Ver todo o percurso',
+    ro: 'Traseu|Înapoi|Următoarea|Mergem mai departe|Tot traseul|Tot traseul|Deschide traseul în Google Maps|Pornim|Înapoi la oprirea {n}|Start|Final|Oprirea {n} din {t}|Harta traseului|câștigată|Tot traseul în Google Maps|Mărește|Micșorează|Arată tot traseul',
+    sk: 'Trasa|Predchádzajúca|Ďalšia|Ideme ďalej|Celá trasa|Celá trasa|Otvoriť trasu v Mapách Google|Ideme na to|Späť na zastávku {n}|Štart|Cieľ|Zastávka {n} z {t}|Mapa trasy|získané|Celá trasa v Mapách Google|Priblížiť|Oddialiť|Zobraziť celú trasu',
+    sv: 'Rutt|Föregående|Nästa|Vi går vidare|Hela rutten|Hela rutten|Öppna rutten i Google Maps|Nu kör vi|Tillbaka till stopp {n}|Start|Mål|Stopp {n} av {t}|Ruttkarta|samlad|Hela rutten i Google Maps|Zooma in|Zooma ut|Visa hela rutten',
+    uk: 'Маршрут|Попередня|Наступна|Ідемо далі|Увесь маршрут|Увесь маршрут|Відкрити маршрут у Google Картах|Починаємо|Назад до зупинки {n}|Старт|Фініш|Зупинка {n} з {t}|Карта маршруту|здобуто|Увесь маршрут у Google Картах|Наблизити|Віддалити|Показати весь маршрут'
   };
   var DICT = {};
   Object.keys(RAW).forEach(function (l) {
@@ -308,7 +308,7 @@
     if (gm) html += '<a class="qc-btn qc-btn--sm qc-ov__gmaps" href="' + esc(gm) + '" target="_blank" rel="noopener">' + PIN + ' ' + esc(t('btn.open_gmaps', 'Otwórz trasę w Mapach Google')) + '</a>';
     html += '</div>';
     if (withGeo.length >= 2) {
-      html += '<div class="qc-map" role="img" aria-label="' + esc(t('label.map', 'Mapa trasy')) + '"><div class="qc-map__tiles"></div>' +
+      html += '<div class="qc-map" role="group" aria-label="' + esc(t('label.map', 'Mapa trasy')) + '"><div class="qc-map__tiles"></div>' +
               '<svg class="qc-map__line" aria-hidden="true"></svg><div class="qc-map__pins"></div>' +
               '<a class="qc-map__attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a></div>';
     }
@@ -383,7 +383,11 @@
     $$('[data-go]').forEach(function (x) { x.classList.toggle('is-next', x.getAttribute('data-go') === next); });
   }
 
-  // ── mapa: kafelki OSM ułożone ręcznie (bez biblioteki), punkty i linia w SVG ──
+  // ── mapa: kafelki ułożone ręcznie (bez biblioteki), punkty i linia w SVG; przybliżanie i przesuwanie ──
+  // Widok: z (może być ułamkowe w trakcie gestu), cx/cy = środek w pikselach świata przy z = 0 (0..256).
+  // Na przeglądzie mapa nie łapie przewijania strony; po przybliżeniu staje się „aktywna” (jeden palec przesuwa).
+  var TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';   // przed 1.06.2027: płatny dostawca (docs/PM.md §0)
+  var MAXZ = 18, M = { z: 0, cx: 0, cy: 0, fit: null, W: 0, H: 0, tiles: {}, pts: [] };
   function proj(lat, lon, z) {
     var s = 256 * Math.pow(2, z), r = lat * Math.PI / 180;
     return [(lon + 180) / 360 * s, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * s];
@@ -392,55 +396,208 @@
     var map = $('.qc-map');
     if (!map) return;
     var W = map.clientWidth;
-    if (!W || W === S.mapW) return;
+    if (!W) return;
+    if (W === S.mapW && M.fit) { renderMap(); return; }
     S.mapW = W;
     var H = Math.round(isMobile() ? Math.min(Math.max(W * 1.05, 320), 520) : Math.min(Math.max(W * 0.6, 300), 440));
     map.style.height = H + 'px';
-    var pts = points().filter(function (s) { return s.lat != null && s.lon != null && isFinite(s.lat) && isFinite(s.lon); });
-    var padPx = 30, z, P, minx, maxx, miny, maxy;
-    for (z = 18; z >= 3; z--) {
-      P = pts.map(function (s) { return proj(+s.lat, +s.lon, z); });
-      minx = Math.min.apply(null, P.map(function (p) { return p[0]; }));
-      maxx = Math.max.apply(null, P.map(function (p) { return p[0]; }));
-      miny = Math.min.apply(null, P.map(function (p) { return p[1]; }));
-      maxy = Math.max.apply(null, P.map(function (p) { return p[1]; }));
-      if (maxx - minx <= W - 2 * padPx && maxy - miny <= H - 2 * padPx) break;
-    }
-    if (z > 17) { z = 17; P = pts.map(function (s) { return proj(+s.lat, +s.lon, z); });
-      minx = Math.min.apply(null, P.map(function (p) { return p[0]; })); maxx = Math.max.apply(null, P.map(function (p) { return p[0]; }));
-      miny = Math.min.apply(null, P.map(function (p) { return p[1]; })); maxy = Math.max.apply(null, P.map(function (p) { return p[1]; })); }
-    var ox = (minx + maxx) / 2 - W / 2, oy = (miny + maxy) / 2 - H / 2, n = Math.pow(2, z);
-    var tiles = '';
-    for (var tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++) {
-      for (var ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
+    M.W = W; M.H = H;
+    M.pts = points().filter(function (s) { return s.lat != null && s.lon != null && isFinite(s.lat) && isFinite(s.lon); });
+    M.base = M.pts.map(function (s) { return proj(+s.lat, +s.lon, 0); });
+    var minx = Math.min.apply(null, M.base.map(function (p) { return p[0]; })), maxx = Math.max.apply(null, M.base.map(function (p) { return p[0]; }));
+    var miny = Math.min.apply(null, M.base.map(function (p) { return p[1]; })), maxy = Math.max.apply(null, M.base.map(function (p) { return p[1]; }));
+    var z;
+    for (z = MAXZ; z > 3; z--) { var k = Math.pow(2, z); if ((maxx - minx) * k <= W - 60 && (maxy - miny) * k <= H - 60) break; }
+    z = Math.min(z, 17);
+    M.bbox = [minx, miny, maxx, maxy];
+    M.fit = { z: z, cx: (minx + maxx) / 2, cy: (miny + maxy) / 2 };
+    M.tiles = {}; $('.qc-map__tiles', map).innerHTML = '';
+    if (!map.dataset.bound) bindMap(map);
+    setView(M.fit.z, M.fit.cx, M.fit.cy);
+  }
+  function clampView(z, cx, cy) {
+    z = Math.max(M.fit.z - 1, Math.min(MAXZ, z));
+    var b = M.bbox, k = Math.pow(2, z), hw = M.W / 2 / k, hh = M.H / 2 / k;
+    // środek nie może odjechać dalej niż pół ekranu poza trasę
+    cx = Math.max(b[0] - hw, Math.min(b[2] + hw, cx));
+    cy = Math.max(b[1] - hh, Math.min(b[3] + hh, cy));
+    return [z, cx, cy];
+  }
+  function setView(z, cx, cy) {
+    var v = clampView(z, cx, cy);
+    M.z = v[0]; M.cx = v[1]; M.cy = v[2];
+    renderMap();
+  }
+  function renderMap() {
+    var map = $('.qc-map');
+    if (!map || !M.fit) return;
+    var W = M.W, H = M.H, tz = Math.max(0, Math.min(MAXZ, Math.round(M.z))), sc = Math.pow(2, M.z - tz), size = 256 * sc;
+    var n = Math.pow(2, tz), CX = M.cx * n * sc, CY = M.cy * n * sc;
+    var ox = CX - W / 2, oy = CY - H / 2, want = {}, layer = $('.qc-map__tiles', map);
+    for (var tx = Math.floor(ox / size); tx <= Math.floor((ox + W) / size); tx++) {
+      for (var ty = Math.floor(oy / size); ty <= Math.floor((oy + H) / size); ty++) {
         if (ty < 0 || ty >= n) continue;
-        var wx = ((tx % n) + n) % n;
-        tiles += '<img src="https://tile.openstreetmap.org/' + z + '/' + wx + '/' + ty + '.png" alt="" width="256" height="256" decoding="async" ' +
-                 'style="left:' + Math.round(tx * 256 - ox) + 'px;top:' + Math.round(ty * 256 - oy) + 'px" onerror="this.style.visibility=\'hidden\'">';
+        var wx = ((tx % n) + n) % n, key = tz + '/' + tx + '/' + ty, img = M.tiles[key];
+        if (!img) {
+          img = document.createElement('img');
+          img.alt = ''; img.decoding = 'async'; img.width = 256; img.height = 256;
+          img.onerror = function () { this.style.visibility = 'hidden'; };
+          img.src = TILE_URL.replace('{z}', tz).replace('{x}', wx).replace('{y}', ty);
+          layer.appendChild(img); M.tiles[key] = img;
+        }
+        img.style.left = Math.round(tx * size - ox) + 'px'; img.style.top = Math.round(ty * size - oy) + 'px';
+        img.style.width = img.style.height = Math.ceil(size) + 'px';
+        want[key] = 1;
       }
     }
-    $('.qc-map__tiles', map).innerHTML = tiles;
-    var xy = P.map(function (p) { return [Math.round(p[0] - ox), Math.round(p[1] - oy)]; });
+    Object.keys(M.tiles).forEach(function (k) { if (!want[k]) { M.tiles[k].remove(); delete M.tiles[k]; } });
+    var k = Math.pow(2, M.z);
+    var xy = M.base.map(function (p) { return [Math.round(p[0] * k - M.cx * k + W / 2), Math.round(p[1] * k - M.cy * k + H / 2)]; });
     // punkty bliżej niż szerokość znacznika rozsuwamy po spirali (linia trasy zostaje w prawdziwych miejscach)
     var minD = isMobile() ? 30 : 34, placed = [];
     var at = xy.map(function (p) {
-      var q = p.slice(), k = 0;
+      var q = p.slice(), i = 0;
       var near = function (a) { return placed.some(function (b) { return Math.abs(a[0] - b[0]) < minD && Math.abs(a[1] - b[1]) < minD; }); };
-      while (near(q) && k < 24) { k++; var ang = k * 2.4, r = minD * (0.8 + k * 0.12); q = [Math.round(p[0] + r * Math.cos(ang)), Math.round(p[1] + r * Math.sin(ang))]; }
-      q[0] = Math.max(18, Math.min(W - 18, q[0])); q[1] = Math.max(18, Math.min(H - 18, q[1]));
+      while (near(q) && i < 24) { i++; var ang = i * 2.4, r = minD * (0.8 + i * 0.12); q = [Math.round(p[0] + r * Math.cos(ang)), Math.round(p[1] + r * Math.sin(ang))]; }
       placed.push(q); return q;
     });
     var svg = $('.qc-map__line', map);
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svg.innerHTML = '<polyline points="' + xy.map(function (p) { return p.join(','); }).join(' ') + '"/>';
     var pins = '';
-    pts.forEach(function (s, i) {
+    M.pts.forEach(function (s, i) {
+      var p = at[i];
+      if (p[0] < -30 || p[1] < -30 || p[0] > W + 30 || p[1] > H + 30) return;
       var kind = (i === 0 && s.cat === 'parking') ? ' is-start' : (s.dinner ? ' is-finish' : '');
-      pins += '<a class="qc-pin' + kind + '" href="#p' + esc(s.num) + '" data-go="' + esc(s.num) + '" style="left:' + at[i][0] + 'px;top:' + at[i][1] + 'px" ' +
+      pins += '<a class="qc-pin' + kind + '" href="#p' + esc(s.num) + '" data-go="' + esc(s.num) + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px" ' +
               'aria-label="' + esc(pad(s.num) + ' ' + (s.name || '')) + '"><span>' + (kind === ' is-start' ? 'P' : pad(s.num)) + '</span></a>';
     });
     $('.qc-map__pins', map).innerHTML = pins;
+    var zoomed = M.z > M.fit.z + 0.01 || Math.abs(M.cx - M.fit.cx) * k > 2 || Math.abs(M.cy - M.fit.cy) * k > 2;
+    map.classList.toggle('is-active', M.z > M.fit.z + 0.01);
+    var fitBtn = $('[data-map="fit"]', map), inBtn = $('[data-map="in"]', map), outBtn = $('[data-map="out"]', map);
+    if (fitBtn) fitBtn.hidden = !zoomed;
+    if (inBtn) inBtn.disabled = M.z >= MAXZ - 0.01;
+    if (outBtn) outBtn.disabled = M.z <= M.fit.z - 0.99;
     refreshCollected();
+  }
+  // przybliżenie wokół punktu ekranu (px, py)
+  function zoomAt(nz, px, py) {
+    var k0 = Math.pow(2, M.z), wx = M.cx + (px - M.W / 2) / k0, wy = M.cy + (py - M.H / 2) / k0;
+    nz = Math.max(M.fit.z - 1, Math.min(MAXZ, nz));
+    var k1 = Math.pow(2, nz);
+    setView(nz, wx - (px - M.W / 2) / k1, wy - (py - M.H / 2) / k1);
+  }
+  function animateZoom(target, px, py) {
+    var from = M.z, t0 = null, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { zoomAt(target, px, py); return; }
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / 220), e = 1 - Math.pow(1 - p, 3);
+      zoomAt(from + (target - from) * e, px, py);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  function bindMap(map) {
+    map.dataset.bound = '1';
+    var ctl = document.createElement('div');
+    ctl.className = 'qc-map__ctl';
+    ctl.innerHTML = '<button type="button" data-map="in" aria-label="' + esc(t('btn.zoom_in', 'Przybliż')) + '" title="' + esc(t('btn.zoom_in', 'Przybliż')) + '">+</button>' +
+      '<button type="button" data-map="out" aria-label="' + esc(t('btn.zoom_out', 'Oddal')) + '" title="' + esc(t('btn.zoom_out', 'Oddal')) + '">−</button>' +
+      '<button type="button" data-map="fit" hidden aria-label="' + esc(t('btn.zoom_fit', 'Pokaż całą trasę')) + '" title="' + esc(t('btn.zoom_fit', 'Pokaż całą trasę')) + '">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>';
+    map.appendChild(ctl);
+    ctl.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-map]'); if (!b || b.disabled) return;
+      var a = b.getAttribute('data-map');
+      if (a === 'fit') { animateFit(); return; }
+      animateZoom(Math.round(M.z) + (a === 'in' ? 1 : -1), M.W / 2, M.H / 2);
+    });
+    map.tabIndex = 0;
+    map.addEventListener('keydown', function (e) {
+      if (e.target !== map) return;
+      var step = 80 / Math.pow(2, M.z), h = true;
+      if (e.key === '+' || e.key === '=') animateZoom(Math.round(M.z) + 1, M.W / 2, M.H / 2);
+      else if (e.key === '-' || e.key === '_') animateZoom(Math.round(M.z) - 1, M.W / 2, M.H / 2);
+      else if (e.key === 'ArrowLeft') setView(M.z, M.cx - step, M.cy);
+      else if (e.key === 'ArrowRight') setView(M.z, M.cx + step, M.cy);
+      else if (e.key === 'ArrowUp') setView(M.z, M.cx, M.cy - step);
+      else if (e.key === 'ArrowDown') setView(M.z, M.cx, M.cy + step);
+      else if (e.key === '0' || e.key === 'Home') animateFit();
+      else h = false;
+      if (h) e.preventDefault();
+    });
+    // wskaźniki: przeciąganie (gdy mapa aktywna albo mysz), szczypanie dwoma palcami
+    var ptrs = {}, start = null, moved = 0;
+    function rel(e) { var r = map.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    function snapshot() {
+      var ids = Object.keys(ptrs), a = ptrs[ids[0]], b = ptrs[ids[1]];
+      return { z: M.z, cx: M.cx, cy: M.cy, n: ids.length,
+        mx: b ? (a[0] + b[0]) / 2 : a[0], my: b ? (a[1] + b[1]) / 2 : a[1], d: b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 0 };
+    }
+    map.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.qc-map__ctl, .qc-map__attr')) return;
+      var touchPassive = e.pointerType === 'touch' && !map.classList.contains('is-active') && Object.keys(ptrs).length === 0;
+      ptrs[e.pointerId] = rel(e);
+      if (touchPassive) { start = null; return; }                // jeden palec na przeglądzie = przewijanie strony
+      try { map.setPointerCapture(e.pointerId); } catch (x) { /* stary Safari */ }
+      start = snapshot(); moved = 0;
+    });
+    map.addEventListener('pointermove', function (e) {
+      if (!ptrs[e.pointerId]) return;
+      ptrs[e.pointerId] = rel(e);
+      var ids = Object.keys(ptrs);
+      if (!start || start.n !== ids.length) { if (ids.length >= 1 && (map.classList.contains('is-active') || ids.length === 2 || e.pointerType !== 'touch')) { start = snapshot(); } return; }
+      var now = snapshot(), k0 = Math.pow(2, start.z);
+      moved = Math.max(moved, Math.hypot(now.mx - start.mx, now.my - start.my), Math.abs(now.d - start.d));
+      if (moved < 4) return;
+      var nz = start.z;
+      if (now.n === 2 && start.d > 10) nz = start.z + Math.log(now.d / start.d) / Math.LN2;
+      nz = Math.max(M.fit.z - 1, Math.min(MAXZ, nz));
+      // punkt świata pod środkiem palców na starcie ma zostać pod środkiem palców teraz
+      var wx = start.cx + (start.mx - M.W / 2) / k0, wy = start.cy + (start.my - M.H / 2) / k0, k1 = Math.pow(2, nz);
+      setView(nz, wx - (now.mx - M.W / 2) / k1, wy - (now.my - M.H / 2) / k1);
+      e.preventDefault();
+    });
+    function end(e) {
+      if (!ptrs[e.pointerId]) return;
+      delete ptrs[e.pointerId];
+      var left = Object.keys(ptrs).length;
+      if (left === 0) {
+        if (Math.abs(M.z - Math.round(M.z)) > 0.02) animateZoom(Math.round(M.z), M.W / 2, M.H / 2);
+        if (moved >= 4) {  // po przeciągnięciu nie klikamy pinezki
+          var stop = function (ev) { ev.preventDefault(); ev.stopPropagation(); };
+          map.addEventListener('click', stop, true);
+          setTimeout(function () { map.removeEventListener('click', stop, true); moved = 0; }, 300);
+        }
+        start = null;
+      } else start = snapshot();
+    }
+    map.addEventListener('pointerup', end);
+    map.addEventListener('pointercancel', end);
+    map.addEventListener('dblclick', function (e) {
+      if (e.target.closest('.qc-map__ctl, .qc-pin')) return;
+      var p = rel(e); animateZoom(Math.round(M.z) + 1, p[0], p[1]); e.preventDefault();
+    });
+    // kółko myszy: tylko z Ctrl/⌘ albo gdy mapa jest już przybliżona (nie porywamy przewijania strony)
+    map.addEventListener('wheel', function (e) {
+      if (!(e.ctrlKey || e.metaKey || map.classList.contains('is-active'))) return;
+      e.preventDefault();
+      var p = rel(e); zoomAt(M.z - e.deltaY * 0.004, p[0], p[1]);
+      clearTimeout(map._wt); map._wt = setTimeout(function () { animateZoom(Math.round(M.z), p[0], p[1]); }, 180);
+    }, { passive: false });
+  }
+  function animateFit() {
+    var f = M.fit, z0 = M.z, x0 = M.cx, y0 = M.cy, t0 = null;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { setView(f.z, f.cx, f.cy); return; }
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / 260), e = 1 - Math.pow(1 - p, 3);
+      setView(z0 + (f.z - z0) * e, x0 + (f.cx - x0) * e, y0 + (f.cy - y0) * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
   }
 
   // ══════════ INIT (po każdym render()) ══════════
