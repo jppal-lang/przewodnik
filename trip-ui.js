@@ -284,9 +284,12 @@
   function gmapsUrl() {
     var c = S.opts.city || {};
     if (c.route_url) return c.route_url;
+    // współrzędne > zapytanie z bazy (maps_query) > nazwa przystanku + miasto (szkice często nie mają jeszcze ani jednego, ani drugiego)
+    var town = S.opts.cityName || '';
     var pts = points().map(function (s) {
-      if (s.lat != null && s.lon != null) return s.lat + ',' + s.lon;
-      return s.query || '';
+      if (s.lat != null && s.lon != null && isFinite(s.lat) && isFinite(s.lon)) return s.lat + ',' + s.lon;
+      if (s.query) return s.query;
+      return s.name ? s.name + (town ? ', ' + town : '') : '';
     }).filter(Boolean);
     if (pts.length < 2) return pts.length ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(pts[0]) : '';
     var origin = pts[0], dest = pts[pts.length - 1], way = pts.slice(1, -1).slice(0, 9);
@@ -338,6 +341,15 @@
     });
     refreshResume();
     refreshCollected();
+    // przycisk w nagłówku miasta: gdy strona nie ma ani route_url, ani maps_query startu (np. podgląd szkicu), dajemy „Cała trasa”
+    var acts = $('.qc-intro__actions');
+    if (gm && acts && !$('a', acts)) {
+      var a = document.createElement('a');
+      a.className = 'qc-btn qc-btn--primary';
+      a.href = gm; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = t('btn.open_gmaps', 'Otwórz trasę w Mapach Google');
+      acts.appendChild(a);
+    }
   }
 
   function refreshResume() {
