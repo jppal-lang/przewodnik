@@ -563,43 +563,104 @@
     var sc = 256 * Math.pow(2, z), r = lat * Math.PI / 180;
     return [(lon + 180) / 360 * sc, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * sc];
   }
+  var AM = null;   // stan mapy szkicu: punkty, zoom, środek (piksele świata przy z)
   function drawMap(stops, trs) {
     var box = document.getElementById('admMap');
     if (!box) return;
     var pts = [], miss = [];
     stops.forEach(function (s) {
       var la = parseFloat(s.lat), lo = parseFloat(s.lon), nm = trOf(trs, 'pl', 'stop_id', s.id).name || '';
-      if (isFinite(la) && isFinite(lo)) pts.push({ n: s.stop_number, la: la, lo: lo, nm: nm, cat: s.category });
+      if (isFinite(la) && isFinite(lo)) pts.push({ n: s.stop_number, la: la, lo: lo, nm: nm });
       else miss.push(num(s.stop_number) + (nm ? ' ' + nm : ''));
     });
     var note = miss.length ? '<p class="adm-warn adm-warn--soft">Bez współrzędnych (brak pinezki): ' + esc(miss.join(', ')) + '</p>' : '';
-    if (!pts.length) { box.innerHTML = '<p class="adm-empty">Żaden przystanek nie ma współrzędnych — mapa pojawi się po ich dodaniu.</p>' + note; return; }
-    var W = Math.max(280, box.clientWidth || 640), H = Math.round(Math.min(420, Math.max(260, W * 0.55))), pad = 40, z = 17;
+    if (!pts.length) { AM = null; box.innerHTML = '<p class="adm-empty">Żaden przystanek nie ma współrzędnych — mapa pojawi się po ich dodaniu.</p>' + note; return; }
+    var W = Math.max(280, box.clientWidth || 640), H = Math.round(Math.min(460, Math.max(280, W * 0.6)));
+    box.innerHTML = '<div class="qc-map adm-map" style="height:' + H + 'px" tabindex="0" aria-label="Mapa trasy — plus i minus przybliżają, strzałki przesuwają">' +
+      '<div class="qc-map__tiles"></div><svg class="qc-map__line" aria-hidden="true"><polyline points=""/></svg><div class="adm-map__pins"></div>' +
+      '<div class="qc-map__ctl"><button type="button" data-z="in" aria-label="Przybliż">+</button><button type="button" data-z="out" aria-label="Oddal">−</button>' +
+      '<button type="button" data-z="fit" aria-label="Cała trasa" title="Cała trasa">⤢</button></div>' +
+      '<a class="qc-map__attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a></div>' +
+      '<p class="adm-send__hint">Przybliżanie: + / −, podwójne kliknięcie albo Ctrl + kółko myszy; przesuwanie: przeciągnij mapę. Kliknij pinezkę, żeby otworzyć miejsce w OpenStreetMap. ' +
+      'Zielona = start, złota = meta, linia = kolejność przystanków (nie droga piesza).</p>' + note;
+    AM = { el: box.querySelector('.adm-map'), pts: pts, W: W, H: H, z: 17, cx: 0, cy: 0 };
+    fitMap(); paintMap(); wireMap(AM.el);
+  }
+  function fitMap() {
+    var pad = 44, z = 18, P;
     for (; z > 3; z--) {
-      var a = pts.map(function (p) { return proj(p.la, p.lo, z); });
-      var xs = a.map(function (q) { return q[0]; }), ys = a.map(function (q) { return q[1]; });
-      if (Math.max.apply(0, xs) - Math.min.apply(0, xs) <= W - 2 * pad && Math.max.apply(0, ys) - Math.min.apply(0, ys) <= H - 2 * pad) break;
+      P = AM.pts.map(function (p) { return proj(p.la, p.lo, z); });
+      var xs = P.map(function (q) { return q[0]; }), ys = P.map(function (q) { return q[1]; });
+      if (Math.max.apply(0, xs) - Math.min.apply(0, xs) <= AM.W - 2 * pad && Math.max.apply(0, ys) - Math.min.apply(0, ys) <= AM.H - 2 * pad) break;
     }
-    var P = pts.map(function (p) { return proj(p.la, p.lo, z); });
+    P = AM.pts.map(function (p) { return proj(p.la, p.lo, z); });
     var X = P.map(function (q) { return q[0]; }), Y = P.map(function (q) { return q[1]; });
-    var ox = (Math.min.apply(0, X) + Math.max.apply(0, X)) / 2 - W / 2, oy = (Math.min.apply(0, Y) + Math.max.apply(0, Y)) / 2 - H / 2;
-    var tiles = '', n = Math.pow(2, z);
-    for (var tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++)
-      for (var ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
+    AM.z = z; AM.cx = (Math.min.apply(0, X) + Math.max.apply(0, X)) / 2; AM.cy = (Math.min.apply(0, Y) + Math.max.apply(0, Y)) / 2;
+  }
+  function zoomMap(dz, fx, fy) {   // fx, fy: punkt na mapie, który zostaje w miejscu (domyślnie środek)
+    var nz = Math.max(3, Math.min(19, AM.z + dz));
+    if (nz === AM.z) return;
+    var k = Math.pow(2, nz - AM.z);
+    fx = fx == null ? AM.W / 2 : fx; fy = fy == null ? AM.H / 2 : fy;
+    var wx = AM.cx - AM.W / 2 + fx, wy = AM.cy - AM.H / 2 + fy;
+    AM.cx = wx * k - fx + AM.W / 2; AM.cy = wy * k - fy + AM.H / 2; AM.z = nz;
+    paintMap();
+  }
+  function paintMap() {
+    var z = AM.z, n = Math.pow(2, z), ox = AM.cx - AM.W / 2, oy = AM.cy - AM.H / 2, tiles = '';
+    for (var tx = Math.floor(ox / 256); tx <= Math.floor((ox + AM.W) / 256); tx++)
+      for (var ty = Math.floor(oy / 256); ty <= Math.floor((oy + AM.H) / 256); ty++) {
         if (ty < 0 || ty >= n) continue;
-        tiles += '<img alt="" loading="lazy" style="left:' + Math.round(tx * 256 - ox) + 'px;top:' + Math.round(ty * 256 - oy) + 'px" src="' +
+        tiles += '<img alt="" draggable="false" style="left:' + Math.round(tx * 256 - ox) + 'px;top:' + Math.round(ty * 256 - oy) + 'px" src="' +
           TILE.replace('{z}', z).replace('{x}', ((tx % n) + n) % n).replace('{y}', ty) + '">';
       }
-    var line = P.map(function (q) { return Math.round(q[0] - ox) + ',' + Math.round(q[1] - oy); }).join(' ');
-    var pins = pts.map(function (p, i) {
-      var cls = i === 0 ? ' is-start' : (i === pts.length - 1 ? ' is-finish' : '');
-      return '<a class="qc-pin' + cls + '" style="left:' + Math.round(P[i][0] - ox) + 'px;top:' + Math.round(P[i][1] - oy) + 'px" target="_blank" rel="noopener" title="' +
+    var P = AM.pts.map(function (p) { var q = proj(p.la, p.lo, z); return [q[0] - ox, q[1] - oy]; });
+    AM.el.querySelector('.qc-map__tiles').innerHTML = tiles;
+    AM.el.querySelector('polyline').setAttribute('points', P.map(function (q) { return Math.round(q[0]) + ',' + Math.round(q[1]); }).join(' '));
+    AM.el.querySelector('.adm-map__pins').innerHTML = AM.pts.map(function (p, i) {
+      var cls = i === 0 ? ' is-start' : (i === AM.pts.length - 1 ? ' is-finish' : '');
+      return '<a class="qc-pin' + cls + '" draggable="false" style="left:' + Math.round(P[i][0]) + 'px;top:' + Math.round(P[i][1]) + 'px" target="_blank" rel="noopener" title="' +
         esc(num(p.n) + ' ' + p.nm + ' (' + p.la.toFixed(5) + ', ' + p.lo.toFixed(5) + ')') + '" href="https://www.openstreetmap.org/?mlat=' + p.la + '&mlon=' + p.lo + '#map=18/' + p.la + '/' + p.lo + '"><span>' + esc(num(p.n)) + '</span></a>';
     }).join('');
-    box.innerHTML = '<div class="qc-map adm-map" style="height:' + H + 'px"><div class="qc-map__tiles">' + tiles + '</div>' +
-      '<svg class="qc-map__line" aria-hidden="true"><polyline points="' + line + '"/></svg>' + pins +
-      '<a class="qc-map__attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a></div>' +
-      '<p class="adm-send__hint">Kliknij pinezkę, żeby otworzyć dokładne miejsce w OpenStreetMap. Zielona = start, złota = meta, linia = kolejność przystanków (nie droga piesza).</p>' + note;
+    AM.el.querySelector('[data-z="in"]').disabled = z >= 19;
+    AM.el.querySelector('[data-z="out"]').disabled = z <= 3;
+  }
+  function wireMap(el) {
+    var drag = null, moved = false;
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-z]');
+      if (b) { var a = b.getAttribute('data-z'); if (a === 'fit') { fitMap(); paintMap(); } else zoomMap(a === 'in' ? 1 : -1); return; }
+      if (moved && e.target.closest('.qc-pin')) { e.preventDefault(); }
+    });
+    el.addEventListener('dblclick', function (e) {
+      if (e.target.closest('.qc-map__ctl,.qc-pin')) return;
+      var r = el.getBoundingClientRect(); zoomMap(1, e.clientX - r.left, e.clientY - r.top);
+    });
+    el.addEventListener('wheel', function (e) {
+      if (!e.ctrlKey && !e.metaKey) return;   // zwykłe kółko przewija stronę szkicu
+      e.preventDefault();
+      var r = el.getBoundingClientRect(); zoomMap(e.deltaY < 0 ? 1 : -1, e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    el.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.qc-map__ctl') || e.button !== 0) return;
+      drag = { x: e.clientX, y: e.clientY, cx: AM.cx, cy: AM.cy }; moved = false;
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!drag || !AM || AM.el !== el) return;
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+      moved = true; el.classList.add('is-drag');
+      AM.cx = drag.cx - dx; AM.cy = drag.cy - dy; paintMap();
+    });
+    window.addEventListener('pointerup', function () { drag = null; el.classList.remove('is-drag'); setTimeout(function () { moved = false; }, 0); });
+    el.addEventListener('keydown', function (e) {
+      var k = e.key, st = 80;
+      if (k === '+' || k === '=') zoomMap(1); else if (k === '-') zoomMap(-1);
+      else if (k === 'ArrowLeft') { AM.cx -= st; paintMap(); } else if (k === 'ArrowRight') { AM.cx += st; paintMap(); }
+      else if (k === 'ArrowUp') { AM.cy -= st; paintMap(); } else if (k === 'ArrowDown') { AM.cy += st; paintMap(); }
+      else return;
+      e.preventDefault();
+    });
   }
 
   function stat(label, now, before) {

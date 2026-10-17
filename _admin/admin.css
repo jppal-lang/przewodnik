@@ -207,3 +207,7 @@
 .adm-rule__acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .adm-rule-add label{display:block;margin:10px 0 4px;font-weight:700}
 .adm-map{margin-top:4px}.adm-map .qc-map__tiles img{position:absolute;width:256px;height:256px}
+.adm-map{cursor:grab;touch-action:pan-y;user-select:none}
+.adm-map.is-drag{cursor:grabbing}
+.adm-map:focus-visible{outline:3px solid var(--azzurro);outline-offset:2px}
+.adm-map__pins{position:absolute;inset:0;z-index:1}
