@@ -1,12 +1,16 @@
 # LOGOWANIE.md — logowanie przez Google, Apple i e-mail (dwuetapowo)
 
+> **Aktualizacja JP 2026-10-17 (później tego dnia): na teraz tylko Google.** Apple i e-mail z kodem zostają w planie
+> jako kolejne kroki (bez kosztu Apple Developer i bez dostawcy e-maili na start). Serwer logowania od razu tak,
+> żeby dołożenie Apple i e-maila było tylko konfiguracją, bez migracji kont.
+
 Decyzja JP 2026-10-17: logowanie **Google, Apple i e-mail** na stronie od razu; e-mail **dwuetapowo**. Zmienia to `DOSTEP-I-KONTA.md` §4,
 gdzie Apple było odłożone do aplikacji, a na stronie miało być e-mail i hasło. Haseł nie przechowujemy.
 
 ## 1. Jak to działa
 
 ```
-zaloguj.html: [Zaloguj przez Google] [Zaloguj przez Apple] [Zaloguj e-mailem]
+zaloguj.html: [Zaloguj przez Google]          (później: [Apple] [E-mail + kod])
    → auth.quolino.com (Supabase Auth / GoTrue na naszym VPS) → Google albo Apple → powrót na /konto.html
    → przeglądarka dostaje sesję (JWT, 1 h + odświeżanie) → PostgREST rozpoznaje konto (auth.uid()) → RLS na tabelach konta
 ```
@@ -53,9 +57,9 @@ Bez ręcznej edycji plików.
 ## 4. Kolejność
 
 1. Hermes: kontener GoTrue (`auth.quolino.com`), SQL (schemat `auth`, role, RLS dla tabel konta), skrypt `auth-setup.sh`.
-2. JP: Google (§2) i dostawca e-maili (§5) → `auth-setup.sh` → test logowania Google i e-mailem.
-3. Claude: `zaloguj.html` (Google, Apple, e-mail + kod), sesja w `konto.html`, wylogowanie, usunięcie konta, klucz `qc.session` w polityce.
-4. JP: Apple (§2) → `auth-setup.sh` (część Apple) → test logowania Apple.
+2. JP: Google (§2) → `auth-setup.sh` → test logowania Google.
+3. Claude: `zaloguj.html` (Google), sesja w `konto.html`, wylogowanie, usunięcie konta, klucz `qc.session` w polityce.
+4. Później (decyzja JP): Apple (§2) i e-mail z kodem (dostawca e-maili, §5) — tylko konfiguracja.
 5. Po działającym logowaniu: pełne wycieczki dla zalogowanych zamiast klucza testera (etap A → B).
 
 ## 5. Do decyzji / prawne
