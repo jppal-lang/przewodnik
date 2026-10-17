@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zaloguj się — Quolino</title>
+<meta name="description" content="Logowanie do konta rodzica Quolino: wpisz e-mail i kliknij link z wiadomości. Bez hasła.">
+<meta name="robots" content="noindex, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=27">
+<style>
+  .lg{max-width:560px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.55;color:var(--ink)}
+  .lg h1{font-size:clamp(34px,7vw,52px);line-height:1.02;margin:.2em 0 .3em}
+  .lg .lead{font-size:20px;margin-bottom:22px}
+  .lg .card{display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--r-stk,18px);background:var(--card,#fff);box-shadow:var(--lift-1)}
+  .lg label{display:block;font-weight:800;margin-bottom:6px}
+  .lg input[type=email]{width:100%;min-height:52px;padding:10px 14px;border:2px solid var(--rule);border-radius:10px;font:500 19px/1.4 'Archivo',sans-serif;background:var(--page);color:var(--ink)}
+  .lg input:focus{outline:3px solid var(--azzurro);outline-offset:1px;border-color:var(--azzurro)}
+  .lg .hint{margin-top:6px;font-size:16px;color:var(--muted)}
+  .lg .qc-btn{width:100%;cursor:pointer}
+  .lg .qc-btn:disabled{opacity:.6;cursor:default}
+  .lg .msg{font-weight:700;min-height:1.4em;margin:0}
+  .lg .msg.err{color:#B3261E}
+  .lg .sent{padding:20px;border-radius:14px;background:var(--verde-50,#e5f3ea)}
+  .lg .sent b{word-break:break-all}
+  .lg .row{display:flex;gap:12px;flex-wrap:wrap}
+  .lg .row .qc-btn{flex:1 1 200px;width:auto}
+  .lg .small{font-size:16px;color:var(--muted);margin-top:18px}
+  .lg .small a{color:var(--azzurro-ink)}
+  .lg .linkbtn{background:none;border:0;padding:0;min-height:44px;font:inherit;font-weight:700;color:var(--azzurro-ink);text-decoration:underline;cursor:pointer}
+  .footer__links{display:flex;gap:16px;justify-content:center}
+  .footer__links a{color:var(--azzurro);min-height:44px;display:inline-flex;align-items:center}
+</style>
+</head>
+<body>
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+  </div>
+</nav>
+
+<main class="lg" id="mainContent">
+  <h1>Zaloguj się</h1>
+  <p class="lead">Wpisz swój e-mail, a wyślemy Ci link. Kliknięcie w link zaloguje Cię od razu, a za pierwszym razem założy konto. Bez hasła.</p>
+
+  <!-- 1. formularz -->
+  <form class="card" id="lgForm" novalidate>
+    <div>
+      <label for="lgEmail">Twój e-mail</label>
+      <input type="email" id="lgEmail" maxlength="200" autocomplete="email" inputmode="email" required aria-describedby="lgHint">
+      <p class="hint" id="lgHint">Link działa raz i przez godzinę.</p>
+    </div>
+    <button type="submit" class="qc-btn qc-btn--primary" id="lgSend">Wyślij link</button>
+    <p class="msg" id="lgMsg" role="status" aria-live="polite"></p>
+  </form>
+
+  <!-- 2. wysłane -->
+  <div class="card" id="lgSent" hidden>
+    <div class="sent" role="status" aria-live="polite">
+      <p style="margin:0 0 8px;font-size:20px;font-weight:800">Sprawdź skrzynkę</p>
+      <p style="margin:0">Wysłaliśmy link na <b id="lgTo"></b>. Otwórz wiadomość od Quolino i kliknij „Zaloguj się”. Jeśli jej nie widzisz, zajrzyj do folderu Spam lub Oferty.</p>
+    </div>
+    <p class="msg" id="lgMsg2" role="status" aria-live="polite"></p>
+    <div class="row">
+      <button type="button" class="qc-btn" id="lgAgain" disabled>Wyślij ponownie</button>
+      <button type="button" class="qc-btn" id="lgOther">Inny adres</button>
+    </div>
+  </div>
+
+  <!-- 3. już zalogowany -->
+  <div class="card" id="lgIn" hidden>
+    <p style="margin:0;font-size:20px">Jesteś zalogowany jako <b id="lgWho"></b>.</p>
+    <div class="row">
+      <a class="qc-btn qc-btn--primary" href="/konto.html">Przejdź do konta</a>
+      <button type="button" class="qc-btn" id="lgOut">Wyloguj</button>
+    </div>
+  </div>
+
+  <p class="small">Adres e-mail służy tylko do logowania. Nie wysyłamy reklam ani newslettera. Szczegóły: <a href="/cookie-policy.html">Prywatność</a>.</p>
+</main>
+
+<div class="footer">
+  <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+  <nav class="footer__links"><a href="/kontakt.html">Kontakt</a><a href="/cookie-policy.html">Prywatność</a></nav>
+  <span>© 2026 · Rodzinne przewodniki wypadowe</span>
+</div>
+<script src="/auth.js?v=1"></script>
+<script>
+/* Logowanie e-mailem linkiem (JP 2026-10-17). Sesja i wysyłka: /auth.js (window.QAuth). Plan: docs/LOGOWANIE.md. */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('lgForm'), email = $('lgEmail'), send = $('lgSend'), msg = $('lgMsg');
+  var sent = $('lgSent'), again = $('lgAgain'), msg2 = $('lgMsg2'), done = $('lgIn');
+  var next = new URLSearchParams(location.search).get('next') || '';
+  var timer = null;
+
+  function show(which) { form.hidden = which !== 'form'; sent.hidden = which !== 'sent'; done.hidden = which !== 'in'; }
+  function say(el, t, err) { el.className = 'msg' + (err ? ' err' : ''); el.textContent = t; }
+  function why(r) {
+    if (r.status === 429 || r.code === 'over_email_send_rate_limit' || r.code === 'over_request_rate_limit') return 'Za dużo prób. Odczekaj minutę i spróbuj ponownie.';
+    if (r.status === 400 || r.status === 422) return 'Sprawdź adres e-mail: wygląda na niepoprawny.';
+    if (r.status === 0) return 'Brak połączenia z internetem. Spróbuj za chwilę.';
+    return 'Nie udało się wysłać linku. Spróbuj za kilka minut.';
+  }
+  function cooldown() {
+    var left = 60; again.disabled = true; again.textContent = 'Wyślij ponownie (' + left + ' s)';
+    clearInterval(timer);
+    timer = setInterval(function () {
+      left--; if (left > 0) { again.textContent = 'Wyślij ponownie (' + left + ' s)'; return; }
+      clearInterval(timer); again.disabled = false; again.textContent = 'Wyślij ponownie';
+    }, 1000);
+  }
+  async function go(addr, out) {
+    var r = await QAuth.sendLink(addr, next);
+    if (r.ok) { $('lgTo').textContent = addr; show('sent'); cooldown(); return true; }
+    say(out, why(r), true); return false;
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var addr = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(addr)) { say(msg, 'Wpisz pełny adres e-mail, np. anna@example.com.', true); email.focus(); return; }
+    send.disabled = true; say(msg, 'Wysyłam…');
+    await go(addr, msg);
+    send.disabled = false;
+  });
+  again.addEventListener('click', async function () { again.disabled = true; say(msg2, 'Wysyłam…'); if (await go($('lgTo').textContent, msg2)) say(msg2, 'Wysłaliśmy nowy link. Poprzedni już nie działa.'); else again.disabled = false; });
+  $('lgOther').addEventListener('click', function () { show('form'); say(msg, ''); email.focus(); });
+  $('lgOut').addEventListener('click', async function () { await QAuth.signOut(); show('form'); say(msg, 'Wylogowano.'); });
+
+  var err = QAuth.lastError();
+  if (err) say(msg, /expired|otp_expired|invalid/.test(err) ? 'Ten link już wygasł albo został użyty. Wpisz e-mail, a wyślemy nowy.' : 'Logowanie się nie udało. Wyślij link jeszcze raz.', true);
+  QAuth.ready.then(function () {
+    var s = QAuth.current();
+    if (s) { $('lgWho').textContent = s.email || 'Twoje konto'; show('in'); }
+    else { show('form'); if (!err) email.focus(); }
+  });
+})();
+</script>
+</body>
+</html>

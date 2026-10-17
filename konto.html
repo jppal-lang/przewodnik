@@ -10,6 +10,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=27">
 <script src="/kid-reward.js?v=2"></script>
+<script src="/auth.js?v=1"></script>
+<style>
+  /* pasek logowania (JP 2026-10-17): zalogowany — e-mail i „Wyloguj”; niezalogowany — zaproszenie do logowania */
+  .acc-auth{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-top:18px;padding:16px 20px;border-radius:var(--r-stk,18px);background:var(--card);box-shadow:var(--lift-1);font-size:18px}
+  .acc-auth__txt{margin:0;flex:1 1 280px}
+  .acc-auth__txt b{word-break:break-all}
+  .acc-auth__act{display:flex;gap:10px;flex-wrap:wrap}
+</style>
 </head>
 <body class="acc">
 <!--
@@ -24,7 +32,7 @@
 <nav class="sticky-nav">
   <div class="sticky-nav-inner">
     <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-    <div class="acc-nav__me"><span class="acc-nav__dot" aria-hidden="true"></span><span>Konto rodzica</span></div>
+    <div class="acc-nav__me"><span class="acc-nav__dot" aria-hidden="true"></span><span id="accNavMe">Konto rodzica</span></div>
   </div>
 </nav>
 
@@ -46,6 +54,11 @@
       <a role="tab" id="t-prywatnosc" href="#prywatnosc" aria-controls="prywatnosc" data-tab="prywatnosc">Prywatność</a>
     </div>
   </div>
+</div>
+
+<div class="acc-auth wrap-wide" id="accAuth" hidden>
+  <p class="acc-auth__txt" id="accAuthTxt"></p>
+  <div class="acc-auth__act" id="accAuthAct"></div>
 </div>
 
 <p class="acc-preview" id="accPreview" hidden></p>
@@ -476,6 +489,29 @@
 
   renderAlbum(); renderChallenges(); renderKids(); renderCodes();
   loadCatalog().then(renderAlbum);
+})();
+</script>
+<script>
+/* Stan logowania na koncie (auth.js). Album, dzieci i kody na razie dalej z tego urządzenia — synchronizacja z kontem w kolejnym kroku. */
+(function () {
+  'use strict';
+  var box = document.getElementById('accAuth'), txt = document.getElementById('accAuthTxt'), act = document.getElementById('accAuthAct');
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function paint() {
+    var s = window.QAuth && QAuth.current();
+    box.hidden = false;
+    if (s) {
+      txt.innerHTML = 'Zalogowano jako <b>' + esc(s.email || 'Twoje konto') + '</b>.';
+      act.innerHTML = '<button type="button" class="qc-btn qc-btn--sm" id="accOut">Wyloguj</button>';
+      document.getElementById('accOut').onclick = function () { QAuth.signOut().then(paint); };
+      document.getElementById('accNavMe').textContent = s.email || 'Konto rodzica';
+    } else {
+      txt.textContent = 'Nie jesteś zalogowany. Zaloguj się e-mailem — bez hasła — żeby zachować konto na kolejne wycieczki.';
+      act.innerHTML = '<a class="qc-btn qc-btn--primary qc-btn--sm" href="/zaloguj.html">Zaloguj się</a>';
+      document.getElementById('accNavMe').textContent = 'Konto rodzica';
+    }
+  }
+  if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
 })();
 </script>
 </body>

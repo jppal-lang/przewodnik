@@ -1,0 +1,76 @@
+# Konta Quolino — Supabase Auth (GoTrue) na naszym VPS. OSOBNY projekt compose, nie dotyka docker-compose.override.yml.
+# Plan: docs/LOGOWANIE.md. Etap 1 (JP 2026-10-17): logowanie e-mailem linkiem (bez hasła); Google dojdzie samą konfiguracją.
+# Uruchomienie (root): sh /root/quolino-web/ops/auth-init.sh   (tworzy sekrety, rolę i schemat „auth”, startuje kontener).
+# Sekrety (JWT, hasło bazy, SMTP Brevo) są w /root/quolino-web/secrets/gotrue.env — tworzy je auth-init.sh. Nic tajnego w repo.
+# Adres publiczny: https://auth.quolino.com/auth/v1/…  (prefiks /auth/v1 jak w Supabase; Traefik go obcina).
+name: quolino-auth
+services:
+  gotrue:
+    image: supabase/gotrue:v2.197.0        # wersja przypięta; migracje sprawdzone na PG17 2026-10-17
+    restart: unless-stopped
+    env_file:
+      - path: ../secrets/gotrue.env
+        required: false
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      PORT: "9999"
+      API_EXTERNAL_URL: https://auth.quolino.com/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_SITE_URL: https://quolino.com
+      GOTRUE_URI_ALLOW_LIST: https://quolino.com/**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: "10"
+      # e-mail: tylko link (magic link); konto zakłada się przy pierwszym kliknięciu
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_MAILER_OTP_EXP: "3600"
+      GOTRUE_SMTP_MAX_FREQUENCY: 60s
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "60"
+      GOTRUE_RATE_LIMIT_HEADER: X-Real-Ip
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "Twój link do Quolino"
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "Twój link do Quolino"
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: https://quolino.com/auth-mail/link.html
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: https://quolino.com/auth-mail/link.html
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      GOTRUE_LOG_LEVEL: info
+    networks: [proxy, db]
+    mem_limit: 256m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9999/health || exit 1"]
+      interval: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=quolino-web_default
+      - traefik.http.routers.quolino-auth.rule=Host(`auth.quolino.com`) && PathPrefix(`/auth/v1`)
+      - traefik.http.routers.quolino-auth.entrypoints=websecure
+      - traefik.http.routers.quolino-auth.tls.certresolver=letsencrypt
+      - traefik.http.routers.quolino-auth.middlewares=quolino-auth-strip
+      - traefik.http.routers.quolino-auth.service=quolino-auth
+      - traefik.http.middlewares.quolino-auth-strip.stripprefix.prefixes=/auth/v1
+      # zamknięte z zewnątrz: zakładanie konta z hasłem, reset hasła, panel administracyjny GoTrue
+      - traefik.http.routers.quolino-auth-deny.rule=Host(`auth.quolino.com`) && (PathPrefix(`/auth/v1/signup`) || PathPrefix(`/auth/v1/recover`) || PathPrefix(`/auth/v1/admin`))
+      - traefik.http.routers.quolino-auth-deny.priority=1000
+      - traefik.http.routers.quolino-auth-deny.entrypoints=websecure
+      - traefik.http.routers.quolino-auth-deny.tls.certresolver=letsencrypt
+      - traefik.http.routers.quolino-auth-deny.middlewares=quolino-auth-block
+      - traefik.http.routers.quolino-auth-deny.service=quolino-auth
+      - traefik.http.middlewares.quolino-auth-block.ipallowlist.sourcerange=127.0.0.1/32
+      - traefik.http.services.quolino-auth.loadbalancer.server.port=9999
+networks:
+  proxy:
+    external: true
+    name: quolino-web_default
+  db:
+    external: true
+    name: postgresql-5bap_default

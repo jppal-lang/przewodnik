@@ -71,3 +71,18 @@ Bez ręcznej edycji plików.
 - Dostawca e-maili transakcyjnych w UE (np. Brevo, Mailjet) — konto zakłada JP, dane SMTP wpisuje komendą z §3.
 - Polityka prywatności: Google, Apple i dostawca e-maili jako podmioty przetwarzające, `qc.session`, retencja kont.
 - Administrator danych: JDG czy spółka (`DOSTEP-I-KONTA.md` §7) — przed publicznym startem logowania.
+
+## 6. Stan wdrożenia — etap 1: e-mail z linkiem (2026-10-17)
+
+- **DNS (OVH):** `auth` A → 187.127.76.206. Brevo: `brevo-code` (TXT @), DKIM `brevo1._domainkey` i `brevo2._domainkey` (CNAME),
+  DMARC `_dmarc` (TXT, `p=none`). Domena uwierzytelniona w Brevo, nadawca „Quolino <no-reply@quolino.com>” zweryfikowany.
+- **SMTP:** `/root/quolino-web/secrets/smtp.env` (JP wpisał klucz przez `read -s`; logowanie do Brevo sprawdzone: 250).
+- **Serwer kont:** `ops/auth-compose.yml` (projekt `quolino-auth`, GoTrue v2.197.0), `ops/auth-init.sh` — sekret JWT i hasło
+  bazy generuje skrypt (`.env`), rola `supabase_auth_admin` + schemat `auth` w bazie `quolino`, rola `postgres` bez logowania
+  (wymagana przez migracje GoTrue; nasz superużytkownik ma inną nazwę). Migracje sprawdzone na bazie testowej 2026-10-17.
+- **Adresy:** `https://auth.quolino.com/auth/v1/…` (Traefik obcina prefiks). Zamknięte z zewnątrz: `/signup`, `/recover`, `/admin`.
+- **Strona:** `zaloguj.html` (e-mail → link), `auth.js` (sesja `qc.session`, ikona konta: zalogowany → `/konto.html`,
+  niezalogowany → `/zaloguj.html`), szablon wiadomości `auth-mail/link.html` (PL + krótko EN), pasek stanu w `konto.html`.
+- **Przepływ:** implicit — link z e-maila działa na każdym urządzeniu (telefon, komputer). Wygasły link → `zaloguj.html` z komunikatem.
+- **Jeszcze nie:** PostgREST nie zna sekretu JWT (konto nie ma jeszcze tabel w bazie), usunięcie konta (wymaga funkcji po stronie
+  serwera), tłumaczenia stron logowania (na razie PL, jak `konto.html`), Google (klient OAuth — JP), polityka prywatności (Brevo, `qc.session`).
