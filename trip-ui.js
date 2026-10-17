@@ -283,6 +283,7 @@
   }
 
   function gmapsUrl() {
+    if (S.opts.locked) return '';   // Etap A: gość bez klucza nie dostaje trasy w Mapach Google
     var c = S.opts.city || {};
     if (c && /^https?:\/\//i.test(String(c.route_url || '').trim())) return String(c.route_url).trim();
     // współrzędne > zapytanie z bazy (maps_query) > nazwa przystanku + miasto (szkice często nie mają jeszcze ani jednego, ani drugiego)

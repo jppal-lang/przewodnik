@@ -515,6 +515,17 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .qc-copy-row{display:flex;gap:8px;margin-top:14px}
 .qc-copy-row input{flex:1;min-width:0;min-height:44px;padding:6px 10px;border:2px solid var(--rule);border-radius:8px;background:var(--page);color:var(--ink2);font:500 15px/1 'Archivo',sans-serif}
 .qc-copy-row button{min-height:44px;padding:0 14px;border:0;border-radius:8px;background:var(--azzurro);color:#fff;font-weight:800;font-size:16px}
+/* Etap A: pełna wycieczka z kluczem dostępu (city.html) */
+.qc-access{margin-top:28px;border:2px dashed var(--rule)}
+.qc-access p{font-size:18px;line-height:1.5}
+.qc-access__form label{display:block;margin-top:14px;font-weight:700;font-size:18px}
+.qc-access .qc-copy-row input,.qc-access .qc-copy-row button{font-size:18px}
+.qc-access .qc-copy-row input[aria-invalid="true"]{border-color:#B3261E}
+.qc-access__err{color:#B3261E;font-weight:700}
+.qc-locked-hint{margin-top:10px;font-size:18px}
+.qc-locked-hint a{color:var(--azzurro);font-weight:700}
+.qc-access-on p{font-size:18px;margin-bottom:10px}
+@media (max-width:520px){.qc-access .qc-copy-row{flex-direction:column}}
 .qc-box--fest{background:var(--sun-50)}
 .qc-box__title{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:28px;line-height:1;color:#4A3600;margin-bottom:8px}
 .qc-box--fest p{color:#4A3600}
@@ -1238,3 +1249,8 @@ html.qk-lock{overflow:hidden}
 /* ── Strona główna: „Jak działa zwiedzanie z Quolino” — 6 kroków w 3 kolumnach (2026-10-16) ── */
 @media(min-width:901px){.route--6{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:44px}.route--6::before{display:none}}
 .route-sos{margin:28px 0 0;padding:14px 18px;border-radius:12px;background:var(--sun-50);color:#5A3E00;font-size:18px;max-width:72ch}
+
+/* Przyciski „Wesprzyj” / Buy Me a Coffee wyłączone (decyzja JP 2026-10-17, przed planami płatnymi).
+   Przywrócenie: usunąć tę regułę. */
+a[href*="buymeacoffee.com"]{display:none!important}
+.cta-note:has(> a[href*="buymeacoffee.com"]:only-child){display:none}

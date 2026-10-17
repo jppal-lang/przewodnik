@@ -104,6 +104,7 @@ Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-polic
 | `qc.parent.shared`                | lista slugów udostępnionych wycieczek (wyzwanie 5 → 5%, `konto.html`) |
 | `qc.parent.codes`                 | wpisane kody `QUO-XXXX-XXXX` (na razie tylko podgląd, `konto.html`) |
 | `qc.parent.news`                  | zgoda na newsletter (`konto.html`)                          |
+| `qc.access`                       | klucz dostępu do pełnych wycieczek z linku `?k=` (`i18n-ui.js`; zapis i usunięcie z adresu; czyta `city.html` → RPC `trip_full`) |
 | `adm.outbox`                      | panel admina: uwagi do szkiców, których API jeszcze nie przyjęło (`_admin/`, nie strona publiczna) |
 | sessionStorage `quolino_kidmode`  | widok dziecka na czas sesji                                 |
 

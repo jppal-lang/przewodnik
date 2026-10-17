@@ -16,6 +16,10 @@
    3. <html lang> i atrybuty aria/teksty statyczne oznaczone
       data-ui-aria / data-ui-local dostają język strony.
 
+   4. KLUCZ DOSTĘPU (Etap A, JP 2026-10-17) — link „…?k=KLUCZ” zapisuje klucz
+      w localStorage (qc.access) i usuwa go z adresu. window.QAccess.get/set/clear.
+      Pełną wycieczkę strona miasta pobiera przez trip_full(slug, lang, klucz).
+
    Docelowo brakujące klucze powinny trafić do Supabase (rola Backend) —
    ten plik jest siatką bezpieczeństwa, nie źródłem prawdy treści.
    ===================================================================== */
@@ -123,4 +127,19 @@
       });
     });
   };
+  // ── 4. Klucz dostępu do pełnych wycieczek ───────────────────────────────
+  (function () {
+    var KEY = 'qc.access', mem = '';
+    function get() { try { return localStorage.getItem(KEY) || mem; } catch (e) { return mem; } }
+    function set(k) { mem = String(k || '').trim(); try { if (mem) localStorage.setItem(KEY, mem); else localStorage.removeItem(KEY); } catch (e) {} }
+    try {
+      var u = new URL(location.href), k = u.searchParams.get('k');
+      if (k) {
+        if (/^[A-Za-z0-9_-]{24,128}$/.test(k.trim())) set(k);
+        u.searchParams.delete('k');
+        history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+      }
+    } catch (e) {}
+    window.QAccess = { get: get, set: set, clear: function () { set(''); } };
+  })();
 })();
