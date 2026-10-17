@@ -273,7 +273,7 @@ function cityHref(c) {
 }
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
-function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ui(key, fallback) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fallback || key; }
 
 // ══════ LOAD PAGE ══════

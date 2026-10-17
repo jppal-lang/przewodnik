@@ -456,7 +456,7 @@
 
   // link do całej trasy w Mapach Google (pieszo): route_url > współrzędne > maps_query > nazwa PL + miasto
   function routeUrl(c, stops, trs, town) {
-    if (c && c.route_url) return c.route_url;
+    if (c && /^https?:\/\//i.test(String(c.route_url || '').trim())) return String(c.route_url).trim();
     var pts = (stops || []).slice().sort(function (a, b) { return a.stop_number - b.stop_number; }).map(function (s) {
       if (s.lat != null && s.lon != null && s.lat !== '' && s.lon !== '') return s.lat + ',' + s.lon;
       if (s.maps_query) return s.maps_query;

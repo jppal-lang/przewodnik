@@ -284,7 +284,7 @@
 
   function gmapsUrl() {
     var c = S.opts.city || {};
-    if (c.route_url) return c.route_url;
+    if (c && /^https?:\/\//i.test(String(c.route_url || '').trim())) return String(c.route_url).trim();
     // współrzędne > zapytanie z bazy (maps_query) > nazwa przystanku + miasto (szkice często nie mają jeszcze ani jednego, ani drugiego)
     var town = S.opts.cityName || '';
     var pts = points().map(function (s) {

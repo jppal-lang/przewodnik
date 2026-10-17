@@ -46,7 +46,7 @@
   var KEY = window.SB_KEY || null;
   if (!KEY) { var m = (document.documentElement.innerHTML.match(/SB_KEY\s*=\s*'([^']+)'/) || [])[1]; KEY = m || null; }
   function city() { return new URLSearchParams(location.search).get('c') || window.citySlug || document.body.getAttribute('data-city'); }
-  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   function css() {
     if (document.getElementById('qr-css')) return;

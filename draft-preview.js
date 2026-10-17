@@ -28,7 +28,8 @@
   var info = null;
   var names = {};   // stop_key → nazwa (do opisu zmian)
 
-  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function safeUrl(u) { u = String(u == null ? '' : u).trim(); return /^https?:\/\//i.test(u) ? u : ''; }
   function when(t) {
     try { return new Date(t).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
     catch (e) { return ''; }
@@ -177,13 +178,13 @@
         h += '<ul class="qd-issues">';
         f.issues.forEach(function (x) {
           h += '<li><b>' + esc(x.stop_key ? (names[x.stop_key] || x.stop_key) : 'Miasto') + ':</b> „' + esc(x.claim) + '” — ' + esc(x.evidence || '') +
-            (x.url ? ' <a href="' + esc(x.url) + '" target="_blank" rel="noopener">artykuł</a>' : '') + '</li>';
+            (safeUrl(x.url) ? ' <a href="' + esc(safeUrl(x.url)) + '" target="_blank" rel="noopener">artykuł</a>' : '') + '</li>';
         });
         h += '</ul>';
       }
       if (f.sources && f.sources.length) {
         h += '<p><small>Źródła potwierdzające (dopisane do przystanków): ' + f.sources.map(function (x) {
-          return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a>' +
+          return (safeUrl(x.url) ? '<a href="' + esc(safeUrl(x.url)) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a>' : esc(x.title)) +
             (x.kind === 'local' ? ' (strona lokalna)' : ' (Wikipedia)');
         }).join(' · ') + '</small></p>';
       }

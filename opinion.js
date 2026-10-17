@@ -44,7 +44,7 @@
   var KEY = window.SB_KEY || null;
   if (!KEY) { var m = (document.documentElement.innerHTML.match(/SB_KEY\s*=\s*'([^']+)'/) || [])[1]; KEY = m || null; }
   function city() { return (window.QSSR && window.QSSR.slug) || new URLSearchParams(location.search).get('c') || window.citySlug; }
-  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function done(c) { try { return localStorage.getItem('quolino_rated_' + c); } catch (e) { return null; } }
   function mark(c, s) { try { localStorage.setItem('quolino_rated_' + c, String(s)); } catch (e) {} }
 
