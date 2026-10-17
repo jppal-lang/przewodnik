@@ -42,13 +42,16 @@ i=0; until echo "SELECT 1 FROM \"user\" WHERE username='admin'" | pgq -d umami 2
   echo -n .; sleep 5
 done; echo " ok"
 
-hash() { $UC exec -T umami node -e 'console.log(require("bcryptjs").hashSync(process.argv[1],10))' "$1"; }
+# hasło admina hashuje baza (pgcrypto, bcrypt $2a$ — Umami je przyjmuje); obraz Umami nie ma bcryptjs poza swoim bundlem
+echo "CREATE EXTENSION IF NOT EXISTS pgcrypto;" | pgq -d umami
 
 # hasło admina — tylko raz; zapis do pliku (chmod 600), nie na ekran
 mkdir -p secrets; chmod 700 secrets
 if [ ! -f secrets/umami-admin.txt ]; then
-  AP=$(rnd 12); AH=$(hash "$AP")
-  printf "UPDATE \"user\" SET password=:'h' WHERE username='admin';\n" | pgq -d umami -v h="$AH"
+  AP=$(rnd 12)
+  printf "UPDATE \"user\" SET password = crypt(:'pw', gen_salt('bf', 10)) WHERE username='admin';\n" | pgq -d umami -v pw="$AP"
+  [ "$(printf "SELECT count(*) FROM \"user\" WHERE username='admin' AND password = crypt(:'pw', password);\n" | pgq -d umami -v pw="$AP")" = 1 ] \
+    || { echo "Nie udało się ustawić hasła admina Umami — panel zatrzymany"; $UC stop umami; exit 1; }
   printf 'https://stats.quolino.com\nlogin: admin\nhasło: %s\n' "$AP" > secrets/umami-admin.txt; chmod 600 secrets/umami-admin.txt
   echo "Hasło admina Umami: $W/secrets/umami-admin.txt (po pierwszym logowaniu zmień je w panelu)"
 fi
