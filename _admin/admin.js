@@ -250,7 +250,7 @@
     return state.comments.filter(function (c) { return ck(c.stop_key, c.field) === ck(stop, field); });
   }
   function isOpen(c) { return c.status === 'new' || c.status === 'sent' || c.status === 'seen' || c.status === 'local'; }
-  function unsent() { return state.comments.filter(function (c) { return c.status === 'new'; }); }
+  function unsent() { return state.comments.filter(function (c) { return c.status === 'new' || c.status === 'local'; }); }
 
   function commentItem(c) {
     var cur = state.current, other = cur && c.city_version !== cur.version;
@@ -310,7 +310,7 @@
       b.textContent = n ? 'Wyślij uwagi do poprawki (' + n + ')' : 'Brak uwag do wysłania';
     });
     var hint = document.getElementById('sendHint');
-    if (hint) hint.textContent = local ? local + ' uwag czeka na połączenie z bazą — wyślą się same.' : '';
+    if (hint) hint.textContent = local ? 'Tylko w tej przeglądarce: ' + plUwagi(local) + '. Przycisk najpierw przeniesie je do bazy.' : '';
   }
   function plUwagi(n) { var d = n % 10, t = n % 100; return n + (n === 1 ? ' uwaga' : (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? ' uwagi' : ' uwag'); }
   function sendAll(btn) {
@@ -318,11 +318,17 @@
     if (!it || !n) return;
     [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.disabled = true; b.classList.add('is-busy'); b.textContent = 'Wysyłam…'; });
     var $m = document.getElementById('sendMsg');
-    api('/rpc/admin_send_comments', { method: 'POST', body: { p_slug: it.city_slug, p_version: it.version } }).then(function (r) {
+    var NOT_READY = 'Uwagi są bezpieczne w tej przeglądarce, ale baza jeszcze ich nie przyjmuje (brak zatwierdzonego SQL). ' +
+      'W konsoli: sh /root/quolino-web/ops/deploy.sh pending, potem approve z najnowszym hashem — i kliknij jeszcze raz.';
+    flushOutbox().then(function (left) {
+      if (left) { var e = new Error('not_ready'); e.notReady = true; throw e; }
+      return api('/rpc/admin_send_comments', { method: 'POST', body: { p_slug: it.city_slug, p_version: it.version } });
+    }).then(function (r) {
       if ($m) { $m.className = 'adm-msg adm-msg--ok'; $m.textContent = 'Wysłane: ' + plUwagi((r && r.sent) || n) + '. Hermes przygotuje nową wersję szkicu i odpisze przy polach.'; }
       return loadComments(it.city_slug);
     }).catch(function (e) {
-      if ($m) { $m.className = 'adm-msg adm-msg--err'; $m.textContent = 'Nie wysłano: ' + e.message; }
+      var nr = e.notReady || /admin_send_comments|draft_comments|does not exist|not find|schema cache/i.test(e.message);
+      if ($m) { $m.className = 'adm-msg adm-msg--err'; $m.textContent = nr ? NOT_READY : 'Nie wysłano: ' + e.message; }
     }).then(function () {
       [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.classList.remove('is-busy'); });
       updateCommentUi();
@@ -357,16 +363,21 @@
     }).then(function () { form.classList.remove('is-busy'); updateCommentUi(); });
   }
   function flushOutbox() {
-    if (DEMO) return;
+    if (DEMO) return Promise.resolve(0);
     var box = lsGet(OUTBOX) || [];
-    if (!box.length) return;
-    var keep = [];
-    box.reduce(function (p, c) {
+    if (!box.length) return Promise.resolve(0);
+    var keep = [], err = '';
+    return box.reduce(function (p, c) {
       return p.then(function () {
         var body = Object.assign({}, c); delete body.local_id; delete body.created_at;
-        return api('/draft_comments', { method: 'POST', body: body }).catch(function () { keep.push(c); });
+        return api('/draft_comments', { method: 'POST', body: body }).catch(function (e) { keep.push(c); err = e.message; });
       });
-    }, Promise.resolve()).then(function () { lsSet(OUTBOX, keep); if (keep.length < box.length) refreshComments(); });
+    }, Promise.resolve()).then(function () {
+      lsSet(OUTBOX, keep);
+      if (keep.length < box.length) return loadComments(state.current ? state.current.city_slug : '').then(function () { return keep.length; });
+      state.outboxErr = err;
+      return keep.length;
+    });
   }
   function autosize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 240) + 'px'; }
 
