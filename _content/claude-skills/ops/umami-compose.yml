@@ -1,17 +1,19 @@
-# Umami (statystyki bez ciasteczek i identyfikatorów) — dopisać do /root/quolino-web/docker-compose.override.yml (sekcja services:).
-# Plan: docs/STATYSTYKI.md. Po wklejeniu: sh /root/quolino-web/ops/umami-init.sh (jednorazowo; tworzy bazę, hasła, witrynę, konto odczytu dla Hermesa).
-# UWAGA: „$” w compose pisze się „$$”. Sekrety (UMAMI_DB_PASSWORD, UMAMI_APP_SECRET) są w /root/quolino-web/.env — tworzy je umami-init.sh.
-# DO SPRAWDZENIA przy wklejaniu: (1) „networks:” — skopiować z usługi api, żeby umami widziało PostgreSQL pod nazwą z DATABASE_URL;
-# (2) entrypoint/certresolver — te same wartości co w usłudze web/ssr; (3) DNS stats.quolino.com → ten serwer (już się rozwiązuje).
+# Umami (statystyki bez ciasteczek i identyfikatorów) — OSOBNY projekt compose, nie dotyka docker-compose.override.yml.
+# Uruchomienie (root): docker compose -f /root/quolino-web/ops/umami-compose.yml up -d  →  potem sh /root/quolino-web/ops/umami-init.sh
+# Sekrety (DATABASE_URL, APP_SECRET) są w /root/quolino-web/secrets/umami.env — tworzy je umami-init.sh; do jego uruchomienia kontener czeka (restart).
+name: quolino-umami
+services:
   umami:
     image: ghcr.io/umami-software/umami:postgresql-v2.20.2   # wersja przypięta; aktualizacja = świadoma zmiana tagu
     restart: unless-stopped
+    env_file:
+      - path: ../secrets/umami.env
+        required: false
     environment:
-      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@postgresql-5bap-postgresql-1:5432/umami
-      APP_SECRET: ${UMAMI_APP_SECRET}
       TRACKER_SCRIPT_NAME: m.js          # skrypt z własnej domeny: https://quolino.com/m.js
       DISABLE_TELEMETRY: "1"
       DISABLE_UPDATES: "1"
+    networks: [proxy, db]
     mem_limit: 512m
     cpus: 0.5
     healthcheck:
@@ -19,10 +21,11 @@
       interval: 60s
     labels:
       - traefik.enable=true
+      - traefik.docker.network=quolino-web_default
       # panel: stats.quolino.com (logowanie Umami; konto admina tworzy umami-init.sh)
       - traefik.http.routers.quolino-umami.rule=Host(`stats.quolino.com`)
-      - traefik.http.routers.quolino-umami.entrypoints=websecure          # jak w usłudze web
-      - traefik.http.routers.quolino-umami.tls.certresolver=letsencrypt   # jak w usłudze web
+      - traefik.http.routers.quolino-umami.entrypoints=websecure
+      - traefik.http.routers.quolino-umami.tls.certresolver=letsencrypt
       - traefik.http.routers.quolino-umami.service=quolino-umami
       # zbieranie z domeny strony: tylko dwie ścieżki (skrypt i odbiór zdarzeń), reszta quolino.com bez zmian
       - traefik.http.routers.quolino-umami-collect.rule=Host(`quolino.com`) && (Path(`/m.js`) || Path(`/api/send`))
@@ -31,3 +34,10 @@
       - traefik.http.routers.quolino-umami-collect.tls.certresolver=letsencrypt
       - traefik.http.routers.quolino-umami-collect.service=quolino-umami
       - traefik.http.services.quolino-umami.loadbalancer.server.port=3000
+networks:
+  proxy:
+    external: true
+    name: quolino-web_default        # sieć, w której Traefik widzi kontenery
+  db:
+    external: true
+    name: postgresql-5bap_default           # sieć, w której kontener postgresql-5bap-postgresql-1 ma nazwę DNS

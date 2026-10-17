@@ -1,7 +1,8 @@
 #!/bin/sh
 # Quolino — jednorazowe uruchomienie Umami (root na VPS). Powtarzalne: nic nie nadpisuje, co już istnieje.
-#   1. wkleić ops/umami-compose.yml do /root/quolino-web/docker-compose.override.yml
-#   2. sh /root/quolino-web/ops/umami-init.sh
+#   1. sh /root/quolino-web/ops/deploy.sh approve <hash>
+#   2. docker compose -f /root/quolino-web/ops/umami-compose.yml up -d
+#   3. sh /root/quolino-web/ops/umami-init.sh
 # Co robi: hasła w .env → baza i rola „umami” w PostgreSQL → start kontenera → hasło admina Umami (plik, nie ekran) →
 #          witryna „Quolino” z ID z stats.js i tokenem odczytu → dopisanie UMAMI_* do .env Hermesa → kopia klucza GSC do prywatnego woluminu Hermesa.
 # Żadnych sekretów w repo, w logu ani na Discordzie.
@@ -18,10 +19,12 @@ getenv() { grep -E "^$1=" .env | tail -1 | cut -d= -f2-; }
 setenv() { [ -n "$(getenv "$1")" ] || printf '%s=%s\n' "$1" "$2" >> .env; }
 pgq() { docker exec -i "$PG" sh -c 'psql -U "$POSTGRES_USER" -v ON_ERROR_STOP=1 -q -At "$@"' sh "$@"; }
 
-docker compose config --services | grep -qx umami || { echo "Brak usługi umami w docker compose — najpierw wklej ops/umami-compose.yml do docker-compose.override.yml"; exit 1; }
+UC="docker compose -f $W/ops/umami-compose.yml"
 
 setenv UMAMI_DB_PASSWORD "$(rnd 24)"; setenv UMAMI_APP_SECRET "$(rnd 32)"
 DBPW=$(getenv UMAMI_DB_PASSWORD)
+mkdir -p secrets; chmod 700 secrets
+printf 'DATABASE_URL=postgresql://umami:%s@%s:5432/umami\nAPP_SECRET=%s\n' "$DBPW" "$PG" "$(getenv UMAMI_APP_SECRET)" > secrets/umami.env; chmod 600 secrets/umami.env
 
 # baza i rola (hasło przez zmienną psql, nie w poleceniu)
 if [ "$(echo "SELECT 1 FROM pg_roles WHERE rolname='umami'" | pgq -d postgres)" != 1 ]; then
@@ -32,14 +35,14 @@ fi
 [ "$(echo "SELECT 1 FROM pg_database WHERE datname='umami'" | pgq -d postgres)" = 1 ] || echo "CREATE DATABASE umami OWNER umami;" | pgq -d postgres
 echo "REVOKE ALL ON DATABASE umami FROM PUBLIC;" | pgq -d postgres
 
-docker compose up -d umami
+$UC up -d --force-recreate umami
 echo -n "Czekam na migracje Umami"
 i=0; until echo "SELECT 1 FROM \"user\" WHERE username='admin'" | pgq -d umami 2>/dev/null | grep -q 1; do
-  i=$((i+1)); [ $i -gt 60 ] && { echo; echo "Umami nie wstało w 5 min: docker compose logs umami"; exit 1; }
+  i=$((i+1)); [ $i -gt 60 ] && { echo; echo "Umami nie wstało w 5 min: $UC logs umami"; exit 1; }
   echo -n .; sleep 5
 done; echo " ok"
 
-hash() { docker compose exec -T umami node -e 'console.log(require("bcryptjs").hashSync(process.argv[1],10))' "$1"; }
+hash() { $UC exec -T umami node -e 'console.log(require("bcryptjs").hashSync(process.argv[1],10))' "$1"; }
 
 # hasło admina — tylko raz; zapis do pliku (chmod 600), nie na ekran
 mkdir -p secrets; chmod 700 secrets
