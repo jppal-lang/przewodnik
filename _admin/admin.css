@@ -22,6 +22,10 @@
 @media(max-width:900px){.adm-queue{position:static;max-height:none;overflow:visible}}
 .adm-queue > h2{margin:0 0 10px}
 .adm-queue__list{display:flex;flex-direction:column;gap:8px}
+.adm-qgroup{display:flex;flex-direction:column;gap:8px}
+.adm-qgroup + .adm-qgroup{margin-top:10px}
+.adm-qgroup__h{margin:4px 2px 0;font:800 18px/1.2 'Archivo',sans-serif;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.adm-qgroup__h .adm-n{background:var(--slot);color:var(--ink)}
 .adm-item{display:grid;grid-template-columns:6px 1fr;gap:0;width:100%;text-align:left;border:0;border-radius:10px;background:var(--card);box-shadow:var(--lift-1);overflow:hidden;transition:box-shadow .2s,transform .2s var(--ease)}
 .adm-item:hover{box-shadow:var(--lift-2);transform:translateY(-1px)}
 .adm-item[aria-current="true"]{box-shadow:0 0 0 3px var(--azzurro),var(--lift-2)}

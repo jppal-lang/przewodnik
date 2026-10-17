@@ -74,6 +74,8 @@
     });
     return load.then(function (d) {
       if (path === '/admin_queue') return d.queue.slice();
+      if (/^\/admin_versions\?status=eq\.draft/.test(path)) return d.versions.filter(function (v) { return v.status === 'draft'; })
+        .map(function (v) { return { city_slug: v.city_slug, version: v.version, region: ((v.content || {}).city || {}).region_slug || null }; });
       var m = path.match(/^\/admin_versions\?city_slug=eq\.([^&]+)/);
       if (m) return d.versions.filter(function (v) { return v.city_slug === decodeURIComponent(m[1]); })
         .map(function (v) { return { city_slug: v.city_slug, version: v.version, status: v.status, source: v.source || 'manual', note: v.note || null, created_at: v.created_at || '2026-10-0' + v.version + 'T10:00:00Z', content: v.content }; });
@@ -153,24 +155,54 @@
   }
 
   // ── kolejka ──────────────────────────────────────────
+  // regiony szkiców do grupowania kolejki (JP 2026-10-17): region z treści szkicu, bez zmian w API (ścieżka JSON w select)
+  var REGION_PL = { umbria: 'Umbria', marche: 'Marche', 'emilia-romagna': 'Emilia-Romania', toscana: 'Toskania', lazio: 'Lacjum',
+    veneto: 'Wenecja Euganejska', lombardia: 'Lombardia', liguria: 'Liguria', piemonte: 'Piemont', campania: 'Kampania', sicilia: 'Sycylia' };
+  function regionName(slug) {
+    if (!slug) return 'Bez regionu';
+    return REGION_PL[slug] || slug.split('-').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join('-');
+  }
+  function loadRegions() {
+    return api('/admin_versions?status=eq.draft&select=city_slug,version,region:content->city->>region_slug')
+      .then(function (rows) { var m = {}; (rows || []).forEach(function (r) { m[r.city_slug + ':' + r.version] = r.region || ''; }); return m; })
+      .catch(function () { return null; });            // bez regionów: zwykła lista
+  }
+  function itemHtml(it, i) {
+    var delta = it.published_stops_count == null ? it.stops_count + ' przyst.' : (it.stops_count === it.published_stops_count ? it.stops_count + ' przyst.' :
+      it.published_stops_count + '→' + it.stops_count + ' przyst.');
+    return '<button class="adm-item" type="button" data-i="' + i + '" style="--team:' + esc(it.bandana_color || '#0B4EA2') + '"' + (it.note ? ' title="' + esc(it.note) + '"' : '') + '>' +
+      '<span class="adm-item__team" aria-hidden="true"></span><span class="adm-item__body">' +
+      '<span class="adm-item__top"><span class="adm-item__name">' + esc(it.city_name || it.city_slug) + '</span><span class="adm-item__ver">v' + it.version + '</span></span>' +
+      '<span class="adm-item__meta">' + (it.published_version == null ? '<span class="adm-chip adm-chip--new">nowa</span>' : '<span class="adm-chip adm-chip--chg">zmiana</span>') +
+      '<span>' + esc(delta) + '</span><span>' + esc(when(it.created_at)) + '</span></span></span></button>';
+  }
   function loadQueue(selectFirst) {
-    return api('/admin_queue').then(function (rows) {
+    return Promise.all([api('/admin_queue'), loadRegions()]).then(function (res) {
+      var rows = res[0], reg = res[1];
       state.queue = rows || [];
       $count.textContent = state.queue.length;
       if (!state.queue.length) {
         $q.innerHTML = '<p class="adm-empty">Nic nie czeka. Wszystkie szkice są rozpatrzone.</p>';
         return;
       }
-      $q.innerHTML = state.queue.map(function (it, i) {
-        var delta = it.published_stops_count == null ? it.stops_count + ' przyst.' : (it.stops_count === it.published_stops_count ? it.stops_count + ' przyst.' :
-          it.published_stops_count + '→' + it.stops_count + ' przyst.');
-        return '<button class="adm-item" type="button" data-i="' + i + '" style="--team:' + esc(it.bandana_color || '#0B4EA2') + '"' + (it.note ? ' title="' + esc(it.note) + '"' : '') + '>' +
-          '<span class="adm-item__team" aria-hidden="true"></span><span class="adm-item__body">' +
-          '<span class="adm-item__top"><span class="adm-item__name">' + esc(it.city_name || it.city_slug) + '</span><span class="adm-item__ver">v' + it.version + '</span></span>' +
-          '<span class="adm-item__meta">' + (it.published_version == null ? '<span class="adm-chip adm-chip--new">nowa</span>' : '<span class="adm-chip adm-chip--chg">zmiana</span>') +
-          '<span>' + esc(delta) + '</span><span>' + esc(when(it.created_at)) + '</span></span></span></button>';
-      }).join('');
-      if (selectFirst) open(0);
+      if (!reg) {
+        $q.innerHTML = state.queue.map(itemHtml).join('');
+      } else {
+        // grupy regionami (alfabetycznie, „Bez regionu” na końcu); w grupie kolejność kolejki (najnowsze pierwsze)
+        var groups = {}, order = [];
+        state.queue.forEach(function (it, i) {
+          var name = regionName(reg[it.city_slug + ':' + it.version]);
+          if (!groups[name]) { groups[name] = []; order.push(name); }
+          groups[name].push(itemHtml(it, i));
+        });
+        order.sort(function (a, b) { return a === 'Bez regionu' ? 1 : b === 'Bez regionu' ? -1 : a.localeCompare(b, 'pl'); });
+        // kolejność przycisków w DOM = kolejność na ekranie, więc „pierwszy” to pierwszy w pierwszej grupie
+        $q.innerHTML = order.map(function (name) {
+          return '<section class="adm-qgroup" aria-label="' + esc(name) + '"><h3 class="adm-qgroup__h">' + esc(name) +
+            ' <b class="adm-n">' + groups[name].length + '</b></h3>' + groups[name].join('') + '</section>';
+        }).join('');
+      }
+      if (selectFirst) { var first = $q.querySelector('.adm-item'); if (first) open(+first.getAttribute('data-i')); }
     }).catch(function (e) {
       $count.textContent = '!';
       $q.innerHTML = '<p class="adm-empty">Nie mogę połączyć się z API admina (' + esc(e.message) + ').<br><br>' +
