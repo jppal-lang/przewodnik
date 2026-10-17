@@ -9,9 +9,18 @@ const UP = new URL(process.env.UPSTREAM || 'http://admin-web:80');
 const API = process.env.ADMIN_API || 'http://admin-api:3000';
 const MAX = (+process.env.SESSION_MAX_MIN || 120) * 60e3;
 const IDLE = (+process.env.SESSION_IDLE_MIN || 30) * 60e3;
+// Ta sama bramka obsługuje panel szkiców (admin.quolino.com) i statystyki (stats.quolino.com, JP 2026-10-17):
+//   PURPOSE — cel linku (admin | stats), AFTER_LOGIN — dokąd po wejściu, COOKIE — nazwa ciasteczka sesji,
+//   GATE_PATH — prefiks ścieżek bramki (stats: /_gate, bo Umami ma własne /login i /logout),
+//   KEEP_AUTH=1 — przepuszcza nagłówek Authorization i ciasteczka aplikacji (Umami loguje się tokenem).
+const PURPOSE = process.env.PURPOSE || 'admin';
+const AFTER = process.env.AFTER_LOGIN || '/_admin/';
+const CK = process.env.COOKIE || 'qadm';
+const GP = process.env.GATE_PATH || '';
+const KEEP_AUTH = process.env.KEEP_AUTH === '1';
 const sessions = new Map();                       // id → { start, last }
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
-const cookie = (req) => ((req.headers.cookie || '').match(/(?:^|;\s*)qadm=([A-Za-z0-9_-]{40,})/) || [])[1];
+const cookie = (req) => ((req.headers.cookie || '').match(new RegExp('(?:^|;\\s*)' + CK + '=([A-Za-z0-9_-]{40,})')) || [])[1];
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 // bez ważnego linku/sesji: bez żadnych komunikatów — przekierowanie na stronę główną (decyzja JP 2026-10-11)
 const MAIN = process.env.MAIN_URL || 'https://quolino.com/';
@@ -41,45 +50,48 @@ http.createServer(async (req, res) => {
 
   // /login: GET niczego nie zużywa (podglądy linków Discorda/komunikatorów odwiedzają adres automatycznie);
   // przeglądarka sama odsyła formularz (POST) skryptem — dopiero POST zużywa jednorazowy link.
-  if (u.pathname === '/login' && req.method === 'GET') {
+  if (u.pathname === GP + '/login' && req.method === 'GET') {
     const t = u.searchParams.get('t') || '';
     if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow',
       'Referrer-Policy': 'no-referrer' });
     return res.end(`<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>Quolino</title><body style="font:16px system-ui,sans-serif;margin:20vh auto;max-width:20em;text-align:center">
-<form method="post" action="/login"><input type="hidden" name="t" value="${t}"><button type="submit" style="font:600 16px system-ui;padding:10px 22px">Wejdź</button></form>
+<form method="post" action="${GP}/login"><input type="hidden" name="t" value="${t}"><button type="submit" style="font:600 16px system-ui;padding:10px 22px">Wejdź</button></form>
 <script>document.forms[0].submit()</script></body></html>`);
   }
-  if (u.pathname === '/login' && req.method === 'POST') {
+  if (u.pathname === GP + '/login' && req.method === 'POST') {
     let body = ''; for await (const ch of req) { body += ch; if (body.length > 2000) break; }
     const t = new URLSearchParams(body).get('t') || '';
     if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
     let ok = false;
     try {
       const r = await fetch(`${API}/rpc/redeem_link`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_hash: sha(t), p_ip: ip }) });
+        body: JSON.stringify({ p_hash: sha(t), p_ip: ip, p_purpose: PURPOSE }) });
       ok = r.ok && (await r.json()) === true;
     } catch (e) { log('redeem error', e.message); }
     if (!ok) { log('odrzucony link', ip); return away(res); }
     const id = crypto.randomBytes(32).toString('base64url');
     sessions.set(id, { start: Date.now(), last: Date.now() });
     log('nowa sesja', ip);
-    res.writeHead(303, { 'Set-Cookie': `qadm=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: '/_admin/',
+    res.writeHead(303, { 'Set-Cookie': `${CK}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: AFTER,
       'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
     return res.end();
   }
-  if (u.pathname === '/logout') {
+  if (u.pathname === GP + '/logout') {
     const id = cookie(req); if (id) sessions.delete(id);
-    return away(res, { 'Set-Cookie': 'qadm=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
+    return away(res, { 'Set-Cookie': `${CK}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` });
   }
   if (!valid(cookie(req))) return away(res);
   const h = { ...req.headers, host: UP.host };
-  delete h.cookie; delete h.authorization;
+  if (KEEP_AUTH) {                                 // aplikacja (Umami) dostaje swoje nagłówki, ale nie ciasteczko bramki
+    const rest = String(h.cookie || '').split(/;\s*/).filter((c) => c && !c.startsWith(CK + '=')).join('; ');
+    if (rest) h.cookie = rest; else delete h.cookie;
+  } else { delete h.cookie; delete h.authorization; }
   const p = http.request({ hostname: UP.hostname, port: UP.port || 80, path: req.url, method: req.method, headers: h }, (r) => {
     res.writeHead(r.statusCode, { ...r.headers, 'cache-control': 'no-store' });
     r.pipe(res);
   });
   p.on('error', () => page(res, 502, 'Panel chwilowo nie odpowiada.'));
   req.pipe(p);
-}).listen(8080, () => log('admin-gate :8080'));
+}).listen(8080, () => log(`gate ${PURPOSE} :8080`));

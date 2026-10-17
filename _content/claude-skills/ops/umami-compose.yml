@@ -22,11 +22,6 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=quolino-web_default
-      # panel: stats.quolino.com (logowanie Umami; konto admina tworzy umami-init.sh)
-      - traefik.http.routers.quolino-umami.rule=Host(`stats.quolino.com`)
-      - traefik.http.routers.quolino-umami.entrypoints=websecure
-      - traefik.http.routers.quolino-umami.tls.certresolver=letsencrypt
-      - traefik.http.routers.quolino-umami.service=quolino-umami
       # zbieranie z domeny strony: tylko dwie ścieżki (skrypt i odbiór zdarzeń), reszta quolino.com bez zmian
       - traefik.http.routers.quolino-umami-collect.rule=Host(`quolino.com`) && (Path(`/m.js`) || Path(`/api/send`))
       - traefik.http.routers.quolino-umami-collect.priority=200
@@ -34,6 +29,37 @@ services:
       - traefik.http.routers.quolino-umami-collect.tls.certresolver=letsencrypt
       - traefik.http.routers.quolino-umami-collect.service=quolino-umami
       - traefik.http.services.quolino-umami.loadbalancer.server.port=3000
+  # Panel stats.quolino.com tylko przez jednorazowy link z Discorda (#admin: „stats”, JP 2026-10-17).
+  # Ta sama bramka co admin.quolino.com (gate/admin-gate.mjs), inny cel linku i inne ciasteczko. Bez sesji → quolino.com.
+  # Hermes czyta Umami wewnętrznie (http://quolino-umami-umami-1:3000), bramka go nie dotyczy.
+  stats-gate:
+    image: node:22-alpine
+    restart: unless-stopped
+    command: ["node", "/app/admin-gate.mjs"]
+    volumes:
+      - /root/quolino-web/gate/admin-gate.mjs:/app/admin-gate.mjs:ro
+    environment:
+      UPSTREAM: http://umami:3000
+      ADMIN_API: http://admin-api:3000      # usługa z projektu quolino-web, w tej samej sieci proxy
+      PURPOSE: stats
+      AFTER_LOGIN: /
+      COOKIE: qsta
+      GATE_PATH: /_gate                     # Umami ma własne /login i /logout
+      KEEP_AUTH: "1"                        # Umami loguje się nagłówkiem Authorization
+      SESSION_IDLE_MIN: "30"
+      SESSION_MAX_MIN: "120"
+    depends_on: [umami]
+    networks: [proxy]
+    mem_limit: 128m
+    cpus: 0.25
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=quolino-web_default
+      - traefik.http.routers.quolino-stats.rule=Host(`stats.quolino.com`)
+      - traefik.http.routers.quolino-stats.entrypoints=websecure
+      - traefik.http.routers.quolino-stats.tls.certresolver=letsencrypt
+      - traefik.http.routers.quolino-stats.service=quolino-stats
+      - traefik.http.services.quolino-stats.loadbalancer.server.port=8080
 networks:
   proxy:
     external: true

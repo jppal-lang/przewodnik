@@ -58,5 +58,6 @@ mkdir -p /root/quolino-web/gate
 if ! cmp -s "$SRC/gate/admin-gate.mjs" /root/quolino-web/gate/admin-gate.mjs; then
   cp "$SRC/gate/admin-gate.mjs" /root/quolino-web/gate/admin-gate.mjs
   docker ps --format '{{.Names}}' | grep -q '^quolino-web-admin-gate-1$' && docker restart quolino-web-admin-gate-1 >/dev/null && echo "bramka admina: zrestartowana"
+  docker ps --format '{{.Names}}' | grep -q '^quolino-umami-stats-gate-1$' && docker restart quolino-umami-stats-gate-1 >/dev/null && echo "bramka statystyk: zrestartowana"
 fi
 echo "ops i SSR: OK"
