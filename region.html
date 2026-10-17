@@ -108,7 +108,7 @@ function sb(table, params) {
 // Adres strony miasta renderowanej z bazy (SSR): /{lang}/{kraj}/{region}/{miasto}/
 var REGION_URL = {};   // regions.slug → regions.url_slug (adres regionu); brak → wewnętrzny slug
 var PATHS = {};        // /paths.json z SSR: { miasto: { lang: adres w języku strony } } (JP 2026-10-17, SEO)
-fetch('/paths.json').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
   PATHS = j || {};
   document.querySelectorAll('a[data-city]').forEach(function (a) { var p = PATHS[a.getAttribute('data-city')]; if (p) a.href = p[String(currentLang || FALLBACK).toLowerCase()] || p[FALLBACK] || a.href; });
 }).catch(function () {});

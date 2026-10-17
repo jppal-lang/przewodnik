@@ -14,7 +14,6 @@ Dlaczego: GitHub Pages darmowy + CDN; Supabase free tier (500 MB, 50k req/mies.)
 treść to pliki, baza potrzebna WYŁĄCZNIE do interakcji między użytkownikami.
 
 **Kiedy wdrożyć Supabase: NIE na starcie.** Faza 2, gdy są użytkownicy.
-Do tego czasu zgłoszenia przez `mailto:kontakt@quolino.com`.
 
 ---
 

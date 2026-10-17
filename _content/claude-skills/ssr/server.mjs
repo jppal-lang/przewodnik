@@ -316,7 +316,8 @@ http.createServer(async (req, res) => {
   try {
     if (url.pathname === '/healthz') return send(res, 200, 'ok', 'text/plain');
     if (url.pathname === '/sitemap.xml') return send(res, 200, await sitemap(), 'application/xml; charset=utf-8');
-    if (url.pathname === '/paths.json') return send(res, 200, await pathsJson(), 'application/json; charset=utf-8');
+    // /{lang}/paths/ — ta sama mapa adresów pod ścieżką, którą Traefik już kieruje do SSR (bez zmiany compose); /paths.json jako zapas
+    if (url.pathname === '/paths.json' || new RegExp(`^/${LANG}/paths/?$`).test(url.pathname)) return send(res, 200, await pathsJson(), 'application/json; charset=utf-8');
     const q = url.searchParams;
     if (url.pathname === '/city.html') {
       const c = q.get('c');
