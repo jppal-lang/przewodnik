@@ -1254,3 +1254,10 @@ html.qk-lock{overflow:hidden}
    Przywrócenie: usunąć tę regułę. */
 a[href*="buymeacoffee.com"]{display:none!important}
 .cta-note:has(> a[href*="buymeacoffee.com"]:only-child){display:none}
+
+/* Ikona konta rodzica na pasku (JP 2026-10-17) — widoczna na telefonie i komputerze; stan „zalogowany” dojdzie z logowaniem */
+.nav-acc{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;color:var(--ink);background:var(--card,#fff);
+  box-shadow:var(--lift-1);text-decoration:none;flex:0 0 auto;transition:transform .15s var(--ease,ease),box-shadow .15s}
+.nav-acc:hover{transform:translateY(-1px);box-shadow:var(--lift-2)}
+.nav-acc:focus-visible{outline:3px solid var(--azzurro);outline-offset:2px}
+.nav-acc.is-in{background:var(--azzurro);color:#fff}

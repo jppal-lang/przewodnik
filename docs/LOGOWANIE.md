@@ -1,8 +1,11 @@
-# LOGOWANIE.md — logowanie przez Google, Apple i e-mail (dwuetapowo)
+# LOGOWANIE.md — logowanie przez Google i e-mail (link w wiadomości)
 
-> **Aktualizacja JP 2026-10-17 (później tego dnia): na teraz tylko Google.** Apple i e-mail z kodem zostają w planie
-> jako kolejne kroki (bez kosztu Apple Developer i bez dostawcy e-maili na start). Serwer logowania od razu tak,
-> żeby dołożenie Apple i e-maila było tylko konfiguracją, bez migracji kont.
+> **Decyzja JP 2026-10-17 (wieczór): Google + e-mail z linkiem.** Rejestracja i logowanie e-mailem bez hasła: wpisujesz adres →
+> dostajesz wiadomość z linkiem → kliknięcie **tworzy konto (przy pierwszym razie) i od razu loguje**, przekierowanie na `/konto.html`.
+> Link jest jednorazowy i ważny 1 godzinę. Zastępuje wariant „6-cyfrowy kod”. Apple — później, tylko konfiguracją.
+> Wymaga dostawcy wysyłki e-maili w UE (SMTP) i rekordów DNS nadawcy (SPF, DKIM) — §5. Adres nadawcy `no-reply@quolino.com`
+> służy tylko do wysyłki; nie publikujemy go jako kontaktu (kontakt nadal wyłącznie przez formularz).
+> Ikona konta na pasku strony prowadzi do `/konto.html`; po wdrożeniu logowania pokaże stan „zalogowany”.
 
 Decyzja JP 2026-10-17: logowanie **Google, Apple i e-mail** na stronie od razu; e-mail **dwuetapowo**. Zmienia to `DOSTEP-I-KONTA.md` §4,
 gdzie Apple było odłożone do aplikacji, a na stronie miało być e-mail i hasło. Haseł nie przechowujemy.
@@ -10,16 +13,17 @@ gdzie Apple było odłożone do aplikacji, a na stronie miało być e-mail i has
 ## 1. Jak to działa
 
 ```
-zaloguj.html: [Zaloguj przez Google]          (później: [Apple] [E-mail + kod])
+zaloguj.html: [Zaloguj przez Google]  [E-mail → link w wiadomości]   (później: [Apple])
    → auth.quolino.com (Supabase Auth / GoTrue na naszym VPS) → Google albo Apple → powrót na /konto.html
    → przeglądarka dostaje sesję (JWT, 1 h + odświeżanie) → PostgREST rozpoznaje konto (auth.uid()) → RLS na tabelach konta
 ```
 
 - **Supabase Auth (GoTrue)** jako osobny kontener obok PostgREST. Obsługuje Google, Apple i logowanie e-mailem kodem jednorazowym.
   Podpisuje JWT tym samym sekretem co PostgREST, więc baza od razu wie, kto pyta.
-- **E-mail dwuetapowo, bez hasła:** krok 1 — wpisujesz e-mail; krok 2 — wpisujesz 6-cyfrowy kod z wiadomości
-  (ważny 10 minut, jednorazowy, limit prób i wysyłek z jednego adresu). Nie ma hasła, więc nie ma czego wykraść ani resetować.
-  Wymaga dostawcy e-maili transakcyjnych z serwerami w UE (SMTP) — decyzja JP, §5.
+- **E-mail bez hasła (link):** wpisujesz e-mail → wiadomość z linkiem (jednorazowy, ważny 1 h; limit wysyłek na adres i IP) →
+  kliknięcie tworzy konto przy pierwszym razie i od razu loguje (GoTrue: magic link, `shouldCreateUser: true`, powrót na
+  `/konto.html`). Działa na urządzeniu, na którym klikniesz link. Nie ma hasła, więc nie ma czego wykraść ani resetować.
+  Wymaga dostawcy e-maili transakcyjnych z serwerami w UE (SMTP) — §5.
 - **Zakresy:** Google tylko `openid email`, Apple tylko `email`. Bez imienia, nazwiska i zdjęcia.
   Akceptujemy ukryty adres Apple (`…@privaterelay.appleid.com`).
 - **Jedno konto, kilka sposobów logowania:** to samo potwierdzone konto e-mail z Google i Apple łączy się w jedno konto.
