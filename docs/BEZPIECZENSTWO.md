@@ -36,6 +36,14 @@ serwer (porty, SSH). **Poza zakresem**: kod SSR (`server.mjs` na VPS — nie ma 
 6. **Panel admina:** ciasteczko `admin-gate` z `HttpOnly; Secure; SameSite=Strict`; API admina bez `Access-Control-Allow-Origin: *`; jednorazowe linki z krótką ważnością.
 7. **Kopia bazy:** codziennie `pg_dump` poza VPS + raz w miesiącu próba odtworzenia.
 8. **Hermes:** `config.yaml` tylko do odczytu, alert na Discordzie przy zmianie; aktualizacje obrazów Dockera raz w miesiącu.
+9. **Formularz kontaktowy — ALTCHA (JP 2026-10-17, aktualizacja co tydzień):** widżet „Nie jestem robotem” leży w `vendor/altcha/`
+   (wersja, skrót integralności i sha256 w `vendor/altcha/VERSION`). Wyzwanie i sprawdzenie robi baza
+   (`contact_challenge`, `ops.pow_verify`, SQL 2026-10-17-contact-altcha.sql), bez ciasteczek i bez zewnętrznych serwerów.
+   Co poniedziałek cron Hermesa: `npm view altcha version dist.integrity deprecated`. Gdy jest nowsza wersja **w obrębie 3.x**:
+   `npm pack altcha@<wersja>`, zgodność `dist.integrity` z rejestrem, podmiana `vendor/altcha/altcha.min.js`
+   (z `dist/main/altcha.umd.min.cjs`), nowy `VERSION`, `?v=<wersja>` w `kontakt.html`, test: strona i skrypt 200,
+   wyzwanie z `contact_challenge` rozwiązywalne. Commit przez `repo.sh publish` i krótka notka na #admin z linkiem do zmian.
+   **Nowa wersja główna (4.x) albo pakiet oznaczony jako `deprecated`** — tylko wiadomość do JP, bez podmiany.
 
 ## 4. Przed kontami i płatnościami (etap B/C)
 

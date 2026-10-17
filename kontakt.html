@@ -29,6 +29,7 @@
   .ct .msg.err{color:#B3261E}
   .ct .done{padding:22px;border-radius:18px;background:var(--verde-50,#e5f3ea);font-size:20px}
   .ct .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+  .ct-human{--altcha-max-width:100%;--altcha-border-radius:10px;--altcha-color-border:var(--rule);font-size:18px}
   .footer__links{display:flex;gap:16px;justify-content:center}
   .footer__links a{color:var(--azzurro);min-height:44px;display:inline-flex;align-items:center}
 </style>
@@ -67,6 +68,7 @@
     </div>
     <!-- pułapka na boty: niewidoczne dla ludzi, wypełniają je tylko automaty -->
     <div class="hp" aria-hidden="true"><label for="ctWebsite">Strona www</label><input type="text" id="ctWebsite" tabindex="-1" autocomplete="off"></div>
+    <div class="ct-human"><altcha-widget id="ctAltcha" name="altcha" language="pl" auto="onfocus" type="checkbox"></altcha-widget></div>
     <button type="submit" id="ctSend">Wyślij wiadomość</button>
     <p class="msg" id="ctMsg" role="status" aria-live="polite"></p>
   </form>
@@ -78,15 +80,33 @@
   <span>© 2026 · Rodzinne przewodniki wypadowe</span>
 </div>
 
+<script src="/vendor/altcha/altcha.min.js?v=3.4.0"></script>
 <script>
 /* Formularz kontaktowy (JP 2026-10-17): nigdzie nie podajemy adresu e-mail — kontakt tylko tędy.
    Ochrona przed spamem: pułapka na boty, minimalny czas wypełnienia, limity długości i linków tu i w bazie,
-   limit wiadomości z jednego adresu IP i duplikaty w funkcji contact_send (SQL 2026-10-17-contact.sql). */
+   limit wiadomości z jednego adresu IP i duplikaty w funkcji contact_send (SQL 2026-10-17-contact.sql),
+   weryfikacja „nie jestem robotem” ALTCHA — proof-of-work liczony w przeglądarce, bez ciasteczek i firm trzecich
+   (widżet: /vendor/altcha/, wyzwanie i sprawdzenie w bazie: SQL 2026-10-17-contact-altcha.sql). */
 (function () {
   'use strict';
   var API = 'https://api.quolino.com/rest/v1';
   var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
   var t0 = Date.now();
+  var H = { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY };
+  var alt = document.getElementById('ctAltcha');
+  function setupAltcha() {
+    if (!window.$altcha || !alt.configure) return false;
+    window.$altcha.i18n.set('pl', { ariaLinkLabel: 'Altcha (oficjalna strona internetowa)', error: 'Weryfikacja nie powiodła się. Spróbuj ponownie.',
+      expired: 'Weryfikacja wygasła. Zaznacz pole jeszcze raz.', footer: '', label: 'Nie jestem robotem', loading: 'Ładowanie…', reload: 'Odśwież',
+      verify: 'Zweryfikuj', verificationRequired: 'Zaznacz „Nie jestem robotem”.', verified: 'Zweryfikowano', verifying: 'Sprawdzam…',
+      waitAlert: 'Trwa sprawdzanie… chwilę.', cancel: 'Anuluj', enterCode: 'Wprowadź kod', enterCodeAria: 'Wpisz kod', getAudioChallenge: 'Zadanie dźwiękowe',
+      enterCodeFromImage: 'Wpisz kod z obrazka.' });
+    // wyzwanie z naszej bazy: POST, bo funkcja zapisuje wyzwanie (jednorazowe, ważne 10 minut)
+    alt.configure({ challenge: API + '/rpc/contact_challenge', hideLogo: false, hideFooter: true,
+      fetch: function (url) { return fetch(url, { method: 'POST', headers: H, body: '{}' }); } });
+    return true;
+  }
+  if (!setupAltcha()) window.addEventListener('load', setupAltcha);
   var f = document.getElementById('ctForm'), body = document.getElementById('ctBody'), email = document.getElementById('ctEmail');
   var msg = document.getElementById('ctMsg'), send = document.getElementById('ctSend'), count = document.getElementById('ctCount');
   var q = new URLSearchParams(location.search);
@@ -100,18 +120,20 @@
     if (b.length < 20) { body.focus(); return fail('Napisz trochę więcej — co najmniej 20 znaków.'); }
     if ((b.match(/https?:\/\/|www\./gi) || []).length > 2) return fail('Najwyżej dwa linki w wiadomości.');
     if (m && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m)) { email.focus(); return fail('Sprawdź adres e-mail albo zostaw pole puste.'); }
+    var pay = (f.querySelector('input[name="altcha"]') || {}).value;
+    if (!pay) return fail('Zaznacz „Nie jestem robotem” nad przyciskiem.');
     send.disabled = true; msg.className = 'msg'; msg.textContent = 'Wysyłam…';
     fetch(API + '/rpc/contact_send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY },
-      body: JSON.stringify({ p_topic: document.getElementById('ctTopic').value, p_body: b, p_email: m || null,
+      headers: H,
+      body: JSON.stringify({ p_topic: document.getElementById('ctTopic').value, p_body: b, p_altcha: pay, p_email: m || null,
         p_hp: document.getElementById('ctWebsite').value, p_ms: Date.now() - t0, p_lang: lang(), p_page: document.referrer ? document.referrer.slice(0, 300) : null })
     }).then(function (r) {
       return r.json().catch(function () { return null; }).then(function (j) {
         if (!r.ok) throw new Error(j && j.message ? j.message : 'Nie udało się wysłać. Spróbuj za chwilę.');
         f.outerHTML = '<div class="done" role="status"><strong>Dziękujemy!</strong> Wiadomość dotarła.' + (m ? ' Odpowiemy na podany adres.' : '') + '</div>';
       });
-    }).catch(function (err) { fail(err.message); });
+    }).catch(function (err) { fail(err.message); if (alt.reset) alt.reset(); });
   });
 })();
 </script>

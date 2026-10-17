@@ -1,0 +1,6 @@
+altcha 3.4.0
+npm integrity: sha512-KsKrInFLlxkM8LcVpIjtM4h/U3nHCiohFzAae0DfGDSz45eWZB9hbhNBtlRBZV/Xvw6K7195X2Hhs254QC33bA==
+plik: dist/main/altcha.umd.min.cjs → vendor/altcha/altcha.min.js (skrypt klasyczny, bez importów)
+sha256: f772eef6882fe18bb79b6a239b63d3a85a25a608c98976265f5e40f20011a78e
+aktualizacja: co tydzień, Hermes (docs/BEZPIECZENSTWO.md §3.9) — patch/minor w obrębie 3.x automatycznie, nowa główna wersja tylko po decyzji JP
+pobrano: 2026-10-17
