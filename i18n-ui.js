@@ -134,8 +134,9 @@
     function set(k) { mem = String(k || '').trim(); try { if (mem) localStorage.setItem(KEY, mem); else localStorage.removeItem(KEY); } catch (e) {} }
     try {
       var u = new URL(location.href), k = u.searchParams.get('k');
-      if (k) {
-        if (/^[A-Za-z0-9_-]{24,128}$/.test(k.trim())) set(k);
+      // tylko prawdziwy klucz (24+ znaki); krótkie ?k=it to kod kraju na country.html — zostaje w adresie
+      if (k && /^[A-Za-z0-9_-]{24,128}$/.test(k.trim())) {
+        set(k);
         u.searchParams.delete('k');
         history.replaceState(history.state, '', u.pathname + u.search + u.hash);
       }
