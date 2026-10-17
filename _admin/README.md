@@ -122,6 +122,21 @@ Błędy: zwykły format PostgREST (`message`) — front pokazuje go pod przycisk
 
 ---
 
+## Wyślij uwagi do poprawki + baza wiedzy (od v4, 2026-10-17)
+
+Uwaga wpisana przy polu i zatwierdzona Enterem jest **zapisana** (`new`), ale Hermes jeszcze jej nie poprawia.
+Pod listą uwag (sekcja „Uwagi do wysłania” na dole szkicu i w przyklejonym menu przystanków) jest przycisk
+**„Wyślij uwagi do poprawki (N)”**. Wywołuje `POST /api/rpc/admin_send_comments {p_slug, p_version}`. Wszystkie
+uwagi `new` miasta przechodzą w `sent` i trafiają do jednej prośby w `draft_revision_requests`. Hermes poprawia
+je razem w jednej nowej wersji szkicu.
+
+Przycisk **„Baza wiedzy redakcji”** pod kolejką pokazuje reguły z uwag (`GET /api/editorial_rules`):
+- reguły do zatwierdzenia można poprawić i zatwierdzić (`rpc/admin_rule_decide`);
+- obowiązujące reguły można wyłączyć;
+- własną regułę dodaje się przez `rpc/admin_rule_add`.
+
+Opis całości: `docs/BAZA-WIEDZY.md`. SQL: `_content/claude-skills/sql/2026-10-17-draft-send-kb.sql`.
+
 ## Uwagi do szkiców → Hermes (od v3, 2026-10-16)
 
 Przy każdym polu szkicu (opis miasta, każde pole każdego przystanku, „cały przystanek”, „cała

@@ -178,3 +178,31 @@
 .adm-route:hover{background:#FFD45A}
 @media(max-width:640px){.adm-sheet__acts{align-items:flex-start}}
 @media(max-width:480px){.adm-env{font-size:13px;padding:6px 10px}.adm .sticky-nav-inner{gap:8px}}
+
+/* v4 (2026-10-17): „Wyślij uwagi do poprawki” + baza wiedzy redakcji */
+.adm-btn-send{background:var(--azzurro);color:#fff;min-height:44px;font-size:16px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)}
+.adm-btn-send:disabled{background:var(--page);color:var(--muted);box-shadow:none;cursor:default}
+.adm-send{border-top:3px solid var(--azzurro)}
+.adm-send__sub,.adm-send__hint{color:var(--ink2);font-size:16px;margin:4px 0 12px}
+.adm-send__list{margin:0 0 14px;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.adm-send__list li{font-size:16px;line-height:1.4}
+.adm-send__list p{margin:2px 0 0;white-space:pre-line}
+.adm-send__where{font-weight:800;color:var(--azzurro);text-decoration:none}
+.adm-send__row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.adm-toc__send{display:flex;flex-direction:column;gap:6px;padding:10px 6px 2px;border-top:1px solid var(--rule);margin-top:8px}
+.adm-toc__send .adm-btn-send{width:100%}
+.adm-toc .adm-toc__all{display:block;min-height:0;padding:4px;font-size:15px;text-align:center;color:var(--azzurro)}
+.adm-send__row .adm-btn-send{padding:0 18px}
+@media(max-width:1199px){.adm-toc .adm-toc__send{display:none}}
+.adm-kbbtn{margin-top:14px;width:100%;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;border:2px solid var(--rule);border-radius:12px;background:var(--card);font:800 16px/1.2 'Archivo',sans-serif;color:var(--ink);cursor:pointer}
+.adm-kbbtn:hover{border-color:var(--azzurro)}
+.adm-rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.adm-rule{padding:12px 14px;border-radius:12px;background:var(--page)}
+.adm-rule--proposed{background:var(--sun-50)}
+.adm-rule--retired{opacity:.7}
+.adm-rule__top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.adm-rule__txt{margin:0;font-size:17px;font-weight:600;line-height:1.4}
+.adm-rule__edit,.adm-rule-add textarea,.adm-rule-add select{width:100%;min-height:44px;padding:8px 10px;border:2px solid var(--rule);border-radius:8px;font:500 16px/1.4 'Archivo',sans-serif;background:var(--card)}
+.adm-rule__why{margin:6px 0 0;color:var(--ink2);font-size:15px}
+.adm-rule__acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.adm-rule-add label{display:block;margin:10px 0 4px;font-weight:700}

@@ -21,7 +21,9 @@
     castle: 'castle', synagogue: 'synagogue' };
   var SRC = { manual: 'ręcznie', import: 'import', pipeline: 'Hermes', restore: 'przywrócenie', migration: 'migracja' };
   var VST = { draft: 'szkic', published: 'opublikowana', archived: 'archiwum', rejected: 'odrzucona' };
-  var CST = { 'new': 'wysłana', seen: 'Hermes czyta', done: 'poprawione', rejected: 'odrzucona', local: 'czeka na wysłanie' };
+  var CST = { 'new': 'zapisana — do wysłania', sent: 'wysłana do poprawki', seen: 'Hermes poprawia', done: 'poprawione', rejected: 'odrzucona', local: 'czeka na połączenie' };
+  var RST = { proposed: 'do zatwierdzenia', active: 'obowiązuje', retired: 'wyłączona' };
+  var RSCOPE = { all: 'cała treść', style: 'styl', facts: 'fakty', mission: 'misje dzieci', stop: 'przystanki', city: 'opis miasta', translation: 'tłumaczenia' };
   var DUR = { half_day: 'pół dnia', full_day: 'cały dzień' };
 
   var CITY_FIELDS = [['duration_type', 'Czas', durLabel], ['duration_hours', 'Godziny'], ['bandana_color', 'Kolor drużyny'],
@@ -36,6 +38,11 @@
   var $q = document.getElementById('queue');
   var $d = document.getElementById('detail');
   var $count = document.getElementById('count');
+
+  var DEMO_RULES = [
+    { id: 1, rule: 'Misja dla dziecka zaczyna się od czasownika i da się ją wykonać bez kupowania biletu.', why: 'Uwaga JP do Perugii: misja wymagała wejścia do muzeum.', scope: 'mission', field: 'stop.kids_box', status: 'proposed', proposed_by: 'hermes', uses: 0, source_comment_ids: [3, 7], created_at: '2026-10-17T09:00:00Z' },
+    { id: 2, rule: 'Nie podajemy cen ani godzin bez źródła — wtedy „sprawdź na miejscu”.', scope: 'facts', status: 'active', proposed_by: 'jp', uses: 12, source_comment_ids: [], created_at: '2026-10-10T09:00:00Z' }
+  ];
 
   // ── dane ─────────────────────────────────────────────
   function api(path, opts) {
@@ -76,6 +83,19 @@
         var row = Object.assign({ id: Date.now(), status: 'new', hermes_reply: null, created_at: new Date().toISOString() }, opts.body);
         d.comments.push(row);
         return new Promise(function (res) { setTimeout(function () { res([row]); }, 250); });
+      }
+      if (path === '/rpc/admin_send_comments') {
+        var n = 0;
+        d.comments.forEach(function (c) { if (c.city_slug === opts.body.p_slug && c.status === 'new') { c.status = 'sent'; n++; } });
+        return new Promise(function (res) { setTimeout(function () { res({ request_id: Date.now(), sent: n }); }, 300); });
+      }
+      if (/^\/editorial_rules/.test(path)) { d.rules = d.rules || DEMO_RULES; return d.rules; }
+      if (/^\/rpc\/admin_rule_(decide|add)$/.test(path)) {
+        d.rules = d.rules || DEMO_RULES;
+        var rb = opts.body;
+        if (/add$/.test(path)) d.rules.push({ id: Date.now(), rule: rb.p_rule, scope: rb.p_scope || 'all', status: 'active', proposed_by: 'jp', uses: 0, source_comment_ids: [], created_at: new Date().toISOString() });
+        else d.rules.forEach(function (r) { if (r.id === rb.p_id) { r.status = rb.p_status; if (rb.p_rule) r.rule = rb.p_rule; } });
+        return Promise.resolve({ ok: true });
       }
       if (/^\/rpc\/admin_(approve|reject)$/.test(path)) {
         var b = opts.body;
@@ -229,7 +249,8 @@
   function commentsFor(stop, field) {
     return state.comments.filter(function (c) { return ck(c.stop_key, c.field) === ck(stop, field); });
   }
-  function isOpen(c) { return c.status === 'new' || c.status === 'seen' || c.status === 'local'; }
+  function isOpen(c) { return c.status === 'new' || c.status === 'sent' || c.status === 'seen' || c.status === 'local'; }
+  function unsent() { return state.comments.filter(function (c) { return c.status === 'new'; }); }
 
   function commentItem(c) {
     var cur = state.current, other = cur && c.city_version !== cur.version;
@@ -243,7 +264,7 @@
     return '<div class="adm-cm" data-stop="' + esc(stop || '') + '" data-field="' + esc(field || '') + '" data-label="' + esc(label) + '"' + (stopVer ? ' data-sv="' + stopVer + '"' : '') + '>' +
       '<ul class="adm-cm__list">' + list.map(commentItem).join('') + '</ul>' +
       '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="Uwaga dla Hermesa…"></textarea>' +
-      '<button type="submit" class="adm-cm__send" aria-label="Wyślij uwagę do Hermesa" title="Wyślij (Enter)">' + SEND + '</button></form></div>';
+      '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form></div>';
   }
   function updateCommentUi() {
     [].forEach.call($d.querySelectorAll('.adm-cm'), function (box) {
@@ -266,7 +287,51 @@
     });
     var warn = document.getElementById('cmWarn');
     if (warn) warn.hidden = state.commentsApi !== false;
+    renderSendBox();
   }
+
+  // ── „Wyślij uwagi do poprawki” — lista zapisanych uwag i jeden przycisk (JP 2026-10-17) ──
+  function sendList() {
+    var list = unsent();
+    if (!list.length) return '<p class="adm-empty">Brak nowych uwag. Wpisz uwagę przy polu i naciśnij Enter — zapisze się tutaj.</p>';
+    return '<ol class="adm-send__list">' + list.map(function (c) {
+      var where = (c.stop_key ? (stopName(c.stop_key) || c.stop_key) : 'Opis miasta') + ' · ' + (c.field_label || 'całość');
+      return '<li><a href="#st-' + esc(c.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a><p>' + esc(c.body) + '</p></li>';
+    }).join('') + '</ol>';
+  }
+  function stopName(key) { var a = $d.querySelector('[data-to="' + key.replace(/"/g, '') + '"] .adm-toc__nm'); return a ? a.textContent : ''; }
+  function renderSendBox() {
+    var n = unsent().length, local = state.comments.filter(function (c) { return c.status === 'local'; }).length;
+    var box = document.getElementById('sendList');
+    if (box && !box.contains(document.activeElement)) box.innerHTML = sendList();
+    [].forEach.call(document.querySelectorAll('[data-send]'), function (b) {
+      if (b.classList.contains('is-busy')) return;
+      b.disabled = !n;
+      b.textContent = n ? 'Wyślij uwagi do poprawki (' + n + ')' : 'Brak uwag do wysłania';
+    });
+    var hint = document.getElementById('sendHint');
+    if (hint) hint.textContent = local ? local + ' uwag czeka na połączenie z bazą — wyślą się same.' : '';
+  }
+  function plUwagi(n) { var d = n % 10, t = n % 100; return n + (n === 1 ? ' uwaga' : (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? ' uwagi' : ' uwag'); }
+  function sendAll(btn) {
+    var it = state.current, n = unsent().length;
+    if (!it || !n) return;
+    [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.disabled = true; b.classList.add('is-busy'); b.textContent = 'Wysyłam…'; });
+    var $m = document.getElementById('sendMsg');
+    api('/rpc/admin_send_comments', { method: 'POST', body: { p_slug: it.city_slug, p_version: it.version } }).then(function (r) {
+      if ($m) { $m.className = 'adm-msg adm-msg--ok'; $m.textContent = 'Wysłane: ' + plUwagi((r && r.sent) || n) + '. Hermes przygotuje nową wersję szkicu i odpisze przy polach.'; }
+      return loadComments(it.city_slug);
+    }).catch(function (e) {
+      if ($m) { $m.className = 'adm-msg adm-msg--err'; $m.textContent = 'Nie wysłano: ' + e.message; }
+    }).then(function () {
+      [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.classList.remove('is-busy'); });
+      updateCommentUi();
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-send]');
+    if (b && !b.disabled) sendAll(b);
+  });
   function refreshComments() {
     if (!state.current) return;
     var focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('.adm-cm');
@@ -388,6 +453,12 @@
     html += '<section class="adm-sheet__sec"><h3>Przystanki</h3><div class="adm-stops">' +
       (stops.length ? stops.map(function (x) { return stopHtml(x, it, pub); }).join('') : '<p class="adm-empty">Brak przystanków.</p>') + '</div></section>';
 
+    html += '<section class="adm-sheet__sec adm-send" id="send"><h3>Uwagi do wysłania</h3>' +
+      '<p class="adm-send__sub">Uwagi zapisane przy polach. Hermes zaczyna poprawki dopiero po kliknięciu przycisku — wszystkie naraz, w jednej nowej wersji szkicu.</p>' +
+      '<div id="sendList">' + sendList() + '</div>' +
+      '<div class="adm-send__row"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
+      '<span class="adm-msg" id="sendMsg" role="status"></span></div><p class="adm-send__hint" id="sendHint"></p></section>';
+
     html += '<form class="adm-decide" id="decide" autocomplete="off">' +
       '<label for="note">Notatka do historii wersji (opcjonalnie)</label>' +
       '<textarea id="note" name="note" rows="1" placeholder="Notatka do wersji (opcjonalnie)"></textarea>' +
@@ -402,7 +473,8 @@
       stops.map(function (x) {
         return '<li class="adm-toc__' + x.kind + '"><a href="#st-' + esc(x.key) + '" data-to="' + esc(x.key) + '"><span class="adm-toc__no">' + num(x.s.stop_number) + '</span>' +
           '<span class="adm-toc__nm">' + esc(x.t.name || '(bez nazwy)') + '</span><b class="adm-n" data-count="' + esc(x.key) + '">0</b></a></li>';
-      }).join('') + '</ol></nav>';
+      }).join('') + '</ol><div class="adm-toc__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
+      '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div></nav>';
 
     $d.innerHTML = '<div class="adm-split">' + html + toc + '</div>';
     updateCounts();
@@ -523,6 +595,74 @@
     armed = null;
   }
 
+  // ── baza wiedzy redakcji: reguły z uwag (JP 2026-10-17, docs/BAZA-WIEDZY.md) ──
+  var $kb = document.getElementById('kbOpen');
+  function loadRules() {
+    return api('/editorial_rules?order=id.desc').then(function (rows) { state.rules = rows || []; state.rulesApi = true; })
+      .catch(function (e) { state.rules = []; state.rulesApi = false; state.rulesErr = e.message; })
+      .then(function () {
+        var n = state.rules.filter(function (r) { return r.status === 'proposed'; }).length;
+        var c = document.getElementById('kbCount');
+        if (c) { c.textContent = n; c.classList.toggle('is-zero', !n); }
+      });
+  }
+  function ruleHtml(r) {
+    var meta = [RSCOPE[r.scope] || r.scope, r.field, r.category, r.city_slug].filter(Boolean).join(' · ');
+    var src = (r.source_comment_ids || []).length ? ' · z ' + r.source_comment_ids.length + ' uwag' : (r.proposed_by === 'jp' ? ' · dodana przez JP' : '');
+    var h = '<li class="adm-rule adm-rule--' + esc(r.status) + '" data-rule="' + esc(r.id) + '">' +
+      '<div class="adm-rule__top"><span class="adm-chip' + (r.status === 'active' ? ' adm-chip--new' : r.status === 'proposed' ? ' adm-chip--chg' : '') + '">' + esc(RST[r.status] || r.status) + '</span>' +
+      '<span class="adm-cm__meta">' + esc(meta + src) + (r.uses ? ' · użyta ' + esc(r.uses) + '×' : '') + '</span></div>';
+    if (r.status === 'proposed') h += '<textarea class="adm-rule__edit" rows="2" aria-label="Treść reguły">' + esc(r.rule) + '</textarea>';
+    else h += '<p class="adm-rule__txt">' + esc(r.rule) + '</p>';
+    if (r.why) h += '<p class="adm-rule__why">Skąd: ' + esc(r.why) + '</p>';
+    if (r.example_bad || r.example_good) h += '<p class="adm-rule__why">' + (r.example_bad ? 'Źle: „' + esc(r.example_bad) + '”' : '') + (r.example_good ? ' Dobrze: „' + esc(r.example_good) + '”' : '') + '</p>';
+    h += '<div class="adm-rule__acts">' + (r.status === 'proposed'
+      ? '<button type="button" class="qc-btn qc-btn--sm adm-btn-ok" data-rule-act="active">Zatwierdź regułę</button><button type="button" class="qc-btn qc-btn--sm adm-btn-no" data-rule-act="retired">Odrzuć</button>'
+      : r.status === 'active' ? '<button type="button" class="qc-btn qc-btn--sm" data-rule-act="retired">Wyłącz</button>'
+      : '<button type="button" class="qc-btn qc-btn--sm" data-rule-act="active">Włącz ponownie</button>') + '</div></li>';
+    return h;
+  }
+  function openRules() {
+    state.current = null; clearInterval(state.poll);
+    [].forEach.call($q.querySelectorAll('.adm-item'), function (b) { b.setAttribute('aria-current', 'false'); });
+    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję bazę wiedzy…</p></div>';
+    loadRules().then(function () {
+      var R = state.rules, by = function (st) { return R.filter(function (r) { return r.status === st; }); };
+      var html = '<article class="adm-sheet adm-kb"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Baza wiedzy redakcji</p>' +
+        '<h2 class="adm-sheet__title">Reguły z uwag</h2><p class="adm-sheet__sub">Hermes zamienia powtarzalne uwagi w reguły. Zatwierdzone reguły dostaje każde pisanie, poprawka, tłumaczenie i walidacja wycieczek — ten sam błąd nie wraca w kolejnych miastach.</p></div></header>';
+      if (state.rulesApi === false) html += '<p class="adm-cmwarn">Baza nie ma jeszcze tabeli reguł (' + esc(state.rulesErr || '') + '). Hermes doda ją po approve SQL 2026-10-17-draft-send-kb.sql.</p>';
+      [['proposed', 'Do zatwierdzenia'], ['active', 'Obowiązują'], ['retired', 'Wyłączone']].forEach(function (g) {
+        var list = by(g[0]);
+        if (!list.length && g[0] === 'retired') return;
+        html += '<section class="adm-sheet__sec"><h3>' + g[1] + ' <b class="adm-n' + (list.length ? '' : ' is-zero') + '">' + list.length + '</b></h3>' +
+          (list.length ? '<ol class="adm-rules">' + list.map(ruleHtml).join('') + '</ol>' : '<p class="adm-empty">' + (g[0] === 'proposed' ? 'Nic nie czeka.' : 'Brak.') + '</p>') + '</section>';
+      });
+      html += '<section class="adm-sheet__sec"><h3>Dodaj regułę</h3><form class="adm-rule-add" id="ruleAdd" autocomplete="off">' +
+        '<label for="ruleTxt">Treść (jedno zdanie, jak polecenie dla autora)</label><textarea id="ruleTxt" rows="2" maxlength="600" required></textarea>' +
+        '<label for="ruleScope">Dotyczy</label><select id="ruleScope">' + Object.keys(RSCOPE).map(function (k) { return '<option value="' + k + '">' + esc(RSCOPE[k]) + '</option>'; }).join('') + '</select>' +
+        '<div class="adm-send__row"><button type="submit" class="qc-btn adm-btn-ok">Dodaj jako obowiązującą</button><span class="adm-msg" id="ruleMsg" role="status"></span></div></form></section></article>';
+      $d.innerHTML = html;
+    });
+  }
+  if ($kb) $kb.addEventListener('click', openRules);
+  $d.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rule-act]');
+    if (!b) return;
+    var li = b.closest('[data-rule]'), id = +li.getAttribute('data-rule'), ta = li.querySelector('.adm-rule__edit');
+    b.disabled = true;
+    api('/rpc/admin_rule_decide', { method: 'POST', body: { p_id: id, p_status: b.getAttribute('data-rule-act'), p_rule: ta ? ta.value.trim() : null } })
+      .then(openRules).catch(function (err) { b.disabled = false; alertRow(li, err.message); });
+  });
+  $d.addEventListener('submit', function (e) {
+    if (e.target.id !== 'ruleAdd') return;
+    e.preventDefault();
+    var t = document.getElementById('ruleTxt').value.trim(), sc = document.getElementById('ruleScope').value, m = document.getElementById('ruleMsg');
+    if (t.length < 10) { m.className = 'adm-msg adm-msg--err'; m.textContent = 'Za krótka reguła.'; return; }
+    api('/rpc/admin_rule_add', { method: 'POST', body: { p_rule: t, p_scope: sc } }).then(openRules)
+      .catch(function (err) { m.className = 'adm-msg adm-msg--err'; m.textContent = 'Nie zapisano: ' + err.message; });
+  });
+  function alertRow(li, msg) { var p = document.createElement('p'); p.className = 'adm-msg adm-msg--err'; p.textContent = 'Nie zapisano: ' + msg; li.appendChild(p); }
+
   // ── start ────────────────────────────────────────────
   var env = document.getElementById('env');
   env.hidden = false;
@@ -531,4 +671,5 @@
   if (!DEMO) env.className = 'adm-env adm-env--live';
   document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshComments(); });
   loadQueue(!window.matchMedia('(max-width:900px)').matches);
+  loadRules();
 })();
