@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kontakt — Quolino</title>
+<meta name="description" content="Napisz do zespołu Quolino: pytanie o wycieczkę, błąd na stronie albo propozycja współpracy.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://quolino.com/kontakt.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=26">
+<style>
+  .ct{max-width:680px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.55;color:var(--ink)}
+  .ct h1{font-size:clamp(34px,7vw,56px);line-height:1.02;margin:.2em 0 .3em}
+  .ct .lead{font-size:20px;margin-bottom:24px}
+  .ct form{display:flex;flex-direction:column;gap:18px;padding:22px;border-radius:var(--r-stk,18px);background:var(--card,#fff);box-shadow:var(--lift-1)}
+  .ct label{display:block;font-weight:800;margin-bottom:6px}
+  .ct .opt{font-weight:500;color:var(--muted)}
+  .ct select,.ct textarea,.ct input[type=email]{width:100%;min-height:48px;padding:10px 12px;border:2px solid var(--rule);border-radius:10px;font:500 18px/1.4 'Archivo',sans-serif;background:var(--page);color:var(--ink)}
+  .ct textarea{min-height:160px;resize:vertical}
+  .ct select:focus,.ct textarea:focus,.ct input:focus{outline:3px solid var(--azzurro);outline-offset:1px;border-color:var(--azzurro)}
+  .ct .hint{margin-top:6px;font-size:16px;color:var(--muted)}
+  .ct .count{float:right;font-weight:500;color:var(--muted);font-size:16px}
+  .ct button{min-height:52px;border:0;border-radius:12px;background:var(--azzurro);color:#fff;font:800 18px/1 'Archivo',sans-serif;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)}
+  .ct button:disabled{opacity:.6;cursor:default}
+  .ct .msg{font-weight:700;min-height:1.4em}
+  .ct .msg.err{color:#B3261E}
+  .ct .done{padding:22px;border-radius:18px;background:var(--verde-50,#e5f3ea);font-size:20px}
+  .ct .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+  .footer__links{display:flex;gap:16px;justify-content:center}
+  .footer__links a{color:var(--azzurro);min-height:44px;display:inline-flex;align-items:center}
+</style>
+</head>
+<body>
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+  </div>
+</nav>
+
+<main class="ct" id="mainContent">
+  <h1>Kontakt</h1>
+  <p class="lead">Napisz do nas: pytanie o wycieczkę, błąd na stronie albo pomysł na współpracę. Czytamy każdą wiadomość.</p>
+
+  <form id="ctForm" novalidate>
+    <div>
+      <label for="ctTopic">Temat</label>
+      <select id="ctTopic" required>
+        <option value="trip">Pytanie o wycieczkę</option>
+        <option value="bug">Błąd na stronie</option>
+        <option value="partner">Współpraca</option>
+        <option value="privacy">Prywatność i dane</option>
+        <option value="other">Inne</option>
+      </select>
+    </div>
+    <div>
+      <label for="ctBody">Wiadomość <span class="count" id="ctCount">0 / 2000</span></label>
+      <textarea id="ctBody" maxlength="2000" required aria-describedby="ctBodyHint"></textarea>
+      <p class="hint" id="ctBodyHint">Od 20 znaków. Najwyżej dwa linki.</p>
+    </div>
+    <div>
+      <label for="ctEmail">Twój e-mail <span class="opt">(opcjonalnie)</span></label>
+      <input type="email" id="ctEmail" maxlength="200" autocomplete="email" inputmode="email" aria-describedby="ctEmailHint">
+      <p class="hint" id="ctEmailHint">Tylko jeśli chcesz odpowiedzi. Użyjemy go wyłącznie do odpowiedzi na tę wiadomość i usuniemy po 90 dniach.</p>
+    </div>
+    <!-- pułapka na boty: niewidoczne dla ludzi, wypełniają je tylko automaty -->
+    <div class="hp" aria-hidden="true"><label for="ctWebsite">Strona www</label><input type="text" id="ctWebsite" tabindex="-1" autocomplete="off"></div>
+    <button type="submit" id="ctSend">Wyślij wiadomość</button>
+    <p class="msg" id="ctMsg" role="status" aria-live="polite"></p>
+  </form>
+</main>
+
+<div class="footer">
+  <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+  <nav class="footer__links"><a href="/kontakt.html">Kontakt</a><a href="/cookie-policy.html">Prywatność</a></nav>
+  <span>© 2026 · Rodzinne przewodniki wypadowe</span>
+</div>
+
+<script>
+/* Formularz kontaktowy (JP 2026-10-17): nigdzie nie podajemy adresu e-mail — kontakt tylko tędy.
+   Ochrona przed spamem: pułapka na boty, minimalny czas wypełnienia, limity długości i linków tu i w bazie,
+   limit wiadomości z jednego adresu IP i duplikaty w funkcji contact_send (SQL 2026-10-17-contact.sql). */
+(function () {
+  'use strict';
+  var API = 'https://api.quolino.com/rest/v1';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+  var t0 = Date.now();
+  var f = document.getElementById('ctForm'), body = document.getElementById('ctBody'), email = document.getElementById('ctEmail');
+  var msg = document.getElementById('ctMsg'), send = document.getElementById('ctSend'), count = document.getElementById('ctCount');
+  var q = new URLSearchParams(location.search);
+  if (q.get('t') && document.querySelector('#ctTopic option[value="' + q.get('t').replace(/[^a-z]/g, '') + '"]')) document.getElementById('ctTopic').value = q.get('t');
+  body.addEventListener('input', function () { count.textContent = body.value.length + ' / 2000'; });
+  function lang() { try { return (localStorage.getItem('quolino_lang') || 'pl').slice(0, 8); } catch (e) { return 'pl'; } }
+  function fail(t) { msg.className = 'msg err'; msg.textContent = t; send.disabled = false; }
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var b = body.value.trim(), m = email.value.trim();
+    if (b.length < 20) { body.focus(); return fail('Napisz trochę więcej — co najmniej 20 znaków.'); }
+    if ((b.match(/https?:\/\/|www\./gi) || []).length > 2) return fail('Najwyżej dwa linki w wiadomości.');
+    if (m && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m)) { email.focus(); return fail('Sprawdź adres e-mail albo zostaw pole puste.'); }
+    send.disabled = true; msg.className = 'msg'; msg.textContent = 'Wysyłam…';
+    fetch(API + '/rpc/contact_send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY },
+      body: JSON.stringify({ p_topic: document.getElementById('ctTopic').value, p_body: b, p_email: m || null,
+        p_hp: document.getElementById('ctWebsite').value, p_ms: Date.now() - t0, p_lang: lang(), p_page: document.referrer ? document.referrer.slice(0, 300) : null })
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (j) {
+        if (!r.ok) throw new Error(j && j.message ? j.message : 'Nie udało się wysłać. Spróbuj za chwilę.');
+        f.outerHTML = '<div class="done" role="status"><strong>Dziękujemy!</strong> Wiadomość dotarła.' + (m ? ' Odpowiemy na podany adres.' : '') + '</div>';
+      });
+    }).catch(function (err) { fail(err.message); });
+  });
+})();
+</script>
+<script src="/stats.js?v=1" defer></script>
+</body>
+</html>
