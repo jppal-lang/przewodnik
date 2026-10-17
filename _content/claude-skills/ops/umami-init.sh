@@ -37,10 +37,14 @@ echo "REVOKE ALL ON DATABASE umami FROM PUBLIC;" | pgq -d postgres
 
 $UC up -d --force-recreate umami
 echo -n "Czekam na migracje Umami"
-i=0; until echo "SELECT 1 FROM \"user\" WHERE username='admin'" | pgq -d umami 2>/dev/null | grep -q 1; do
+i=0; until echo "SELECT 1 FROM \"user\" WHERE username IN ('admin', 'admin_jp') LIMIT 1" | pgq -d umami 2>/dev/null | grep -q 1; do
   i=$((i+1)); [ $i -gt 60 ] && { echo; echo "Umami nie wstało w 5 min: $UC logs umami"; exit 1; }
   echo -n .; sleep 5
 done; echo " ok"
+
+# login admina: admin_jp zamiast domyślnego admin (JP 2026-10-17); powtarzalne
+echo "UPDATE \"user\" SET username = 'admin_jp' WHERE username = 'admin' AND NOT EXISTS (SELECT 1 FROM \"user\" WHERE username = 'admin_jp');" | pgq -d umami
+[ -f secrets/umami-admin.txt ] && sed -i 's/^login: admin$/login: admin_jp/' secrets/umami-admin.txt
 
 # hasło admina hashuje baza (pgcrypto, bcrypt $2a$ — Umami je przyjmuje); obraz Umami nie ma bcryptjs poza swoim bundlem
 echo "CREATE EXTENSION IF NOT EXISTS pgcrypto;" | pgq -d umami
@@ -49,10 +53,10 @@ echo "CREATE EXTENSION IF NOT EXISTS pgcrypto;" | pgq -d umami
 mkdir -p secrets; chmod 700 secrets
 if [ ! -f secrets/umami-admin.txt ]; then
   AP=$(rnd 12)
-  printf "UPDATE \"user\" SET password = crypt(:'pw', gen_salt('bf', 10)) WHERE username='admin';\n" | pgq -d umami -v pw="$AP"
-  [ "$(printf "SELECT count(*) FROM \"user\" WHERE username='admin' AND password = crypt(:'pw', password);\n" | pgq -d umami -v pw="$AP")" = 1 ] \
+  printf "UPDATE \"user\" SET password = crypt(:'pw', gen_salt('bf', 10)) WHERE username='admin_jp';\n" | pgq -d umami -v pw="$AP"
+  [ "$(printf "SELECT count(*) FROM \"user\" WHERE username='admin_jp' AND password = crypt(:'pw', password);\n" | pgq -d umami -v pw="$AP")" = 1 ] \
     || { echo "Nie udało się ustawić hasła admina Umami — panel zatrzymany"; $UC stop umami; exit 1; }
-  printf 'https://stats.quolino.com\nlogin: admin\nhasło: %s\n' "$AP" > secrets/umami-admin.txt; chmod 600 secrets/umami-admin.txt
+  printf 'https://stats.quolino.com\nlogin: admin_jp\nhasło: %s\n' "$AP" > secrets/umami-admin.txt; chmod 600 secrets/umami-admin.txt
   echo "Hasło admina Umami: $W/secrets/umami-admin.txt (po pierwszym logowaniu zmień je w panelu)"
 fi
 
@@ -60,7 +64,7 @@ fi
 SHARE=$(getenv UMAMI_SHARE_ID); [ -n "$SHARE" ] || { SHARE=$(rnd 12); printf 'UMAMI_SHARE_ID=%s\n' "$SHARE" >> .env; }
 cat <<SQL | pgq -d umami -v sid="$SITE_ID" -v share="$SHARE"
 INSERT INTO website (website_id, name, domain, share_id, user_id, created_by)
-SELECT :'sid'::uuid, 'Quolino', 'quolino.com', :'share', user_id, user_id FROM "user" WHERE username='admin'
+SELECT :'sid'::uuid, 'Quolino', 'quolino.com', :'share', user_id, user_id FROM "user" WHERE username='admin_jp'
 ON CONFLICT (website_id) DO UPDATE SET share_id = EXCLUDED.share_id, deleted_at = NULL;
 SQL
 
