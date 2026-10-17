@@ -17,6 +17,7 @@
   var prodHost = /(^|\.)quolino\.com$/.test(location.hostname);
   var enabled = !!WEBSITE_ID && !off && prodHost && !qs.has('draft');
   var q = [], loaded = false;
+  var lang = function () { var S = window.QSSR; return String(window.currentLang || (S && S.lang) || document.documentElement.lang || 'pl').slice(0, 5); };
 
   function flush() {
     if (!window.umami || typeof window.umami.track !== 'function') return false;
@@ -39,6 +40,7 @@
   s.setAttribute('data-exclude-hash', 'true');
   s.setAttribute('data-do-not-track', 'true');
   s.setAttribute('data-domains', location.hostname);
+  s.setAttribute('data-tag', lang());                               // język strony (wybrany w Quolino), osobno od języka przeglądarki
   s.onload = function () { loaded = true; flush(); };
   s.onerror = function () { enabled = false; q.length = 0; };
   document.head.appendChild(s);
@@ -46,7 +48,6 @@
 
   // ── kontekst strony ────────────────────────────────────────────────────────────────────
   var city = function () { var S = window.QSSR; return (S && (S.uslug || S.slug)) || qs.get('c') || ''; };
-  var lang = function () { var S = window.QSSR; return String(window.currentLang || (S && S.lang) || document.documentElement.lang || 'pl').slice(0, 5); };
   var kid = function () { var c = document.getElementById('city'); return c && c.dataset.view === 'kid'; };
   var view = function () { return kid() ? 'dziecko' : 'rodzic'; };
   var stopNum = function (el) { var st = el && el.closest && el.closest('.qc-stop'); return st ? +st.dataset.stopNum || null : null; };
