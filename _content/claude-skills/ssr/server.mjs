@@ -50,11 +50,11 @@ const publishedCities = () => cached('cities', async () => {
 // język miasta jest „gotowy”, gdy ma opis miasta i tłumaczenie KAŻDEGO przystanku — inaczej strona
 // byłaby mieszanką języków (słabe SEO); taki język nie trafia do hreflang ani mapy strony
 const cityLangs = () => cached('city_langs', async () => {
-  const [ct, stops, st] = await Promise.all([api('city_translations?select=city_slug,lang'),
-    api('stops?select=id,city_slug'), api('stop_translations?select=stop_id,lang')]);
-  const cityOf = Object.fromEntries(stops.map(s => [s.id, s.city_slug]));
-  const nStops = {}; for (const s of stops) nStops[s.city_slug] = (nStops[s.city_slug] ?? 0) + 1;
-  const cnt = {}; for (const t of st) { const c = cityOf[t.stop_id]; if (c) cnt[`${c}|${t.lang}`] = (cnt[`${c}|${t.lang}`] ?? 0) + 1; }
+  // Etap A: gość nie czyta tabel stops/stop_translations — liczymy z widoków publicznych (public_cities.stops_count, public_stops)
+  const [ct, pc, ps] = await Promise.all([api('city_translations?select=city_slug,lang'),
+    api('public_cities?select=slug,stops_count'), api('public_stops?select=city_slug,lang')]);
+  const nStops = Object.fromEntries(pc.map(c => [c.slug, c.stops_count]));
+  const cnt = {}; for (const t of ps) cnt[`${t.city_slug}|${t.lang}`] = (cnt[`${t.city_slug}|${t.lang}`] ?? 0) + 1;
   const m = {};
   for (const r of ct) if ((cnt[`${r.city_slug}|${r.lang}`] ?? 0) >= (nStops[r.city_slug] ?? 0)) (m[r.city_slug] ??= new Set()).add(r.lang);
   return m;
@@ -69,20 +69,21 @@ const uiDict = (lang) => cached(`ui:${lang}`, async () => {
 
 async function cityData(slug, lang) {
   return cached(`city:${slug}:${lang}`, async () => {
-    const [cities, ct, stops, plan, emerg] = await Promise.all([
-      api(`cities?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=*`),
-      api(`city_translations?city_slug=eq.${encodeURIComponent(slug)}&lang=in.(${lang},${FALLBACK})&select=*`),
-      api(`stops?city_slug=eq.${encodeURIComponent(slug)}&select=*,stop_translations(*)&order=sort_order`),
-      api(`day_plan?city_slug=eq.${encodeURIComponent(slug)}&lang=in.(${lang},${FALLBACK})&select=*&order=sort_order`).catch(() => []),
-      api(`emergency_points?city_slug=eq.${encodeURIComponent(slug)}&lang=in.(${lang},${FALLBACK})&select=*&order=sort_order`).catch(() => []),
+    // Etap A (JP 2026-10-17): strona publiczna = opowieść. Tylko kolumny publiczne miasta, public_stops (nazwa + 1–2 akapity),
+    // bez planu dnia, punktów awaryjnych, godzin, cen, parkingu, współrzędnych, misji. Pełna treść: trip_full z kluczem (w przeglądarce).
+    const q = encodeURIComponent(slug), L = `in.(${lang},${FALLBACK})`;
+    const [cities, ct, rows] = await Promise.all([
+      api(`cities?slug=eq.${q}&status=eq.published&select=slug,country,region,region_slug,duration_type,duration_hours,hero_image,url_slug,bandana_color`),
+      api(`city_translations?city_slug=eq.${q}&lang=${L}&select=city_slug,lang,title,region_label,subtitle,lead`),
+      api(`public_stops?city_slug=eq.${q}&lang=${L}&select=stop_id,stop_number,stop_key,sort_order,lang,name,desc_paragraphs&order=sort_order`),
     ]);
     if (!cities.length) return null;
-    const pick = (rows) => { const own = rows.filter(r => r.lang === lang); return own.length ? own : rows.filter(r => r.lang === FALLBACK); };
+    const byStop = new Map();
+    for (const r of rows) { const g = byStop.get(r.stop_id) ?? { s: r, own: null, fb: null }; (r.lang === lang ? g.own = r : g.fb = r); byStop.set(r.stop_id, g); }
     return {
       city: cities[0],
       tr: ct.find(t => t.lang === lang) ?? ct.find(t => t.lang === FALLBACK) ?? {},
-      stops: stops.map(s => ({ s, t: (s.stop_translations ?? []).find(t => t.lang === lang) ?? (s.stop_translations ?? []).find(t => t.lang === FALLBACK) ?? {} })),
-      plan: pick(plan), emergency: pick(emerg),
+      stops: [...byStop.values()].map(g => ({ s: g.s, t: g.own ?? g.fb ?? {} })).sort((a, b) => (a.s.sort_order ?? 0) - (b.s.sort_order ?? 0)),
     };
   });
 }
@@ -113,7 +114,7 @@ function template() {
 
 function publicLayer(d, lang, ui) {
   const u = (k, f) => ui[k] ?? f;
-  const { tr, stops, plan, emergency, city } = d;
+  const { tr, stops, city } = d;
   const paras = (txt) => String(txt ?? '').split(/\n\s*\n/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join('');
   let h = `<article class="ssr-public" lang="${esc(lang)}">`;
   h += `<header><h1>${esc(tr.title ?? city.slug)}</h1>`;
@@ -122,34 +123,16 @@ function publicLayer(d, lang, ui) {
   h += `<p>${esc(city.duration_type === 'half_day' ? u('label.half_day', 'pół dnia') : u('label.full_day', 'cały dzień'))} · ` +
        `${esc(u('label.stops_count', '{n} przystanków').replace('{n}', stops.length))}</p></header>`;
   if (tr.lead) h += paras(tr.lead);
-  if (tr.good_to_know) h += `<section><h2>${esc(u('label.good_to_know', 'Warto wiedzieć'))}</h2>${paras(tr.good_to_know)}</section>`;
-  if (tr.local_food) h += `<section><h2>${esc(u('label.local_food', 'Lokalne jedzenie'))}</h2>${paras(tr.local_food)}</section>`;
-  if (plan.length) {
-    h += `<section><h2>${esc(u('label.today_route', 'Dzisiejsza trasa'))}</h2><ol class="ssr-plan">`;
-    for (const p of plan) h += `<li>${p.time_label ? `<time>${esc(p.time_label)}</time> ` : ''}${esc(p.description)}</li>`;
-    h += '</ol></section>';
-  }
   h += `<section><h2>${esc(u('label.route_stops', 'Trasa punkt po punkcie'))}</h2><ol class="ssr-stops">`;
   for (const { s, t } of stops) {
     h += `<li id="p${esc(s.stop_number)}"><h3>${esc(t.name ?? s.stop_key)}</h3>`;
     for (const p of (t.desc_paragraphs ?? []).slice(0, 2)) h += `<p>${esc(p)}</p>`;
-    const facts = [];
-    const f = (k) => t[k] || s[k];   // fakt w języku strony, gdy przetłumaczony
-    if (s.time_label) facts.push(esc(s.time_label));
-    if (f('visit_duration')) facts.push(`${esc(u('label.visit_time', 'Czas zwiedzania'))}: ${esc(f('visit_duration'))}`);
-    if (f('opening_hours')) facts.push(`${esc(u('label.hours', 'Godziny'))}: ${esc(f('opening_hours'))}`);
-    if (f('price') && s.price_status !== 'unverified') facts.push(`${esc(u('label.ticket', 'Bilet'))}: ${esc(f('price'))}`);
-    if (s.parking_cost) facts.push(`${esc(u('label.parking', 'Parking'))}: ${esc(s.parking_cost)}`);
-    if (t.practical_note) facts.push(esc(t.practical_note));
-    if (facts.length) h += `<p class="ssr-facts">${facts.join(' · ')}</p>`;
     h += '</li>';
   }
   h += '</ol></section>';
-  if (emergency.length) {
-    h += `<section><h2>${esc(u('label.emergency', 'Punkty awaryjne'))}</h2><ul>`;
-    for (const e of emergency) h += `<li><strong>${esc(e.label)}</strong>${e.description ? ' — ' + esc(e.description) : ''}</li>`;
-    h += '</ul></section>';
-  }
+  // pod zapowiedzią: co zawiera pełna wycieczka (bez treści; klucz dostępu dostaje się od nas)
+  h += `<section class="ssr-locked"><h2>${esc(u('access.full_title', 'Pełna wycieczka'))}</h2><p>${esc(u('access.full_text',
+    'Plan dnia z godzinami, mapa trasy, parking, misje i zagadki dla dzieci, punkty awaryjne i dalsze akapity opisów są dostępne z kluczem dostępu.'))}</p></section>`;
   return h + '</article>';
 }
 
