@@ -2,9 +2,12 @@
 // Baza zostaje jedynym źródłem prawdy: żadnych plików do generowania, zero tokenów, zmiana w bazie
 // widoczna najpóźniej po CACHE_SECONDS. Google dostaje pełną warstwę publiczną w każdym języku.
 //
-//   GET /{lang}/{kraj}/{region}/{miasto}/ → city.html z treścią publiczną, meta, hreflang, JSON-LD (kraj = ISO, region i miasto = cities.url_slug / regions.url_slug)
-//   GET /{lang}/{region}/{miasto}/ , /wlochy/…/*.html , /city.html?c=…  → 301 na nowy adres (jeden skok)
-//   GET /{lang}/{kraj}/{region}/ → 302 /region.html?r=<slug wewnętrzny>, /{lang}/{kraj}/ → 302 /country.html?k=<kraj> (do czasu stron SSR; 302, bo docelowo to będą strony SSR)
+//   GET /{lang}/{kraj}/{region}/{miasto-z-dziecmi}/ → city.html z treścią publiczną, meta, hreflang, JSON-LD.
+//       Od 2026-10-17 (decyzja JP, SEO) każdy segment w języku strony: /pl/wlochy/umbria/perugia-z-dziecmi/,
+//       /en/italy/umbria/perugia-with-kids/, /de/italien/umbrien/perugia-mit-kindern/ — z nazw w *_translations (slugify, uk → łacinka)
+//   GET dawne /{lang}/{iso}/{region}/{miasto}/, /{lang}/{region}/{miasto}/, /wlochy/…/*.html, /city.html?c=…  → 301 na nowy adres (jeden skok)
+//   GET /{lang}/{kraj}/{region}/ → 302 /region.html?r=…, /{lang}/{kraj}/ → 302 /country.html?k=<iso> (kraj i region po lokalnemu albo dawnym kodem)
+//   GET /paths.json                  → { miasto: { lang: adres } } dla linków na stronach statycznych (index, region)
 //   GET /city.html (bez ?c=, np. ?draft=) → statyczny szablon bez zmian
 //   GET /sitemap.xml                 → wszystkie opublikowane miasta × języki (z alternates)
 //   GET /healthz
@@ -41,11 +44,43 @@ const enabledLangs = () => cached('langs', async () =>
   (await api('languages?select=code,priority&enabled=eq.true&order=priority')).map(l => l.code));
 const regionRows = () => cached('regions', () => api('regions?select=slug,url_slug,country_slug'));
 const countryRows = () => cached('countries', () => api('countries?select=slug'));
-// miasta opublikowane + adresy: u = cities.url_slug, rurl = regions.url_slug (brak → wewnętrzny slug)
+// ── adresy w języku strony (JP 2026-10-17) ──────────────────────────────────────────────────
+// „z dziećmi” na końcu adresu miasta: fraza, którą rodzice wpisują w wyszukiwarkę („Perugia z dziećmi”)
+const WITH_KIDS = { pl: 'z-dziecmi', en: 'with-kids', de: 'mit-kindern', es: 'con-ninos', fr: 'avec-enfants', it: 'con-bambini',
+  cs: 's-detmi', sk: 's-detmi', da: 'med-born', no: 'med-barn', sv: 'med-barn', hr: 's-djecom', hu: 'gyerekekkel',
+  nl: 'met-kinderen', pt: 'com-criancas', ro: 'cu-copii', uk: 'z-ditmy' };
+const UK = { а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ie', ж: 'zh', з: 'z', и: 'y', і: 'i', ї: 'i', й: 'i', к: 'k', л: 'l', м: 'm',
+  н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '', ю: 'iu', я: 'ia', 'ʼ': '', "'": '' };
+const SPECIAL = { ł: 'l', đ: 'd', ø: 'o', æ: 'ae', œ: 'oe', ß: 'ss', þ: 'th', ð: 'd', ı: 'i' };
+function slugify(txt) {
+  return String(txt ?? '').toLowerCase().replace(/[\u0400-\u04ff'ʼ]/g, ch => UK[ch] ?? '').replace(/[łđøæœßþðı]/g, ch => SPECIAL[ch])
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+const pickName = (rows, key, id, lang, field = 'name') => {
+  const by = (l) => rows.find(r => r[key] === id && r.lang === l && r[field]);
+  return (by(lang) ?? by('en') ?? by(FALLBACK) ?? {})[field];
+};
+// miasta opublikowane + adresy: u = cities.url_slug, rurl = regions.url_slug (dawny schemat, do 301),
+// seg[lang] = { country, region, city } — segmenty nowego adresu w danym języku
 const publishedCities = () => cached('cities', async () => {
-  const [cs, rs] = await Promise.all([api('cities?select=slug,url_slug,region_slug,country,status&status=eq.published&order=sort_order'), regionRows()]);
+  const [cs, rs, langs, ctr, rtr, cityTr] = await Promise.all([
+    api('cities?select=slug,url_slug,region_slug,country,status&status=eq.published&order=sort_order'), regionRows(), enabledLangs(),
+    api('country_translations?select=country_slug,lang,name'), api('region_translations?select=region_slug,lang,name'),
+    api('city_translations?select=city_slug,lang,title')]);
   const ru = Object.fromEntries(rs.map(r => [r.slug, r.url_slug || r.slug]));
-  return cs.map(c => ({ ...c, u: c.url_slug || c.slug, rurl: ru[c.region_slug] || c.region_slug, country: String(c.country || '').toLowerCase() }));
+  const out = cs.map(c => ({ ...c, u: c.url_slug || c.slug, rurl: ru[c.region_slug] || c.region_slug, country: String(c.country || '').toLowerCase(), seg: {} }));
+  for (const l of new Set([FALLBACK, ...langs])) {
+    const taken = new Set();
+    for (const c of out) {
+      const country = slugify(pickName(ctr, 'country_slug', c.country, l)) || c.country;
+      const region = slugify(pickName(rtr, 'region_slug', c.region_slug, l)) || c.rurl;
+      let city = (slugify(pickName(cityTr, 'city_slug', c.slug, l, 'title')) || c.u) + '-' + (WITH_KIDS[l] || WITH_KIDS.en);
+      if (taken.has(`${country}/${region}/${city}`)) city += '-' + c.slug;          // dwa miasta o tej samej nazwie w regionie
+      taken.add(`${country}/${region}/${city}`);
+      c.seg[l] = { country, region, city };
+    }
+  }
+  return out;
 });
 // język miasta jest „gotowy”, gdy ma opis miasta i tłumaczenie KAŻDEGO przystanku — inaczej strona
 // byłaby mieszanką języków (słabe SEO); taki język nie trafia do hreflang ani mapy strony
@@ -90,7 +125,10 @@ async function cityData(slug, lang) {
 
 // ── HTML ────────────────────────────────────────────────────────────────────────────────────
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const cityPath = (lang, m) => `/${lang}/${m.country}/${m.rurl}/${m.u}/`;   // m z publishedCities()
+const segOf = (lang, m) => m.seg[lang] ?? m.seg[FALLBACK];
+const cityPath = (lang, m) => { const s = segOf(lang, m); return `/${lang}/${s.country}/${s.region}/${s.city}/`; };   // m z publishedCities()
+const regionPath = (lang, m) => { const s = segOf(lang, m); return `/${lang}/${s.country}/${s.region}/`; };
+const countryPath = (lang, m) => `/${lang}/${segOf(lang, m).country}/`;
 const cityUrl = (lang, m) => SITE + cityPath(lang, m);
 let tpl = { mtime: 0, html: '' };
 // Bez <base href="/">: <base> przestawia też kotwice (href="#p1" → strona główna) i psuje zakładki oraz pasek naklejek (JP 2026-10-13).
@@ -131,8 +169,8 @@ function publicLayer(d, lang, ui) {
   }
   h += '</ol></section>';
   // pod zapowiedzią: co zawiera pełna wycieczka (bez treści; klucz dostępu dostaje się od nas)
-  h += `<section class="ssr-locked"><h2>${esc(u('access.full_title', 'Pełna wycieczka'))}</h2><p>${esc(u('access.full_text',
-    'Plan dnia z godzinami, mapa trasy, parking, misje i zagadki dla dzieci, punkty awaryjne i dalsze akapity opisów są dostępne z kluczem dostępu.'))}</p></section>`;
+  h += `<section class="ssr-locked"><h2>${esc(u('access.full_title', 'Pełna wycieczka po zalogowaniu'))}</h2><p>${esc(u('access.full_text',
+    'Po zalogowaniu zobaczysz plan dnia z godzinami, mapę trasy, parking, misje i zagadki dla dzieci, punkty awaryjne i pełne opisy przystanków. Konta ruszają wkrótce.'))}</p></section>`;
   return h + '</article>';
 }
 
@@ -154,8 +192,8 @@ function headExtra(d, lang, langs, ui, loc, names) {
         ...(t.desc_paragraphs?.[0] ? { description: t.desc_paragraphs[0] } : {}),
         ...(s.lat && s.lon ? { geo: { '@type': 'GeoCoordinates', latitude: +s.lat, longitude: +s.lon } } : {}) } })) },
   };
-  const crumbs = [['Quolino', `${SITE}/`], [names.country, `${SITE}/country.html?k=${encodeURIComponent(loc.country)}`],
-    [names.region, `${SITE}/region.html?r=${encodeURIComponent(city.region_slug)}`], [tr.title ?? city.slug, url]].filter(c => c[0]);
+  const crumbs = [['Quolino', `${SITE}/`], [names.country, SITE + countryPath(lang, loc)],
+    [names.region, SITE + regionPath(lang, loc)], [tr.title ?? city.slug, url]].filter(c => c[0]);
   const bc = { '@context': 'https://schema.org', '@type': 'BreadcrumbList',
     itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c[0], item: c[1] })) };
   let h = `<link rel="canonical" href="${esc(url)}">\n` +
@@ -168,7 +206,8 @@ function headExtra(d, lang, langs, ui, loc, names) {
        `<meta name="twitter:card" content="summary_large_image">\n`;
   h += `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n` +
        `<script type="application/ld+json">${JSON.stringify(bc).replace(/</g, '\\u003c')}</script>\n`;
-  h += `<script>window.QSSR=${JSON.stringify({ slug: city.slug, region: city.region_slug, country: loc.country, rurl: loc.rurl, uslug: loc.u, lang, langs }).replace(/</g, '\\u003c')};</script>\n`;
+  const paths = Object.fromEntries(langs.map(l => [l, { city: cityPath(l, loc), region: regionPath(l, loc), country: countryPath(l, loc) }]));
+  h += `<script>window.QSSR=${JSON.stringify({ slug: city.slug, region: city.region_slug, country: loc.country, rurl: loc.rurl, uslug: loc.u, lang, langs, paths }).replace(/</g, '\\u003c')};</script>\n`;
   return { title, head: h };
 }
 
@@ -193,15 +232,24 @@ async function langsFor(meta) {
 // język, którego miasto nie ma → polski (jeden skok); inaczej wskazany
 const targetLang = (lang, langs) => (langs.includes(lang) ? lang : FALLBACK);
 
+// nowy adres: segmenty w języku z adresu; potem w dowolnym języku (ktoś zmienił /en/ na /de/ ręcznie) → 301 na właściwe
+function findBySeg(cities, lang, country, region, city) {
+  const hit = (l) => cities.find(c => { const s = c.seg[l]; return s && s.country === country && s.region === region && s.city === city; });
+  const own = hit(lang);
+  if (own) return { meta: own, exact: true };
+  for (const c of cities) for (const s of Object.values(c.seg)) if (s.country === country && s.region === region && s.city === city) return { meta: c, exact: false };
+  return null;
+}
 async function renderCity(lang, country, region, slug, oldSchema) {
   const cities = await publishedCities();
-  const meta = findCity(cities, region, slug, oldSchema ? null : country);
+  const found = oldSchema ? null : (country && findBySeg(cities, lang, country, region, slug));
+  const meta = found ? found.meta : findCity(cities, region, slug, oldSchema ? null : country);   // dawny schemat: ISO / url_slug
   if (!meta) return { status: 404 };
   const langs = await langsFor(meta);
   const canonical = (l) => cityPath(l, meta);
-  if (oldSchema) return { status: 301, location: canonical(targetLang(lang, langs)) };            // stary /{lang}/{region}/{miasto}/
+  if (!found) return { status: 301, location: canonical(targetLang(lang, langs)) };              // dawny adres → nowy, jeden skok
   if (!langs.includes(lang)) return { status: 302, location: canonical(FALLBACK) };
-  if (country !== meta.country || region !== meta.rurl || slug !== meta.u) return { status: 301, location: canonical(lang) };  // np. dawny slug w nowym schemacie
+  if (!found.exact) return { status: 301, location: canonical(lang) };                           // segmenty z innego języka
   const d = await cityData(meta.slug, lang);
   if (!d) return { status: 404 };
   const [ui, names] = await Promise.all([uiDict(lang), crumbNames(meta, lang)]);
@@ -223,6 +271,17 @@ async function legacyTarget(slug, lang, wanted) {
   if (!meta) return null;
   const langs = await langsFor(meta);
   return cityPath(targetLang(wanted && langs.includes(wanted) ? wanted : lang || FALLBACK, langs), meta);
+}
+
+async function pathsJson() {
+  return cached('paths', async () => {
+    const out = {};
+    for (const c of await publishedCities()) {
+      const langs = await langsFor(c);
+      out[c.slug] = Object.fromEntries(langs.map(l => [l, cityPath(l, c)]));
+    }
+    return JSON.stringify(out);
+  });
 }
 
 async function sitemap() {
@@ -248,15 +307,16 @@ const send = (res, status, body, type = 'text/html; charset=utf-8', extra = {}) 
 };
 const redirect = (res, to, search = '') => send(res, 301, '', 'text/plain', { Location: to + search });
 const LANG = '[a-z]{2}(?:-[a-z]{2})?';
-const RE_NEW = new RegExp(`^/(${LANG})/([a-z]{2})/([a-z0-9-]+)/([a-z0-9-]+)(/?)$`);   // /{lang}/{kraj}/{region}/{miasto}/
+const RE_NEW = new RegExp(`^/(${LANG})/([a-z0-9-]+)/([a-z0-9-]+)/([a-z0-9-]+)(/?)$`);   // /{lang}/{kraj}/{region}/{miasto}/ (kraj po lokalnemu albo ISO)
 const RE_OLD = new RegExp(`^/(${LANG})/([a-z0-9-]+)/([a-z0-9-]+)(/?)$`);              // /{lang}/{region}/{miasto}/ (do 301) — ALE też /{lang}/{kraj}/{region}/ (patrz niżej)
-const RE_COUNTRY = new RegExp(`^/(${LANG})/([a-z]{2})(/?)$`);                          // /{lang}/{kraj}/
+const RE_COUNTRY = new RegExp(`^/(${LANG})/([a-z0-9-]+)(/?)$`);                       // /{lang}/{kraj}/ (po lokalnemu albo ISO)
 const RE_WLOCHY = /^\/wlochy\/[a-z0-9-]+\/([a-z0-9-]+)\.html$/;                       // dawne statyczne strony miast
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try {
     if (url.pathname === '/healthz') return send(res, 200, 'ok', 'text/plain');
     if (url.pathname === '/sitemap.xml') return send(res, 200, await sitemap(), 'application/xml; charset=utf-8');
+    if (url.pathname === '/paths.json') return send(res, 200, await pathsJson(), 'application/json; charset=utf-8');
     const q = url.searchParams;
     if (url.pathname === '/city.html') {
       const c = q.get('c');
@@ -273,14 +333,24 @@ http.createServer(async (req, res) => {
     }
     // Skrócone adresy: /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ → strony statyczne (302, docelowo SSR). Trzy segmenty z kodem kraju
     // w drugim to region, nie stary adres miasta (kolizja z /{lang}/{region}/{miasto}/).
-    const code = async (x) => (await countryRows()).some(c => c.slug === x);
+    // segment kraju: kod ISO (dawny adres) albo nazwa w dowolnym języku → kod ISO
+    const allCities = await publishedCities();
+    const code = async (x) => {
+      if ((await countryRows()).some(c => c.slug === x)) return x;
+      for (const c of allCities) for (const s of Object.values(c.seg)) if (s.country === x) return c.country;
+      return null;
+    };
+    const tail = url.search ? '&' + url.search.slice(1) : '';
     const mc = url.pathname.match(RE_COUNTRY);
-    if (mc && await code(mc[2])) return send(res, 302, '', 'text/plain', { Location: `/country.html?k=${mc[2]}&lang=${mc[1]}${url.search ? '&' + url.search.slice(1) : ''}` });
+    const ccode = mc && await code(mc[2]);
+    if (ccode) return send(res, 302, '', 'text/plain', { Location: `/country.html?k=${ccode}&lang=${mc[1]}${tail}` });
     const mr = url.pathname.match(RE_OLD);
-    if (mr && await code(mr[2])) {
-      const reg = (await regionRows()).find(r => r.country_slug === mr[2] && (r.url_slug === mr[3] || r.slug === mr[3]));
+    const rcode = mr && await code(mr[2]);
+    if (rcode) {
+      let reg = (await regionRows()).find(r => r.country_slug === rcode && (r.url_slug === mr[3] || r.slug === mr[3]));
+      if (!reg) { const c = allCities.find(c => c.country === rcode && Object.values(c.seg).some(s => s.region === mr[3])); if (c) reg = { slug: c.region_slug }; }
       if (!reg) return send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiego regionu. <a href="/">Quolino</a></p>');
-      return send(res, 302, '', 'text/plain', { Location: `/region.html?r=${encodeURIComponent(reg.slug)}&lang=${mr[1]}${url.search ? '&' + url.search.slice(1) : ''}` });
+      return send(res, 302, '', 'text/plain', { Location: `/region.html?r=${encodeURIComponent(reg.slug)}&lang=${mr[1]}${tail}` });
     }
     const n = url.pathname.match(RE_NEW);
     const o = !n && url.pathname.match(RE_OLD);

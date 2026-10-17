@@ -266,7 +266,14 @@ function sb(table, params) {
 }
 // Adres strony miasta renderowanej z bazy (SSR): /{lang}/{kraj}/{region}/{miasto}/
 var REGION_URL = {};   // regions.slug → regions.url_slug (adres regionu); brak → wewnętrzny slug
+var PATHS = {};        // /paths.json z SSR: { miasto: { lang: adres w języku strony } } (JP 2026-10-17, SEO)
+fetch('/paths.json').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+  PATHS = j || {};
+  document.querySelectorAll('a[data-city]').forEach(function (a) { var p = PATHS[a.getAttribute('data-city')]; if (p) a.href = p[String(currentLang || FALLBACK).toLowerCase()] || p[FALLBACK] || a.href; });
+}).catch(function () {});
 function cityHref(c) {
+  var P = PATHS[c.slug], L = String(currentLang || FALLBACK).toLowerCase();
+  if (P && (P[L] || P[FALLBACK])) return P[L] || P[FALLBACK];
   if (!c.region_slug) return 'city.html?c=' + encodeURIComponent(c.slug);
   return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(String(c.country || 'it').toLowerCase()) + '/' +
     encodeURIComponent(REGION_URL[c.region_slug] || c.region_slug) + '/' + encodeURIComponent(c.url_slug || c.slug) + '/';
@@ -402,7 +409,7 @@ function buildHeroSheet(cities, cityTrs, regionTrs) {
     var name = tr && tr.title ? tr.title : c.slug;
     var a = document.createElement('a');
     a.className = 'sticker';
-    a.href = cityHref(c);
+    a.href = cityHref(c); a.setAttribute("data-city", c.slug);
     if (c.bandana_color) a.style.setProperty('--team', c.bandana_color);
     var base = imgBase(c);
     a.innerHTML = '<span class="sticker-no">' + String(i + 1).padStart(2, '0') + '</span>' +

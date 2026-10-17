@@ -103,7 +103,9 @@ var FALLBACK = 'pl';
 // ── State ──────────────────────────────────────────────
 var citySlug = new URLSearchParams(location.search).get('c') || (window.QSSR && window.QSSR.slug) || null;
 // adres strony miasta z SSR: /{lang}/{kraj}/{region}/{miasto}/ (kraj ISO, region i miasto = url_slug; wstrzykuje SSR w window.QSSR)
-function ssrPath(lang) { var q = window.QSSR; return '/' + lang + '/' + q.country + '/' + q.rurl + '/' + q.uslug + '/'; }
+// od 2026-10-17 SSR podaje gotowe adresy w każdym języku (QSSR.paths[lang] = {city, region, country}); stary wzór jako zapas
+function ssrPaths(lang) { var q = window.QSSR, p = q.paths && (q.paths[lang] || q.paths[q.lang]); return p || { city: '/' + lang + '/' + q.country + '/' + q.rurl + '/' + q.uslug + '/', region: '/' + lang + '/' + q.country + '/' + q.rurl + '/', country: '/' + lang + '/' + q.country + '/' }; }
+function ssrPath(lang) { return ssrPaths(lang).city; }
 var currentLang = new URLSearchParams(location.search).get('lang') || (window.QSSR && window.QSSR.lang) || readPref() || FALLBACK;
 var cityData = null;
 var langList = [];
@@ -372,8 +374,8 @@ function render(d) {
 
   var levels = [
     { label: ui('continent.' + (d.continent || 'europe'), 'Europa'), href: '/#regiony' },
-    { label: d.countryName, href: window.QSSR ? '/' + currentLang + '/' + window.QSSR.country + '/' : (city.country ? '/country.html?k=' + encodeURIComponent(city.country) : null) },
-    { label: d.regionName,  href: window.QSSR ? '/' + currentLang + '/' + window.QSSR.country + '/' + window.QSSR.rurl + '/' : (city.region_slug ? '/region.html?r=' + encodeURIComponent(city.region_slug) : null) },
+    { label: d.countryName, href: window.QSSR ? ssrPaths(currentLang).country : (city.country ? '/country.html?k=' + encodeURIComponent(city.country) : null) },
+    { label: d.regionName,  href: window.QSSR ? ssrPaths(currentLang).region : (city.region_slug ? '/region.html?r=' + encodeURIComponent(city.region_slug) : null) },
     { label: tr.title || city.slug, href: null }
   ];
   levels.forEach(function(l) {
@@ -537,7 +539,7 @@ function render(d) {
       html += '</div>';
     }
     if (d.locked && ((t.paragraphs_total || 0) > (t.desc_paragraphs || []).length || t.has_mission)) {
-      html += '<p class="qc-locked-hint"><a href="#qcAccess">' + esc(ui('access.more', 'Dalsza część opisu i misja dla dziecka — w pełnej wycieczce')) + '</a></p>';
+      html += '<p class="qc-locked-hint"><a href="#qcAccess">' + esc(ui('access.more', 'Dalsza część opisu i misja dla dziecka — po zalogowaniu')) + '</a></p>';
     }
 
     // Opening hours chip
@@ -707,13 +709,13 @@ function render(d) {
 // ── Pełna wycieczka: klucz dostępu (Etap A) ───────────
 function accessBox(err) {
   var h = '<div class="qc-box qc-access" id="qcAccess">';
-  h += '<h2 class="qc-section__title">' + esc(ui('access.full_title', 'Pełna wycieczka')) + '</h2>';
-  h += '<p>' + esc(ui('access.full_text', 'Plan dnia z godzinami, mapa trasy, parking, misje i zagadki dla dzieci, punkty awaryjne i dalsze akapity opisów są dostępne z kluczem dostępu.')) + '</p>';
+  h += '<h2 class="qc-section__title">' + esc(ui('access.full_title', 'Pełna wycieczka po zalogowaniu')) + '</h2>';
+  h += '<p>' + esc(ui('access.full_text', 'Po zalogowaniu zobaczysz plan dnia z godzinami, mapę trasy, parking, misje i zagadki dla dzieci, punkty awaryjne i pełne opisy przystanków. Konta ruszają wkrótce.')) + '</p>';
   if (err === 'invalid_key') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_bad', 'Ten klucz jest nieważny albo wygasł.')) + '</p>';
   else if (err === 'rate_limit') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_limit', 'Za dużo otwarć z tym kluczem w ostatniej godzinie. Spróbuj później.')) + '</p>';
   else if (err) h += '<p class="qc-access__err" role="alert">' + esc(ui('error.load', 'Błąd ładowania danych. Spróbuj odświeżyć stronę.')) + '</p>';
   h += '<form class="qc-access__form" data-access-form>';
-  h += '<label for="qcAccessKey">' + esc(ui('access.key_label', 'Masz klucz albo link? Wklej go tutaj')) + '</label>';
+  h += '<label for="qcAccessKey">' + esc(ui('access.key_label', 'Masz klucz testera? Wklej go tutaj')) + '</label>';
   h += '<div class="qc-copy-row"><input type="text" id="qcAccessKey" autocomplete="off" autocapitalize="off" spellcheck="false" required>';
   h += '<button type="submit">' + esc(ui('access.key_btn', 'Otwórz pełną wycieczkę')) + '</button></div>';
   h += '</form></div>';
