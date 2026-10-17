@@ -4,7 +4,7 @@ Decyzja JP z 2026-10-17 (oznaczona jako WAŻNE). Uwagi redakcyjne do szkiców ni
 Z tego, co JP poprawia, powstają **reguły**. Każde kolejne pisanie, poprawka, tłumaczenie i walidacja wycieczki
 dostaje te reguły, więc ten sam błąd nie wraca w następnym mieście.
 
-SQL: `_content/claude-skills/sql/2026-10-17-draft-send-kb.sql` (approve JP). Panel: `_admin/` v4.
+SQL: `_content/claude-skills/sql/2026-10-17-draft-send-kb-v2.sql` (approve JP; wersja 2 rozszerza istniejącą tabelę reguł Hermesa — wersja 1 padała przy approve). Panel: `_admin/` v4. Obsługa prośby: `bin/draft-comments.mjs`.
 
 ## 1. Przebieg
 
@@ -14,7 +14,7 @@ JP pisze uwagi przy polach szkicu (Enter = zapisz, status new „zapisana”)
   → Hermes bierze prośbę (NOTIFY draft_revision / cron co 1 min), poprawia WSZYSTKIE uwagi w jednej nowej wersji
      szkicu, odpisuje przy każdej uwadze (done / rejected z powodem), prośba → done + result_version
   → dla każdej załatwionej uwagi Hermes ocenia, czy to wiedza ogólna:
-       tak → nowa reguła „proposed” (albo dopisanie uwagi do istniejącej, podobnej reguły: source_comment_ids)
+       tak → nowa reguła, od razu obowiązuje (`trip-revise` → learn; JP może ją w panelu wyłączyć albo poprawić)
        nie (poprawka jednorazowa, np. literówka w tej nazwie) → nic
   → JP w panelu: „Baza wiedzy redakcji” → Zatwierdź (może poprawić treść) / Odrzuć; może dopisać regułę sam
   → reguły „active” idą do każdego promptu i walidatora
@@ -28,10 +28,10 @@ Od teraz Hermes **nie** zaczyna poprawek po 5 minutach ciszy, tylko po przycisku
 |---|---|
 | `rule` | jedno zdanie w trybie polecenia dla autora, np. „Misja zaczyna się od czasownika i nie wymaga biletu.” |
 | `why` | skąd reguła: streszczenie uwag JP |
-| `scope` | `all`, `style`, `facts`, `mission`, `stop`, `city`, `translation` |
+| `scope` | `quest`, `opis`, `fakty`, `praktyczne`, `plan-dnia`, `ton`, `struktura`, `inne` (zakresy Hermesa z 11.10) |
 | `field` / `category` / `city_slug` | zawężenie: pole (`stop.kids_box`), kategoria przystanku, jedno miasto |
 | `example_bad` / `example_good` | przykład z uwagi: przed i po poprawce |
-| `status` | `proposed` → `active` albo `retired` |
+| `status` | `active` / `retired` (`proposed` tylko dla reguł do decyzji JP); zsynchronizowany z kolumną `active` używaną przez skrypty Hermesa |
 | `uses`, `violations` | ile razy reguła trafiła do promptu i ile razy walidator złapał jej złamanie |
 
 **Kiedy uwaga staje się regułą:** gdy da się ją zastosować do innego przystanku albo miasta (styl, długość,

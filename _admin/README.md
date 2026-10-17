@@ -130,12 +130,21 @@ Pod listą uwag (sekcja „Uwagi do wysłania” na dole szkicu i w przyklejonym
 uwagi `new` miasta przechodzą w `sent` i trafiają do jednej prośby w `draft_revision_requests`. Hermes poprawia
 je razem w jednej nowej wersji szkicu.
 
+Po stronie Hermesa (`bin/draft-comments.mjs`, cron co 3 min): prośba `new` → `working` → nowa wersja szkicu przez
+`trip-revise` (kontrola, link do podglądu w wątku miasta) → prośba `done` z `result_version`, uwagi `done` z odpowiedzią
+przy polu. Panel pokazuje statusy: wysłana do poprawki → Hermes poprawia → poprawione (v N). Chwilowy błąd modelu =
+prośba wraca do kolejki; trwały = uwagi „odrzucona” z powodem.
+
+Reguły w bazie wiedzy to istniejąca tabela Hermesa `public.editorial_rules` (zakresy: quest, opis, fakty, praktyczne,
+plan-dnia, ton, struktura, inne). Reguły, które Hermes zapamiętuje z poprawek, od razu obowiązują (tak działał od 11.10);
+w panelu można je wyłączyć albo poprawić. `status` i `active` są zsynchronizowane wyzwalaczem.
+
 Przycisk **„Baza wiedzy redakcji”** pod kolejką pokazuje reguły z uwag (`GET /api/editorial_rules`):
 - reguły do zatwierdzenia można poprawić i zatwierdzić (`rpc/admin_rule_decide`);
 - obowiązujące reguły można wyłączyć;
 - własną regułę dodaje się przez `rpc/admin_rule_add`.
 
-Opis całości: `docs/BAZA-WIEDZY.md`. SQL: `_content/claude-skills/sql/2026-10-17-draft-send-kb.sql`.
+Opis całości: `docs/BAZA-WIEDZY.md`. SQL: `_content/claude-skills/sql/2026-10-17-draft-send-kb-v2.sql`.
 
 ## Uwagi do szkiców → Hermes (od v3, 2026-10-16)
 

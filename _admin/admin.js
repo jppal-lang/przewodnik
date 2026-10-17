@@ -23,7 +23,7 @@
   var VST = { draft: 'szkic', published: 'opublikowana', archived: 'archiwum', rejected: 'odrzucona' };
   var CST = { 'new': 'zapisana — do wysłania', sent: 'wysłana do poprawki', seen: 'Hermes poprawia', done: 'poprawione', rejected: 'odrzucona', local: 'czeka na połączenie' };
   var RST = { proposed: 'do zatwierdzenia', active: 'obowiązuje', retired: 'wyłączona' };
-  var RSCOPE = { all: 'cała treść', style: 'styl', facts: 'fakty', mission: 'misje dzieci', stop: 'przystanki', city: 'opis miasta', translation: 'tłumaczenia' };
+  var RSCOPE = { quest: 'misje dzieci', opis: 'opisy', fakty: 'fakty', praktyczne: 'informacje praktyczne', 'plan-dnia': 'plan dnia', ton: 'ton i styl', struktura: 'struktura wycieczki', inne: 'inne' };
   var DUR = { half_day: 'pół dnia', full_day: 'cały dzień' };
 
   var CITY_FIELDS = [['duration_type', 'Czas', durLabel], ['duration_hours', 'Godziny'], ['bandana_color', 'Kolor drużyny'],
@@ -40,8 +40,8 @@
   var $count = document.getElementById('count');
 
   var DEMO_RULES = [
-    { id: 1, rule: 'Misja dla dziecka zaczyna się od czasownika i da się ją wykonać bez kupowania biletu.', why: 'Uwaga JP do Perugii: misja wymagała wejścia do muzeum.', scope: 'mission', field: 'stop.kids_box', status: 'proposed', proposed_by: 'hermes', uses: 0, source_comment_ids: [3, 7], created_at: '2026-10-17T09:00:00Z' },
-    { id: 2, rule: 'Nie podajemy cen ani godzin bez źródła — wtedy „sprawdź na miejscu”.', scope: 'facts', status: 'active', proposed_by: 'jp', uses: 12, source_comment_ids: [], created_at: '2026-10-10T09:00:00Z' }
+    { id: 1, rule: 'Misja dla dziecka zaczyna się od czasownika i da się ją wykonać bez kupowania biletu.', why: 'Uwaga JP do Perugii: misja wymagała wejścia do muzeum.', scope: 'quest', field: 'stop.kids_box', status: 'proposed', proposed_by: 'hermes', uses: 0, source_comment_ids: [3, 7], created_at: '2026-10-17T09:00:00Z' },
+    { id: 2, rule: 'Nie podajemy cen ani godzin bez źródła — wtedy „sprawdź na miejscu”.', scope: 'fakty', status: 'active', proposed_by: 'jp', uses: 12, source_comment_ids: [], created_at: '2026-10-10T09:00:00Z' }
   ];
 
   // ── dane ─────────────────────────────────────────────
@@ -751,7 +751,7 @@
       var R = state.rules, by = function (st) { return R.filter(function (r) { return r.status === st; }); };
       var html = '<article class="adm-sheet adm-kb"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Baza wiedzy redakcji</p>' +
         '<h2 class="adm-sheet__title">Reguły z uwag</h2><p class="adm-sheet__sub">Hermes zamienia powtarzalne uwagi w reguły. Zatwierdzone reguły dostaje każde pisanie, poprawka, tłumaczenie i walidacja wycieczek — ten sam błąd nie wraca w kolejnych miastach.</p></div></header>';
-      if (state.rulesApi === false) html += '<p class="adm-cmwarn">Baza nie ma jeszcze tabeli reguł (' + esc(state.rulesErr || '') + '). Hermes doda ją po approve SQL 2026-10-17-draft-send-kb.sql.</p>';
+      if (state.rulesApi === false) html += '<p class="adm-cmwarn">Baza nie ma jeszcze tabeli reguł (' + esc(state.rulesErr || '') + '). Pojawi się po approve SQL 2026-10-17-draft-send-kb-v2.sql.</p>';
       [['proposed', 'Do zatwierdzenia'], ['active', 'Obowiązują'], ['retired', 'Wyłączone']].forEach(function (g) {
         var list = by(g[0]);
         if (!list.length && g[0] === 'retired') return;
