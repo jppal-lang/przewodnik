@@ -94,6 +94,7 @@ Ciekawy dla 9-latka, nieinfantylny dla 15-latka. Parking i restauracja nie musz�
 
 ### D — WSKAZÓWKA
 Pomaga rozwiązać quest, nie powtarza go: gdzie patrzeć, czego szukać, który detal jest kluczowy.
+**Nigdy nie podaje odpowiedzi** — ani wskazówka, ani quest (żadnych „(odpowiedź: …)”, „rozwiązanie to…”). Dziecko ma ją znaleźć na miejscu.
 
 ### E — LOKALNY SMAK
 Legenda, zwyczaj, jedzenie, powiedzenie lub ciekawostka. Nie na siłę.
@@ -167,6 +168,28 @@ Kategorie wyłącznie z listy w `IMPORT.md §2a`.
 
 ---
 
+### Lekcje z poprawek JP (Rimini, Rawenna, Asyż, Ancona, Perugia — 12–17.10.2026)
+Każdy z tych błędów JP już raz poprawiał. Pełna analiza: `docs/WNIOSKI-Z-POPRAWEK.md`. Walidator łapie oznaczone ⚙️.
+1. ⚙️ **Quest i wskazówka nie zdradzają odpowiedzi** (Rawenna: Neon, Galla Placydia, Domus — odpowiedź w nawiasie).
+2. ⚙️ **Superlatyw tylko ze źródłem** — „najstarszy”, „jedyny w Europie”, „pierwszy na świecie” musi stać w researchu z linkiem;
+   bez źródła piszemy konkretny fakt bez superlatywu (Rawenna: „najstarsze przedstawienie Trzech Mędrców” — fałsz).
+3. ⚙️ **Ten sam fakt raz, bez sprzeczności** — zdanie nie wraca w kolejnym akapicie, a dwa akapity nie mówią różnych rzeczy
+   o tym samym (Rawenna, San Vitale: męczeństwo Witalisa dwa razy i w dwóch wersjach).
+4. ⚙️ **`maps_query` w języku kraju**: oryginalna nazwa + miasto + kraj („Mausoleo di Galla Placidia, Ravenna, Italia”), nie angielska.
+   Parking: nazwa parkingu, nie adres ulicy — od niego Mapy liczą trasę (Rawenna: trasa startowała z „Via Mura di San Vitale 9”).
+5. ⚙️ **Linki źródeł działają**: Wikipedia w danym języku z tytułem w tym języku (Rawenna: it.wikipedia…/Mausoleum_of_… — nie istnieje).
+6. ⚙️ **Bez powtórzeń w akapicie** — to samo słowo trzeci raz to wypełniacz (Rawenna, parking: „płaska” ×3).
+7. ⚙️ **Nazwa przystanku = nazwa miejsca** (lokalu, zabytku), nie posiłek ani pora („Kolacja przy Corso Vannucci”, „Kolacja — Finał Dnia”).
+8. **Bez konfabulacji lokali** — piekarnia, lodziarnia, danie „u kogoś” tylko z nazwą i źródłem; inaczej nie piszemy (Rawenna: „piekarnia
+   z chlebem z orzechów laskowych” bez nazwy).
+9. **Postacie i pojęcia wyjaśnione** przy pierwszym użyciu: kim był, kiedy, dlaczego tutaj (Rawenna: Justynian, Teodora, Teodoryk,
+   św. Apolinary, Pan, etimasia bez wyjaśnienia).
+10. ⚙️ **Treść uniwersalna** — bez narodowości czytelnika, porównań do innych krajów i „naszego miasta/naszej trasy” (Rimini, Asyż,
+   Ancona, Rawenna). Fakt historyczny o narodzie podany neutralnie jako zdarzenie jest dozwolony („II Korpus wyzwolił miasto w 1944”).
+11. **Tekst nie obiecuje tego, czego plan nie daje** — „kolacja przy zachodzie słońca”, „omijamy upał” tylko gdy godziny w planie dnia
+   to potwierdzają (strona główna obiecywała to, czego 5 z 8 wycieczek nie miało).
+12. **Literówki** — kontrola czyta każde pole jak korektor; literówka to błąd, nie uwaga.
+
 ## Sprawdzanie (Tryb B)
 
 1. **Walidator mechaniczny** — uruchom i przepisz wszystkie błędy do raportu:
@@ -195,7 +218,10 @@ Kategorie wyłącznie z listy w `IMPORT.md §2a`.
      „włoska Szwajcaria”, „jak Holendrzy”) oraz odwołanie do serii/innych tras („nasze miasto”, „z całej listy”) — zgłoś jako błąd z poprawką,
    - brak konfabulacji: fakty, ceny, godziny, telefony mają źródło albo są `null`/`unverified`;
      sprawdź w sieci fakty, które budzą wątpliwość, i podaj, co znalazłeś,
-   - poprawne `maps_query` (nazwa + miasto, kraj), lat/lon w mieście,
+   - poprawne `maps_query` (oryginalna nazwa w języku kraju + miasto, kraj; parking = nazwa parkingu), lat/lon w mieście,
+   - **lekcje z poprawek JP** (sekcja wyżej, punkty 1–12): każdy złamany punkt = **BŁĄD** z poprawką. Superlatywy i fakty
+     „sporne” sprawdź w sieci; quest/wskazówka zdradzające odpowiedź, powtórzone lub sprzeczne zdania, lokal bez nazwy i źródła,
+     niewyjaśniona postać, obietnica bez pokrycia w planie dnia, literówki,
    - zgodność HTML ↔ JSON (liczba akapitów, komplet punktów, kolejność), gdy jest HTML.
 3. **Werdykt** — odpowiedz WYŁĄCZNIE JSON-em:
    ```json

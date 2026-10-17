@@ -69,6 +69,22 @@ LEGEND_WORD = re.compile(r"\b(legend\w*|podani\w+|według tradycji)\b", re.I)
 LEGEND_OPEN = re.compile(r"^\s*(Legenda mówi|Według tradycji)", re.I)
 WORD = re.compile(r"\w+", re.UNICODE)
 
+# ── Lekcje z poprawek JP (Rimini, Rawenna, Asyż, Ancona, Perugia; 2026-10-12…17) — docs/WNIOSKI-Z-POPRAWEK.md ──
+# maps_query i linki źródeł po angielsku w kraju nieanglojęzycznym (Rawenna: „Mausoleum of Galla Placidia”, it.wikipedia/…_of_…)
+EN_PLACE = re.compile(r"\b(Mausoleum|Basilica|Baptistery|Cathedral|Church|Tomb|Palace|Museum|Bridge|Square|Tower|Castle|Abbey|Chapel)\s+of\b"
+                      r"|\b(Baptistery|Cathedral|Square|Tower|Bridge)\b(?!\s*\()", re.I)
+WIKI = re.compile(r"https?://([a-z]{2,3})\.(?:m\.)?wikipedia\.org/wiki/([^\s?#]+)", re.I)
+EN_TITLE = re.compile(r"(^|_)(of|the|Mausoleum|Basilica|Baptistery|Cathedral|Church|Tomb|Palace|Bridge|Square|Tower)(_|$)", re.I)
+# quest/wskazówka zdradza odpowiedź (Rawenna: „odpowiedź w nawiasie”, wskazówka podaje rozwiązanie)
+GIVEAWAY = re.compile(r"\(\s*(odp\w*|odpowied\w*|rozwiąz\w*)|\b(odpowiedź|rozwiązanie)\s*(to|brzmi|:)|\bpoprawna odpowied\w*", re.I)
+# superlatywy wymagają źródła (Rawenna: „najstarsze przedstawienie Trzech Mędrców” — fałsz)
+SUPERLATIVE = re.compile(r"\b(najstarsz\w+|najwięk\w+|najwyższ\w+|najdłuższ\w+|jedyn\w+ (na świecie|w Europie|w kraju|we Włoszech|tego typu)"
+                         r"|pierwsz\w+ (na świecie|w Europie|w historii))\b", re.I)
+# nazwa przystanku = nazwa miejsca (Perugia: „Kolacja przy Corso Vannucci”)
+MEAL_NAME = re.compile(r"^\s*(kolacja|obiad|lunch|śniadanie|przerwa|finał)\b", re.I)
+SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+")
+STOPWORDS = set("które który która których tylko także przez jednak bardzo można miasta miasto jeszcze kiedy gdzie wtedy dzisiaj potem właśnie".split())
+
 errors, warnings = [], []
 def err(c, m):  errors.append(f"  [BŁĄD] {c}: {m}")
 def warn(c, m): warnings.append(f"  [uwaga] {c}: {m}")
@@ -167,6 +183,16 @@ def validate_city(folder: Path):
             err(slug, f"{k}: brak verify_url — każdy punkt musi mieć link do samodzielnego sprawdzenia (§3)")
         if not s.get("maps_query"):
             err(slug, f"{k}: brak maps_query")
+        elif (c.get("country") or "").lower() not in ("gb", "uk", "ie", "en") and EN_PLACE.search(str(s["maps_query"])):
+            err(slug, f"{k}: maps_query po angielsku („{s['maps_query']}”) — podaj oryginalną nazwę w języku kraju + miasto, kraj "
+                      f"(np. „Mausoleo di Galla Placidia, Ravenna, Italia”); angielska nazwa potrafi wskazać złe miejsce")
+        if s.get("category") == "parking" and s.get("maps_query") and not re.search(r"parch|park|aparc|stationnement|parcare", str(s["maps_query"]), re.I):
+            warn(slug, f"{k}: maps_query parkingu („{s['maps_query']}”) bez słowa parking — trasa w Mapach ma startować z parkingu, nie z adresu ulicy")
+        for url in re.findall(r"https?://\S+", json.dumps(s, ensure_ascii=False)):
+            m = WIKI.match(url.rstrip('",'))
+            if m and m.group(1).lower() != "en" and EN_TITLE.search(m.group(2)):
+                err(slug, f"{k}: link {url.rstrip(chr(34)+',')} — Wikipedia {m.group(1)} z angielskim tytułem, taki artykuł nie istnieje; "
+                          f"użyj tytułu w języku tej Wikipedii (np. it.wikipedia.org/wiki/Mausoleo_di_Galla_Placidia)")
         # §14 — ocena i liczba opinii idą w parze
         if (s.get("rating") is None) != (s.get("reviews_count") is None):
             err(slug, f"{k}: rating i reviews_count muszą wystąpić razem albo wcale")
@@ -317,6 +343,32 @@ def validate_city(folder: Path):
                         if LEGEND_WORD.search(ptxt) and not LEGEND_OPEN.match(ptxt):
                             warn(slug, f"{code}: {key} desc[{i}] — wzmianka o legendzie/tradycji w akapicie, który nie zaczyna się od "
                                        f"„Legenda mówi…” / „Według tradycji…” (legenda ma mieć własny, oznaczony akapit)")
+                for f in ("kids_box", "hint"):
+                    m = GIVEAWAY.search(st.get(f) or "")
+                    if m:
+                        err(slug, f"{code}: {key}.{f} — zdradza odpowiedź („{m.group(0)}”); quest i wskazówka prowadzą do odpowiedzi, nie podają jej")
+                if cat == "restaurant" and MEAL_NAME.search(st.get("name") or ""):
+                    warn(slug, f"{code}: {key} — nazwa „{st.get('name')}” opisuje posiłek; nazwa przystanku to nazwa lokalu (pora jest w planie dnia)")
+                paras_all = [x for x in (st.get("desc_paragraphs") or []) if isinstance(x, str)]
+                seen = {}
+                for i, ptxt in enumerate(paras_all):
+                    for zd in SENT_SPLIT.split(ptxt):
+                        n = " ".join(WORD.findall(zd.lower()))
+                        if len(n.split()) >= 8:
+                            if n in seen:
+                                err(slug, f"{code}: {key} desc[{seen[n]}] i desc[{i}] — to samo zdanie dwa razy: „{zd.strip()[:80]}…”")
+                            seen.setdefault(n, i)
+                    stems = {}
+                    for w in WORD.findall(ptxt.lower()):
+                        if len(w) >= 5 and w not in STOPWORDS:
+                            stems[w[:6]] = stems.get(w[:6], 0) + 1
+                    own = {w[:6] for w in WORD.findall((st.get("name") or "").lower())} | {"kości", "kośció", "bazyli", "katedr", "muzeum"}
+                    rep = [w for w, n in stems.items() if n >= 3 and w not in own]
+                    if rep:
+                        warn(slug, f"{code}: {key} desc[{i}] — powtórzenia w jednym akapicie ({', '.join(rep[:4])}…): każde zdanie ma wnosić nową treść")
+                    m = SUPERLATIVE.search(ptxt)
+                    if m:
+                        warn(slug, f"{code}: {key} desc[{i}] — superlatyw „{m.group(0)}”: musi mieć źródło w researchu; kontrola sprawdza go w sieci")
                 if cat not in NO_QUEST:
                     if not st.get("kids_box"):
                         err(slug, f"{code}: {key} — brak questu (kids_box) przy punkcie zwiedzania")
