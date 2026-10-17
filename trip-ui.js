@@ -286,11 +286,11 @@
     if (S.opts.locked) return '';   // Etap A: gość bez klucza nie dostaje trasy w Mapach Google
     var c = S.opts.city || {};
     if (c && /^https?:\/\//i.test(String(c.route_url || '').trim())) return String(c.route_url).trim();
-    // współrzędne > zapytanie z bazy (maps_query) > nazwa przystanku + miasto (szkice często nie mają jeszcze ani jednego, ani drugiego)
+    // zapytanie z bazy (maps_query) > współrzędne > nazwa przystanku + miasto — nazwa daje w Google punkt z nazwą, a nie adres ulicy
     var town = S.opts.cityName || '';
     var pts = points().map(function (s) {
+      if (s.query) return s.query;   // nazwa miejsca: Google pokazuje POI, a nie adres ulicy przy współrzędnych
       if (s.lat != null && s.lon != null && isFinite(s.lat) && isFinite(s.lon)) return s.lat + ',' + s.lon;
-      if (s.query) return s.query;
       return s.name ? s.name + (town ? ', ' + town : '') : '';
     }).filter(Boolean);
     if (pts.length < 2) return pts.length ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(pts[0]) : '';

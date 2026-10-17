@@ -206,3 +206,4 @@
 .adm-rule__why{margin:6px 0 0;color:var(--ink2);font-size:15px}
 .adm-rule__acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .adm-rule-add label{display:block;margin:10px 0 4px;font-weight:700}
+.adm-map{margin-top:4px}.adm-map .qc-map__tiles img{position:absolute;width:256px;height:256px}

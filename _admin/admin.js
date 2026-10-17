@@ -454,6 +454,8 @@
       '</div>' + warn.map(function (w) { return '<p class="adm-warn' + (w[0] ? ' adm-warn--' + w[0] : '') + '">' + esc(w[1]) + '</p>'; }).join('') +
       langChips(sLangsOld.length ? sLangsOld : cLangsOld, sLangsNew.length ? sLangsNew : cLangsNew) + '</section>';
 
+    html += '<section class="adm-sheet__sec"><h3>Mapa trasy (OpenStreetMap)</h3><div id="admMap"></div></section>';
+
     // opis miasta — każde pole z uwagami
     html += '<section class="adm-sheet__sec adm-anchor" id="st-_city" data-spy="_city"><h3>Opis miasta</h3>' +
       '<div class="adm-rows">' + cell('Cała wycieczka', null, 'Uwaga ogólna do całego szkicu', null, false, commentBox(null, null, 'Cała wycieczka')) +
@@ -488,6 +490,7 @@
       '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div></nav>';
 
     $d.innerHTML = '<div class="adm-split">' + html + toc + '</div>';
+    drawMap(newStops, draft.stop_translations);
     updateCounts();
     spy();
   }
@@ -541,8 +544,9 @@
   function routeUrl(c, stops, trs, town) {
     if (c && /^https?:\/\//i.test(String(c.route_url || '').trim())) return String(c.route_url).trim();
     var pts = (stops || []).slice().sort(function (a, b) { return a.stop_number - b.stop_number; }).map(function (s) {
-      if (s.lat != null && s.lon != null && s.lat !== '' && s.lon !== '') return s.lat + ',' + s.lon;
+      // nazwa miejsca przed współrzędnymi: Google pokazuje wtedy „Largo Giustiniano”, a nie adres ulicy (JP 2026-10-17)
       if (s.maps_query) return s.maps_query;
+      if (s.lat != null && s.lon != null && s.lat !== '' && s.lon !== '') return s.lat + ',' + s.lon;
       var n = trOf(trs, 'pl', 'stop_id', s.id).name;
       return n ? n + (town ? ', ' + town : '') : '';
     }).filter(Boolean);
@@ -551,6 +555,51 @@
     var way = pts.slice(1, -1).slice(0, 9);
     return 'https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=' + encodeURIComponent(pts[0]) +
       '&destination=' + encodeURIComponent(pts[pts.length - 1]) + (way.length ? '&waypoints=' + encodeURIComponent(way.join('|')) : '');
+  }
+
+  // ── mapa szkicu: kafelki OSM + pinezki z lat/lon (podgląd dla JP, bez przybliżania) ──
+  var TILE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  function proj(lat, lon, z) {
+    var sc = 256 * Math.pow(2, z), r = lat * Math.PI / 180;
+    return [(lon + 180) / 360 * sc, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * sc];
+  }
+  function drawMap(stops, trs) {
+    var box = document.getElementById('admMap');
+    if (!box) return;
+    var pts = [], miss = [];
+    stops.forEach(function (s) {
+      var la = parseFloat(s.lat), lo = parseFloat(s.lon), nm = trOf(trs, 'pl', 'stop_id', s.id).name || '';
+      if (isFinite(la) && isFinite(lo)) pts.push({ n: s.stop_number, la: la, lo: lo, nm: nm, cat: s.category });
+      else miss.push(num(s.stop_number) + (nm ? ' ' + nm : ''));
+    });
+    var note = miss.length ? '<p class="adm-warn adm-warn--soft">Bez współrzędnych (brak pinezki): ' + esc(miss.join(', ')) + '</p>' : '';
+    if (!pts.length) { box.innerHTML = '<p class="adm-empty">Żaden przystanek nie ma współrzędnych — mapa pojawi się po ich dodaniu.</p>' + note; return; }
+    var W = Math.max(280, box.clientWidth || 640), H = Math.round(Math.min(420, Math.max(260, W * 0.55))), pad = 40, z = 17;
+    for (; z > 3; z--) {
+      var a = pts.map(function (p) { return proj(p.la, p.lo, z); });
+      var xs = a.map(function (q) { return q[0]; }), ys = a.map(function (q) { return q[1]; });
+      if (Math.max.apply(0, xs) - Math.min.apply(0, xs) <= W - 2 * pad && Math.max.apply(0, ys) - Math.min.apply(0, ys) <= H - 2 * pad) break;
+    }
+    var P = pts.map(function (p) { return proj(p.la, p.lo, z); });
+    var X = P.map(function (q) { return q[0]; }), Y = P.map(function (q) { return q[1]; });
+    var ox = (Math.min.apply(0, X) + Math.max.apply(0, X)) / 2 - W / 2, oy = (Math.min.apply(0, Y) + Math.max.apply(0, Y)) / 2 - H / 2;
+    var tiles = '', n = Math.pow(2, z);
+    for (var tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++)
+      for (var ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
+        if (ty < 0 || ty >= n) continue;
+        tiles += '<img alt="" loading="lazy" style="left:' + Math.round(tx * 256 - ox) + 'px;top:' + Math.round(ty * 256 - oy) + 'px" src="' +
+          TILE.replace('{z}', z).replace('{x}', ((tx % n) + n) % n).replace('{y}', ty) + '">';
+      }
+    var line = P.map(function (q) { return Math.round(q[0] - ox) + ',' + Math.round(q[1] - oy); }).join(' ');
+    var pins = pts.map(function (p, i) {
+      var cls = i === 0 ? ' is-start' : (i === pts.length - 1 ? ' is-finish' : '');
+      return '<a class="qc-pin' + cls + '" style="left:' + Math.round(P[i][0] - ox) + 'px;top:' + Math.round(P[i][1] - oy) + 'px" target="_blank" rel="noopener" title="' +
+        esc(num(p.n) + ' ' + p.nm + ' (' + p.la.toFixed(5) + ', ' + p.lo.toFixed(5) + ')') + '" href="https://www.openstreetmap.org/?mlat=' + p.la + '&mlon=' + p.lo + '#map=18/' + p.la + '/' + p.lo + '"><span>' + esc(num(p.n)) + '</span></a>';
+    }).join('');
+    box.innerHTML = '<div class="qc-map adm-map" style="height:' + H + 'px"><div class="qc-map__tiles">' + tiles + '</div>' +
+      '<svg class="qc-map__line" aria-hidden="true"><polyline points="' + line + '"/></svg>' + pins +
+      '<a class="qc-map__attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a></div>' +
+      '<p class="adm-send__hint">Kliknij pinezkę, żeby otworzyć dokładne miejsce w OpenStreetMap. Zielona = start, złota = meta, linia = kolejność przystanków (nie droga piesza).</p>' + note;
   }
 
   function stat(label, now, before) {
