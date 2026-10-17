@@ -15,7 +15,7 @@ web
 Quolino zamienia zwiedzanie miasta w grę terenową dla rodziny. Rodzic dostaje gotowy plan dnia od parkingu po kolację (godziny, ceny, nawigacja, ZTL, plan awaryjny, rozmówki, telefony); dziecko dostaje misję na każdym przystanku. Sukces: rodzina otwiera plan na telefonie i jedzie, dziecko nie marudzi, rodzice zwiedzają w spokoju.
 
 ## Positioning
-Jeden plan, dwa widoki: przewodnik dla dorosłego i gra terenowa dla dziecka nad tą samą trasą, oparte na zweryfikowanych faktach, za darmo. Trasa zawsze zaczyna się od parkingu i kończy kolacją; godziny ułożone pod klimat (omijają upał).
+Jeden plan, dwa widoki: przewodnik dla dorosłego i gra terenowa dla dziecka nad tą samą trasą, oparte na zweryfikowanych faktach, za darmo. Trasa zawsze zaczyna się od parkingu; ostateczny kształt wycieczki ustala rodzic (pora startu, pominięte przystanki, gdzie zostać dłużej). Nie obiecujemy godzin „pod klimat” ani kolacji na finał, dopóki nie mają ich wszystkie wycieczki (decyzja JP 2026-10-17).
 
 ## Operating Context
 - Kolejność: landing → kraj → region → miasto (city.html, dane z Supabase) → widok dziecka.
