@@ -94,6 +94,7 @@ Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-polic
 | `quolino_album:<strona>:<nr>`     | zdjęcia użytkownika, tylko na urządzeniu                    |
 | `quolino_client`                  | losowy numer przeglądarki przy wysyłaniu oceny (`opinion.js`)|
 | `quolino_rated_<miasto>`          | wycieczka już oceniona                                      |
+| `qc.session`                     | sesja zalogowanego rodzica (token + odświeżanie, `auth.js`); usuwa wylogowanie |
 | `quolino_nostats`                 | `1` = statystyki wyłączone (JP, testerzy); `?nostats=1/0` w adresie przełącza |
 | `quolino_migrated`, `quolino_migration_expiry` | jednorazowa migracja z `questini_*` (`migrate-storage.js`) |
 | `qc.pager.<slug>`                 | ostatni przystanek w widoku mobilnym wycieczki (pager ≤767 px, `trip-ui.js`) |
