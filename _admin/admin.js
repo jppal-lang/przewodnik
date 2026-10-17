@@ -45,21 +45,37 @@
   ];
 
   // ── dane ─────────────────────────────────────────────
+  // Sesja panelu (bramka admin-gate) wygasa po 30 min bez ruchu albo 2 h od wejścia — wtedy bramka odsyła przekierowanie.
+  // Wykrywamy to od razu (redirect: 'manual'), zamiast czekać na błąd sieci; każde zapytanie ma limit czasu.
+  var SESSION_MSG = 'Sesja panelu wygasła (30 min bez ruchu albo 2 h od wejścia). Uwagi są bezpieczne w tej przeglądarce. ' +
+    'Napisz „link” na #admin, wejdź z nowego linku w tej samej przeglądarce i kliknij jeszcze raz.';
   function api(path, opts) {
     if (DEMO) return demo(path, opts);
     opts = opts || {};
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, opts.timeout || 20000) : null;
     return fetch(API + path, {
       method: opts.method || 'GET',
+      redirect: 'manual',
+      credentials: 'same-origin',
+      signal: ctl ? ctl.signal : undefined,
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Prefer': 'return=representation' },
       body: opts.body ? JSON.stringify(opts.body) : undefined
     }).then(function (r) {
+      if (r.type === 'opaqueredirect' || (r.status >= 300 && r.status < 400)) { var se = new Error(SESSION_MSG); se.session = true; throw se; }
       return r.text().then(function (t) {
         var j = null;
-        try { j = t ? JSON.parse(t) : null; } catch (e) { throw new Error('API nie odpowiada (HTTP ' + r.status + ', brak JSON)'); }
+        try { j = t ? JSON.parse(t) : null; } catch (e) {
+          if (/<html|<!doctype/i.test(t)) { var se2 = new Error(SESSION_MSG); se2.session = true; throw se2; }
+          throw new Error('API nie odpowiada (HTTP ' + r.status + ', brak JSON)');
+        }
         if (!r.ok) throw new Error((j && (j.message || j.hint)) || ('HTTP ' + r.status));
         return j;
       });
-    });
+    }, function (e) {
+      if (e && e.name === 'AbortError') throw new Error('Serwer nie odpowiedział w 20 s. Uwagi są bezpieczne — spróbuj za chwilę.');
+      throw new Error('Brak połączenia z panelem (' + (e && e.message || 'sieć') + '). Uwagi są bezpieczne — sprawdź internet i kliknij jeszcze raz.');
+    }).then(function (v) { if (timer) clearTimeout(timer); return v; }, function (e) { if (timer) clearTimeout(timer); throw e; });
   }
 
   function demo(path, opts) {
@@ -235,7 +251,7 @@
       if (!draft) throw new Error('brak treści szkicu');
       render(it, draft, pub, all);
       flushOutbox();
-      state.poll = setInterval(function () { if (!document.hidden) refreshComments(); }, 30000);
+      state.poll = setInterval(refreshComments, 30000);   // także w tle: zapytanie co 30 s podtrzymuje sesję panelu (30 min bez ruchu = wylogowanie)
       if (window.matchMedia('(max-width:900px)').matches) $d.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (e) { $d.innerHTML = '<div class="adm-placeholder"><p>Nie udało się wczytać szkicu: ' + esc(e.message) + '</p></div>'; });
   }
@@ -345,25 +361,42 @@
     if (hint) hint.textContent = local ? 'Tylko w tej przeglądarce: ' + plUwagi(local) + '. Przycisk najpierw przeniesie je do bazy.' : '';
   }
   function plUwagi(n) { var d = n % 10, t = n % 100; return n + (n === 1 ? ' uwaga' : (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? ' uwagi' : ' uwag'); }
+  // komunikat widoczny zawsze — pod przyciskiem i w pływającej ramce (przycisk w menu przystanków nie ma pola komunikatu)
+  function sendNote(text, ok) {
+    var $m = document.getElementById('sendMsg');
+    if ($m) { $m.className = 'adm-msg ' + (ok ? 'adm-msg--ok' : 'adm-msg--err'); $m.textContent = text; }
+    var t = document.getElementById('admToast');
+    if (!t) { t = document.createElement('div'); t.id = 'admToast'; t.className = 'adm-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.className = 'adm-toast ' + (ok ? 'adm-toast--ok' : 'adm-toast--err');
+    t.innerHTML = '<p>' + esc(text) + '</p><button type="button" class="qc-btn qc-btn--sm" data-toast-close>Zamknij</button>';
+    t.hidden = false;
+    if (ok) setTimeout(function () { t.hidden = true; }, 12000);
+  }
+  document.addEventListener('click', function (e) { if (e.target.closest('[data-toast-close]')) document.getElementById('admToast').hidden = true; });
+  function setSendLabel(txt) { [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.textContent = txt; }); }
   function sendAll(btn) {
     var it = state.current, n = unsent().length;
     if (!it || !n) return;
-    [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.disabled = true; b.classList.add('is-busy'); b.textContent = 'Wysyłam…'; });
-    var $m = document.getElementById('sendMsg');
-    var NOT_READY = 'Uwagi są bezpieczne w tej przeglądarce, ale baza jeszcze ich nie przyjmuje (brak zatwierdzonego SQL). ' +
-      'W konsoli: sh /root/quolino-web/ops/deploy.sh pending, potem approve z najnowszym hashem — i kliknij jeszcze raz.';
-    flushOutbox().then(function (left) {
-      if (left) { var e = new Error('not_ready'); e.notReady = true; throw e; }
+    [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.disabled = true; b.classList.add('is-busy'); });
+    setSendLabel('Wysyłam…');
+    var box = lsGet(OUTBOX) || [], total = box.length, done = 0;
+    var step = total ? flushOutbox(function () { done++; setSendLabel('Przenoszę uwagi do bazy ' + done + '/' + total + '…'); }) : Promise.resolve(0);
+    step.then(function (left) {
+      if (left) {
+        throw new Error(state.outboxSession ? SESSION_MSG : 'Baza nie przyjęła ' + plUwagi(left) + ' (' + (state.outboxErr || 'brak odpowiedzi') +
+          '). Są bezpieczne w tej przeglądarce — kliknij jeszcze raz za chwilę.');
+      }
+      setSendLabel('Zlecam poprawkę…');
       return api('/rpc/admin_send_comments', { method: 'POST', body: { p_slug: it.city_slug, p_version: it.version } });
     }).then(function (r) {
-      if ($m) { $m.className = 'adm-msg adm-msg--ok'; $m.textContent = 'Wysłane: ' + plUwagi((r && r.sent) || n) + '. Hermes przygotuje nową wersję szkicu i odpisze przy polach.'; }
+      sendNote('Wysłane: ' + plUwagi((r && r.sent) || n) + '. Hermes zrobi nową wersję szkicu (zwykle 5–15 min), napisze w wątku miasta i odpowie przy każdej uwadze.', true);
       return loadComments(it.city_slug);
     }).catch(function (e) {
-      var nr = e.notReady || /admin_send_comments|draft_comments|does not exist|not find|schema cache/i.test(e.message);
-      if ($m) { $m.className = 'adm-msg adm-msg--err'; $m.textContent = nr ? NOT_READY : 'Nie wysłano: ' + e.message; }
+      sendNote('Nie wysłano. ' + (e && e.message || 'Nieznany błąd') , false);
+      if (window.console) console.error('Wyślij uwagi:', e);
     }).then(function () {
       [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.classList.remove('is-busy'); });
-      updateCommentUi();
+      try { updateCommentUi(); } catch (e2) { if (window.console) console.error(e2); renderSendBox(); }
     });
   }
   document.addEventListener('click', function (e) {
@@ -394,20 +427,32 @@
       state.commentsApi = false;
     }).then(function () { form.classList.remove('is-busy'); updateCommentUi(); });
   }
-  function flushOutbox() {
+  // jedno przenoszenie naraz: otwarcie szkicu i przycisk nie mogą wysłać tych samych uwag dwa razy (duplikaty w bazie)
+  var flushing = null;
+  function flushOutbox(onEach) {
     if (DEMO) return Promise.resolve(0);
+    if (flushing) return flushing;
+    flushing = flushOnce(onEach).then(function (v) { flushing = null; return v; }, function (e) { flushing = null; throw e; });
+    return flushing;
+  }
+  function flushOnce(onEach) {
     var box = lsGet(OUTBOX) || [];
     if (!box.length) return Promise.resolve(0);
-    var keep = [], err = '';
+    var keep = [], err = '', session = false;
     return box.reduce(function (p, c) {
       return p.then(function () {
-        var body = Object.assign({}, c); delete body.local_id; delete body.created_at;
-        return api('/draft_comments', { method: 'POST', body: body }).catch(function (e) { keep.push(c); err = e.message; });
+        if (session) { keep.push(c); return; }            // sesja wygasła — nie męczymy bramki kolejnymi próbami
+        var body = Object.assign({}, c); delete body.local_id; delete body.created_at; delete body.status;
+        return api('/draft_comments', { method: 'POST', body: body })
+          .then(function () { if (onEach) onEach(); })
+          .catch(function (e) { keep.push(c); err = e.message; if (e.session) session = true; });
       });
     }, Promise.resolve()).then(function () {
-      lsSet(OUTBOX, keep);
+      var ids = box.map(function (c) { return c.local_id; });
+      var added = (lsGet(OUTBOX) || []).filter(function (c) { return ids.indexOf(c.local_id) < 0; });   // dopisane w trakcie
+      lsSet(OUTBOX, keep.concat(added));                 // w przeglądarce zostaje tylko to, czego baza nie przyjęła
+      state.outboxErr = err; state.outboxSession = session;
       if (keep.length < box.length) return loadComments(state.current ? state.current.city_slug : '').then(function () { return keep.length; });
-      state.outboxErr = err;
       return keep.length;
     });
   }

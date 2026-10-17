@@ -74,7 +74,8 @@ WORD = re.compile(r"\w+", re.UNICODE)
 EN_PLACE = re.compile(r"\b(Mausoleum|Basilica|Baptistery|Cathedral|Church|Tomb|Palace|Museum|Bridge|Square|Tower|Castle|Abbey|Chapel)\s+of\b"
                       r"|\b(Baptistery|Cathedral|Square|Tower|Bridge)\b(?!\s*\()", re.I)
 WIKI = re.compile(r"https?://([a-z]{2,3})\.(?:m\.)?wikipedia\.org/wiki/([^\s?#]+)", re.I)
-EN_TITLE = re.compile(r"(^|_)(of|the|Mausoleum|Basilica|Baptistery|Cathedral|Church|Tomb|Palace|Bridge|Square|Tower)(_|$)", re.I)
+# tylko słowa wyłącznie angielskie: „Basilica”, „Castello”, „Museo” itp. są też włoskie/hiszpańskie — nie mogą dawać błędu
+EN_TITLE = re.compile(r"(^|_)(of|the|Mausoleum|Baptistery|Cathedral|Church|Tomb|Palace|Bridge|Square|Tower|Abbey|Chapel)(_|$)", re.I)
 # quest/wskazówka zdradza odpowiedź (Rawenna: „odpowiedź w nawiasie”, wskazówka podaje rozwiązanie)
 GIVEAWAY = re.compile(r"\(\s*(odp\w*|odpowied\w*|rozwiąz\w*)|\b(odpowiedź|rozwiązanie)\s*(to|brzmi|:)|\bpoprawna odpowied\w*", re.I)
 # superlatywy wymagają źródła (Rawenna: „najstarsze przedstawienie Trzech Mędrców” — fałsz)
