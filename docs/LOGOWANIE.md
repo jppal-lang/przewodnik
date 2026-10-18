@@ -101,12 +101,16 @@ Bez ręcznej edycji plików.
 - **Konto po zalogowaniu** to prawdziwy widok: bez „podglądu na przykładowych danych”; pusty album pokazuje miasta „do zdobycia”.
   Przykładowe dane tylko dla niezalogowanych (albo `?demo=1`).
 - Konto JP założone 17.10 linkiem nie ma hasła — ustawia je przez „Nie pamiętasz hasła?”.
-- Do decyzji JP: usuwanie nieaktywnych kont (propozycja w rozmowie 2026-10-18).
 
 ## 8. Kasowanie kont (JP 2026-10-18)
 
 - **Niepotwierdzone** (nikt nie kliknął linku z maila) kasujemy po **48 godzinach**: `ops/auth-cleanup.sh`, cron co godzinę
   (`cron/crontab.txt`). Kasowanie w `auth.users` usuwa kaskadowo tożsamości, sesje i tokeny. W logu tylko liczba, bez adresów.
 - Podgląd bez kasowania: `sh /root/quolino-web/ops/auth-cleanup.sh --check`.
-- Konta potwierdzone, ale nieużywane: do decyzji JP (propozycja: 24 miesiące bez logowania, mail z ostrzeżeniem 30 dni wcześniej;
-  przy zakupach dane transakcji zostają tyle, ile wymagają przepisy).
+- **Potwierdzonych nie kasujemy z powodu nieaktywności.** Konto trzyma wybraną darmową wycieczkę (bezterminową, `docs/KONTO-RODZICA.md` §4)
+  i zakupy — rodzina musi mieć do nich dostęp także po latach. Konto znika tylko na prośbę właściciela („Usuń konto” w panelu).
+- **Darmowa wycieczka blokuje kolejne.** Żeby „usuń konto i załóż od nowa” nie dawało drugiej darmowej trasy, po usunięciu konta
+  zostaje tylko skrót adresu (HMAC z sekretem serwera, bez samego adresu) z adnotacją „darmowa wykorzystana”. Przy rejestracji
+  ten sam adres (po normalizacji: małe litery; Gmail bez kropek i części po „+”) nie dostaje nowej darmowej trasy.
+  Podstawa: uzasadniony interes (zapobieganie nadużyciom) — opisać w polityce prywatności. Do zrobienia razem z tabelą `entitlements`.
+- Dane transakcji (od czerwca 2027) zostają po usunięciu konta tyle, ile wymagają przepisy.
