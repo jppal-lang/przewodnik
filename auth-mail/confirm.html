@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Potwierdź konto w Quolino</title></head>
+<body style="margin:0;padding:0;background:#EAF0F8;font-family:Arial,Helvetica,sans-serif;color:#0E1A2B">
+  <!-- Szablon e-maila „Potwierdź konto” (GoTrue: confirmation po rejestracji). Pobiera go kontener quolino-auth.
+       Zmienne GoTrue: {{ .ConfirmationURL }}. Bez obrazków z zewnątrz i bez śledzenia otwarć. -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAF0F8;padding:24px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:28px">
+        <tr><td style="font-size:26px;font-weight:800;letter-spacing:-.5px;padding-bottom:18px">quolino<span style="color:#E0A800">.</span>com</td></tr>
+        <tr><td style="font-size:18px;line-height:1.5;padding-bottom:22px">
+          Dziękujemy za założenie konta rodzica w Quolino. Kliknij przycisk, żeby potwierdzić adres e-mail — od razu też Cię zalogujemy.
+        </td></tr>
+        <tr><td align="center" style="padding-bottom:22px">
+          <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0B4EA2;color:#ffffff;text-decoration:none;font-size:19px;font-weight:700;padding:16px 30px;border-radius:12px">Potwierdź konto</a>
+        </td></tr>
+        <tr><td style="font-size:16px;line-height:1.5;color:#5D6B82;padding-bottom:14px">
+          Link działa raz i przez godzinę. Jeśli to nie Ty zakładałeś konto, zignoruj tę wiadomość — bez potwierdzenia konto nie zostanie aktywowane.
+        </td></tr>
+        <tr><td style="font-size:15px;line-height:1.5;color:#5D6B82;border-top:1px solid #D3DDEA;padding-top:14px">
+          <span lang="en">Thanks for creating a Quolino parent account. Click the button to confirm your email address. The link works once, for one hour. If it wasn't you, ignore this email.</span>
+        </td></tr>
+      </table>
+      <p style="font-size:13px;color:#8a8f99;margin:14px 0 0">Wiadomość automatyczna — nie odpowiadaj na nią. Kontakt: quolino.com/kontakt.html</p>
+    </td></tr>
+  </table>
+</body>
+</html>

@@ -44,7 +44,7 @@ mkdir -p secrets; chmod 700 secrets
 } > secrets/gotrue.env
 chmod 600 secrets/gotrue.env
 
-docker compose -f "$W/ops/auth-compose.yml" up -d --force-recreate gotrue
+docker compose -f "$W/ops/auth-compose.yml" up -d --force-recreate --remove-orphans
 printf 'Czekam na GoTrue'
 i=0; until docker exec quolino-auth-gotrue-1 wget -qO- http://127.0.0.1:9999/health >/dev/null 2>&1; do
   i=$((i+1)); [ $i -lt 40 ] || { echo; echo "GoTrue nie wstał. Ostatnie logi:"; docker logs --tail 15 quolino-auth-gotrue-1 2>&1 | cut -c1-300; exit 1; }
@@ -52,4 +52,6 @@ i=0; until docker exec quolino-auth-gotrue-1 wget -qO- http://127.0.0.1:9999/hea
 done
 echo " OK"
 echo "Tabele kont: $(echo "SELECT count(*) FROM information_schema.tables WHERE table_schema='auth'" | pgq -d quolino)"
-echo "Z zewnątrz: $(curl -s -o /dev/null -w '%{http_code}' https://auth.quolino.com/auth/v1/health) (200 = działa; certyfikat może potrzebować minuty)"
+sleep 20
+echo "Z zewnątrz: $(curl -s -o /dev/null -w "%{http_code}" https://auth.quolino.com/auth/v1/health) (200 = działa)"
+echo "Bramka rejestracji: $(curl -s -o /dev/null -w "%{http_code}" -X POST -H "content-type: application/json" -d "{}" https://auth.quolino.com/auth/v1/signup) (400 = działa i odrzuca bez weryfikacji)"

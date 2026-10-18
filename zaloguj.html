@@ -3,33 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zaloguj się — Quolino</title>
-<meta name="description" content="Logowanie do konta rodzica Quolino: wpisz e-mail i kliknij link z wiadomości. Bez hasła.">
+<title>Zaloguj się lub załóż konto — Quolino</title>
+<meta name="description" content="Konto rodzica Quolino: załóż konto e-mailem i hasłem albo zaloguj się.">
 <meta name="robots" content="noindex, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=27">
 <style>
+  [hidden]{display:none!important}
   .lg{max-width:560px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.55;color:var(--ink)}
-  .lg h1{font-size:clamp(34px,7vw,52px);line-height:1.02;margin:.2em 0 .3em}
-  .lg .lead{font-size:20px;margin-bottom:22px}
+  .lg h1{font-size:clamp(34px,7vw,52px);line-height:1.02;margin:.2em 0 .4em}
+  .lg .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;margin-bottom:16px;border-radius:14px;background:var(--azzurro-50)}
+  .lg .tabs button{min-height:48px;border:0;border-radius:10px;background:none;font:800 18px/1 'Archivo',sans-serif;color:var(--azzurro-ink);cursor:pointer}
+  .lg .tabs button[aria-selected="true"]{background:var(--card);box-shadow:var(--lift-1);color:var(--ink)}
   .lg .card{display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--r-stk,18px);background:var(--card,#fff);box-shadow:var(--lift-1)}
+  .lg .card h2{margin:0;font-size:24px}
   .lg label{display:block;font-weight:800;margin-bottom:6px}
-  .lg input[type=email]{width:100%;min-height:52px;padding:10px 14px;border:2px solid var(--rule);border-radius:10px;font:500 19px/1.4 'Archivo',sans-serif;background:var(--page);color:var(--ink)}
+  .lg input[type=email],.lg input[type=password],.lg input[type=text].pw{width:100%;min-height:52px;padding:10px 14px;border:2px solid var(--rule);border-radius:10px;font:500 19px/1.4 'Archivo',sans-serif;background:var(--page);color:var(--ink)}
   .lg input:focus{outline:3px solid var(--azzurro);outline-offset:1px;border-color:var(--azzurro)}
+  .lg .pwrow{position:relative}
+  .lg .pwrow input{padding-right:64px}
+  .lg .eye{position:absolute;right:4px;top:4px;width:48px;height:44px;border:0;border-radius:8px;background:none;cursor:pointer;color:var(--muted)}
+  .lg .eye:focus-visible{outline:3px solid var(--azzurro)}
   .lg .hint{margin-top:6px;font-size:16px;color:var(--muted)}
   .lg .qc-btn{width:100%;cursor:pointer}
   .lg .qc-btn:disabled{opacity:.6;cursor:default}
   .lg .msg{font-weight:700;min-height:1.4em;margin:0}
   .lg .msg.err{color:#B3261E}
-  .lg .sent{padding:20px;border-radius:14px;background:var(--verde-50,#e5f3ea)}
-  .lg .sent b{word-break:break-all}
+  .lg .msg.ok{color:var(--verde)}
+  .lg .done{padding:20px;border-radius:14px;background:var(--verde-50,#e5f3ea)}
+  .lg .done p{margin:0}
+  .lg .done .t{font-size:21px;font-weight:800;margin-bottom:8px}
+  .lg .done b{word-break:break-all}
   .lg .row{display:flex;gap:12px;flex-wrap:wrap}
   .lg .row .qc-btn{flex:1 1 200px;width:auto}
-  .lg .small{font-size:16px;color:var(--muted);margin-top:18px}
+  .lg .linkbtn{align-self:flex-start;background:none;border:0;padding:0;min-height:44px;font:inherit;font-weight:700;color:var(--azzurro-ink);text-decoration:underline;cursor:pointer}
+  .lg .small{font-size:16px;color:var(--muted);margin:0}
   .lg .small a{color:var(--azzurro-ink)}
-  .lg .linkbtn{background:none;border:0;padding:0;min-height:44px;font:inherit;font-weight:700;color:var(--azzurro-ink);text-decoration:underline;cursor:pointer}
+  .lg .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+  .lg altcha-widget{--altcha-max-width:100%;--altcha-border-radius:10px;--altcha-color-border:var(--rule);font-size:18px}
   .footer__links{display:flex;gap:16px;justify-content:center}
   .footer__links a{color:var(--azzurro);min-height:44px;display:inline-flex;align-items:center}
 </style>
@@ -42,43 +55,97 @@
 </nav>
 
 <main class="lg" id="mainContent">
-  <h1>Zaloguj się</h1>
-  <p class="lead">Wpisz swój e-mail, a wyślemy Ci link. Kliknięcie w link zaloguje Cię od razu, a za pierwszym razem założy konto. Bez hasła.</p>
+  <h1 id="lgTitle">Konto rodzica</h1>
 
-  <!-- 1. formularz -->
-  <form class="card" id="lgForm" novalidate>
+  <div class="tabs" role="tablist" aria-label="Logowanie lub rejestracja" id="lgTabs">
+    <button type="button" role="tab" id="tabIn" aria-controls="vIn" aria-selected="true">Zaloguj się</button>
+    <button type="button" role="tab" id="tabUp" aria-controls="vUp" aria-selected="false">Załóż konto</button>
+  </div>
+
+  <!-- LOGOWANIE -->
+  <form class="card" id="vIn" role="tabpanel" aria-labelledby="tabIn" novalidate>
     <div>
-      <label for="lgEmail">Twój e-mail</label>
-      <input type="email" id="lgEmail" maxlength="200" autocomplete="email" inputmode="email" required aria-describedby="lgHint">
-      <p class="hint" id="lgHint">Link działa raz i przez godzinę.</p>
+      <label for="inEmail">E-mail</label>
+      <input type="email" id="inEmail" maxlength="200" autocomplete="username" inputmode="email" required>
     </div>
-    <button type="submit" class="qc-btn qc-btn--primary" id="lgSend">Wyślij link</button>
-    <p class="msg" id="lgMsg" role="status" aria-live="polite"></p>
+    <div>
+      <label for="inPass">Hasło</label>
+      <div class="pwrow"><input type="password" id="inPass" maxlength="72" autocomplete="current-password" required>
+        <button type="button" class="eye" data-eye="inPass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+    </div>
+    <button type="submit" class="qc-btn qc-btn--primary" id="inSend">Zaloguj się</button>
+    <p class="msg" id="inMsg" role="status" aria-live="polite"></p>
+    <button type="button" class="qc-btn" id="inResend" hidden>Wyślij link potwierdzający ponownie</button>
+    <button type="button" class="linkbtn" id="inForgot">Nie pamiętasz hasła?</button>
   </form>
 
-  <!-- 2. wysłane -->
-  <div class="card" id="lgSent" hidden>
-    <div class="sent" role="status" aria-live="polite">
-      <p style="margin:0 0 8px;font-size:20px;font-weight:800">Sprawdź skrzynkę</p>
-      <p style="margin:0">Wysłaliśmy link na <b id="lgTo"></b>. Otwórz wiadomość od Quolino i kliknij „Zaloguj się”. Jeśli jej nie widzisz, zajrzyj do folderu Spam lub Oferty.</p>
+  <!-- REJESTRACJA -->
+  <form class="card" id="vUp" role="tabpanel" aria-labelledby="tabUp" novalidate hidden>
+    <div>
+      <label for="upEmail">E-mail</label>
+      <input type="email" id="upEmail" maxlength="200" autocomplete="email" inputmode="email" required>
     </div>
-    <p class="msg" id="lgMsg2" role="status" aria-live="polite"></p>
-    <div class="row">
-      <button type="button" class="qc-btn" id="lgAgain" disabled>Wyślij ponownie</button>
-      <button type="button" class="qc-btn" id="lgOther">Inny adres</button>
+    <div>
+      <label for="upPass">Hasło</label>
+      <div class="pwrow"><input type="password" id="upPass" maxlength="72" autocomplete="new-password" minlength="10" required aria-describedby="upPassHint">
+        <button type="button" class="eye" data-eye="upPass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+      <p class="hint" id="upPassHint">Co najmniej 10 znaków. Najłatwiej: trzy dowolne słowa.</p>
     </div>
+    <div class="hp" aria-hidden="true"><label for="upWebsite">Strona www</label><input type="text" id="upWebsite" tabindex="-1" autocomplete="off"></div>
+    <altcha-widget id="upAltcha" name="altcha" language="pl" auto="onfocus" type="checkbox"></altcha-widget>
+    <button type="submit" class="qc-btn qc-btn--primary" id="upSend">Załóż konto</button>
+    <p class="msg" id="upMsg" role="status" aria-live="polite"></p>
+    <p class="small">Wyślemy Ci link potwierdzający. Adres e-mail służy tylko do konta — bez reklam i newslettera. Szczegóły: <a href="/cookie-policy.html">Prywatność</a>.</p>
+  </form>
+
+  <!-- NIE PAMIĘTAM HASŁA -->
+  <form class="card" id="vForgot" novalidate hidden>
+    <h2>Nowe hasło</h2>
+    <p class="small" style="font-size:18px;color:var(--ink)">Wpisz e-mail konta. Wyślemy link do ustawienia nowego hasła.</p>
+    <div>
+      <label for="fgEmail">E-mail</label>
+      <input type="email" id="fgEmail" maxlength="200" autocomplete="email" inputmode="email" required>
+    </div>
+    <div class="hp" aria-hidden="true"><label for="fgWebsite">Strona www</label><input type="text" id="fgWebsite" tabindex="-1" autocomplete="off"></div>
+    <altcha-widget id="fgAltcha" name="altcha" language="pl" auto="onfocus" type="checkbox"></altcha-widget>
+    <button type="submit" class="qc-btn qc-btn--primary" id="fgSend">Wyślij link</button>
+    <p class="msg" id="fgMsg" role="status" aria-live="polite"></p>
+    <button type="button" class="linkbtn" id="fgBack">Wróć do logowania</button>
+  </form>
+
+  <!-- WYSŁANE (rejestracja albo reset) — sam komunikat, bez formularza -->
+  <div class="card" id="vSent" hidden>
+    <div class="done" role="status" aria-live="polite">
+      <p class="t">Sprawdź skrzynkę</p>
+      <p id="sentTxt"></p>
+    </div>
+    <p class="small">Nie widzisz wiadomości? Zajrzyj do folderu Spam lub Oferty. Przycisk „Wyślij ponownie” włączy się za chwilę.</p>
+    <p class="msg" id="sentMsg" role="status" aria-live="polite"></p>
+    <button type="button" class="qc-btn" id="sentAgain" disabled>Wyślij ponownie</button>
+    <button type="button" class="linkbtn" id="sentBack">Wróć do logowania</button>
   </div>
 
-  <!-- 3. już zalogowany -->
-  <div class="card" id="lgIn" hidden>
-    <p style="margin:0;font-size:20px">Jesteś zalogowany jako <b id="lgWho"></b>.</p>
+  <!-- USTAW NOWE HASŁO (po kliknięciu linku resetu) -->
+  <form class="card" id="vNewPass" novalidate hidden>
+    <h2>Ustaw nowe hasło</h2>
+    <div>
+      <label for="npPass">Nowe hasło</label>
+      <div class="pwrow"><input type="password" id="npPass" maxlength="72" autocomplete="new-password" minlength="10" required aria-describedby="npHint">
+        <button type="button" class="eye" data-eye="npPass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+      <p class="hint" id="npHint">Co najmniej 10 znaków.</p>
+    </div>
+    <button type="submit" class="qc-btn qc-btn--primary" id="npSend">Zapisz hasło</button>
+    <p class="msg" id="npMsg" role="status" aria-live="polite"></p>
+  </form>
+
+  <!-- ZALOGOWANY -->
+  <div class="card" id="vMe" hidden>
+    <p style="margin:0;font-size:20px" id="meTxt"></p>
     <div class="row">
       <a class="qc-btn qc-btn--primary" href="/konto.html">Przejdź do konta</a>
-      <button type="button" class="qc-btn" id="lgOut">Wyloguj</button>
+      <button type="button" class="qc-btn" id="meOut">Wyloguj</button>
     </div>
   </div>
-
-  <p class="small">Adres e-mail służy tylko do logowania. Nie wysyłamy reklam ani newslettera. Szczegóły: <a href="/cookie-policy.html">Prywatność</a>.</p>
 </main>
 
 <div class="footer">
@@ -86,57 +153,181 @@
   <nav class="footer__links"><a href="/kontakt.html">Kontakt</a><a href="/cookie-policy.html">Prywatność</a></nav>
   <span>© 2026 · Rodzinne przewodniki wypadowe</span>
 </div>
-<script src="/auth.js?v=1"></script>
+<script src="/auth.js?v=2"></script>
+<script src="/vendor/altcha/altcha.min.js?v=3.4.0"></script>
 <script>
-/* Logowanie e-mailem linkiem (JP 2026-10-17). Sesja i wysyłka: /auth.js (window.QAuth). Plan: docs/LOGOWANIE.md. */
+/* Konto rodzica (JP 2026-10-18): rejestracja e-mail + hasło → link potwierdzający; logowanie e-mail + hasło; reset hasła linkiem.
+   Rejestracja i reset przechodzą przez bramkę „Nie jestem robotem” (ALTCHA z naszej bazy, jak formularz kontaktowy).
+   Sesja: /auth.js (window.QAuth). Plan: docs/LOGOWANIE.md. */
 (function () {
   'use strict';
+  var API = 'https://api.quolino.com/rest/v1';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+  var H = { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY };
   var $ = function (id) { return document.getElementById(id); };
-  var form = $('lgForm'), email = $('lgEmail'), send = $('lgSend'), msg = $('lgMsg');
-  var sent = $('lgSent'), again = $('lgAgain'), msg2 = $('lgMsg2'), done = $('lgIn');
-  var next = new URLSearchParams(location.search).get('next') || '';
-  var timer = null;
+  var VIEWS = ['vIn', 'vUp', 'vForgot', 'vSent', 'vNewPass', 'vMe'];
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  var opened = { vUp: 0, vForgot: 0 };   // czas otwarcia formularza (ochrona przed botami)
+  var sent = null, timer = null;
 
-  function show(which) { form.hidden = which !== 'form'; sent.hidden = which !== 'sent'; done.hidden = which !== 'in'; }
-  function say(el, t, err) { el.className = 'msg' + (err ? ' err' : ''); el.textContent = t; }
-  function why(r) {
-    if (r.status === 429 || r.code === 'over_email_send_rate_limit' || r.code === 'over_request_rate_limit') return 'Za dużo prób. Odczekaj minutę i spróbuj ponownie.';
-    if (r.status === 400 || r.status === 422) return 'Sprawdź adres e-mail: wygląda na niepoprawny.';
-    if (r.status === 0) return 'Brak połączenia z internetem. Spróbuj za chwilę.';
-    return 'Nie udało się wysłać linku. Spróbuj za kilka minut.';
+  function show(v) {
+    VIEWS.forEach(function (id) { $(id).hidden = id !== v; });
+    var tabsOn = v === 'vIn' || v === 'vUp';
+    $('lgTabs').hidden = !tabsOn;
+    $('tabIn').setAttribute('aria-selected', String(v === 'vIn'));
+    $('tabUp').setAttribute('aria-selected', String(v === 'vUp'));
+    if (opened[v] !== undefined) opened[v] = Date.now();
+    $('lgTitle').textContent = v === 'vUp' ? 'Załóż konto' : v === 'vIn' ? 'Zaloguj się' : v === 'vMe' ? 'Konto rodzica' : $('lgTitle').textContent;
   }
-  function cooldown() {
-    var left = 60; again.disabled = true; again.textContent = 'Wyślij ponownie (' + left + ' s)';
+  function say(el, t, kind) { el.className = 'msg' + (kind ? ' ' + kind : ''); el.textContent = t || ''; }
+  function err(r) {
+    var c = r.code || '';
+    if (r.status === 0) return 'Brak połączenia z internetem. Spróbuj za chwilę.';
+    if (/^gate_/.test(c)) return r.msg || 'Potwierdź, że nie jesteś robotem.';
+    if (c === 'invalid_credentials') return 'Nieprawidłowy e-mail lub hasło.';
+    if (c === 'email_not_confirmed') return 'Najpierw potwierdź adres e-mail — kliknij link z wiadomości od Quolino.';
+    if (c === 'weak_password') return 'Hasło jest za słabe. Użyj co najmniej 10 znaków, np. trzech dowolnych słów.';
+    if (c === 'user_already_exists' || c === 'email_exists') return 'Konto z tym adresem już istnieje. Zaloguj się albo ustaw nowe hasło.';
+    if (r.status === 429 || /rate_limit/.test(c)) return 'Za dużo prób. Odczekaj minutę i spróbuj ponownie.';
+    if (c === 'validation_failed' || r.status === 422) return 'Sprawdź adres e-mail i hasło.';
+    return 'Coś poszło nie tak. Spróbuj za kilka minut.';
+  }
+
+  // „Nie jestem robotem” — wyzwanie z naszej bazy (jak w formularzu kontaktowym)
+  function setupAltcha() {
+    if (!window.$altcha) return false;
+    window.$altcha.i18n.set('pl', { ariaLinkLabel: 'Altcha (oficjalna strona internetowa)', error: 'Weryfikacja nie powiodła się. Spróbuj ponownie.',
+      expired: 'Weryfikacja wygasła. Zaznacz pole jeszcze raz.', footer: '', label: 'Nie jestem robotem', loading: 'Ładowanie…', reload: 'Odśwież',
+      verify: 'Zweryfikuj', verificationRequired: 'Zaznacz „Nie jestem robotem”.', verified: 'Zweryfikowano', verifying: 'Sprawdzam…',
+      waitAlert: 'Trwa sprawdzanie… chwilę.', cancel: 'Anuluj', enterCode: 'Wprowadź kod', enterCodeAria: 'Wpisz kod', getAudioChallenge: 'Zadanie dźwiękowe',
+      enterCodeFromImage: 'Wpisz kod z obrazka.' });
+    ['upAltcha', 'fgAltcha'].forEach(function (id) {
+      var w = $(id); if (!w.configure) return;
+      w.configure({ challenge: API + '/rpc/contact_challenge', hideLogo: false, hideFooter: true,
+        fetch: function (url) { return fetch(url, { method: 'POST', headers: H, body: '{}' }); } });
+    });
+    return true;
+  }
+  if (!setupAltcha()) window.addEventListener('load', setupAltcha);
+  function altcha(id) { var v = ''; $(id).querySelectorAll('input[name="altcha"]').forEach(function (i) { if (i.value) v = i.value; }); return v; }
+  function resetAltcha(id) { try { $(id).reset(); } catch (e) { /* stary widżet */ } }
+
+  // pokaż/ukryj hasło
+  document.querySelectorAll('[data-eye]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var i = $(b.getAttribute('data-eye')), on = i.type === 'password';
+      i.type = on ? 'text' : 'password'; i.classList.toggle('pw', on);
+      b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Ukryj hasło' : 'Pokaż hasło');
+    });
+  });
+
+  // ekran „wysłane” + odliczanie do „Wyślij ponownie”
+  var COOLDOWN = 60;
+  function showSent(kind, email) {
+    sent = { kind: kind, email: email };
+    $('sentTxt').innerHTML = kind === 'signup'
+      ? 'Wysłaliśmy link potwierdzający na <b></b>. Kliknij go w wiadomości od Quolino — konto się aktywuje, a my od razu Cię zalogujemy.'
+      : 'Jeśli konto z adresem <b></b> istnieje, wysłaliśmy na niego link do ustawienia nowego hasła.';
+    $('sentTxt').querySelector('b').textContent = email;
+    say($('sentMsg'), '');
+    show('vSent'); countdown();
+  }
+  function countdown() {
+    var left = COOLDOWN, b = $('sentAgain');
+    b.disabled = true; b.textContent = 'Wyślij ponownie (' + left + ' s)';
     clearInterval(timer);
     timer = setInterval(function () {
-      left--; if (left > 0) { again.textContent = 'Wyślij ponownie (' + left + ' s)'; return; }
-      clearInterval(timer); again.disabled = false; again.textContent = 'Wyślij ponownie';
+      left--;
+      if (left > 0) { b.textContent = 'Wyślij ponownie (' + left + ' s)'; return; }
+      clearInterval(timer); b.disabled = false; b.textContent = 'Wyślij ponownie';
     }, 1000);
   }
-  async function go(addr, out) {
-    var r = await QAuth.sendLink(addr, next);
-    if (r.ok) { $('lgTo').textContent = addr; show('sent'); cooldown(); return true; }
-    say(out, why(r), true); return false;
-  }
-
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var addr = email.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(addr)) { say(msg, 'Wpisz pełny adres e-mail, np. anna@example.com.', true); email.focus(); return; }
-    send.disabled = true; say(msg, 'Wysyłam…');
-    await go(addr, msg);
-    send.disabled = false;
+  $('sentAgain').addEventListener('click', async function () {
+    if (!sent) return;
+    if (sent.kind === 'recover') { $('fgEmail').value = sent.email; show('vForgot'); say($('fgMsg'), 'Zaznacz „Nie jestem robotem” i wyślij jeszcze raz.'); return; }
+    this.disabled = true; say($('sentMsg'), 'Wysyłam…');
+    var r = await QAuth.resend(sent.email);
+    if (r.ok) { say($('sentMsg'), 'Wysłaliśmy nowy link. Poprzedni już nie działa.', 'ok'); countdown(); }
+    else { say($('sentMsg'), err(r), 'err'); this.disabled = false; }
   });
-  again.addEventListener('click', async function () { again.disabled = true; say(msg2, 'Wysyłam…'); if (await go($('lgTo').textContent, msg2)) say(msg2, 'Wysłaliśmy nowy link. Poprzedni już nie działa.'); else again.disabled = false; });
-  $('lgOther').addEventListener('click', function () { show('form'); say(msg, ''); email.focus(); });
-  $('lgOut').addEventListener('click', async function () { await QAuth.signOut(); show('form'); say(msg, 'Wylogowano.'); });
+  $('sentBack').addEventListener('click', function () { if (sent) $('inEmail').value = sent.email; show('vIn'); });
 
-  var err = QAuth.lastError();
-  if (err) say(msg, /expired|otp_expired|invalid/.test(err) ? 'Ten link już wygasł albo został użyty. Wpisz e-mail, a wyślemy nowy.' : 'Logowanie się nie udało. Wyślij link jeszcze raz.', true);
+  // zakładki
+  $('tabIn').addEventListener('click', function () { show('vIn'); history.replaceState(null, '', location.pathname); });
+  $('tabUp').addEventListener('click', function () { show('vUp'); history.replaceState(null, '', location.pathname + '#rejestracja'); });
+  $('inForgot').addEventListener('click', function () { $('fgEmail').value = $('inEmail').value; show('vForgot'); });
+  $('fgBack').addEventListener('click', function () { show('vIn'); });
+
+  // logowanie
+  $('vIn').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var email = $('inEmail').value.trim(), pass = $('inPass').value;
+    $('inResend').hidden = true;
+    if (!EMAIL_RE.test(email)) { say($('inMsg'), 'Wpisz pełny adres e-mail.', 'err'); $('inEmail').focus(); return; }
+    if (!pass) { say($('inMsg'), 'Wpisz hasło.', 'err'); $('inPass').focus(); return; }
+    $('inSend').disabled = true; say($('inMsg'), 'Loguję…');
+    var r = await QAuth.signIn(email, pass);
+    $('inSend').disabled = false;
+    if (r.ok) { say($('inMsg'), 'Zalogowano.', 'ok'); location.href = '/konto.html'; return; }
+    say($('inMsg'), err(r), 'err');
+    if (r.code === 'email_not_confirmed') $('inResend').hidden = false;
+  });
+  $('inResend').addEventListener('click', async function () {
+    var email = $('inEmail').value.trim(); this.disabled = true;
+    var r = await QAuth.resend(email);
+    this.disabled = false;
+    if (r.ok) { this.hidden = true; showSent('signup', email); } else say($('inMsg'), err(r), 'err');
+  });
+
+  // rejestracja
+  $('vUp').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var email = $('upEmail').value.trim(), pass = $('upPass').value, a = altcha('upAltcha');
+    if (!EMAIL_RE.test(email)) { say($('upMsg'), 'Wpisz pełny adres e-mail, np. anna@example.com.', 'err'); $('upEmail').focus(); return; }
+    if (pass.length < 10) { say($('upMsg'), 'Hasło musi mieć co najmniej 10 znaków.', 'err'); $('upPass').focus(); return; }
+    if (!a) { say($('upMsg'), 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.', 'err'); return; }
+    $('upSend').disabled = true; say($('upMsg'), 'Zakładam konto…');
+    var r = await QAuth.signUp(email, pass, { altcha: a, hp: $('upWebsite').value, ms: Date.now() - opened.vUp });
+    $('upSend').disabled = false; resetAltcha('upAltcha');
+    if (r.ok) { $('upPass').value = ''; showSent('signup', email); return; }
+    say($('upMsg'), err(r), 'err');
+  });
+
+  // nie pamiętam hasła
+  $('vForgot').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var email = $('fgEmail').value.trim(), a = altcha('fgAltcha');
+    if (!EMAIL_RE.test(email)) { say($('fgMsg'), 'Wpisz pełny adres e-mail.', 'err'); $('fgEmail').focus(); return; }
+    if (!a) { say($('fgMsg'), 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.', 'err'); return; }
+    $('fgSend').disabled = true; say($('fgMsg'), 'Wysyłam…');
+    var r = await QAuth.recover(email, { altcha: a, hp: $('fgWebsite').value, ms: Date.now() - opened.vForgot });
+    $('fgSend').disabled = false; resetAltcha('fgAltcha');
+    if (r.ok) { showSent('recover', email); return; }
+    say($('fgMsg'), err(r), 'err');
+  });
+
+  // nowe hasło (po linku z e-maila)
+  $('vNewPass').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var pass = $('npPass').value;
+    if (pass.length < 10) { say($('npMsg'), 'Hasło musi mieć co najmniej 10 znaków.', 'err'); return; }
+    $('npSend').disabled = true; say($('npMsg'), 'Zapisuję…');
+    var r = await QAuth.setPassword(pass);
+    $('npSend').disabled = false;
+    if (r.ok) { say($('npMsg'), 'Hasło zapisane. Przechodzę do konta…', 'ok'); setTimeout(function () { location.href = '/konto.html'; }, 900); return; }
+    say($('npMsg'), r.code === 'same_password' ? 'To jest Twoje obecne hasło — wpisz inne.' : err(r), 'err');
+  });
+
+  $('meOut').addEventListener('click', async function () { await QAuth.signOut(); show('vIn'); say($('inMsg'), 'Wylogowano.', 'ok'); });
+
+  // stan początkowy
+  var linkErr = QAuth.lastError();
   QAuth.ready.then(function () {
     var s = QAuth.current();
-    if (s) { $('lgWho').textContent = s.email || 'Twoje konto'; show('in'); }
-    else { show('form'); if (!err) email.focus(); }
+    if (s && QAuth.linkType() === 'recovery') { $('lgTitle').textContent = 'Nowe hasło'; show('vNewPass'); $('npPass').focus(); return; }
+    if (s) { $('meTxt').innerHTML = 'Jesteś zalogowany jako <b></b>.'; $('meTxt').querySelector('b').textContent = s.email || 'Twoje konto'; show('vMe'); return; }
+    show(location.hash === '#rejestracja' ? 'vUp' : 'vIn');
+    if (linkErr) say($('inMsg'), /expired|otp_expired|invalid/.test(linkErr) ? 'Ten link już wygasł albo został użyty. Zaloguj się albo poproś o nowy.' : 'Link nie zadziałał. Spróbuj jeszcze raz.', 'err');
   });
 })();
 </script>

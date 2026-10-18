@@ -1,14 +1,16 @@
 /* Quolino — konto rodzica: sesja logowania (GoTrue na auth.quolino.com). Bez bibliotek, bez ciasteczek.
-   Plan: docs/LOGOWANIE.md. Etap 1 (2026-10-17): logowanie e-mailem linkiem; Google dojdzie bez zmian w tym pliku.
-   – Po kliknięciu linku z e-maila GoTrue wraca na stronę z #access_token=…&refresh_token=… — zapisujemy sesję i czyścimy adres.
+   Plan: docs/LOGOWANIE.md. Od 2026-10-18 (JP): rejestracja e-mail + hasło z linkiem potwierdzającym (przez bramkę z ALTCHA),
+   logowanie e-mail + hasło, reset hasła linkiem. Google dojdzie bez zmian w tym pliku.
+   – Po kliknięciu linku z e-maila (potwierdzenie, reset) GoTrue wraca z #access_token=…&type=… — zapisujemy sesję i czyścimy adres.
    – Sesja w localStorage pod kluczem „qc.session” (token dostępu 1 h + token odświeżania z rotacją). Wylogowanie unieważnia ją na serwerze.
    – Ikona konta na pasku: zalogowany → /konto.html (kolor), niezalogowany → /zaloguj.html.
-   Użycie: window.QAuth.session(), .user(), .sendLink(email, next), .signOut(), .ready (Promise), zdarzenie „qauth” na document. */
+   Użycie: QAuth.signIn(email, hasło), .signUp(email, hasło, weryfikacja, next), .recover(email, weryfikacja), .setPassword(hasło),
+   .resend(email, next), .session(), .user(), .signOut(), .linkType() ('signup' | 'recovery' | ''), .ready (Promise), zdarzenie „qauth”. */
 (function () {
   'use strict';
   var API = 'https://auth.quolino.com/auth/v1';
   var KEY = 'qc.session';
-  var lastError = '';
+  var lastError = '', linkType = '';
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
   function save(s) { try { if (s) localStorage.setItem(KEY, JSON.stringify(s)); else localStorage.removeItem(KEY); } catch (e) { /* prywatne okno */ } }
@@ -26,7 +28,7 @@
     var h = location.hash || '';
     if (!/access_token=|error=|error_code=/.test(h)) return;
     var p = new URLSearchParams(h.slice(1));
-    if (p.get('access_token') && p.get('refresh_token')) save(fromTokens(p.get('access_token'), p.get('refresh_token'), p.get('expires_in')));
+    if (p.get('access_token') && p.get('refresh_token')) { save(fromTokens(p.get('access_token'), p.get('refresh_token'), p.get('expires_in'))); linkType = p.get('type') || ''; }
     else {
       lastError = p.get('error_code') || p.get('error') || 'error';
       // link wygasły / użyty: komunikat pokazuje strona logowania
@@ -70,12 +72,46 @@
     } catch (e) { /* brak sieci */ }
     return { email: s.email, id: s.sub, offline: true };
   }
-  async function sendLink(email, next) {
-    var back = 'https://quolino.com' + (next && /^\/[a-z0-9._\-\/]*(\?[^#]*)?$/i.test(next) ? next : '/konto.html');
-    try {
-      var r = await call('/otp?redirect_to=' + encodeURIComponent(back), { method: 'POST', body: JSON.stringify({ email: String(email || '').trim(), create_user: true }) });
-      return { ok: r.ok, status: r.status, code: r.body.error_code || r.body.code || '' };
-    } catch (e) { return { ok: false, status: 0, code: 'network' }; }
+  function back(next, fallback) {
+    return 'https://quolino.com' + (next && /^\/[a-z0-9._\-\/]*(\?[^#]*)?$/i.test(next) ? next : fallback);
+  }
+  function result(r) { return { ok: r.ok, status: r.status, code: r.body.error_code || r.body.code || '', msg: r.body.msg || r.body.message || '', body: r.body }; }
+  async function safe(fn) { try { return await fn(); } catch (e) { return { ok: false, status: 0, code: 'network', msg: '' }; } }
+  // logowanie hasłem
+  function signIn(email, password) {
+    return safe(async function () {
+      var r = await call('/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: String(email || '').trim(), password: password }) });
+      if (r.ok && r.body.access_token) { save(fromTokens(r.body.access_token, r.body.refresh_token, r.body.expires_in)); paintNav(); emit(); }
+      return result(r);
+    });
+  }
+  // rejestracja: bramka sprawdza „Nie jestem robotem” (altcha), pułapkę (hp) i czas wypełnienia (ms); GoTrue wysyła link potwierdzający
+  function signUp(email, password, check, next) {
+    return safe(async function () {
+      var c = check || {};
+      return result(await call('/signup?redirect_to=' + encodeURIComponent(back(next, '/konto.html')), { method: 'POST',
+        body: JSON.stringify({ email: String(email || '').trim(), password: password, altcha: c.altcha, hp: c.hp || '', ms: c.ms || 0 }) }));
+    });
+  }
+  // reset hasła: link prowadzi na /zaloguj.html (tam formularz „nowe hasło”)
+  function recover(email, check) {
+    return safe(async function () {
+      var c = check || {};
+      return result(await call('/recover?redirect_to=' + encodeURIComponent(back('/zaloguj.html', '/zaloguj.html')), { method: 'POST',
+        body: JSON.stringify({ email: String(email || '').trim(), altcha: c.altcha, hp: c.hp || '', ms: c.ms || 0 }) }));
+    });
+  }
+  function resend(email, next) {
+    return safe(async function () {
+      return result(await call('/resend?redirect_to=' + encodeURIComponent(back(next, '/konto.html')), { method: 'POST',
+        body: JSON.stringify({ type: 'signup', email: String(email || '').trim() }) }));
+    });
+  }
+  function setPassword(password) {
+    return safe(async function () {
+      var s = await session(); if (!s) return { ok: false, status: 401, code: 'no_session', msg: '' };
+      return result(await call('/user', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.at }, body: JSON.stringify({ password: password }) }));
+    });
   }
   async function signOut() {
     var s = load(); save(null); emit(); paintNav();
@@ -88,14 +124,15 @@
     document.querySelectorAll('.nav-acc').forEach(function (a) {
       a.classList.toggle('is-in', !!s);
       a.setAttribute('href', s ? '/konto.html' : '/zaloguj.html');
-      var label = s ? 'Twoje konto' + (s.email ? ': ' + s.email : '') : 'Zaloguj się';
+      var label = s ? 'Twoje konto' + (s.email ? ': ' + s.email : '') : 'Zaloguj się lub załóż konto';
       a.setAttribute('aria-label', label); a.setAttribute('title', label);
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paintNav); else paintNav();
   window.addEventListener('storage', function (e) { if (e.key === KEY) { paintNav(); emit(); } });
 
-  window.QAuth = { api: API, session: session, user: user, sendLink: sendLink, signOut: signOut, refresh: refresh,
-    current: load, lastError: function () { return lastError; } };
+  window.QAuth = { api: API, session: session, user: user, signIn: signIn, signUp: signUp, recover: recover, resend: resend,
+    setPassword: setPassword, signOut: signOut, refresh: refresh, current: load,
+    lastError: function () { return lastError; }, linkType: function () { return linkType; } };
   window.QAuth.ready = session().then(function () { paintNav(); emit(); });
 })();

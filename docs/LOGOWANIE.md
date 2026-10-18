@@ -86,3 +86,19 @@ Bez ręcznej edycji plików.
 - **Przepływ:** implicit — link z e-maila działa na każdym urządzeniu (telefon, komputer). Wygasły link → `zaloguj.html` z komunikatem.
 - **Jeszcze nie:** PostgREST nie zna sekretu JWT (konto nie ma jeszcze tabel w bazie), usunięcie konta (wymaga funkcji po stronie
   serwera), tłumaczenia stron logowania (na razie PL, jak `konto.html`), Google (klient OAuth — JP), polityka prywatności (Brevo, `qc.session`).
+
+## 7. Zmiana 2026-10-18 (JP): rejestracja z hasłem, logowanie hasłem, ochrona przed botami
+
+- **Najpierw rejestracja, potem logowanie.** `zaloguj.html`: zakładki „Zaloguj się” / „Załóż konto” (`#rejestracja`).
+  Rejestracja: e-mail + hasło (min. 10 znaków) + „Nie jestem robotem” → e-mail „Potwierdź konto” (`auth-mail/confirm.html`)
+  → kliknięcie aktywuje konto i loguje (powrót na `/konto.html`). Logowanie: e-mail + hasło. „Nie pamiętasz hasła?” →
+  e-mail „Nowe hasło” (`auth-mail/reset.html`) → `zaloguj.html` z formularzem nowego hasła.
+- **Po wysłaniu** formularz znika; zostaje komunikat „Sprawdź skrzynkę” i „Wyślij ponownie” po 60 s.
+- **Boty:** `POST /signup` i `/recover` idą przez bramkę `gate/auth-gate.mjs` (kontener `auth-gate` w `ops/auth-compose.yml`):
+  ALTCHA z naszej bazy (te same wyzwania co formularz kontaktowy), ukryte pole, minimalny czas wypełnienia, limity na skrót IP
+  (5 udanych na godzinę, 30 prób dziennie) i 300 rejestracji dziennie łącznie — `sql/2026-10-18-auth-gate.sql` (`public.auth_gate_check`).
+  Zamknięte z zewnątrz: `/otp`, `/magiclink` (konto bez hasła omijałoby bramkę), `/invite`, `/admin`.
+- **Konto po zalogowaniu** to prawdziwy widok: bez „podglądu na przykładowych danych”; pusty album pokazuje miasta „do zdobycia”.
+  Przykładowe dane tylko dla niezalogowanych (albo `?demo=1`).
+- Konto JP założone 17.10 linkiem nie ma hasła — ustawia je przez „Nie pamiętasz hasła?”.
+- Do decyzji JP: usuwanie nieaktywnych kont (propozycja w rozmowie 2026-10-18).

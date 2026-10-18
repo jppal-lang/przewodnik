@@ -60,4 +60,9 @@ if ! cmp -s "$SRC/gate/admin-gate.mjs" /root/quolino-web/gate/admin-gate.mjs; th
   docker ps --format '{{.Names}}' | grep -q '^quolino-web-admin-gate-1$' && docker restart quolino-web-admin-gate-1 >/dev/null && echo "bramka admina: zrestartowana"
   docker ps --format '{{.Names}}' | grep -q '^quolino-umami-stats-gate-1$' && docker restart quolino-umami-stats-gate-1 >/dev/null && echo "bramka statystyk: zrestartowana"
 fi
+# bramka rejestracji kont (ALTCHA przed GoTrue, JP 2026-10-18)
+if ! cmp -s "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs; then
+  cp "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs
+  docker ps --format '{{.Names}}' | grep -q '^quolino-auth-auth-gate-1$' && docker restart quolino-auth-auth-gate-1 >/dev/null && echo "bramka rejestracji: zrestartowana"
+fi
 echo "ops i SSR: OK"

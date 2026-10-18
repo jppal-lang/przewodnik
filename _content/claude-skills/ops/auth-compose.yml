@@ -1,5 +1,6 @@
 # Konta Quolino — Supabase Auth (GoTrue) na naszym VPS. OSOBNY projekt compose, nie dotyka docker-compose.override.yml.
-# Plan: docs/LOGOWANIE.md. Etap 1 (JP 2026-10-17): logowanie e-mailem linkiem (bez hasła); Google dojdzie samą konfiguracją.
+# Plan: docs/LOGOWANIE.md. Od 2026-10-18 (JP): rejestracja e-mail + hasło z linkiem potwierdzającym, logowanie e-mail + hasło,
+# reset hasła linkiem. Rejestracja i reset idą przez bramkę auth-gate (ALTCHA, limity) — boty nie założą kont. Google dojdzie konfiguracją.
 # Uruchomienie (root): sh /root/quolino-web/ops/auth-init.sh   (tworzy sekrety, rolę i schemat „auth”, startuje kontener).
 # Sekrety (JWT, hasło bazy, SMTP Brevo) są w /root/quolino-web/secrets/gotrue.env — tworzy je auth-init.sh. Nic tajnego w repo.
 # Adres publiczny: https://auth.quolino.com/auth/v1/…  (prefiks /auth/v1 jak w Supabase; Traefik go obcina).
@@ -25,7 +26,7 @@ services:
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
       GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: "10"
-      # e-mail: tylko link (magic link); konto zakłada się przy pierwszym kliknięciu
+      # e-mail: rejestracja z hasłem + link potwierdzający; logowanie hasłem; reset hasła linkiem
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
       GOTRUE_MAILER_AUTOCONFIRM: "false"
       GOTRUE_MAILER_OTP_EXP: "3600"
@@ -37,9 +38,12 @@ services:
       GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
       GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
       GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "Twój link do Quolino"
-      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "Twój link do Quolino"
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "Potwierdź konto w Quolino"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "Nowe hasło do Quolino"
+      GOTRUE_PASSWORD_MIN_LENGTH: "10"
       GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: https://quolino.com/auth-mail/link.html
-      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: https://quolino.com/auth-mail/link.html
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: https://quolino.com/auth-mail/confirm.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: https://quolino.com/auth-mail/reset.html
       GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
       GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
       GOTRUE_LOG_LEVEL: info
@@ -48,7 +52,8 @@ services:
     cpus: 0.5
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9999/health || exit 1"]
-      interval: 60s
+      interval: 15s
+      start_period: 5s
     labels:
       - traefik.enable=true
       - traefik.docker.network=quolino-web_default
@@ -58,8 +63,8 @@ services:
       - traefik.http.routers.quolino-auth.middlewares=quolino-auth-strip
       - traefik.http.routers.quolino-auth.service=quolino-auth
       - traefik.http.middlewares.quolino-auth-strip.stripprefix.prefixes=/auth/v1
-      # zamknięte z zewnątrz: zakładanie konta z hasłem, reset hasła, panel administracyjny GoTrue
-      - traefik.http.routers.quolino-auth-deny.rule=Host(`auth.quolino.com`) && (PathPrefix(`/auth/v1/signup`) || PathPrefix(`/auth/v1/recover`) || PathPrefix(`/auth/v1/admin`))
+      # zamknięte z zewnątrz: logowanie/zakładanie konta linkiem bez hasła (omijałoby bramkę), zaproszenia, panel administracyjny GoTrue
+      - traefik.http.routers.quolino-auth-deny.rule=Host(`auth.quolino.com`) && (PathPrefix(`/auth/v1/otp`) || PathPrefix(`/auth/v1/magiclink`) || PathPrefix(`/auth/v1/invite`) || PathPrefix(`/auth/v1/admin`))
       - traefik.http.routers.quolino-auth-deny.priority=1000
       - traefik.http.routers.quolino-auth-deny.entrypoints=websecure
       - traefik.http.routers.quolino-auth-deny.tls.certresolver=letsencrypt
@@ -67,6 +72,35 @@ services:
       - traefik.http.routers.quolino-auth-deny.service=quolino-auth
       - traefik.http.middlewares.quolino-auth-block.ipallowlist.sourcerange=127.0.0.1/32
       - traefik.http.services.quolino-auth.loadbalancer.server.port=9999
+  # bramka rejestracji i resetu hasła: ALTCHA + limity, dopiero potem GoTrue (gate/auth-gate.mjs, SQL 2026-10-18-auth-gate.sql)
+  auth-gate:
+    image: node:22-alpine
+    restart: unless-stopped
+    command: ["node", "/app/auth-gate.mjs"]
+    volumes:
+      - /root/quolino-web/gate/auth-gate.mjs:/app/auth-gate.mjs:ro
+    environment:
+      GOTRUE_URL: http://gotrue:9999
+      API_URL: http://quolino-web-api-1:3000     # PostgREST z projektu quolino-web (ta sama sieć proxy)
+      ALLOW_ORIGIN: https://quolino.com
+    depends_on: [gotrue]
+    networks: [proxy]
+    mem_limit: 96m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 15s
+      start_period: 5s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=quolino-web_default
+      - traefik.http.routers.quolino-auth-gate.rule=Host(`auth.quolino.com`) && (Path(`/auth/v1/signup`) || Path(`/auth/v1/recover`))
+      - traefik.http.routers.quolino-auth-gate.priority=900
+      - traefik.http.routers.quolino-auth-gate.entrypoints=websecure
+      - traefik.http.routers.quolino-auth-gate.tls.certresolver=letsencrypt
+      - traefik.http.routers.quolino-auth-gate.middlewares=quolino-auth-strip
+      - traefik.http.routers.quolino-auth-gate.service=quolino-auth-gate
+      - traefik.http.services.quolino-auth-gate.loadbalancer.server.port=8080
 networks:
   proxy:
     external: true

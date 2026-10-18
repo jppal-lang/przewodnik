@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=27">
 <script src="/kid-reward.js?v=2"></script>
-<script src="/auth.js?v=1"></script>
+<script src="/auth.js?v=2"></script>
 <style>
   /* pasek logowania (JP 2026-10-17): zalogowany — e-mail i „Wyloguj”; niezalogowany — zaproszenie do logowania */
   .acc-auth{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-top:18px;padding:16px 20px;border-radius:var(--r-stk,18px);background:var(--card);box-shadow:var(--lift-1);font-size:18px}
@@ -151,7 +151,7 @@
       </ul>
       <div class="acc-priv__acts">
         <button type="button" class="qc-btn" data-act="export">Pobierz moje dane (JSON)</button>
-        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Działa po uruchomieniu kont">Usuń konto i dane</button>
+        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Wkrótce — na razie napisz do nas przez formularz kontaktowy">Usuń konto i dane</button>
       </div>
     </div>
   </section>
@@ -189,7 +189,9 @@
   function colors() { return window.QReward ? window.QReward.colors : ['#0B4EA2']; }
 
   var local = lsGet('qc.album') || [];
-  var demo = forceDemo || !local.length;
+  // zalogowany rodzic widzi prawdziwy widok (pusty album = miasta „do zdobycia”); przykładowe dane tylko bez konta albo z ?demo=1
+  var signedIn = !!(window.QAuth && QAuth.current());
+  var demo = forceDemo || (!signedIn && !local.length);
   var album = demo ? DEMO_ALBUM : local;
   var shared = demo ? ['spello', 'assisi'] : (lsGet('qc.parent.shared') || []);
   var catalog = [];
@@ -197,7 +199,7 @@
   if (demo) {
     var pv = document.getElementById('accPreview');
     pv.hidden = false;
-    pv.innerHTML = '<b>Podgląd na przykładowych danych.</b> Konta ruszą zimą — wtedy album zapisze się na koncie. ' +
+    pv.innerHTML = '<b>Podgląd na przykładowych danych.</b> Załóż konto albo zaloguj się, żeby zobaczyć swój album. ' +
       (local.length ? 'Masz już ' + local.length + ' miejsc na tym urządzeniu: <a href="konto.html">pokaż moje</a>.' : 'Prawdziwe miejsca pojawią się tu, gdy dziecko odsłoni cały obrazek w widoku dziecka.');
   }
 
@@ -365,7 +367,7 @@
       if (mine.indexOf(c) < 0) mine.push(c); lsSet('qc.parent.codes', mine);
       codeMsg.classList.add('is-ok'); codeMsg.textContent = 'Kod przyjęty (podgląd): darmowa wycieczka do wyboru.'; codeIn.value = ''; renderCodes(); return;
     }
-    codeMsg.textContent = 'Kody zadziałają po uruchomieniu kont. Zachowaj go — wpiszesz go tutaj po zalogowaniu.';
+    codeMsg.textContent = 'Wpisywanie kodów uruchomimy wkrótce. Zachowaj kod — wpiszesz go tutaj.';
   });
   function renderCodes() {
     var mine = demo ? (lsGet('qc.parent.codes') || []) : [];
@@ -503,11 +505,11 @@
     if (s) {
       txt.innerHTML = 'Zalogowano jako <b>' + esc(s.email || 'Twoje konto') + '</b>.';
       act.innerHTML = '<button type="button" class="qc-btn qc-btn--sm" id="accOut">Wyloguj</button>';
-      document.getElementById('accOut').onclick = function () { QAuth.signOut().then(paint); };
+      document.getElementById('accOut').onclick = function () { QAuth.signOut().then(function () { location.reload(); }); };
       document.getElementById('accNavMe').textContent = s.email || 'Konto rodzica';
     } else {
-      txt.textContent = 'Nie jesteś zalogowany. Zaloguj się e-mailem — bez hasła — żeby zachować konto na kolejne wycieczki.';
-      act.innerHTML = '<a class="qc-btn qc-btn--primary qc-btn--sm" href="/zaloguj.html">Zaloguj się</a>';
+      txt.textContent = 'Nie jesteś zalogowany. Załóż konto, żeby album i kody zostały z Tobą na kolejne wycieczki.';
+      act.innerHTML = '<a class="qc-btn qc-btn--primary qc-btn--sm" href="/zaloguj.html#rejestracja">Załóż konto</a><a class="qc-btn qc-btn--sm" href="/zaloguj.html">Zaloguj się</a>';
       document.getElementById('accNavMe').textContent = 'Konto rodzica';
     }
   }
