@@ -46,7 +46,24 @@ Klucze localStorage do listy w `docs/BACKEND.md` §6: `qc.kid.avatar`, `qc.kid.n
 - Kod rabatowy przekazujemy operatorowi płatności przy zakupie (Dodo discount codes).
 - Migracja: po pierwszym zalogowaniu panel proponuje przeniesienie lokalnego `qc.album` (miasto + data) na konto.
 
-## 4. Do decyzji JP
+## 4. Darmowa wycieczka na konto (decyzje JP 2026-10-18)
+
+- **Jedna darmowa wycieczka na konto.** Rodzic wybiera ją **na stronie miasta** przyciskiem „Wybieram jako darmową”
+  (tylko zalogowany, konto potwierdzone). Przed zapisem potwierdzenie: „Na pewno to miasto? Tego wyboru nie zmienisz”.
+- **Wybór jest ostateczny** i **bezterminowy**. Obejmuje **miasto, nie wersję tekstu** — po poprawkach redakcji rodzina ma aktualną trasę.
+- **Blokada pozostałych tras działa od 1 czerwca 2027** (start planów płatnych, `docs/PM.md` §0). Do tego dnia wszystko jest otwarte,
+  a konto tylko zapisuje wybraną darmową trasę.
+- **Co widać przy trasie nieodblokowanej:**
+  - zapowiedź miasta — otwarta dla wszystkich, także bez konta (nazwa, zdjęcie, krótki opis, czas zwiedzania, nazwy przystanków);
+  - plan dnia rodzica — zablokowany; pierwszy przystanek widoczny jako próbka;
+  - gra dziecka (misje, zagadki, obrazek-nagroda) i kod QR — zablokowane; QR generuje się tylko dla trasy odblokowanej.
+- **Konta założone przed 1 czerwca 2027** zachowują darmową trasę oraz miasta, w które dziecko już grało (album na koncie).
+- Odblokowanie innych tras: zakup albo kod `free_trip` (§2). Zapis: `entitlements` z `source = free | purchase | code | early`
+  (`early` = miasta rozegrane przed startem płatności); jedna pozycja `free` na konto (indeks unikalny).
+- Kontrola dostępu musi być na serwerze (PostgREST z weryfikacją JWT z GoTrue + RLS), nie tylko w przeglądarce —
+  inaczej blokadę obchodzi się, czytając API.
+
+## 5. Do decyzji JP
 
 - Progi odznak i ewentualne dodatkowe nagrody.
 - Czy kolorowanki robimy jako osobne grafiki (`-coloring.webp`) dla każdego miasta.
