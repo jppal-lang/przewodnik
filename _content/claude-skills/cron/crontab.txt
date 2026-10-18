@@ -24,3 +24,6 @@ H=hermes-quolino-hermes-agent-1
 # w niedzielę pełny przegląd wszystkich stron jako siatka bezpieczeństwa (blokada w skrypcie: przebiegi się nie nakładają)
 7-59/15 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node lang-inspect.mjs --changed >> /root/quolino-web/lang-inspect.log 2>&1
 37 5 * * 0   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node lang-inspect.mjs >> /root/quolino-web/lang-inspect.log 2>&1
+# Treść przystanków według standardu (TRESC-PRZYSTANKU.md): kolejka work/stop-content/queue.txt, najwyżej 2 przystanki dziennie,
+# zatrzymanie przy dziennym limicie płatnych modeli; bez publikacji (publikuje się po akceptacji JP). JP 2026-10-18: „jedno miasto porządnie w dwa dni”.
+29 2 * * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node stop-content.mjs --next --max-stops 2 --notify 1558873867643134073 >> /root/quolino-web/stop-content.log 2>&1

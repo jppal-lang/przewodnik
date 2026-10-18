@@ -89,6 +89,60 @@ ${JSON.stringify(all)}`;
   return saved;
 }
 
+// Błędy znalezione przy kontroli (walidator + Claude) → czy wytyczne trzeba poprawić? (JP 2026-10-18:
+// „jak robimy poprawki do miasta, Claude musi rozpatrzyć, czy nie poprawić wytycznych”).
+// Claude patrzy, jakich błędów pisarz narobił przed poprawkami, i rozstrzyga: przypadek tego miejsca (nic)
+// czy luka w wytycznych — wtedy zasada w editorial_rules (od razu trafia do pisania i kontroli; JP cofa: trip-rules.mjs off <id>).
+export async function learnFromErrors(q, { slug, stop, errors, standard = '' }) {
+  if (!errors?.length) return [];
+  const all = await q('SELECT id, scope, rule, bad, good, active FROM public.editorial_rules ORDER BY id').catch(() => []);
+  const prompt = `PRZEGLĄD WYTYCZNYCH PO POPRAWKACH — czy zasady pisania trzeba zmienić?
+Trasa „${slug}”, przystanek „${stop}”. Pisarz (GPT/Claude) napisał treść według standardu i zasad, a kontrola znalazła błędy (poniżej).
+Rozstrzygnij dla każdej grupy błędów:
+- PRZYPADEK: błąd wynika z tego miejsca albo z jednorazowej pomyłki, a obecne wytyczne już go zabraniają jasno. Nic nie zmieniaj.
+- LUKA W WYTYCZNYCH: wytyczne są niejasne, nie mówią tego wprost albo pisarz powtarza ten typ błędu mimo zasad (np. zdania z datą bez przypisu,
+  źródła nieużyte, fakty spoza researchu, powtórzenia między blokami). Wtedy zaproponuj JEDNĄ zasadę: zdanie w trybie polecenia, ogólne
+  (bez nazw z tego miejsca), sprawdzalne, z przykładem Źle/Dobrze. Jeśli podobna zasada już jest — "update" z jej id i doprecyzuj.
+Lepiej nie zapisać niż zapisać wątpliwą zasadę. Nie powielaj tego, co standard już mówi jasno — chyba że pisarz go nie rozumie,
+wtedy doprecyzuj sformułowanie.
+Odpowiedz wyłącznie JSON-em:
+{"rules": [{"action": "add"|"update", "id": <tylko przy update>, "scope": "tresc-przystanku|opis|fakty|ton|inne",
+            "rule": "…", "bad": "…", "good": "…", "why": "1 zdanie: jakie błędy to pokazały"}],
+ "standard_note": "1–2 zdania: czy coś w docs/TRESC-PRZYSTANKU.md warto przeredagować (dla JP), albo pusty tekst",
+ "one_off": "1 zdanie: co było przypadkiem"}
+
+STANDARD (skrót):
+${standard.slice(0, 6000)}
+
+BŁĘDY (przed poprawkami):
+${JSON.stringify(errors.slice(0, 40))}
+
+ISTNIEJĄCE ZASADY:
+${JSON.stringify(all)}`;
+  let j;
+  try { j = extractJson(await claude('quolino-trip-writing', prompt)); }
+  catch (e) { log('przegląd wytycznych: Claude niedostępny —', e.message.slice(0, 120)); return []; }
+  const saved = [];
+  for (const r of j.rules ?? []) {
+    if (!r.rule || r.rule.length < 10) continue;
+    if (r.action === 'update' && r.id) {
+      const [u] = await q(`UPDATE public.editorial_rules SET rule = $2, bad = coalesce($3, bad), good = coalesce($4, good),
+                             scope = coalesce($5, scope), active = true, updated_at = now(),
+                             history = history || jsonb_build_array(jsonb_build_object('at', now(), 'city', $6::text, 'say', $7::text))
+                            WHERE id = $1 RETURNING id, scope, rule`, [r.id, r.rule, r.bad ?? null, r.good ?? null, r.scope ?? null, slug, `kontrola: ${stop}`]);
+      if (u) saved.push({ ...u, action: 'update', why: r.why });
+    } else {
+      const [n] = await q(`INSERT INTO public.editorial_rules (scope, rule, bad, good, origin_city, origin_version, origin_say, why)
+                           VALUES ($1, $2, $3, $4, $5, NULL, $6, $7) RETURNING id, scope, rule`,
+        [r.scope ?? 'tresc-przystanku', r.rule, r.bad ?? null, r.good ?? null, slug, `kontrola: ${stop}`, r.why ?? null]);
+      saved.push({ ...n, action: 'add', why: r.why });
+    }
+  }
+  if (saved.length) await loadRules(q);
+  log(`przegląd wytycznych (${stop}): ${saved.length ? saved.map(x => `#${x.id} (${x.action})`).join(', ') : 'bez zmian'} — ${j.one_off ?? ''}`);
+  return { saved, standard_note: j.standard_note ?? '' };
+}
+
 // ── źródła: Wikipedia w języku kraju + strony lokalne (oficjalne) ───────────────────────────
 // Kolejność Wikipedii: język kraju wycieczki → angielski → polski (Włochy: it, Hiszpania: es, …).
 const COUNTRY_LANG = { it: 'it', es: 'es', fr: 'fr', de: 'de', at: 'de', ch: 'de', pt: 'pt', hr: 'hr', si: 'sl', cz: 'cs',

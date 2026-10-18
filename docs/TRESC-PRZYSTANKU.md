@@ -116,3 +116,15 @@ Wszystkie opublikowane i szkicowane trasy przechodzą raz pełną ścieżkę:
 4. Strona: pas „Po zalogowaniu…” (niezalogowany), karty Legenda / Ciekawostka / W popkulturze (zalogowany),
    fun fact w widoku dziecka; przypisy i źródła w panelu admina, nie na stronie.
 5. Przeróbka miast (§6) — po jednym, każde do akceptacji JP.
+
+## 8. Proces na serwerze (Hermes) — `bin/stop-content.mjs`
+
+- Treść przystanków pisze serwer, nie Claude w czacie: research (§2) → pisanie z przypisami → walidator → kontrola Claude ze
+  źródłami (§5) → zapis do `ops.stop_research`. Na stronę trafia dopiero po akceptacji JP (`--publish`, tylko przy werdykcie ok).
+- **Tempo i koszt (JP 2026-10-18): jedno miasto porządnie w dwa dni, nie przepalanie pieniędzy na poprawki.** Kolejka
+  `work/stop-content/queue.txt`, cron raz na dobę robi najwyżej 2 przystanki; przy dziennym limicie płatnych modeli
+  (`QUOLINO_DAILY_USD`) skrypt kończy i dokańcza następnego dnia. Zrobione przystanki (werdykt ok) są pomijane.
+  Poprawki: jedna runda GPT, potem jedna runda Claude.
+- **Poprawki → przegląd wytycznych (JP 2026-10-18).** Po każdej poprawce Claude rozstrzyga, czy błędy to przypadek, czy luka w
+  wytycznych. Luka = zasada w `editorial_rules` (od razu obowiązuje przy pisaniu i kontroli; JP cofa: `trip-rules.mjs off <id>`);
+  uwaga do tego dokumentu trafia do JP w podsumowaniu na Discordzie. To samo dotyczy poprawek JP w wątku miasta (`trip-revise` → `learn`).

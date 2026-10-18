@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // Treść przystanków według standardu docs/TRESC-PRZYSTANKU.md (JP 2026-10-18) — Hermes, bez ręcznego pisania.
-//   node stop-content.mjs <city_slug> [--stops 21,22] [--notify <kanał>] [--publish] [--dry] [--fresh] [--writer claude|gpt]
+//   node stop-content.mjs <city_slug> [--stops 21,22] [--notify <kanał>] [--publish] [--dry] [--fresh] [--writer claude|gpt] [--max-stops N]
+//   node stop-content.mjs --next [--notify <kanał>]   — z kolejki work/stop-content/queue.txt (jedno miasto w wierszu) bierze pierwsze
+//        miasto z przystankami do zrobienia i robi najwyżej --max-stops (domyślnie 2) — tempo „jedno miasto porządnie w dwa dni” (JP 2026-10-18).
+// Oszczędnie: przystanki z werdyktem ok ze stop-content są pomijane (chyba że --stops/--fresh); przed każdym przystankiem sprawdzany
+// dzienny limit płatnych modeli — po jego osiągnięciu skrypt kończy i dokańcza następnym razem. Jedna runda poprawek GPT + jedna Claude.
+// Po poprawkach Claude przegląda błędy i rozstrzyga, czy wytyczne trzeba poprawić (zasady w editorial_rules) — JP 2026-10-18.
 // Dla każdego przystanku miasta (public.stops + stop_translations pl, kolejność sort_order):
 // a) RESEARCH  — Claude z siecią odpowiada na pytania §2 (legenda, ciekawostka, fun fact, popkultura) + historia/ludzie/co oglądać;
 //               każda odpowiedź = fakt + URL albo „brak — sprawdzono: gdzie”. Plik: WORK/<slug>/stop-<id>-research.md
@@ -16,26 +21,30 @@
 // f) POWIADOMIENIE — podsumowanie miasta na Discordzie (--notify).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { claude, claudeJson, openrouterJson, JSON_QUOTE_RULE, env, log, db, spent, SKILLS } from './lib.mjs';
+import { claude, claudeJson, openrouterJson, JSON_QUOTE_RULE, env, log, db, spent, SKILLS, paidToday, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, loadResearch, notify } from './draft-lib.mjs';
-import { loadRules, rulesText } from './quality-lib.mjs';
+import { loadRules, rulesText, learnFromErrors } from './quality-lib.mjs';
 import { validateStop, normalizeRecord, blocksLine, PRACTICAL_CATS, BLOCK_PL } from './stop-content-lib.mjs';
 export { validateStop } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
-const slug = argv[0];
+const NEXT = argv.includes('--next');
+const QUEUE = join(WORK, '..', 'stop-content', 'queue.txt');
+const MAX_STOPS = +(argv[argv.indexOf('--max-stops') + 1] ?? 0) || (NEXT ? 2 : 99);
+let slug = NEXT ? null : argv[0];
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
 const flag = (n) => argv.includes(n);
 const channel = opt('--notify'), DRY = flag('--dry'), PUBLISH = flag('--publish'), FRESH = flag('--fresh');
 const only = opt('--stops') ? opt('--stops').split(',').map(x => +x.trim()).filter(Number.isInteger) : null;
 const writer = opt('--writer') ?? (env('OPENROUTER_API_KEY') ? 'gpt' : 'claude');
-if (!slug || !/^[a-z0-9-]+$/.test(slug) || (opt('--stops') && !only?.length) || !['gpt', 'claude'].includes(writer)) {
-  console.error('Użycie: stop-content.mjs <city_slug> [--stops 21,22] [--notify kanał] [--publish] [--dry] [--fresh] [--writer claude|gpt]');
+if ((!NEXT && (!slug || !/^[a-z0-9-]+$/.test(slug))) || (opt('--stops') && !only?.length) || !['gpt', 'claude'].includes(writer)) {
+  console.error('Użycie: stop-content.mjs <city_slug>|--next [--stops 21,22] [--max-stops N] [--notify kanał] [--publish] [--dry] [--fresh] [--writer claude|gpt]');
   process.exit(2);
 }
 if (DRY && PUBLISH) log('--dry wyłącza --publish: nic nie zapisuję w bazie');
 const TODAY = new Date().toISOString().slice(0, 10);
-const dir = join(WORK, slug); mkdirSync(dir, { recursive: true });
+let dir = slug ? join(WORK, slug) : null;
+if (dir) mkdirSync(dir, { recursive: true });
 const EXAMPLES = `${SKILLS}/quolino-trip-writing/references/stop-content-examples`;
 const SIGHT_QS = new Set(['monument', 'church', 'museum', 'castle', 'house', 'synagogue']);
 
@@ -239,7 +248,8 @@ async function processStop(stop, city) {
   const models = new Set([w.model]);
   let ck = await retry(`${stop.id}: kontrola`, () => check(stop, city, w.rec));
   log(`  ${stop.id}: kontrola Claude 1: ${ck.verdict}${ck.errors.length ? ` (${ck.errors.length} błędów)` : ''}; walidator: ${w.v.errors.length} błędów`);
-  for (let round = 1; round <= 2 && (ck.verdict !== 'ok' || w.v.errors.length); round++) {
+  const firstErrors = [...w.v.errors.map(e => ({ ...e, by: 'walidator' })), ...ck.errors.map(e => ({ ...e, by: 'Claude' }))];
+  for (let round = 1; round <= 1 && (ck.verdict !== 'ok' || w.v.errors.length); round++) {
     w = await writeValid(stop, city, researchMd, { current: w.rec, errors: [...w.v.errors, ...ck.errors] });
     models.add(w.model);
     ck = await retry(`${stop.id}: kontrola`, () => check(stop, city, w.rec));
@@ -261,6 +271,11 @@ async function processStop(stop, city) {
     errors: [...v.errors.map(e => ({ ...e, by: 'walidator' })), ...ck.errors.map(e => ({ ...e, by: 'Claude' }))],
     gap: w.gap,
   };
+  // przegląd wytycznych: czy błędy sprzed poprawek pokazują lukę w zasadach (JP 2026-10-18)
+  if (firstErrors.length && !DRY) {
+    const lr = await learnFromErrors(q, { slug, stop: stop.name, errors: firstErrors, standard: STANDARD });
+    if (lr?.saved?.length || lr?.standard_note) check_result.guidelines = { rules: lr.saved ?? [], standard_note: lr.standard_note ?? '' };
+  }
   return { stop, rec: w.rec, check_result };
 }
 
@@ -288,8 +303,24 @@ async function publish(results) {
   } catch (e) { await q('ROLLBACK').catch(() => {}); throw e; }
 }
 
+// kolejka: pierwsze miasto z queue.txt, które ma przystanki bez werdyktu ok ze stop-content
+async function pickNext() {
+  if (!existsSync(QUEUE)) return null;
+  for (const line of readFileSync(QUEUE, 'utf8').split('\n').map(x => x.trim()).filter(x => /^[a-z0-9-]+$/.test(x))) {
+    const [r] = await q(`SELECT count(*)::int AS todo FROM public.stops s LEFT JOIN ops.stop_research sr ON sr.stop_id = s.id
+                          WHERE s.city_slug = $1 AND NOT (coalesce(sr.check_result ->> 'by', '') = 'stop-content.mjs' AND sr.check_result ->> 'verdict' = 'ok')`, [line]);
+    if (r?.todo) return line;
+  }
+  return null;
+}
+
 async function main() {
   await loadRules(q);
+  if (NEXT) {
+    slug = await pickNext();
+    if (!slug) { log('kolejka stop-content pusta albo wszystko zrobione'); return; }
+    dir = join(WORK, slug); mkdirSync(dir, { recursive: true });
+  }
   const [city] = await q(`SELECT c.slug, c.country, c.region_slug, c.content_v2,
       coalesce((SELECT title FROM public.city_translations WHERE city_slug = c.slug AND lang = 'pl'), c.slug) AS title
     FROM public.cities c WHERE c.slug = $1`, [slug]);
@@ -303,12 +334,22 @@ async function main() {
     if (miss.length) throw new Error(`przystanki ${miss.join(', ')} nie należą do ${slug} (albo nie mają wersji pl)`);
     stops = stops.filter(s => only.includes(s.id));
   }
-  if (!stops.length) throw new Error(`${slug}: brak przystanków z wersją pl`);
+  if (!only && !FRESH) {   // zrobione (werdykt ok ze stop-content) pomijamy — poprawiamy tylko to, co trzeba
+    const done = new Set((await q(`SELECT stop_id FROM ops.stop_research WHERE check_result ->> 'by' = 'stop-content.mjs'
+                                   AND check_result ->> 'verdict' = 'ok' AND stop_id = ANY($1::int[])`, [stops.map(s => s.id)])).map(r => r.stop_id));
+    if (done.size) log(`${slug}: pomijam zrobione: ${[...done].join(', ')}`);
+    stops = stops.filter(s => !done.has(s.id));
+  }
+  stops = stops.slice(0, MAX_STOPS);
+  if (!stops.length) { log(`${slug}: wszystkie przystanki mają werdykt ok — nic do zrobienia`); return; }
   log(`${slug}: ${stops.length} przystanków · pisze ${writer === 'gpt' ? 'GPT (OpenRouter)' : 'Claude'}${DRY ? ' · --dry (bez zapisu)' : ''}${PUBLISH && !DRY ? ' · --publish' : ''}`);
   await notify(channel, `🔎 ${city.title}: treść przystanków według standardu (${stops.length} przystanków) — research, pisanie, kontrola Claude. Dam znać tutaj.`);
 
   const results = [];
+  let budgetStop = '';
   for (const stop of stops) {
+    const used = paidToday();
+    if (used >= DAILY_USD) { budgetStop = `limit dzienny płatnych modeli ($${used.toFixed(2)} / $${DAILY_USD.toFixed(2)}) — reszta przy następnym uruchomieniu`; log(`${slug}: ${budgetStop}`); break; }
     try {
       const r = await processStop(stop, city);
       writeFileSync(join(dir, `stop-${stop.id}.json`), JSON.stringify({ stop_id: stop.id, stop_key: stop.stop_key, ...r.rec, check_result: r.check_result }, null, 2));
@@ -330,7 +371,10 @@ async function main() {
       (errs.length ? `\n${errs.slice(0, 3).map(e => `   – ${BLOCK_PL[e.block] ?? e.block ?? ''}: ${e.problem}`).join('\n')}${errs.length > 3 ? `\n   – … i ${errs.length - 3} więcej` : ''}` : '');
   });
   const msg = `📚 **${city.title} — treść przystanków** · ok ${ok}/${results.length}${DRY ? ' · próba (--dry), nic nie zapisane' : ' · zapisane w ops.stop_research'}\n` +
-    `${lines.join('\n')}\n${pub ? pub + '\n' : ''}koszt modeli płatnych: $${spent.usd.toFixed(4)}` +
+    `${lines.join('\n')}\n${pub ? pub + '\n' : ''}${budgetStop ? '⏸ ' + budgetStop + '\n' : ''}` +
+    `${results.flatMap(r => r.check_result.guidelines?.rules ?? []).map(g => `📐 wytyczne: #${g.id} (${g.action}) ${g.rule}`).join('\n')}` +
+    `${results.map(r => r.check_result.guidelines?.standard_note).filter(Boolean).map(n => `\n📝 do standardu (JP): ${n}`).join('')}\n` +
+    `koszt modeli płatnych: $${spent.usd.toFixed(4)}` +
     (!PUBLISH && !DRY && ok === results.length ? `\nWszystko ok — po akceptacji JP: node stop-content.mjs ${slug} --publish (albo ops.stop_publish_pl per przystanek).` : '');
   await notify(channel, msg);
   const out = { slug, dry: DRY, writer, ok, total: results.length, published: pub || null, cost_usd: +spent.usd.toFixed(4),
