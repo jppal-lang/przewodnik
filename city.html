@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=27">
+<link rel="stylesheet" href="styles.css?v=28">
 <script src="i18n-ui.js?v=4"></script>
 <script src="trip-ui.js?v=9"></script>
 <script src="kid-reward.js?v=2"></script>
@@ -188,7 +188,7 @@ function guestData(lang) {
   return Promise.all([
     sb('cities', 'slug=eq.' + q + '&select=slug,country,region,region_slug,lat,lon,bandana_color,duration_type,duration_hours,hero_image,url_slug,status'),
     sb('city_translations', 'city_slug=eq.' + q + '&lang=' + L + '&select=city_slug,lang,title,region_label,subtitle,lead'),
-    sb('public_stops', 'city_slug=eq.' + q + '&lang=' + L + '&select=stop_id,stop_number,sort_order,stop_key,category,hero_image,lang,name,desc_paragraphs,paragraphs_total,has_mission&order=sort_order')
+    sb('public_stops', 'city_slug=eq.' + q + '&lang=' + L + '&select=stop_id,stop_number,sort_order,stop_key,category,hero_image,lang,name,desc_paragraphs,paragraphs_total,has_mission,blocks&order=sort_order')
   ]).then(function(r) {
     var by = {}, order = [];
     r[2].forEach(function(row) {
@@ -199,7 +199,8 @@ function guestData(lang) {
         order.push(row.stop_id);
       }
       g.stop_translations.push({ lang: row.lang, name: row.name, desc_paragraphs: row.desc_paragraphs || [],
-                                 paragraphs_total: row.paragraphs_total || 0, has_mission: row.has_mission });
+                                 paragraphs_total: row.paragraphs_total || 0, has_mission: row.has_mission,
+                                 blocks: row.blocks || [] });
     });
     return { city: r[0][0], cityTrRows: r[1], stops: order.map(function(id) { return by[id]; }), emergency: [], locked: true };
   });
@@ -211,13 +212,33 @@ function fullData(lang, key) {
       if (why === 'invalid_key' && window.QAccess) window.QAccess.clear();
       return guestData(lang).then(function(d) { d.keyError = why; return d; });
     }
-    var em = j.emergency_points || [];
-    var pick = function(L) { return em.filter(function(e) { return e.lang === L; }); };
-    var emL = pick(lang); if (!emL.length) emL = pick('en'); if (!emL.length) emL = pick(FALLBACK);
-    return { city: j.city, cityTrRows: j.city_translations || [], stops: j.stops || [], emergency: emL, locked: false };
+    return shapeFull(j, lang);
   }, function() {
     return guestData(lang).then(function(d) { d.keyError = 'network'; return d; });
   });
+}
+function shapeFull(j, lang) {
+  var em = j.emergency_points || [];
+  var pick = function(L) { return em.filter(function(e) { return e.lang === L; }); };
+  var emL = pick(lang); if (!emL.length) emL = pick('en'); if (!emL.length) emL = pick(FALLBACK);
+  return { city: j.city, cityTrRows: j.city_translations || [], stops: j.stops || [], emergency: emL, locked: false, member: !!j.member };
+}
+// Zalogowany (konto rodzica, JP 2026-10-18): token sesji idzie w treści wywołania, baza sprawdza podpis (trip_member).
+function hasSession() { try { return !!localStorage.getItem('qc.session'); } catch (e) { return false; } }
+function whenAuth() {
+  return new Promise(function(res) {
+    if (window.QAuth) return res(window.QAuth);
+    var n = 0, t = setInterval(function() { if (window.QAuth || ++n > 60) { clearInterval(t); res(window.QAuth || null); } }, 50);
+  });
+}
+function memberData(lang) {
+  return whenAuth().then(function(A) { return A ? A.session() : null; }).then(function(sess) {
+    if (!sess || !sess.at) return guestData(lang);
+    return rpc('trip_member', { p_slug: citySlug, p_lang: lang, p_token: sess.at }).then(function(j) {
+      if (!j || j.error) return guestData(lang).then(function(d) { d.keyError = (j && j.error === 'invalid_session') ? 'session' : ''; return d; });
+      return shapeFull(j, lang);
+    });
+  }).catch(function() { return guestData(lang).then(function(d) { d.keyError = 'network'; return d; }); });
 }
 function accessKey() { return window.QAccess ? window.QAccess.get() : ''; }
 
@@ -252,7 +273,7 @@ function loadPage(lang) {
     ? Promise.all(QD.core(lang, SB_URL, SB_KEY, FALLBACK)).then(function(r) {
         return { city: r[0][0], cityTrRows: r[1], stops: r[2], emergency: r[3], locked: false };
       })
-    : (key ? fullData(lang, key) : guestData(lang));
+    : (key ? fullData(lang, key) : (hasSession() ? memberData(lang) : guestData(lang)));
   Promise.all([dataP].concat([
     sb('languages', 'enabled=eq.true&order=priority'),
     sb('ui_translations', 'lang=eq.' + lang),
@@ -309,7 +330,9 @@ function loadPage(lang) {
           || s.stop_translations.find(function(t) { return t.lang === FALLBACK; })
           || s.stop_translations[0];
       }
-      return { stop: s, tr: tr };
+      // bloki (legenda, ciekawostka, popkultura, fun fact) tylko w języku tekstu przystanku — bez mieszania języków
+      var bl = tr && s.stop_blocks ? (s.stop_blocks.find(function(b) { return b.lang === tr.lang; }) || null) : null;
+      return { stop: s, tr: tr, bl: bl };
     });
 
     // SEO title
@@ -539,7 +562,12 @@ function render(d) {
       t.desc_paragraphs.forEach(function(p) { html += '<p>' + esc(p) + '</p>'; });
       html += '</div>';
     }
-    if (d.locked && ((t.paragraphs_total || 0) > (t.desc_paragraphs || []).length || t.has_mission)) {
+    if (!d.locked && item.bl) html += blocksHtml(item.bl);
+    if (d.locked && t.blocks && t.blocks.length) {
+      html += '<p class="qc-locked-hint qc-locked-hint--blocks"><a href="#qcAccess">' + esc(ui('access.blocks_after', 'Po zalogowaniu')) + ': ' +
+              t.blocks.map(function(b) { return esc(ui('block.' + b, ({ legend: 'legenda', curiosity: 'ciekawostka', pop_culture: 'w popkulturze' })[b] || b)); }).join(' · ') +
+              '</a></p>';
+    } else if (d.locked && ((t.paragraphs_total || 0) > (t.desc_paragraphs || []).length || t.has_mission)) {
       html += '<p class="qc-locked-hint"><a href="#qcAccess">' + esc(ui('access.more', 'Dalsza część opisu i misja dla dziecka — po zalogowaniu')) + '</a></p>';
     }
 
@@ -563,8 +591,10 @@ function render(d) {
     // Missions & photo tasks
     var hasMission = t.kids_box || t.hint;
     var hasPhoto = t.photo_task;
-    if (hasMission || hasPhoto) {
+    var funFact = !d.locked && item.bl && item.bl.fun_fact && item.bl.fun_fact.text;
+    if (hasMission || hasPhoto || funFact) {
       html += '<div class="qc-tasks">';
+      if (funFact) html += '<p class="qc-funfact">' + esc(funFact) + '</p>';   // zdanie samo zaczyna się od „Czy wiesz, że…”
       if (t.kids_box) {
         var taskKey = (s.stop_key || s.slug || id) + '-mission';
         html += '<div class="qc-task">';
@@ -711,8 +741,12 @@ function render(d) {
 function accessBox(err) {
   var h = '<div class="qc-box qc-access" id="qcAccess">';
   h += '<h2 class="qc-section__title">' + esc(ui('access.full_title', 'Pełna wycieczka po zalogowaniu')) + '</h2>';
-  h += '<p>' + esc(ui('access.full_text', 'Po zalogowaniu zobaczysz plan dnia z godzinami, mapę trasy, parking, misje i zagadki dla dzieci, punkty awaryjne i pełne opisy przystanków. Konta ruszają wkrótce.')) + '</p>';
-  if (err === 'invalid_key') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_bad', 'Ten klucz jest nieważny albo wygasł.')) + '</p>';
+  h += '<p>' + esc(ui('access.full_text', 'Po zalogowaniu zobaczysz plan dnia z godzinami, mapę trasy, parking, misje i zagadki dla dzieci, punkty awaryjne, pełne opisy przystanków oraz legendy, ciekawostki i popkulturę. Konto jest bezpłatne.')) + '</p>';
+  var next = encodeURIComponent(location.pathname + location.search);
+  h += '<p class="qc-access__acts"><a class="qc-btn qc-btn--primary" href="/zaloguj.html?next=' + next + '#rejestracja">' + esc(ui('access.signup', 'Załóż konto')) + '</a> ' +
+       '<a class="qc-btn" href="/zaloguj.html?next=' + next + '">' + esc(ui('access.signin', 'Zaloguj się')) + '</a></p>';
+  if (err === 'session') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.session_bad', 'Sesja wygasła. Zaloguj się ponownie.')) + '</p>';
+  else if (err === 'invalid_key') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_bad', 'Ten klucz jest nieważny albo wygasł.')) + '</p>';
   else if (err === 'rate_limit') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_limit', 'Za dużo otwarć z tym kluczem w ostatniej godzinie. Spróbuj później.')) + '</p>';
   else if (err) h += '<p class="qc-access__err" role="alert">' + esc(ui('error.load', 'Błąd ładowania danych. Spróbuj odświeżyć stronę.')) + '</p>';
   h += '<form class="qc-access__form" data-access-form>';
@@ -720,6 +754,29 @@ function accessBox(err) {
   h += '<div class="qc-copy-row"><input type="text" id="qcAccessKey" autocomplete="off" autocapitalize="off" spellcheck="false" required>';
   h += '<button type="submit">' + esc(ui('access.key_btn', 'Otwórz pełną wycieczkę')) + '</button></div>';
   h += '</form></div>';
+  return h;
+}
+// Karty bloków przystanku (docs/TRESC-PRZYSTANKU.md): legenda, ciekawostka, popkultura — zawsze w tej kolejności.
+function blocksHtml(b) {
+  var h = '';
+  var txt = function(v) { return esc(v).replace(/\n\s*\n/g, '</p><p>'); };
+  if (b.legend && b.legend.text) {
+    h += '<section class="qc-block qc-block--legend"><h4 class="qc-block__title">' + esc(ui('block.legend_title', 'Legenda')) + '</h4><p>' + txt(b.legend.text) + '</p>';
+    if (b.legend.trace) h += '<p class="qc-block__more"><b>' + esc(ui('block.legend_trace', 'Gdzie to zobaczyć')) + ':</b> ' + esc(b.legend.trace) + '</p>';
+    if (b.legend.history) h += '<p class="qc-block__more"><b>' + esc(ui('block.legend_history', 'Co mówi historia')) + ':</b> ' + esc(b.legend.history) + '</p>';
+    h += '</section>';
+  }
+  if (b.curiosity && b.curiosity.text) {
+    h += '<section class="qc-block qc-block--curiosity"><h4 class="qc-block__title">' + esc(ui('block.curiosity_title', 'Ciekawostka')) + '</h4><p>' + txt(b.curiosity.text) + '</p></section>';
+  }
+  var items = b.pop_culture && b.pop_culture.items || [];
+  if (items.length) {
+    h += '<section class="qc-block qc-block--pop"><h4 class="qc-block__title">' + esc(ui('block.pop_title', 'W popkulturze')) + '</h4><ul>';
+    items.forEach(function(it) {
+      h += '<li><b>' + esc(it.title || '') + '</b>' + (it.year ? ' (' + esc(it.year) + ')' : '') + (it.text ? ' — ' + esc(it.text) : '') + '</li>';
+    });
+    h += '</ul></section>';
+  }
   return h;
 }
 function initAccessForm() {

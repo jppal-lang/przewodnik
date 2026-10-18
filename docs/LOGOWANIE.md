@@ -114,3 +114,18 @@ Bez ręcznej edycji plików.
   ten sam adres (po normalizacji: małe litery; Gmail bez kropek i części po „+”) nie dostaje nowej darmowej trasy.
   Podstawa: uzasadniony interes (zapobieganie nadużyciom) — opisać w polityce prywatności. Do zrobienia razem z tabelą `entitlements`.
 - Dane transakcji (od czerwca 2027) zostają po usunięciu konta tyle, ile wymagają przepisy.
+
+## 9. Treść dla zalogowanego (2026-10-18)
+
+- `public.trip_member(slug, lang, token)` — pełna wycieczka z blokami (legenda, ciekawostka, popkultura, fun fact) dla
+  zalogowanego. Traefik zdejmuje nagłówek `Authorization`, więc strona przekazuje token sesji w treści wywołania, a baza
+  sama sprawdza podpis HS256 (sekret GoTrue w `ops.app_secrets`, wpisuje go `ops/app-secrets.sh`), ważność i rolę
+  `authenticated`. Limit 300 otwarć na godzinę na konto (`ops.member_usage`, 30 dni).
+- Kolejność na stronie miasta: klucz testera → sesja konta → gość. Wspólna treść: `ops.trip_payload` (też dla `trip_full`).
+- Do 31.05.2027 zalogowany widzi wszystkie trasy. Od 1.06.2027 funkcja zwraca `locked` dla tras innych niż darmowe,
+  dopóki nie powstanie tabela uprawnień (`docs/KONTO-RODZICA.md` §3–4).
+- Trasy darmowe (`cities.access = 'free'`) też wymagają logowania, ale nie zakupu (decyzja Claude z upoważnienia JP 2026-10-18,
+  do zmiany jedną linijką w `trip_member`, gdyby miały być otwarte dla gości).
+- Strona logowania wraca po zalogowaniu/rejestracji pod adres z `?next=` (tylko ścieżki quolino.com).
+- Do zrobienia: widok dziecka na telefonie dziecka dla zalogowanego rodzica (dziś kod QR niesie tylko klucz testera) —
+  token dziecka ważny do końca dnia (`trip_runs.kid_token`, `docs/KONTO-RODZICA.md` §3).

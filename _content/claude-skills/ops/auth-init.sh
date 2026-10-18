@@ -55,3 +55,5 @@ echo "Tabele kont: $(echo "SELECT count(*) FROM information_schema.tables WHERE 
 sleep 20
 echo "Z zewnątrz: $(curl -s -o /dev/null -w "%{http_code}" https://auth.quolino.com/auth/v1/health) (200 = działa)"
 echo "Bramka rejestracji: $(curl -s -o /dev/null -w "%{http_code}" -X POST -H "content-type: application/json" -d "{}" https://auth.quolino.com/auth/v1/signup) (400 = działa i odrzuca bez weryfikacji)"
+# sekret podpisu dla funkcji bazy (trip_member) — gdy tabela już jest
+sh "$W/ops/app-secrets.sh" 2>/dev/null || echo "Sekret w bazie: pominięty (uruchom ops/app-secrets.sh po approve SQL)"
