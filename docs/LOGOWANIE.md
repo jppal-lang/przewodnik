@@ -102,3 +102,11 @@ Bez ręcznej edycji plików.
   Przykładowe dane tylko dla niezalogowanych (albo `?demo=1`).
 - Konto JP założone 17.10 linkiem nie ma hasła — ustawia je przez „Nie pamiętasz hasła?”.
 - Do decyzji JP: usuwanie nieaktywnych kont (propozycja w rozmowie 2026-10-18).
+
+## 8. Kasowanie kont (JP 2026-10-18)
+
+- **Niepotwierdzone** (nikt nie kliknął linku z maila) kasujemy po **48 godzinach**: `ops/auth-cleanup.sh`, cron co godzinę
+  (`cron/crontab.txt`). Kasowanie w `auth.users` usuwa kaskadowo tożsamości, sesje i tokeny. W logu tylko liczba, bez adresów.
+- Podgląd bez kasowania: `sh /root/quolino-web/ops/auth-cleanup.sh --check`.
+- Konta potwierdzone, ale nieużywane: do decyzji JP (propozycja: 24 miesiące bez logowania, mail z ostrzeżeniem 30 dni wcześniej;
+  przy zakupach dane transakcji zostają tyle, ile wymagają przepisy).

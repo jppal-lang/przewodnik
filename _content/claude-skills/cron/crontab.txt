@@ -5,6 +5,8 @@ H=hermes-quolino-hermes-agent-1
 # czuwanie: strona, API, Hermes, baza, dysk — alarm na Discord (ALERT_WEBHOOK) tylko przy zmianie stanu
 */5 * * * *  /root/quolino-web/ops/healthcheck.sh
 */5 * * * *  /root/quolino-web/ops/hermes-watch.sh >> /root/quolino-web/hermes-watch.log 2>&1
+# konta: niepotwierdzone (bez kliknięcia w link) kasowane po 48 h (JP 2026-10-18)
+23 * * * *   /root/quolino-web/ops/auth-cleanup.sh >> /root/quolino-web/auth-cleanup.log 2>&1
 # kopia bazy co noc (14 dni na VPS + poza serwerem, gdy skonfigurowane)
 41 3 * * *   /root/quolino-web/ops/backup-db.sh >> /root/quolino-web/backup.log 2>&1
 # zgłoszenia od rodzin → wątki miast
