@@ -315,7 +315,7 @@
     }
     html += '<ol class="qc-ov__list">';
     pts.forEach(function (s, i) {
-      var tag = i === 0 && s.cat === 'parking' ? t('label.start', 'Start') : (s.dinner ? t('label.finish', 'Meta') : '');
+      var tag = i === 0 ? t('label.start', 'Start') : (s.dinner ? t('label.finish', 'Meta') : '');
       html += '<li><a class="qc-ov__item" href="#p' + esc(s.num) + '" data-go="' + esc(s.num) + '">' +
               '<span class="qc-ov__no">' + pad(s.num) + '</span>' +
               '<span class="qc-ov__txt"><span class="qc-ov__time">' + esc(s.time || '') + '</span>' +

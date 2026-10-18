@@ -355,6 +355,7 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .qc-intro{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;align-items:end;padding-top:clamp(16px,3vw,32px)}
 .qc-title{font-size:clamp(64px,12vw,152px);line-height:.86}
 .qc-lede{margin-top:18px;max-width:58ch;font-size:clamp(19px,1.8vw,22px);line-height:1.5}
+.qc-langnote{margin-top:14px;max-width:58ch;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.16);border:1px solid currentColor;font-size:18px;line-height:1.45}
 .qc-facts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
 .qc-facts > span{display:inline-flex;align-items:baseline;gap:7px;min-height:42px;padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.16);font-size:17px}
 .qc-facts strong{font-stretch:125%;font-weight:900}

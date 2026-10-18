@@ -148,7 +148,7 @@
         body: 'Wstęp za długi — dwa zdania wystarczą.', status: 'done', hermes_reply: 'Skrócone do dwóch zdań.', resolved_in_version: 3, created_at: '2026-10-16T09:05:00Z' });
     }
     var base = sp[0];
-    [['assisi', 'Asyż', 'it', 'umbria', 'published'], ['urbino', 'Urbino', 'it', 'marche', 'published'], ['ancona', 'Ankona', 'it', 'marche', 'draft'],
+    [['assisi', 'Asyż', 'it', 'umbria', 'published'], ['urbino', 'Urbino', 'it', 'marche', 'published'], ['ancona', 'Ancona', 'it', 'marche', 'draft'],
       ['krakow', 'Kraków', 'pl', 'malopolska', 'published'], ['wieliczka', 'Wieliczka', 'pl', 'malopolska', 'draft'],
       ['zakopane', 'Zakopane', 'pl', 'malopolska', 'rejected'], ['rovinj', 'Rovinj', 'hr', 'istria', 'published']].forEach(function (x, i) {
       if (!base || d.versions.some(function (v) { return v.city_slug === x[0]; })) return;
