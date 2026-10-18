@@ -1,0 +1,23 @@
+{
+  "stop_id": 20,
+  "stop_key": "frasassi-01",
+  "marked": {
+    "desc_paragraphs": [
+      "Duży parking jest przy kasach jaskiń, w miejscowości San Vittore delle Chiuse; według przewodnika dla rodzin jest bezpłatny, ale zasady parkowania mogą się zmieniać, więc sprawdźcie na miejscu [1]. Kampery też tu staną [1]. Do samego wejścia do jaskiń dowozi autobus, którego przejazd jest wliczony w bilet [1].",
+      "Kolejność na miejscu: kasa albo, jeśli kupiliście bilety przez internet, od razu przystanek autobusu do jaskiń. Z biletem kupionym online bądźcie tam co najmniej 15 minut przed godziną wejścia z biletu [1]. W weekendy i święta lepiej zarezerwować bilety wcześniej przez internet [1]. Zwiedzanie odbywa się o godzinie wpisanej na bilecie."
+    ],
+    "legend": null,
+    "curiosity": null,
+    "fun_fact": null,
+    "pop_culture": null
+  },
+  "state": {
+    "legend": { "state": "none", "checked": "przystanek praktyczny (parking) — pytania §2 nie dotyczą" },
+    "curiosity": { "state": "none", "checked": "przystanek praktyczny (parking) — pytania §2 nie dotyczą" },
+    "fun_fact": { "state": "none", "checked": "przystanek praktyczny (parking) — pytania §2 nie dotyczą" },
+    "pop_culture": { "state": "none", "checked": "przystanek praktyczny (parking) — pytania §2 nie dotyczą" }
+  },
+  "sources": [
+    { "n": 1, "url": "https://www.viaggiapiccoli.com/grotte-di-frasassi/", "title": "Grotte di Frasassi con i bambini (ViaggiaPiccoli)", "lang": "it" }
+  ]
+}

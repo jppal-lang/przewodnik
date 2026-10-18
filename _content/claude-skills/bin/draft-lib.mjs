@@ -153,10 +153,10 @@ Bez emoji w wartościach. Fakty, godziny i ceny tylko pewne — inaczej null / "
 // Minimum głębokości opisu rodzica (JP, 2026-10-13) — wspólny tekst dla pisania i poprawek
 export const DEPTH_TEXT = `GŁĘBOKOŚĆ OPISU RODZICA (dolna granica, nie cel; poniżej = błąd walidatora): zabytek/kościół/muzeum/zamek/synagoga/dom —
 4 akapity i 300 słów (zwykle 5–8); ulica/punkt widokowy/zdjęcie — 2 akapity i 120 słów; parking i lokale — 1 akapit.
-Szkielet zabytku: (1) hak — dlaczego warto tu stanąć; (2) historia i ludzie; (3) „Kim był/była…”; (4) co oglądać, z dokładnym miejscem;
-(5) legenda — akapit zaczyna się od „Legenda mówi…” albo „Według tradycji…” i kończy tym, co wiadomo historycznie;
-(6) ciekawostka, popkultura albo znaczenie dziś. Każdy akapit wnosi nową treść; bez wypełniaczy („zachwyca”, „warto zobaczyć”,
-„bogata historia”) — zamiast przymiotnika fakt. Legenda z researchu MUSI trafić do opisu i nigdy nie jest podana jako fakt.
+Szkielet zabytku: (1) hak — dlaczego warto tu stanąć; (2) historia i ludzie; (3) „Kim był/była…”; (4) co oglądać, z dokładnym miejscem.
+Legenda, ciekawostka i popkultura NIE wchodzą do opisu (standard docs/TRESC-PRZYSTANKU.md, JP 2026-10-18) — mają własne bloki,
+które pisze stop-content.mjs; w opisie najwyżej jedno zdanie-zapowiedź. Każdy akapit wnosi nową treść; bez wypełniaczy („zachwyca”,
+„warto zobaczyć”, „bogata historia”) — zamiast przymiotnika fakt. Legenda nigdy nie jest podana jako fakt.
 Rozbudowując opis, bierz fakty WYŁĄCZNIE z researchu; czego tam nie ma — nie wymyślaj, dodaj notatkę w content._notes.
 AKAPIT TO AKAPIT: przy zabytku min. 40 słów i 2+ zdania. Jednozdaniowe „akapity” (cięcie tekstu, by zaliczyć próg) to błąd walidatora.`;
 
@@ -191,25 +191,9 @@ ${JSON.stringify(trip)}`;
 // Cała wycieczka w jednej odpowiedzi kończyła się skracaniem: model ciął tekst na jednozdaniowe „akapity”.
 // Dlatego opis każdego zabytku/miejsca powstaje w osobnym wywołaniu, z całym research.md i sprawdzeniem lokalnym
 // (te same progi co walidator), a szkielet, questy i plan dnia powstają osobno.
-export const SIGHT_CATS = new Set(['monument', 'church', 'museum', 'castle', 'house', 'synagogue']);
-export const PLACE_CATS = new Set(['viewpoint', 'street', 'photo', 'park']);
-export const DESCRIBE_CATS = new Set([...SIGHT_CATS, ...PLACE_CATS]);
-const wordsOf = (s) => (String(s).match(/[\p{L}\p{N}]+/gu) ?? []).length;
-const sentencesOf = (s) => (String(s).match(/[.!?…]+(?:["”»)]*)(?=\s|$)/g) ?? []).length;
-
-// problemy opisu wg progów JP: zabytek 4 akap./300 słów, miejsce 2 akap./120 słów, akapit zabytku min. 40 słów i 2+ zdania
-export function descProblems(category, paras) {
-  const p = Array.isArray(paras) ? paras.filter(x => typeof x === 'string') : [];
-  const [minPar, minWords] = SIGHT_CATS.has(category) ? [4, 300] : PLACE_CATS.has(category) ? [2, 120] : [1, 0];
-  const out = [];
-  const words = p.reduce((n, x) => n + wordsOf(x), 0);
-  if (p.length < minPar || words < minWords) out.push(`${p.length} akapitów i ${words} słów — minimum ${minPar} akapity i ${minWords} słów`);
-  if (SIGHT_CATS.has(category)) {
-    const bad = p.map((x, i) => ({ i: i + 1, w: wordsOf(x), s: sentencesOf(x) })).filter(x => x.w < 40 || x.s < 2);
-    if (bad.length) out.push(`akapity ${bad.map(b => `${b.i} (${b.w} słów, ${b.s} zd.)`).join(', ')} za krótkie — akapit ma mieć min. 40 słów i 2+ zdania; nie tnij tekstu na jednozdaniowe akapity, łącz je`);
-  }
-  return out;
-}
+// progi i descProblems żyją w czystym module desc-rules.mjs (testy bez bazy); tu tylko eksport dalej
+import { SIGHT_CATS, PLACE_CATS, DESCRIBE_CATS, descProblems } from './desc-rules.mjs';
+export { SIGHT_CATS, PLACE_CATS, DESCRIBE_CATS, descProblems };
 
 export async function describeStop(trip, stopKey, { errors = [], instruction = '' } = {}) {
   const slug = trip.meta.city.slug;
@@ -224,8 +208,8 @@ PRZYSTANEK: ${pl.name ?? stopKey} (stop_key \"${stopKey}\", kategoria ${s?.categ
 ${instruction ? `POLECENIE: ${instruction}\n` : ''}${feedback ? `POPRAW (uwagi kontroli):\n${feedback}\n` : ''}
 ${DEPTH_TEXT}
 AKAPIT to akapit: min. 40 słów i co najmniej 2 zdania (zabytek). Nigdy nie dziel tekstu na jednozdaniowe „akapity” — to obejście progu
-i jest błędem. Pisz opowieść, nie listę faktów: kto, po co, co się wydarzyło, „kim był…”, pełna legenda z przebiegiem i zakończeniem
-(oznaczona „Legenda mówi…” / „Według tradycji…”), detale do oglądania z dokładnym miejscem. Używaj WYŁĄCZNIE faktów z researchu
+i jest błędem. Pisz opowieść, nie listę faktów: kto, po co, co się wydarzyło, „kim był…”, detale do oglądania z dokładnym miejscem.
+Legendy, ciekawostki i popkultury nie opowiadaj w opisie (osobne bloki) — najwyżej jedno zdanie-zapowiedź. Używaj WYŁĄCZNIE faktów z researchu
 (sekcje o tym przystanku); czego brakuje — nie wymyślaj, opisz w polu \"gap\".
 ${rulesText()}
 AKTUALNY OPIS:\n${JSON.stringify(pl.desc_paragraphs ?? [])}\n

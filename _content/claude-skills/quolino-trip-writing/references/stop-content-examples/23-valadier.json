@@ -1,0 +1,112 @@
+{
+  "stop_id": 23,
+  "stop_key": "frasassi-04",
+  "marked": {
+    "desc_paragraphs": [
+      "Na końcu ścieżki czeka widok, w który trudno uwierzyć: w otworze ogromnej groty stoi biała, ośmioboczna świątynia z kopułą [1][3]. Ma osiem jednakowych boków, więc z góry wyglądałaby jak znak STOP. Zbudowano ją z białego trawertynu wydobytego w kamieniołomie tuż nad grotą, a kopułę pokryto płytami ołowiu [1][3]. To styl neoklasyczny: z początku XIX wieku, wzorowany na świątyniach starożytnej Grecji i Rzymu, prosty i symetryczny [8].",
+      "Świątynię zamówił kardynał Annibale della Genga [8]. Urodził się w 1760 roku w zamku Castello della Genga, w starej rodzinie szlacheckiej z tych okolic, jako szóste z dziesięciorga dzieci [5]. W 1823 roku został papieżem jako Leon XII i rządził do śmierci w 1829 roku [5]. Papież był wtedy nie tylko głową Kościoła, ale i władcą Państwa Kościelnego w środkowych Włoszech. Jako papież starał się rozwijać swoje rodzinne strony [2]. Świątynię otwarto w 1828 roku [8][9].",
+      "Tradycyjnie jej projekt przypisuje się Giuseppe Valadierowi (1762–1839), rzymskiemu architektowi, autorowi placu Piazza del Popolo w Rzymie i fasady katedry w Urbino [6][8]. Stąd nazwa Tempio del Valadier. Badania archiwalne z 2016 roku wskazują jednak, że Valadier nie miał z budową nic wspólnego, a nazwa została tylko z tradycji [4][9].",
+      "Ścieżka do świątyni ma niecały kilometr i prowadzi pod górę; zaczyna się przy Piazzale Fedeli, niedaleko wejścia do jaskiń [8][10]. Na progu groty stoi kamienny łuk [9]. W świątyni jest alabastrowy ołtarz [2] i kopia marmurowej Madonny z Dzieciątkiem z warsztatu Antonia Canovy; oryginał ze względów bezpieczeństwa przeniesiono do muzeum w Genga [1][3][7][8]. Poszukajcie napisu „Refugium Peccatorum”, czyli „Schronienie grzeszników” [7].",
+      "Obok świątyni, przyklejona do skalnej ściany i w połowie zawieszona nad urwiskiem, stoi dużo starsza pustelnia Santa Maria infra Saxa [8]. Wspominają ją dokumenty z 1029 roku [1][4]. Najpierw była miejscem modlitwy, a potem klasztorem benedyktynek żyjących w klauzurze, czyli w odcięciu od świata [1]. Jej dawna drewniana figura Madonny przetrwała kilka prób kradzieży, ale spłonęła w latach czterdziestych XX wieku; zastąpiono ją kamienną [1]."
+    ],
+    "legend": null,
+    "curiosity": {
+      "text": "Zanim w grocie stanęła świątynia, ludzie się w niej chowali. Podczas usuwania osadów pod budowę znaleziono piece do pieczenia chleba, dwa doły na zboże, monety i wiele ludzkich kości, także dziecięcych [1][2][7]. Uznano je za ślady schronienia. Według FAI i miejscowych przekazów okoliczni mieszkańcy ukrywali się tu w X wieku przed najazdami Węgrów [7][9]. Nie były to jednak prawdziwe wykopaliska, tylko znaleziska przy robotach budowlanych [2]. Przedmioty z groty trafiły do Narodowego Muzeum Archeologicznego Marche w Ankonie [2]."
+    },
+    "fun_fact": {
+      "text": "Czy wiesz, że nazwa Frasassi wzięła się od łacińskiego „infra saxa”, czyli „wśród skał”, od nazwy tej pustelni [2]?"
+    },
+    "pop_culture": {
+      "items": [
+        {
+          "title": "Italy for movies — „Luoghi sacri”",
+          "year": "2024",
+          "text": "Świątynia w wąwozie Frasassi pojawia się w odcinku o miejscach świętych dokumentalnej serii Sky Arte o włoskich plenerach filmowych [13]."
+        }
+      ]
+    }
+  },
+  "state": {
+    "legend": {
+      "state": "none",
+      "checked": "italia.it, showcaves, museionline, en.wikipedia, FAI, broszura Passaporto (frasassi.com), Wanted in Rome, Quotidiano.net, Business Insider, hoteldiamond.it, italyreview.com, siviaggia.it — tylko historia schronienia; legenda o Pierze i Sarze dotyczy Pierosary (przystanek jaskiń)"
+    },
+    "curiosity": {
+      "state": "found"
+    },
+    "fun_fact": {
+      "state": "found"
+    },
+    "pop_culture": {
+      "state": "found"
+    }
+  },
+  "sources": [
+    {
+      "n": 1,
+      "url": "https://www.italia.it/it/marche/genga/il-tempio-del-valadier-eremo-santa-maria-infra-saxa",
+      "title": "Il tempio del Valadier e l'eremo di Santa Maria Infra Saxa (italia.it)",
+      "lang": "it"
+    },
+    {
+      "n": 2,
+      "url": "https://www.showcaves.com/english/it/caves/Frasassi.html",
+      "title": "Tempio del Valadier - Santa Maria di Frasassi (Showcaves)",
+      "lang": "en"
+    },
+    {
+      "n": 3,
+      "url": "https://www.museionline.info/marche-musei-monumenti/tempio-del-valadier",
+      "title": "Tempio del Valadier (MuseiOnline)",
+      "lang": "it"
+    },
+    {
+      "n": 4,
+      "url": "https://en.wikipedia.org/wiki/Sanctuary_of_Santa_Maria_infra_Saxa,_Genga",
+      "title": "Sanctuary of Santa Maria infra Saxa, Genga (en.wikipedia)",
+      "lang": "en"
+    },
+    {
+      "n": 5,
+      "url": "https://en.wikipedia.org/wiki/Pope_Leo_XII",
+      "title": "Pope Leo XII (en.wikipedia)",
+      "lang": "en"
+    },
+    {
+      "n": 6,
+      "url": "https://en.wikipedia.org/wiki/Giuseppe_Valadier",
+      "title": "Giuseppe Valadier (en.wikipedia)",
+      "lang": "en"
+    },
+    {
+      "n": 7,
+      "url": "https://fondoambiente.it/luoghi/tempio-del-valadier",
+      "title": "Tempio del Valadier (FAI)",
+      "lang": "it"
+    },
+    {
+      "n": 8,
+      "url": "https://www.frasassi.com/files/passaporto/passaporto-brochure.pdf",
+      "title": "Passaporto del Turista (Consorzio Frasassi)",
+      "lang": "it"
+    },
+    {
+      "n": 9,
+      "url": "https://www.wantedinrome.com/news/italys-tempio-del-valadier-a-chapel-inside-a-cave.html",
+      "title": "Italy's Tempio del Valadier, a chapel inside a cave (Wanted in Rome)",
+      "lang": "en"
+    },
+    {
+      "n": 10,
+      "url": "https://www.quotidiano.net/itinerari/consigli-di-viaggio/tempio-valadier-frasassi-drjduze3",
+      "title": "Tempio del Valadier, il gioiello nascosto (Quotidiano.net)",
+      "lang": "it"
+    },
+    {
+      "n": 13,
+      "url": "https://www.artribune.com/?p=1115401",
+      "title": "Su Sky Arte: in viaggio nell'Italia del cinema (Artribune)",
+      "lang": "it"
+    }
+  ]
+}

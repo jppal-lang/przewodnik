@@ -12,7 +12,7 @@ for s in $(cd "$SRC" && ls -d quolino-trip-*/ | tr -d /); do
 done
 docker exec "$H" mkdir -p /opt/data/quolino/work/drafts
 for f in "$SRC"/bin/*.mjs; do docker cp "$f" "$H:/opt/data/quolino/$(basename "$f")"; done
-docker exec "$H" sh -c 'U=$(stat -c %u:%g /opt/data/quolino/qdb.mjs); chown -R $U /opt/data/home/.claude/skills /opt/data/quolino/*.mjs /opt/data/quolino/work 2>/dev/null; cd /opt/data/quolino && for f in lib.mjs draft-lib.mjs quality-lib.mjs trip-*.mjs gastro-refresh.mjs links-check.mjs reports-relay.mjs cost-report.mjs; do node --check $f || exit 1; done && echo "skrypty Hermesa: OK"'
+docker exec "$H" sh -c 'U=$(stat -c %u:%g /opt/data/quolino/qdb.mjs); chown -R $U /opt/data/home/.claude/skills /opt/data/quolino/*.mjs /opt/data/quolino/work 2>/dev/null; cd /opt/data/quolino && for f in lib.mjs draft-lib.mjs desc-rules.mjs stop-content-lib.mjs stop-content.mjs quality-lib.mjs trip-*.mjs gastro-refresh.mjs links-check.mjs reports-relay.mjs cost-report.mjs; do node --check $f || exit 1; done && echo "skrypty Hermesa: OK"'
 
 # sekcje w instrukcji Hermesa: każdy hermes/*-section.md podmieniany między swoimi znacznikami <!-- nazwa:start/end -->
 for sec in "$SRC"/hermes/*-section.md; do

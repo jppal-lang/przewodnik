@@ -1,0 +1,43 @@
+{
+  "stop_id": 22,
+  "stop_key": "frasassi-03",
+  "marked": {
+    "desc_paragraphs": [
+      "Z daleka San Vittore alle Chiuse wygląda bardziej jak mała forteca niż kościół: zwarta kamienna bryła, po jednej stronie niska okrągła wieża, po drugiej masywna, ścięta dzwonnica [1][2][4]. Uchodzi za jeden z najważniejszych przykładów architektury romańskiej w regionie Marche [4][14]. Według miejscowego przekazu przydomek „delle Chiuse”, czyli „w zamknięciu”, wziął się stąd, że góry otaczają to miejsce, jakby chciały je ukryć [5].",
+      "Klasztor benedyktynów pojawia się w dokumentach już w 1007 roku, a sam kościół zbudowano najpewniej w latach 1060–1080 [1][2]. Benedyktyni to mnisi żyjący wspólnie według reguły świętego Benedykta, w rytmie modlitwy i pracy. Na początku XIII wieku opactwo było u szczytu znaczenia i podlegały mu 42 kościoły [1][2]. W XV wieku klasztor zlikwidowano i z jego zabudowań przetrwało tylko kilka pomieszczeń [1]. W 1902 roku kościół uznano za pomnik narodowy, a w latach 1925–1932 gruntownie go odnowiono [4][6].",
+      "Kościół jest romański: to styl z czasów, gdy stawiano grube kamienne mury z małymi oknami, dlatego wnętrze jest surowe i dość ciemne [2][3][8]. Zbudowano go z miejscowego wapienia na planie krzyża greckiego wpisanego w prawie kwadratowy obrys [1][2]. Krzyż grecki ma cztery ramiona równej długości, jak znak plus, więc kościół nie ma jednej długiej nawy prowadzącej do ołtarza. Cztery okrągłe filary dzielą wnętrze na dziewięć pól, a nad środkowym wznosi się kopuła na ośmiobocznym bębnie [1].",
+      "Stańcie pod kopułą, dokładnie pośrodku: w każdą stronę widać mniej więcej tyle samo przestrzeni i po tym najłatwiej rozpoznać plan krzyża greckiego. Potem obejdźcie kościół z zewnątrz. Półkoliste wybrzuszenia murów to absydy, czyli wnęki zamknięte półkolem; jest ich pięć [1], a tylko północna zachowała pierwotną dekorację [3]. Przy lewych drzwiach w pobliżu ołtarza wyryto w kamieniu znak przypominający odwrócony symbol nieskończoności; jego znaczenia nie udało się wyjaśnić do dziś [6][7][8].",
+      "Naprzeciw kościoła przez rzekę Sentino przerzucony jest kamienny most: z jednej strony ma łuk ostry, z drugiej półokrągły, a wchodzi się na niego przez ufortyfikowaną wieżę [7]. Kilka kroków dalej biją siarkowe źródła San Vittore Terme, czuć je w powietrzu. Z tej wody korzystali już Rzymianie, a pierwszy mały zakład kąpielowy otwarto tu w 1922 roku [11]."
+    ],
+    "legend": null,
+    "curiosity": {
+      "text": "W 1976 roku, podczas budowy tunelu drogi S.S. 76 w pobliskim Camponocecchio, miejscowy badacz trafił na skamieniałego ichtiozaura, morskiego gada podobnego do delfina [4][9][10]. Szkielet wydobyto razem z płytą skalną, pokazano w 1980 roku na wystawie w Weronie i na długie lata o nim zapomniano [9][13]. Dopiero w latach 2016–2017 naukowcy uznali go za nowy, nieznany wcześniej gatunek i nazwali Gengasaurus nicosiai, czyli „jaszczur z Gengi” [12][13]. Można go zobaczyć w Muzeum Speleopaleontologicznym, urządzonym w dawnym klasztorze tuż obok kościoła [9][10]."
+    },
+    "fun_fact": {
+      "text": "Czy wiesz, że w muzeum obok kościoła leży morski gad długi na około 3 metry, który pływał w morzu w tym miejscu około 150 milionów lat temu [4][12][14]?"
+    },
+    "pop_culture": null
+  },
+  "state": {
+    "legend": { "state": "none", "checked": "FAI, italia.it, en.wikipedia, opracowanie kościołów romańskich prowincji Ancona (PDF), greenMe, e-borghi, SiViaggia, komoot — tylko przekaz o nazwie „delle Chiuse” i niewyjaśniony znak, bez opowieści z przebiegiem i zakończeniem" },
+    "curiosity": { "state": "found" },
+    "fun_fact": { "state": "found" },
+    "pop_culture": { "state": "none", "checked": "FAI (tylko ranking Luoghi del Cuore i Giornate FAI), italia.it, en.wikipedia, greenMe, e-borghi, SiViaggia — brak filmów, seriali, książek" }
+  },
+  "sources": [
+    { "n": 1, "url": "https://www.famigliedellavisitazione.it/wp/wp-content/uploads/Chiese_paleocristiane_romaniche_in_Italia/PROVINCIA%20DI%20ANCONA/ANCONA-Genga-Abbazia-di-S.Vittore-alle-Chiuse.pdf", "title": "ANCONA Genga Abbazia di S. Vittore alle Chiuse", "lang": "it" },
+    { "n": 2, "url": "https://www.museionline.info/marche-musei-monumenti/abbazia-di-san-vittore-alle-chiuse", "title": "Abbazia di San Vittore alle Chiuse (MuseiOnline)", "lang": "it" },
+    { "n": 3, "url": "https://en.wikipedia.org/wiki/San_Vittore_alle_Chiuse", "title": "San Vittore alle Chiuse", "lang": "en" },
+    { "n": 4, "url": "https://www.italia.it/it/marche/genga/abbazia-san-vittore-delle-chiuse", "title": "Abbazia San Vittore delle Chiuse (italia.it)", "lang": "it" },
+    { "n": 5, "url": "https://fondoambiente.it/luoghi/abbazia-di-svittore-delle-chiuse", "title": "Abbazia di S. Vittore delle Chiuse (FAI)", "lang": "it" },
+    { "n": 6, "url": "https://www.greenme.it/viaggi/italia/tra-le-montagne-marchigiane-si-nasconde-unabbazia-che-sembra-uscita-da-unaltra-epoca/", "title": "Tra le montagne marchigiane si nasconde un'abbazia… (greenMe)", "lang": "it" },
+    { "n": 7, "url": "https://siviaggia.it/idee-di-viaggio/genga-marche-cosa-vedere/538944/", "title": "Cosa fare e vedere a Genga (SiViaggia)", "lang": "it" },
+    { "n": 8, "url": "https://www.e-borghi.com/en/what-to-see/genga-abbey-of-san-vittore-alle-chiuse/", "title": "Genga, Abbey of San Vittore alle Chiuse (e-borghi)", "lang": "en" },
+    { "n": 9, "url": "https://cultura.gov.it/luogo/museo-speleopaleontologico-ed-archeologico", "title": "Museo Speleopaleontologico ed Archeologico (Ministero della Cultura)", "lang": "it" },
+    { "n": 10, "url": "https://www.isprambiente.gov.it/it/attivita/museo/regioni/musei/museo-speleo-paleontologico-e-archeologico-di-genga", "title": "Museo speleo-paleontologico e archeologico di Genga (ISPRA)", "lang": "it" },
+    { "n": 11, "url": "https://termedifrasassi.it/wp-content/uploads/2024/04/Carta-servizi-Terme-San-Vittore_15-agg.-02_04_2024.pdf", "title": "Carta servizi Terme San Vittore", "lang": "it" },
+    { "n": 12, "url": "https://en.wikipedia.org/wiki/Gengasaurus", "title": "Gengasaurus", "lang": "en" },
+    { "n": 13, "url": "https://www.scientificamerican.com/blog/laelaps/paleo-profile-the-genga-lizard/", "title": "Paleo Profile: The Genga Lizard (Scientific American)", "lang": "en" },
+    { "n": 14, "url": "https://www.touringclub.it/notizie/bandiere-arancioni/genga-da-scoprire-la-terza-tappa-di-va-dove-ti-porta-il-touring", "title": "Genga da scoprire (Touring Club Italiano)", "lang": "it" }
+  ]
+}

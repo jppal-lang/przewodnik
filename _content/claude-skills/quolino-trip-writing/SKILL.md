@@ -55,9 +55,10 @@ długości, ale ma **dolną granicę**. To minimum, nie cel — poniżej niego w
 1. **hak** — dlaczego warto tu stanąć;
 2. **historia i ludzie** — fundatorzy, architekci, artyści, fazy budowy, znaczenie;
 3. **„Kim był/była…”** — bohater miejsca wyjaśniony od podstaw (święty, władca, artysta);
-4. **co oglądać** — konkretne detale z dokładnym miejscem („nad drzwiami po lewej”, „w drugiej kaplicy”);
-5. **legenda** — wyraźnie oznaczona jako legenda (zob. „Legendy”);
-6. **ciekawostka, popkultura albo znaczenie dziś** — tylko potwierdzone źródłem.
+4. **co oglądać** — konkretne detale z dokładnym miejscem („nad drzwiami po lewej”, „w drugiej kaplicy”).
+
+**Legenda, ciekawostka i popkultura nie wchodzą do opisu** (standard 2026-10-18, sekcja niżej) — mają własne bloki
+(`legend`, `curiosity`, `pop_culture`, a dla dziecka `fun_fact`). W opisie najwyżej jedno zdanie-zapowiedź; blok jest jej rozwinięciem.
 
 **Każdy akapit wnosi nową treść.** Bez zdań-wypełniaczy („zachwyca”, „warto zobaczyć”, „bogata historia”, „tętni życiem”):
 zamiast przymiotnika podaj fakt (kto, kiedy, ile, gdzie). Wypełniacze zgłasza walidator jako uwagę.
@@ -77,9 +78,10 @@ Wyjaśniaj od podstaw: **święty** (kim był, kiedy żył, dlaczego ważny, dla
 linijka **„Legendy: …”** ze źródłem (URL) albo **„Legendy: brak — sprawdzono: …”** (gdzie szukano: Wikipedia w języku kraju,
 strona gminy/diecezji/muzeum, lokalne przewodniki). Bez tej linijki research jest niekompletny.
 
-**Opis:** legenda znaleziona w researchu **musi trafić do opisu**. Opowiedz ją w całości (bohaterowie, miejsce, przebieg,
-zakończenie, znaczenie lokalne). Akapit zaczyna się od **„Legenda mówi…”** albo **„Według tradycji…”**, a kończy tym, co
-wiadomo historycznie (FAKT oddzielony od LEGENDY). Legenda nigdy nie jest podana jako fakt.
+**Blok legendy (nie opis):** legenda znaleziona w researchu trafia do **bloku `legend`**, nie do `desc_paragraphs`
+(standard 2026-10-18). `legend.text` opowiada ją w całości (bohaterowie, miejsce, przebieg, zakończenie) i jest wyraźnie
+legendą („Legenda mówi…”, „Według tradycji…”); `legend.trace` — ślad na miejscu i gdzie dokładnie; `legend.history` — co wiadomo
+historycznie (FAKT oddzielony od LEGENDY). Legenda nigdy nie jest podana jako fakt. Brak legendy = stan `none` z `checked`.
 
 ### Popkultura — obowiązkowy research
 Szukaj: filmy, seriale, teledyski, piosenki o mieście/miejscu, muzycy, artyści, pisarze i książki,
@@ -150,6 +152,47 @@ Status `draft`, dopóki JP nie zatwierdzi.
 Nie twórz TOUR-u z listy atrakcji. Stwórz opowieść o miejscu, którą można przeżyć pieszo.
 Najpierw poznaj miejsce. Potem napisz o nim. Dopiero z tego, co naprawdę znaleziono, zbuduj quest.
 
+## Standard treści przystanku (2026-10-18)
+
+Źródło: `docs/TRESC-PRZYSTANKU.md` (JP 2026-10-18). Zastępuje dawną zasadę „legenda w osobnym akapicie opisu”.
+
+**Bloki przystanku** (wersja redakcyjna z przypisami w `ops.stop_research`; strona dostaje je bez przypisów):
+- `desc_paragraphs` — opis rodzica (publiczny): hak, historia i ludzie, „Kim był/była…”, co oglądać z miejscem. Minimum głębokości
+  bez zmian (zabytek 4 akapity / 300 słów, akapit min. 40 słów; krótki końcowy „Praktycznie: …” dozwolony).
+- `legend` `{text, trace?, history?}` — legenda z przebiegiem i zakończeniem, ślad na miejscu, co mówi historia.
+- `curiosity` `{text}` — dla rodzica, 2–4 zdania, **zgłębiona**: co, dlaczego, w jakim kontekście, gdzie to widać dziś.
+- `fun_fact` `{text}` — dla dziecka: **jedno zdanie „Czy wiesz, że…”**, zrozumiałe dla 9-latka, z researchu, nie z pamięci.
+- `pop_culture` `{items: [{title, year, text}]}` — film/serial (scena), książka, piosenka, gra, obraz, znana osoba.
+- Każdy blok ma stan: `{"state":"found"}` (treść + przypisy) albo `{"state":"none","checked":"gdzie szukano"}` (treść `null`).
+  Przystanek praktyczny (parking, restauracja, lody, słodycze): legenda zawsze `none` z `checked` „przystanek praktyczny…”;
+  ciekawostka dozwolona (JP 2026-10-18).
+- **Bez powtórzeń między blokami** — fakt stoi w jednym bloku; w opisie najwyżej zdanie-zapowiedź, blok idzie dalej.
+
+**Research (pytania §2)** — na każde pytanie: fakt + przypis albo „brak — sprawdzono: gdzie”. Zabytki: wszystkie pytania;
+ulica, punkt widokowy, park, zdjęcie: pytania 1–2 z każdej grupy.
+- Legenda: (1) czy jest legenda/cud/podanie — kto, co, jak się skończyło; (2) ślad na miejscu i gdzie; (3) co mówi historia.
+- Ciekawostka: (1) co zaskoczy dorosłego; (2) detal, który turyści mijają; (3) co zniknęło, przeniesiono, odkryto przypadkiem.
+- Fun fact: (1) liczba, która robi wrażenie; (2) coś zabawnego albo dziwnego.
+- Popkultura: (1) film/serial — tytuł, rok, scena; (2) książka, piosenka, gra, obraz; (3) znana osoba związana z miejscem.
+
+**Przypisy `[n]` — tylko dla redakcji i AI.** Każdy fakt (data, liczba, nazwisko, zdarzenie, przypisanie dzieła) kończy się `[n]`;
+`sources[]` = `{n, url, title, lang, accessed}`, numeracja wspólna dla przystanku; źródło musi zawierać ten fakt. Kolejność:
+oficjalne → Wikipedia w języku kraju → inne rzetelne. Przypisy nigdy nie trafiają na stronę ani do publicznego API.
+Ciekawostka, superlatyw i fun fact z liczbą — **dwa niezależne źródła** (różne domeny) albo blok `none`.
+
+**Kontrola (§5, zawsze przed szkicem dla JP):**
+1. walidator mechaniczny (`stop-content-lib.mjs` → `validateStop`): komplet bloków ze stanem, każde `[n]` ma źródło i każde źródło
+   jest użyte, `none` ma `checked`, fun fact „Czy wiesz…” w jednym zdaniu, dwa źródła (ciekawostka, fun fact z liczbą, superlatyw w bloku),
+   głębokość opisu, zdania z liczbą/datą mają przypis, zero czasów dojazdu i „km”, brak akapitu legendy w opisie, brak tekstu bloku powtórzonego w opisie;
+2. Claude z siecią: otwiera każde źródło i sprawdza fakt (brak/martwy link = błąd z poprawką), powtórzenia między blokami,
+   sens i chronologia, legenda nie podana jako fakt, ciekawostka naprawdę zaskakuje, fun fact zrozumiały dla dziecka.
+
+**Narzędzie:** `node stop-content.mjs <city_slug> [--stops 21,22] [--notify <kanał>] [--publish] [--dry]` (Hermes) — research,
+pisanie, walidator, kontrola Claude, zapis do `ops.stop_research`; publikacja (`ops.stop_publish_pl` + `cities.content_v2`) tylko z
+`--publish` i tylko przy werdykcie ok wszystkich przystanków. Uruchamiane po zatwierdzeniu szkicu (`trip-draft`), nie automatycznie.
+**Wzorce jakości** (Frasassi, zaakceptowane przez JP): `references/stop-content-examples/` — `20-parking.json` (praktyczny),
+`21-grotte.json` (wszystkie bloki), `22-san-vittore.json` (kościół, legenda i popkultura `none`), `23-valadier.json`.
+
 ---
 
 ## Format plików (Tryb A)
@@ -201,15 +244,15 @@ Każdy z tych błędów JP już raz poprawiał. Pełna analiza: `docs/WNIOSKI-Z-
    parkingu i ceny, strukturę `_notes`, kilometry i czasy dojazdu, quest/wskazówkę przy zabytkach.
 2. **Ocena merytoryczna** — przejdź przez listę i przy każdym punkcie zapisz, co nie spełnia zasad:
    - opis rodzica spełnia minimum głębokości (4 akapity i 300 słów dla zabytku; 2 akapity i 120 słów dla ulicy,
-     punktu widokowego, zdjęcia), ma elementy szkieletu (hak, historia i ludzie, „Kim był…”, co oglądać z miejscem,
-     legenda, ciekawostka/popkultura/znaczenie dziś), a każdy akapit wnosi nową treść,
-   - **research.md** (gdy jest dołączony): czy opis wykorzystał jego materiał — ludzi, detale do oglądania, popkulturę
-     i **legendy**. Zgłoś jako **BŁĄD**: legendę z researchu pominiętą w opisie, legendę podaną jako fakt, legendę bez
-     oznaczenia „Legenda mówi…”/„Według tradycji…”. Brak linijki „Legendy:” przy zabytku w researchu = uwaga.
+     punktu widokowego, zdjęcia), ma elementy szkieletu (hak, historia i ludzie, „Kim był…”, co oglądać z miejscem),
+     a każdy akapit wnosi nową treść; legenda, ciekawostka i popkultura NIE są opowiadane w opisie (osobne bloki),
+   - **research.md** (gdy jest dołączony): czy opis wykorzystał jego materiał — ludzi i detale do oglądania. Legendy,
+     ciekawostki i popkultura z researchu idą do bloków (stop-content.mjs), nie do opisu: **BŁĄD** to legenda opowiedziana
+     w opisie (więcej niż jedno zdanie-zapowiedź) albo legenda podana jako fakt. Brak linijki „Legendy:” przy zabytku w researchu = uwaga.
      Rozbudowa opisu może brać fakty wyłącznie z researchu; fakt spoza researchu bez źródła = błąd,
    - wyjaśnieni święci, bóstwa, artyści, terminy architektoniczne, symbole (zasada turysty),
-   - legendy opowiedziane i oznaczone jako legenda, nie fakt,
-   - popkultura wykorzystana, gdy potwierdzona — i tylko ze źródłem,
+   - legendy (w bloku `legend`) oznaczone jako legenda, nie fakt,
+   - popkultura (w bloku `pop_culture`) tylko potwierdzona źródłem,
    - quest wynika z konkretnego detalu z researchu, jest wykonalny na miejscu, nie jest quizem,
    - wskazówka pomaga, nie powtarza questu,
    - plan dnia = tylko czas na miejscu, od parkingu do ostatniego punktu,

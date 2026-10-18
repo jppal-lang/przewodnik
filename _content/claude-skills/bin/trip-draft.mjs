@@ -6,6 +6,7 @@
 // 2) PISANIE  — GPT (OpenRouter, zadanie „draft”) pisze meta + pl według umiejętności
 // 3) KONTROLA — walidator + Claude (trip-review); błędy wracają do GPT, najwyżej 2 rundy
 // 4) ZAPIS    — nowa wersja „draft” w historii (tabele na żywo nietknięte) + link podglądu
+// 5) DALEJ    — po zatwierdzeniu: stop-content.mjs <slug> (bloki legenda/ciekawostka/fun fact/popkultura z przypisami) — ręcznie, nie automatycznie
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { claude, openrouter, openrouterJson, extractJson, log, db, spent } from './lib.mjs';
@@ -42,13 +43,15 @@ meta = {
 content = {
  "lang": "pl",
  "city": {"title": "…", "region_label": "<sama nazwa regionu>", "subtitle": "…", "lead": "…", "good_to_know": "…", "hero_note": null, "local_food": "…"},
- "stops": { "<stop_key>": {"name": "…", "desc_paragraphs": ["1 hak: dlaczego warto tu stanąć", "2 historia i ludzie", "3 Kim był/była…", "4 co oglądać (dokładne miejsce)", "5 Legenda mówi… / Według tradycji… (na końcu: co wiadomo historycznie)", "6 ciekawostka / popkultura / znaczenie dziś"], "kids_box": "…", "hint": "…", "local_flavor": "…",
+ "stops": { "<stop_key>": {"name": "…", "desc_paragraphs": ["1 hak: dlaczego warto tu stanąć", "2 historia i ludzie", "3 Kim był/była…", "4 co oglądać (dokładne miejsce)"], "kids_box": "…", "hint": "…", "local_flavor": "…",
             "practical_note": null, "dress_code": null, "photo_task": "…"}, … },
  "day_plan": { "<stop_key>": "HH:MM — co się dzieje na miejscu", … },
  "emergency": { "1": {"label": "…", "description": "…"}, … },
  "_notes": [ {"stop_key": "…", "field": "a|b|c|d|e|f|g", "note": "…"} ]
 }
-Wzór desc_paragraphs pokazuje szkielet zabytku (6 elementów); ulica/punkt widokowy/zdjęcie — 2 akapity, parking i lokale — 1 (patrz GŁĘBOKOŚĆ OPISU).
+Wzór desc_paragraphs pokazuje szkielet zabytku (hak, historia i ludzie, „Kim był…”, co oglądać); ulica/punkt widokowy/zdjęcie — 2 akapity,
+parking i lokale — 1 (patrz GŁĘBOKOŚĆ OPISU). Legenda, ciekawostka i popkultura NIE wchodzą do desc_paragraphs (standard docs/TRESC-PRZYSTANKU.md):
+po zatwierdzeniu szkicu powstają jako osobne bloki z przypisami (stop-content.mjs); w opisie najwyżej jedno zdanie-zapowiedź.
 Kategorie: parking, monument, museum, church, synagogue, castle, viewpoint, street, house, photo, park, icecream, sweets, restaurant.
 Przystanek 01 = parking. 6–11 przystanków. Restauracja (finał): ocena ≥ 4,1 i > 100 opinii, telefon i strona obowiązkowe.`;
 
@@ -119,7 +122,7 @@ Wynik: Markdown, każdy fakt ze źródłem (URL). Nic nie zmyślaj.`, { web: tru
 Miasto: ${name}, slug "${slug}", region "${region}", kraj "${country}", ${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}.
 Życzenia JP: ${brief || 'brak szczególnych'}.
 Pisz po polsku według WSZYSTKICH zasad umiejętności. Korzystaj wyłącznie z faktów z researchu poniżej;
-każda legenda z researchu („Legendy: …”) trafia do opisu w osobnym, oznaczonym akapicie;
+legend, ciekawostek i popkultury z researchu NIE opowiadaj w opisie (osobne bloki, stop-content.mjs) — najwyżej jedno zdanie-zapowiedź;
 czego nie ma w researchu — null / unverified / notatka w _notes. Questy wynikają z detali z researchu.
 OPISY RODZICA (desc_paragraphs) ZABYTKÓW I MIEJSC (monument, church, museum, castle, house, synagogue, viewpoint, street, photo, park)
 w tej odpowiedzi wpisz tylko ROBOCZO (2 akapity po 2–3 zdania, hak i historia) — pełne opisy powstaną zaraz potem, osobno dla każdego
@@ -181,7 +184,10 @@ ${research}`, 'draft');
   await notify(channel, `📝 **${name} — szkic v${saved.version}** (${saved.stops} przystanków) · ${verdictLine(rv)}\n` +
     (rv.summary ? `${rv.summary}\n` : '') + factsLine(rv) +
     (rv.errors?.length ? `Do poprawy:\n${rv.errors.slice(0, 6).map(e => `• ${e.stop_key ?? 'miasto'}: ${e.problem}`).join('\n')}\n` : '') +
-    `Podgląd: ${url}\nNapisz, co zmienić — albo „zatwierdzam”.`);
+    `Podgląd: ${url}\nNapisz, co zmienić — albo „zatwierdzam”.\n` +
+    `Po zatwierdzeniu: bloki legenda / ciekawostka / fun fact / popkultura z przypisami — node stop-content.mjs ${slug} --notify <kanał>.`);
+  // 5) następny krok (nie uruchamiany automatycznie): treść przystanków według standardu, dopiero po akceptacji szkicu przez JP
+  log(`${slug}: następny krok po zatwierdzeniu szkicu → node stop-content.mjs ${slug} [--notify <kanał>] (bloki i przypisy wg docs/TRESC-PRZYSTANKU.md)`);
   console.log(JSON.stringify(out, null, 2));
 }
 

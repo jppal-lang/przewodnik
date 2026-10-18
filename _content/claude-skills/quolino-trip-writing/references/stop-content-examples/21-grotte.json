@@ -1,0 +1,191 @@
+{
+  "stop_id": 21,
+  "stop_key": "frasassi-02",
+  "marked": {
+    "desc_paragraphs": [
+      "25 września 1971 roku Rolando Silvestri z klubu Gruppo Speleologico Marchigiano CAI w Ankonie zauważył, że z małego otworu na zboczu góry wydobywa się silny prąd powietrza: znak, że w środku jest wielka pustka [2][7]. Wyprawą dowodził Giancarlo Cappanera [2][3][7]. Odkrywcy wrzucili w szczelinę kamień i z czasu spadania oszacowali głębokość na ponad sto metrów; lin, które mieli ze sobą, nie wystarczyło, żeby dosięgnąć dna [2][7]. Pierwszą salę nazwali Abisso Ancona, na cześć swojego miasta [2]. Ma ponad 2 miliony metrów sześciennych objętości [10][20].",
+      "Jaskinie wyrzeźbiła woda. Około miliona lat temu rzeka Sentino płynęła w wąwozie znacznie wyżej niż dziś. Jej zimna woda mieszała się z siarkową wodą podchodzącą z głębi, a taka mieszanka rozpuszczała wapień dużo szybciej niż zwykła woda [2][14]. W środku przez cały rok jest stałe 14 stopni [2][4], a wilgotność sięga prawie stu procent [2]. Część jaskiń otwarto dla zwiedzających 1 września 1974 roku [1][2][4].",
+      "Trasa turystyczna ma około półtora kilometra [1] i zajmuje około godziny i kwadransa [4]. Prowadzi przez kilka sal, między innymi Abisso Ancona, Salę 200, Salę Świeczek, Salę Niedźwiedzicy i Salę Nieskończoności [1]. W Abisso Ancona stoją „Giganci”, stalagmity wysokie na około 20 metrów [8][16]. Sala 200 to korytarz długi na 200 metrów, stąd nazwa; na jej środku stoi Obelisk, stalagmit wysoki na 15 metrów [2]. Szukajcie też Miecza Damoklesa, największego stalaktytu jaskini: ma 7,40 metra długości i 150 centymetrów średnicy [2].",
+      "Sala Świeczek zawdzięcza nazwę mnóstwu małych, walcowatych stalagmitów, które wyglądają jak świeczki na podstawkach [2][8]. W Sali Niedźwiedzicy woda wyrzeźbiła głaz przypominający niedźwiedzia [2]. A Sala Nieskończoności ma swoją nazwę od odkrywców, którzy stracili w niej orientację i kilka razy obeszli ją dookoła, zanim znaleźli drogę dalej [2]. Organowe Piszczałki, cienkie kamienne formy, dźwięczą, gdy się w nie uderzy [2].",
+      "Praktycznie: w jaskini jest chłodno i wilgotno, więc nawet latem weźcie bluzy dla wszystkich i wygodne buty [4]. Osoby o ograniczonej mobilności i wózki dojadą tylko do początku drugiej sali, Sali 200 [4][33]."
+    ],
+    "legend": {
+      "text": "Nad wąwozem Frasassi stoi średniowieczny zamek Pierosara, a z jego nazwą wiąże się legenda. Sara była zaręczona z Pierem. Zakochał się w niej hrabia Rovellone, pan sąsiedniego zamku Rotorscio, i pewnej nocy wdarł się do twierdzy, żeby ją porwać. Mieszkańcy zamknęli bramy i stanęli do walki. Osaczony hrabia zabił Sarę, a śmiertelnie ranny Piero skonał u jej boku. Od imion zakochanych zamek, nazywany wcześniej Castel Petroso, miał dostać nazwę Pierosara [21].",
+      "trace": "Ze średniowiecznego zamku przetrwały mury, bramy, wieża i kościół San Sebastiano [21]. Pierosara jest jednym z przystanków turystycznego paszportu Frasassi [22].",
+      "history": "W dokumentach z 981 roku pojawia się okręg Castel Petroso, a w 1212 roku zamek przeszedł pod władzę Fabriano [21]. Strzegł wejścia do wąwozów Frasassi i Rossa [21]. Opowieść o Pierze i Sarze to legenda, nie wydarzenie potwierdzone w źródłach [21]."
+    },
+    "curiosity": {
+      "text": "W niższych, wciąż aktywnych korytarzach Frasassi płyną strumienie z siarkowodorem, a na ścianach zwisają śluzowate sople bakterii, nazywane przez naukowców „snottites” (od angielskiego „snot”, czyli smark) [11]. Są kwaśne jak elektrolit w akumulatorze: mają pH 0–1 [11][26]. Bakterie czerpią energię z siarkowodoru i tlenu, a jako produkt uboczny wytwarzają kwas siarkowy, który rozpuszcza wapień i przyspiesza powstawanie jaskini [11][12]. Takie życie bez światła słonecznego zainteresowało NASA: jej Instytut Astrobiologii finansował badania genomów tych bakterii w programie o przystosowaniu życia poza Ziemią [26]."
+    },
+    "fun_fact": {
+      "text": "Czy wiesz, że w pierwszej sali jaskini, Abisso Ancona, zmieściłaby się cała katedra w Mediolanie [2][10][13][16]?"
+    },
+    "pop_culture": {
+      "items": [
+        {
+          "title": "Grotto",
+          "year": "2016",
+          "text": "Familijny film fantasy w reżyserii Micol Pallucci, nakręcony w całości w Grotte di Frasassi. Grupa dzieci trafia do podziemnego świata, a przewodnikiem jest gadający stalagmit Grotto [28][29]. Wygrał Giffoni Film Festival 2015 w kategorii filmów +6 [29]."
+        },
+        {
+          "title": "Gormiti – The New Era",
+          "year": "2024",
+          "text": "Aktorski serial dla dzieci, kręcony między innymi w jaskiniach Frasassi; emitowały go Rai2, Rai Gulp i RaiPlay [30][31]."
+        },
+        {
+          "title": "Il Volo w jaskini",
+          "year": "2021",
+          "text": "26 września 2021 roku, na 50-lecie odkrycia, trio Il Volo zaśpiewało w Grotte di Frasassi [9]."
+        }
+      ]
+    }
+  },
+  "state": {
+    "legend": {
+      "state": "found"
+    },
+    "curiosity": {
+      "state": "found"
+    },
+    "fun_fact": {
+      "state": "found"
+    },
+    "pop_culture": {
+      "state": "found"
+    }
+  },
+  "sources": [
+    {
+      "n": 1,
+      "url": "https://fondoambiente.it/luoghi/grotte-di-frasassi",
+      "title": "Grotte di Frasassi (FAI)",
+      "lang": "it"
+    },
+    {
+      "n": 2,
+      "url": "https://it.wikipedia.org/wiki/Grotte_di_Frasassi",
+      "title": "Grotte di Frasassi (it.wikipedia)",
+      "lang": "it"
+    },
+    {
+      "n": 3,
+      "url": "https://en.wikipedia.org/wiki/Frasassi_Caves",
+      "title": "Frasassi Caves (en.wikipedia)",
+      "lang": "en"
+    },
+    {
+      "n": 4,
+      "url": "https://www.frasassi.com/it/attivita/percorso-turistico/",
+      "title": "Percorso turistico (frasassi.com, operator)",
+      "lang": "it"
+    },
+    {
+      "n": 7,
+      "url": "https://www.quotidiano.net/speciali/cultura/grotte-di-frasassi-da-vivere-5036c0a5",
+      "title": "Grotte di Frasassi da vivere (Quotidiano.net)",
+      "lang": "it"
+    },
+    {
+      "n": 8,
+      "url": "https://www.familygo.eu/vacanze-con-bambini/viaggi/marche/grotte-di-frasassi-con-bambini-curiosita-info/",
+      "title": "Grotte di Frasassi con bambini (FamilyGo)",
+      "lang": "it"
+    },
+    {
+      "n": 9,
+      "url": "https://www.lapresse.it/spettacoli/musica/2021/09/26/il-volo-canta-nelle-grotte-di-frasassi-per-i-50-anni-dalla-scoperta/",
+      "title": "Il Volo canta nelle Grotte di Frasassi (LaPresse)",
+      "lang": "it"
+    },
+    {
+      "n": 10,
+      "url": "https://italia.googleblog.com/2015/07/meraviglie-sotterranee-su-street-view.html",
+      "title": "Meraviglie sotterranee su Street View (Google Italia)",
+      "lang": "it"
+    },
+    {
+      "n": 11,
+      "url": "https://www.psu.edu/news/research/story/snottites-other-biofilms-hasten-cave-formation",
+      "title": "Snottites, other biofilms hasten cave formation (Penn State)",
+      "lang": "en"
+    },
+    {
+      "n": 12,
+      "url": "https://digitalcommons.usf.edu/kip_articles/1903",
+      "title": "Jones, Polerecky, Galdenzi 2015, Chemical Geology 410",
+      "lang": "en"
+    },
+    {
+      "n": 13,
+      "url": "https://www.sportoutdoor24.it/viaggi/italia/grotte-di-frasassi/",
+      "title": "Grotte di Frasassi (SportOutdoor24)",
+      "lang": "it"
+    },
+    {
+      "n": 14,
+      "url": "https://www.italia.it/it/marche/ancona/grotte-di-frasassi",
+      "title": "Grotte di Frasassi (italia.it)",
+      "lang": "it"
+    },
+    {
+      "n": 16,
+      "url": "https://nuvomagazine.com/daily-edit/the-underground-world-of-the-frasassi-caves",
+      "title": "The underground world of the Frasassi Caves (Nuvo)",
+      "lang": "en"
+    },
+    {
+      "n": 20,
+      "url": "https://www.panorama.it/tempo-libero/viaggi/grotte-frasassi-marche-grotta-del-vento-toscana",
+      "title": "Grotte di Frasassi e Grotta del Vento (Panorama)",
+      "lang": "it"
+    },
+    {
+      "n": 21,
+      "url": "https://www.sportoutdoor24.it/?p=675205",
+      "title": "La leggenda di Pierosara (SportOutdoor24)",
+      "lang": "it"
+    },
+    {
+      "n": 22,
+      "url": "https://www.frasassi.com/en/passport/",
+      "title": "Tourist Passport (frasassi.com)",
+      "lang": "en"
+    },
+    {
+      "n": 26,
+      "url": "https://astrobiology.nasa.gov/nai/annual-reports/2007/psu/genomics-of-sulfidic-cave-extremophiles-supplement-to-nna04cc06a/index.html",
+      "title": "Genomics of sulfidic cave extremophiles (NASA Astrobiology Institute)",
+      "lang": "en"
+    },
+    {
+      "n": 28,
+      "url": "https://www.cinemaitaliano.info/news/34379/grotto-al-cinema-in-2d-e-3d-dal-24-marzo.html",
+      "title": "Grotto al cinema (CinemaItaliano)",
+      "lang": "it"
+    },
+    {
+      "n": 29,
+      "url": "https://www.panorama.it/grotto-film-grotte-frasassi-backstage",
+      "title": "Grotto, backstage (Panorama)",
+      "lang": "it"
+    },
+    {
+      "n": 30,
+      "url": "https://www.ilrestodelcarlino.it/ancona/cronaca/le-grotte-di-frasassi-ospiteranno-la-serie-tv-gormiti-the-new-era-2c98d97d",
+      "title": "Gormiti The New Era nelle grotte (il Resto del Carlino)",
+      "lang": "it"
+    },
+    {
+      "n": 31,
+      "url": "https://www.ilrestodelcarlino.it/ancona/cultura/grotte-di-frasassi-casa-dei-gormiti-anteprima-sanremo-06e827f2",
+      "title": "Grotte di Frasassi casa dei Gormiti (il Resto del Carlino)",
+      "lang": "it"
+    },
+    {
+      "n": 33,
+      "url": "https://www.viaggiapiccoli.com/grotte-di-frasassi/",
+      "title": "Grotte di Frasassi con i bambini (ViaggiaPiccoli)",
+      "lang": "it"
+    }
+  ]
+}
