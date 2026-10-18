@@ -20,3 +20,7 @@ H=hermes-quolino-hermes-agent-1
 17 6 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node gastro-refresh.mjs >> /root/quolino-web/gastro.log 2>&1
 47 6 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node links-check.mjs >> /root/quolino-web/links.log 2>&1
 13 7 1 * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node cost-report.mjs >> /root/quolino-web/costs.log 2>&1
+# inspektor językowy (docs/INSPEKTOR-JEZYKOWY.md): co 15 min tylko po zmianie (kod strony, treści w bazie, UI) — nowe/rozwiązane problemy na #jezyki;
+# w niedzielę pełny przegląd wszystkich stron jako siatka bezpieczeństwa (blokada w skrypcie: przebiegi się nie nakładają)
+7-59/15 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node lang-inspect.mjs --changed >> /root/quolino-web/lang-inspect.log 2>&1
+37 5 * * 0   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node lang-inspect.mjs >> /root/quolino-web/lang-inspect.log 2>&1

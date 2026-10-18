@@ -32,7 +32,7 @@
 
 <main class="pol" id="mainContent">
   <h1>Prywatność i pliki w przeglądarce</h1>
-  <p class="lead">Quolino nie używa ciasteczek śledzących, Google Analytics, pikseli reklamowych ani reklam. Nie zbieramy imion, nazwisk, adresów e-mail ani zdjęć. Dlatego nie pokazujemy baneru zgody: nie ma na co się zgadzać.</p>
+  <p class="lead">Quolino nie używa ciasteczek śledzących, Google Analytics, pikseli reklamowych ani reklam. Nie zbieramy imion, nazwisk ani zdjęć. Adres e-mail zapisujemy tylko wtedy, gdy sam założysz konto rodzica (konto jest dobrowolne). Nie pokazujemy baneru zgody, bo nie używamy niczego, co by jej wymagało.</p>
 
   <h2>Co zapisujemy w Twojej przeglądarce</h2>
   <p>Tylko w pamięci przeglądarki (<code>localStorage</code>), na Twoim urządzeniu. Nie są to ciasteczka i nie są wysyłane do nas przy każdym wejściu na stronę. Możesz je w każdej chwili usunąć w ustawieniach przeglądarki.</p>
@@ -44,6 +44,7 @@
     <li><code>qc.kid.avatar</code>, <code>qc.kid.nicks</code> — wybrana postać Quo i wymyślone ksywki dzieci (bez imion i wieku), tylko na urządzeniu.</li>
     <li><code>qc.album</code> — które miejsca zdobyło dziecko (album naklejek), tylko na urządzeniu.</li>
     <li><code>qc.parent.shared</code>, <code>qc.parent.codes</code>, <code>qc.parent.news</code> — panel rodzica: udostępnione wycieczki, wpisane kody i zgoda na newsletter, tylko na urządzeniu.</li>
+    <li><code>qc.session</code> — sesja logowania do konta rodzica (krótko ważny token i token odświeżania). Znika po wylogowaniu.</li>
     <li><code>qc.access</code> — klucz dostępu do pełnych wycieczek z linku, który dostałeś. Wysyłamy go tylko do sprawdzenia, czy wycieczka jest dla Ciebie otwarta.</li>
     <li><code>quolino_album:…</code> — zdjęcia z zadań foto. Zostają wyłącznie na urządzeniu, nie trafiają na serwer.</li>
     <li><code>quolino_client</code> — losowy numer przeglądarki, używany tylko przy wysłaniu oceny wycieczki, żeby jedno urządzenie nie głosowało wiele razy. Nie zawiera żadnych danych o Tobie.</li>
@@ -52,6 +53,20 @@
     <li><code>quolino_migrated</code>, <code>quolino_migration_expiry</code> — jednorazowe przeniesienie ustawień ze starej nazwy serwisu (klucze <code>questini_…</code>).</li>
     <li>W pamięci sesji (znika po zamknięciu karty): <code>quolino_kidmode</code> — czy włączony jest widok dziecka.</li>
   </ul>
+
+  <h2>Konto rodzica</h2>
+  <p>Konto jest bezpłatne i dobrowolne. Bez konta możesz czytać zapowiedzi i opisy miejsc. Konto otwiera pełne wycieczki, legendy, ciekawostki i misje dla dzieci.</p>
+  <ul>
+    <li><strong>Co zapisujemy:</strong> adres e-mail, hasło w postaci nieodwracalnego skrótu (samego hasła nie znamy), datę założenia konta i ostatniego logowania. Po wprowadzeniu wyboru darmowej wycieczki i zakupów — także, które trasy są dla Ciebie otwarte.</li>
+    <li><strong>Po co:</strong> żeby założyć konto, zalogować Cię i pokazać treści dostępne dla Twojego konta (podstawa: umowa o korzystanie z serwisu, art. 6 ust. 1 lit. b RODO).</li>
+    <li><strong>Gdzie:</strong> na naszym serwerze w centrum danych we Frankfurcie (Niemcy). Wiadomości z linkiem potwierdzającym i do zmiany hasła wysyła w naszym imieniu firma Brevo (Sendinblue SAS, Paryż, Francja). Nie wysyłamy newslettera bez Twojej osobnej zgody.</li>
+    <li><strong>Ochrona przed botami:</strong> przy zakładaniu konta i zmianie hasła przeglądarka rozwiązuje krótkie zadanie obliczeniowe z naszego serwera (bez zewnętrznych firm). Z adresu IP zapisujemy tylko skrót zmieniany codziennie, żeby ograniczyć liczbę prób; te zapisy usuwamy po 30 dniach.</li>
+    <li><strong>Ograniczenie nadużyć:</strong> przy otwarciu pełnej wycieczki zapisujemy numer konta, miasto, język i czas, żeby wykryć masowe pobieranie treści. Usuwamy to po 30 dniach.</li>
+    <li><strong>Jak długo:</strong> konto, którego nie potwierdzono linkiem z e-maila, usuwamy automatycznie po 48 godzinach. Potwierdzone konto trzymamy, dopóki go nie usuniesz — nie kasujemy go za brak aktywności, bo przechowuje Twoją darmową wycieczkę i zakupy.</li>
+    <li><strong>Po usunięciu konta</strong> zostaje wyłącznie nieodwracalny skrót adresu e-mail z informacją, że darmowa wycieczka została już wykorzystana. Nie da się z niego odczytać adresu. Służy tylko temu, żeby ponowne założenie konta na ten sam adres nie dawało kolejnej darmowej trasy (nasz uzasadniony interes, art. 6 ust. 1 lit. f RODO).</li>
+    <li><strong>Usunięcie konta:</strong> do czasu dodania przycisku w panelu napisz przez formularz kontaktowy z adresu konta — usuniemy je.</li>
+  </ul>
+  <p>Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia, przeniesienia, ograniczenia przetwarzania i sprzeciwu, a także prawo skargi do Prezesa Urzędu Ochrony Danych Osobowych.</p>
 
   <h2>Statystyki odwiedzin</h2>
   <p>Liczymy odwiedziny programem <strong>Umami</strong> działającym na naszym własnym serwerze. Skrypt wczytuje się z naszej domeny, a dane nie trafiają do żadnej zewnętrznej firmy analitycznej.</p>
@@ -75,7 +90,7 @@
 
   <h2>Kontakt</h2>
   <p>Pytania o prywatność: przez formularz kontaktowy na stronie. Adres e-mail podany w formularzu (nieobowiązkowy) służy wyłącznie do odpowiedzi na tę wiadomość i jest usuwany po 90 dniach. Z adresu IP zapisujemy tylko skrót zmieniany codziennie, który służy do ograniczenia spamu.</p>
-  <p class="note">Wersja polska. Pozostałe języki dodamy wkrótce. Ostatnia aktualizacja: 17 października 2026. Gdy wprowadzimy konta użytkowników, ta strona zostanie rozszerzona o opis danych konta i plików sesji.</p>
+  <p class="note">Wersja polska. Pozostałe języki dodamy wkrótce. Ostatnia aktualizacja: 18 października 2026.</p>
 </main>
 
 <footer class="footer">
