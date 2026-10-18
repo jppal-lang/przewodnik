@@ -12,7 +12,7 @@
   'use strict';
 
   var NS = 'http://www.w3.org/2000/svg';
-  var ICONS = 'media/icons/';
+  var ICONS = '/media/icons/';
   var POSE = { run1: 'pose-08-running', run2: 'pose-09-sprint', sit: 'pose-05-curious-sitting', joy: 'pose-13-celebration-jump', leap: 'pose-11-leaping-forward' };
   // Kraje zapowiedziane przez JP (2026-10-07). Gdy kraj dostanie miasta w bazie, sam przechodzi do „gotowych”.
   var PLANNED = ['pl', 'cz', 'fr', 'gr'];
@@ -203,13 +203,13 @@
       var box = el('section', 'atlas-country');
       box.setAttribute('aria-label', co.name);
       box.innerHTML = solo ? '' : '<div class="atlas-country__head"><h3>' + esc(co.name) + '</h3>' +
-        '<a href="country.html?k=' + encodeURIComponent(code) + '"><span>' + esc(ui('home.country_all', 'Zobacz cały kraj')) + '</span><span aria-hidden="true">&rarr;</span></a></div>';
+        '<a href="/country.html?k=' + encodeURIComponent(code) + '"><span>' + esc(ui('home.country_all', 'Zobacz cały kraj')) + '</span><span aria-hidden="true">&rarr;</span></a></div>';
       var ol = el('ol', 'atlas-regions');
       co.regions.forEach(function (r) {
         r.no = ++no;
         var li = el('li');
         var a = el('a', 'atlas-region');
-        a.href = 'region.html?r=' + encodeURIComponent(r.slug);
+        a.href = '/region.html?r=' + encodeURIComponent(r.slug);
         a.setAttribute('data-region', r.slug);
         a.style.setProperty('--team', r.team);
         var base = o.imgBase(r.cover);
@@ -334,7 +334,7 @@
       stops = [];
       co.regions.forEach(function (r) {
         stops.push({ pt: r.pt, live: true, cap: true, no: r.no, label: r.name, meta: r.cities.length + ' ' + ui('home.region_ready', 'gotowe plany'),
-          href: 'region.html?r=' + encodeURIComponent(r.slug), region: r.slug, team: r.team });
+          href: '/region.html?r=' + encodeURIComponent(r.slug), region: r.slug, team: r.team });
         r.cities.forEach(function (c) {
           var p = proj(+c.lon, +c.lat);
           gDots.appendChild(svg('circle', { cx: p[0], cy: p[1], r: (4.5 * countryVB(code).w / Math.max(1, map.clientWidth)).toFixed(2), class: 'atlas-city' }));

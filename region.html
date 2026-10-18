@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=29">
-<script src="i18n-ui.js?v=5"></script>
+<script src="i18n-ui.js?v=6"></script>
 </head>
 <body>
 
@@ -96,8 +96,8 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var FALLBACK = 'pl';
 
 // ══════════════ STATE ══════════════
-var regionSlug  = new URLSearchParams(location.search).get('r');
-var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
+var regionSlug  = (window.QPAGE && QPAGE.kind === 'region' && QPAGE.id) || new URLSearchParams(location.search).get('r');   // ładny adres z serwera (JP 2026-10-18)
+var currentLang = new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || FALLBACK;
 var langList = [];
 var uiStrings = {};
 
@@ -117,7 +117,7 @@ fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(fun
 function cityHref(c) {
   var P = PATHS[c.slug], L = String(currentLang || FALLBACK).toLowerCase();
   if (P && (P[L] || P[FALLBACK])) return P[L] || P[FALLBACK];
-  if (!c.region_slug) return 'city.html?c=' + encodeURIComponent(c.slug);
+  if (!c.region_slug) return '/city.html?c=' + encodeURIComponent(c.slug);
   return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(String(c.country || 'it').toLowerCase()) + '/' +
     encodeURIComponent(REGION_URL[c.region_slug] || c.region_slug) + '/' + encodeURIComponent(c.url_slug || c.slug) + '/';
 }
@@ -145,7 +145,7 @@ function stopsLabel(n) {
 // Nazwa wynika ze slugow: media/tours/quolino-<kraj>-<miasto>-tile-384.webp itd.
 // Zadnych zapytan do Wikipedii i zadnego cache w localStorage — pliki sa nasze,
 // wiec wystarczy poprawna sciezka i przegladarkowy cache.
-var IMG_DIR = 'media/tours/';
+var IMG_DIR = '/media/tours/';
 
 function imgBase(city) {
   if (!city) return '';
@@ -184,6 +184,7 @@ function loadPage(lang) {
   currentLang = lang;
   savePref(lang);
   document.documentElement.lang = lang;
+  if (window.QPlace) QPlace.sync('region', regionSlug, lang);   // adres w pasku = ładny adres w tym języku
 
   if (!regionSlug) { location.replace('/#regiony'); return; }   // goły adres bez regionu → mapa regionów
 
@@ -235,7 +236,7 @@ function loadPage(lang) {
 
     var cities = allCities.filter(function(c) { return c.region_slug === regionSlug; });
 
-    document.title = regionName + ' — Quolino';
+    document.title = regionName + ' ' + ui('seo.with_kids', 'z dziećmi') + ' — ' + ui('seo.trip_plans', 'gotowe plany wycieczek') + ' | Quolino';
     buildCrumbs(continent, countryName, regionName, region.country_slug);
     buildRegion(region, regionName, countryName, country, rTr, cities, cityTrs, stopCount,
                 allRegions, regionTrs, allCities, countries, countryTrs);
@@ -247,7 +248,7 @@ function loadPage(lang) {
 
 function fail(msg) {
   document.getElementById('regionContent').innerHTML =
-    '<div class="state-msg">' + esc(msg) + '<br><br><a href="./">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
+    '<div class="state-msg">' + esc(msg) + '<br><br><a href="/">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
 }
 
 // ══════════════ BREADCRUMBS ══════════════
@@ -258,14 +259,14 @@ function buildCrumbs(continent, countryName, regionName, countrySlug) {
   var homeLabel = ui('nav.home', 'Strona główna');
   var html = '';
 
-  html += '<a class="crumb-home" href="./" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
+  html += '<a class="crumb-home" href="/" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
             '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>' +
           '</a>';
 
   var levels = [
-    { label: ui('continent.' + continent, 'Europa'), href: './#regiony' },
-    { label: countryName,                            href: countrySlug ? 'country.html?k=' + encodeURIComponent(countrySlug) : './#regiony' },
+    { label: ui('continent.' + continent, 'Europa'), href: '/#regiony' },
+    { label: countryName,                            href: countrySlug ? '/country.html?k=' + encodeURIComponent(countrySlug) : '/#regiony' },
     { label: regionName,                             href: null }
   ];
 
@@ -312,7 +313,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
       var oCt    = countryTrs.filter(function(t) { return t.country_slug === reg.country_slug; })[0];
       var oCoun  = oCt ? oCt.name : '';
       var oFlag  = (countries.filter(function(c) { return c.slug === reg.country_slug; })[0] || {}).flag_code || reg.country_slug;
-      html += '<a class="other-region-tile" href="region.html?r=' + encodeURIComponent(reg.slug) + '">';
+      html += '<a class="other-region-tile" href="/region.html?r=' + encodeURIComponent(reg.slug) + '">';
       html += '<div class="ort-body"><div class="ort-country">' + (oFlag ? '<img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="">' : '') + esc(oCoun) + '</div>';
       html += '<div class="ort-name">' + esc(oName) + '</div>';
       html += '<div class="ort-meta">' + published[reg.slug] + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';

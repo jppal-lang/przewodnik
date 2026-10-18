@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=29">
-<script src="i18n-ui.js?v=5"></script>
+<script src="i18n-ui.js?v=6"></script>
 </head>
 <body>
 
@@ -96,8 +96,8 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var FALLBACK = 'pl';
 
 // ══════════════ STATE ══════════════
-var countrySlug = new URLSearchParams(location.search).get('k');
-var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
+var countrySlug = (window.QPAGE && QPAGE.kind === 'country' && QPAGE.id) || new URLSearchParams(location.search).get('k');   // ładny adres z serwera (JP 2026-10-18)
+var currentLang = new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || FALLBACK;
 var langList = [];
 var uiStrings = {};
 
@@ -117,7 +117,7 @@ function ui(key, fb) { return uiStrings[key] || (window.QUI && window.QUI.t(key)
 // Nazwa wynika ze slugow: media/tours/<kraj>-<miasto>-tile-384.webp itd.
 // Zadnych zapytan do Wikipedii i zadnego cache w localStorage — pliki sa nasze,
 // wiec wystarczy poprawna sciezka i przegladarkowy cache.
-var IMG_DIR = 'media/tours/';
+var IMG_DIR = '/media/tours/';
 
 function imgBase(city) {
   if (!city) return '';
@@ -156,6 +156,7 @@ function loadPage(lang) {
   currentLang = lang;
   savePref(lang);
   document.documentElement.lang = lang;
+  if (window.QPlace) QPlace.sync('country', countrySlug, lang);   // adres w pasku = ładny adres w tym języku
 
   if (!countrySlug) { location.replace('/#regiony'); return; }   // goły adres bez kraju → mapa regionów na stronie głównej
 
@@ -193,7 +194,7 @@ function loadPage(lang) {
     var countryName = cTr ? cTr.name : countrySlug;
     var continent   = country.continent || 'europe';
 
-    document.title = countryName + ' — Quolino';
+    document.title = countryName + ' ' + ui('seo.with_kids', 'z dziećmi') + ' — ' + ui('seo.trip_plans', 'gotowe plany wycieczek') + ' | Quolino';
     buildCrumbs(continent, countryName);
     buildCountry(country, countryName, allRegions, regionTrs, allCities,
                  countries, countryTrs);
@@ -205,7 +206,7 @@ function loadPage(lang) {
 
 function fail(msg) {
   document.getElementById('pageContent').innerHTML =
-    '<div class="state-msg">' + esc(msg) + '<br><br><a href="./">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
+    '<div class="state-msg">' + esc(msg) + '<br><br><a href="/">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
 }
 
 // ══════════════ BREADCRUMBS ══════════════
@@ -216,13 +217,13 @@ function buildCrumbs(continent, countryName) {
   var homeLabel = ui('nav.home', 'Strona główna');
   var html = '';
 
-  html += '<a class="crumb-home" href="./" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
+  html += '<a class="crumb-home" href="/" title="' + esc(homeLabel) + '" aria-label="' + esc(homeLabel) + '">' +
             '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>' +
           '</a>';
 
   var levels = [
-    { label: ui('continent.' + continent, 'Europa'), href: './#regiony' },
+    { label: ui('continent.' + continent, 'Europa'), href: '/#regiony' },
     { label: countryName,                            href: null }
   ];
 
@@ -285,7 +286,7 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
       var oName = oTr ? oTr.name : oc.slug;
       var oCnt  = allRegions.filter(function(r) { return r.country_slug === oc.slug; })
                             .reduce(function(n, r) { return n + ((byRegion[r.slug] || []).length); }, 0);
-      html += '<a class="other-region-tile" href="country.html?k=' + encodeURIComponent(oc.slug) + '">';
+      html += '<a class="other-region-tile" href="/country.html?k=' + encodeURIComponent(oc.slug) + '">';
       html += '<div class="ort-body"><div class="ort-name">' + esc(oName) + '</div>';
       html += '<div class="ort-meta">' + oCnt + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
       html += '<div class="ort-go" aria-hidden="true">&rarr;</div></a>';
@@ -295,7 +296,7 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
 
   el.innerHTML = html;
 
-  if (window.QuoAtlas) QuoAtlas.render({ mount: 'atlas', start: country.slug, homeHref: './#regiony', lang: currentLang, ui: ui, imgBase: imgBase,
+  if (window.QuoAtlas) QuoAtlas.render({ mount: 'atlas', start: country.slug, homeHref: '/#regiony', lang: currentLang, ui: ui, imgBase: imgBase,
     regions: allRegions, regionTrs: regionTrs, countries: countries, countryTrs: countryTrs, cities: allCities });
 }
 
@@ -339,7 +340,7 @@ document.addEventListener('keydown', function(e) {
 loadPage(currentLang);
 </script>
 <script src="media/map/europe.js?v=3"></script>
-<script src="atlas.js?v=5"></script>
+<script src="atlas.js?v=6"></script>
 <script src="motion.js?v=4" defer></script>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>

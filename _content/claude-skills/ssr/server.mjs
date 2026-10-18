@@ -6,7 +6,8 @@
 //       Od 2026-10-17 (decyzja JP, SEO) każdy segment w języku strony: /pl/wlochy/umbria/perugia-z-dziecmi/,
 //       /en/italy/umbria/perugia-with-kids/, /de/italien/umbrien/perugia-mit-kindern/ — z nazw w *_translations (slugify, uk → łacinka)
 //   GET dawne /{lang}/{iso}/{region}/{miasto}/, /{lang}/{region}/{miasto}/, /wlochy/…/*.html, /city.html?c=…  → 301 na nowy adres (jeden skok)
-//   GET /{lang}/{kraj}/{region}/ → 302 /region.html?r=…, /{lang}/{kraj}/ → 302 /country.html?k=<iso> (kraj i region po lokalnemu albo dawnym kodem)
+//   GET /{lang}/{kraj}/{region}/ i /{lang}/{kraj}/ → region.html / country.html z serwera pod tym adresem (200, canonical, hreflang)
+//       od 2026-10-18 (JP: „adresy krajów i regionów jak miast”); kod ISO, dawny url_slug albo nazwa z innego języka → 301 na właściwy
 //   GET /paths.json                  → { miasto: { lang: adres } } dla linków na stronach statycznych (index, region)
 //   GET /city.html (bez ?c=, np. ?draft=) → statyczny szablon bez zmian
 //   GET /sitemap.xml                 → wszystkie opublikowane miasta × języki (z alternates)
@@ -22,6 +23,7 @@ const PORT = +(process.env.PORT ?? 8080);
 const API = (process.env.API_URL ?? 'https://api.quolino.com/rest/v1').replace(/\/$/, '');
 const SITE = (process.env.SITE_URL ?? 'https://quolino.com').replace(/\/$/, '');
 const TEMPLATE = process.env.TEMPLATE ?? '/site/city.html';
+const SITE_DIR = TEMPLATE.replace(/\/[^/]*$/, '');            // region.html i country.html leżą obok city.html
 const CACHE_SECONDS = +(process.env.CACHE_SECONDS ?? 300);
 const FALLBACK = 'pl';
 
@@ -82,6 +84,30 @@ const publishedCities = () => cached('cities', async () => {
   }
   return out;
 });
+// adresy krajów i regionów w każdym języku (także regionów bez opublikowanych miast — strona „wkrótce”);
+// ten sam wzór co segmenty miast, więc okruszki ze strony miasta trafiają dokładnie tutaj
+const placeSegs = () => cached('place_segs', async () => {
+  const [rs, cs, langs, ctr, rtr, cities] = await Promise.all([regionRows(), countryRows(), enabledLangs(),
+    api('country_translations?select=country_slug,lang,name'), api('region_translations?select=region_slug,lang,name'), publishedCities()]);
+  const all = [...new Set([FALLBACK, ...langs])];
+  const country = {}, region = {};
+  for (const c of cs) {
+    const code = String(c.slug).toLowerCase();
+    country[code] = { code, live: cities.some(m => m.country === code), seg: Object.fromEntries(all.map(l => [l, slugify(pickName(ctr, 'country_slug', c.slug, l)) || code])) };
+  }
+  for (const r of rs) {
+    const code = String(r.country_slug || '').toLowerCase();
+    if (!country[code]) continue;
+    region[r.slug] = { slug: r.slug, url: r.url_slug || r.slug, country: code, live: cities.some(m => m.region_slug === r.slug), seg: Object.fromEntries(all.map(l => [l,
+      { country: country[code].seg[l], region: slugify(pickName(rtr, 'region_slug', r.slug, l)) || r.url_slug || r.slug }])) };
+  }
+  return { country, region, langs: all };
+});
+const placePath = {
+  country: (p, l) => `/${l}/${p.seg[l] ?? p.seg[FALLBACK]}/`,
+  region: (p, l) => { const s = p.seg[l] ?? p.seg[FALLBACK]; return `/${l}/${s.country}/${s.region}/`; },
+};
+
 // język miasta jest „gotowy”, gdy ma opis miasta i tłumaczenie KAŻDEGO przystanku — inaczej strona
 // byłaby mieszanką języków (słabe SEO); taki język nie trafia do hreflang ani mapy strony
 const cityLangs = () => cached('city_langs', async () => {
@@ -281,6 +307,34 @@ async function renderCity(lang, country, region, slug, oldSchema) {
   return { status: 200, html };
 }
 
+// strona kraju / regionu pod ładnym adresem: statyczny szablon + parametry w window.QPAGE (zamiast ?k= / ?r=)
+async function renderPlace(kind, place, lang, langs) {
+  const ui = await uiDict(lang);
+  const u = (k, f) => ui[k] ?? f;
+  const table = kind === 'region' ? `region_translations?region_slug=eq.${encodeURIComponent(place.slug)}`
+                                  : `country_translations?country_slug=eq.${encodeURIComponent(place.code)}`;
+  const rows = await cached(`place:${kind}:${place.slug ?? place.code}`, () => api(`${table}&lang=in.(${lang},${FALLBACK})&select=*`).catch(() => []));
+  const tr = rows.find(r => r.lang === lang) ?? rows.find(r => r.lang === FALLBACK) ?? {};
+  const name = tr.name || place.slug || place.code.toUpperCase();
+  const title = `${name} ${u('seo.with_kids', 'z dziećmi')} — ${u('seo.trip_plans', 'gotowe plany wycieczek')} | Quolino`;
+  let desc = String(tr.description || tr.lead || '').trim();
+  if (desc.length > 300) desc = desc.slice(0, 297) + '…';
+  const url = (l) => SITE + placePath[kind](place, l);
+  let h = `<link rel="canonical" href="${esc(url(lang))}">\n`;
+  for (const l of langs) h += `<link rel="alternate" hreflang="${esc(l)}" href="${esc(url(l))}">\n`;
+  h += `<link rel="alternate" hreflang="x-default" href="${esc(url(FALLBACK))}">\n`;
+  if (desc) h += `<meta name="description" content="${esc(desc)}">\n<meta property="og:description" content="${esc(desc)}">\n`;
+  h += `<meta property="og:type" content="website">\n<meta property="og:title" content="${esc(name + ' — Quolino')}">\n<meta property="og:url" content="${esc(url(lang))}">\n`;
+  const paths = Object.fromEntries(langs.map(l => [l, placePath[kind](place, l)]));
+  h += `<script>window.QPAGE=${JSON.stringify({ kind, id: kind === 'region' ? place.slug : place.code, lang, paths }).replace(/</g, '\\u003c')};</script>\n`;
+  const file = `${SITE_DIR}/${kind}.html`;
+  const html = localizeUi(absolutize(readFileSync(file, 'utf8')), ui)
+    .replace(/<html lang="[^"]*">/, `<html lang="${esc(lang)}">`)
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+    .replace('</head>', h + '</head>');
+  return html;
+}
+
 // 301 ze starych adresów jednym skokiem: ?c=<slug> (lub dawny url) → /{lang}/{kraj}/{region}/{miasto}/
 async function legacyTarget(slug, lang, wanted) {
   const cities = await publishedCities();
@@ -297,6 +351,10 @@ async function pathsJson() {
       const langs = await langsFor(c);
       out[c.slug] = Object.fromEntries(langs.map(l => [l, cityPath(l, c)]));
     }
+    // adresy krajów i regionów (JP 2026-10-18): _country[iso][lang], _region[slug][lang] — strony statyczne przepisują na nie linki
+    const P = await placeSegs();
+    out._country = Object.fromEntries(Object.values(P.country).map(p => [p.code, Object.fromEntries(P.langs.map(l => [l, placePath.country(p, l)]))]));
+    out._region = Object.fromEntries(Object.values(P.region).map(p => [p.slug, Object.fromEntries(P.langs.map(l => [l, placePath.region(p, l)]))]));
     return JSON.stringify(out);
   });
 }
@@ -311,6 +369,16 @@ async function sitemap() {
         x += `<url><loc>${esc(cityUrl(l, c))}</loc>`;
         for (const a of langs) x += `<xhtml:link rel="alternate" hreflang="${a}" href="${esc(cityUrl(a, c))}"/>`;
         x += `<xhtml:link rel="alternate" hreflang="x-default" href="${esc(cityUrl(FALLBACK, c))}"/></url>\n`;
+      }
+    }
+    const P = await placeSegs();
+    for (const [kind, list] of [['country', Object.values(P.country)], ['region', Object.values(P.region)]]) {
+      for (const p of list.filter(p => p.live)) {
+        for (const l of P.langs) {
+          x += `<url><loc>${esc(SITE + placePath[kind](p, l))}</loc>`;
+          for (const a of P.langs) x += `<xhtml:link rel="alternate" hreflang="${a}" href="${esc(SITE + placePath[kind](p, a))}"/>`;
+          x += `<xhtml:link rel="alternate" hreflang="x-default" href="${esc(SITE + placePath[kind](p, FALLBACK))}"/></url>\n`;
+        }
       }
     }
     return x + '</urlset>\n';
@@ -349,26 +417,28 @@ http.createServer(async (req, res) => {
       const to = await legacyTarget(w[1], FALLBACK);
       return to ? redirect(res, to, url.search) : send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiej wycieczki. <a href="/">Quolino</a></p>');
     }
-    // Skrócone adresy: /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ → strony statyczne (302, docelowo SSR). Trzy segmenty z kodem kraju
+    // Kraj i region (JP 2026-10-18): /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ → strona z serwera pod tym adresem.
+    // Segment w innym języku, kod ISO albo dawny url_slug → 301 na adres w języku z adresu. Trzy segmenty z krajem
     // w drugim to region, nie stary adres miasta (kolizja z /{lang}/{region}/{miasto}/).
-    // segment kraju: kod ISO (dawny adres) albo nazwa w dowolnym języku → kod ISO
-    const allCities = await publishedCities();
-    const code = async (x) => {
-      if ((await countryRows()).some(c => c.slug === x)) return x;
-      for (const c of allCities) for (const s of Object.values(c.seg)) if (s.country === x) return c.country;
-      return null;
-    };
-    const tail = url.search ? '&' + url.search.slice(1) : '';
+    const P = await placeSegs();
+    const placeLang = (l) => (P.langs.includes(l) ? l : FALLBACK);
+    const findCountry = (x) => P.country[x] ?? Object.values(P.country).find(p => Object.values(p.seg).includes(x));
     const mc = url.pathname.match(RE_COUNTRY);
-    const ccode = mc && await code(mc[2]);
-    if (ccode) return send(res, 302, '', 'text/plain', { Location: `/country.html?k=${ccode}&lang=${mc[1]}${tail}` });
+    const pc = mc && findCountry(mc[2]);
+    if (pc) {
+      const l = placeLang(mc[1]), want = placePath.country(pc, l);
+      if (url.pathname !== want) return redirect(res, want, url.search);
+      return send(res, 200, await renderPlace('country', pc, l, P.langs));
+    }
     const mr = url.pathname.match(RE_OLD);
-    const rcode = mr && await code(mr[2]);
-    if (rcode) {
-      let reg = (await regionRows()).find(r => r.country_slug === rcode && (r.url_slug === mr[3] || r.slug === mr[3]));
-      if (!reg) { const c = allCities.find(c => c.country === rcode && Object.values(c.seg).some(s => s.region === mr[3])); if (c) reg = { slug: c.region_slug }; }
-      if (!reg) return send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiego regionu. <a href="/">Quolino</a></p>');
-      return send(res, 302, '', 'text/plain', { Location: `/region.html?r=${encodeURIComponent(reg.slug)}&lang=${mr[1]}${tail}` });
+    const rc = mr && findCountry(mr[2]);
+    if (rc) {
+      const pr = Object.values(P.region).find(p => p.country === rc.code &&
+        (p.slug === mr[3] || p.url === mr[3] || Object.values(p.seg).some(s => s.region === mr[3])));
+      if (!pr) return send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiego regionu. <a href="/">Quolino</a></p>');
+      const l = placeLang(mr[1]), want = placePath.region(pr, l);
+      if (url.pathname !== want) return redirect(res, want, url.search);
+      return send(res, 200, await renderPlace('region', pr, l, P.langs));
     }
     const n = url.pathname.match(RE_NEW);
     const o = !n && url.pathname.match(RE_OLD);

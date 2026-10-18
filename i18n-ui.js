@@ -143,4 +143,56 @@
     } catch (e) {}
     window.QAccess = { get: get, set: set, clear: function () { set(''); } };
   })();
+  // ── 5. Ładne adresy krajów i regionów (JP 2026-10-18) ───────────────────
+  // Serwer podaje mapę adresów (/pl/paths/: _country[iso][lang], _region[slug][lang]). Linki „/region.html?r=…”
+  // i „/country.html?k=…” budowane przez skrypty stron przepisujemy na /{lang}/{kraj}/{region}/ w języku strony,
+  // a QPlace.sync ustawia ładny adres w pasku (bez przeładowania), także po zmianie języka.
+  (function () {
+    var map = null, wait = [];
+    function lang() { return String(document.documentElement.lang || pageLang() || 'pl').toLowerCase(); }
+    function pathFor(kind, id, l) {
+      var m = map && map[kind === 'region' ? '_region' : '_country'], p = m && m[id];
+      return p ? (p[l] || p.pl || null) : null;
+    }
+    var RE = /^(?:https?:\/\/[^/]+)?\/?(region|country)\.html\?(?:[^#]*&)?(r|k)=([^&#]+)/;
+    function fix(root) {
+      if (!map || !root || !root.querySelectorAll) return;
+      var list = root.matches && root.matches('a[href]') ? [root] : [];
+      list = list.concat([].slice.call(root.querySelectorAll('a[href*="region.html?"],a[href*="country.html?"]')));
+      list.forEach(function (a) {
+        var m = (a.getAttribute('href') || '').match(RE);
+        if (!m) return;
+        var to = pathFor(m[1], decodeURIComponent(m[3]), lang());
+        if (to) a.setAttribute('href', to);
+      });
+    }
+    function ready(cb) { if (map) cb(); else wait.push(cb); }
+    try {
+      fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+        map = j || {};
+        fix(document);
+        wait.splice(0).forEach(function (cb) { try { cb(); } catch (e) {} });
+      }).catch(function () {});
+      new MutationObserver(function (muts) {
+        if (!map) return;
+        muts.forEach(function (mu) { [].forEach.call(mu.addedNodes || [], function (n) { if (n.nodeType === 1) fix(n); }); });
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    } catch (e) {}
+    function sync(kind, id, l) {
+      if (!id) return;
+      var known = window.QPAGE && window.QPAGE.kind === kind && window.QPAGE.paths && window.QPAGE.paths[l];
+      var go = function (to) {
+        if (!to) return;
+        if (location.pathname + location.search !== to) {
+          try { history.replaceState(history.state, '', to + location.hash); } catch (e) {}
+        }
+        var c = document.querySelector('link[rel="canonical"]');
+        if (!c) { c = document.createElement('link'); c.rel = 'canonical'; document.head.appendChild(c); }
+        c.href = location.origin + to;
+      };
+      if (known) go(known); else ready(function () { go(pathFor(kind, id, l)); fix(document); });
+      if (known) ready(function () { fix(document); });
+    }
+    window.QPlace = { sync: sync, path: pathFor, ready: ready };
+  })();
 })();

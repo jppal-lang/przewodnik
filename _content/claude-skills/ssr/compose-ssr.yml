@@ -1,6 +1,6 @@
 # Dopisać do /root/quolino-web/docker-compose.override.yml (sekcja services:).
 # Strony miast z bazy: /{lang}/{kraj}/{region}/{miasto}/ (nowy schemat), 301 ze starych adresów (/{lang}/{region}/{miasto}/, /city.html, /wlochy/*.html)
-# oraz skróty /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ (302 na country.html / region.html) i /sitemap.xml — reszta strony bez zmian (kontener web). Zmiana etykiet = `docker compose up -d ssr` (deploy.sh approve robi to sam).
+# oraz strony krajów i regionów /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ (region.html / country.html z serwera, 200; od 2026-10-18) i /sitemap.xml — reszta strony bez zmian (kontener web). Zmiana etykiet = `docker compose up -d ssr` (deploy.sh approve robi to sam).
 # UWAGA: w pliku compose „$” trzeba pisać jako „$$” (poniżej już tak jest).
 # Etykiety Traefika: skopiować nazwy entrypoint/certresolver z istniejącej usługi „web” (te same wartości).
   ssr:
