@@ -175,8 +175,11 @@
       }).catch(function () {});
       new MutationObserver(function (muts) {
         if (!map) return;
-        muts.forEach(function (mu) { [].forEach.call(mu.addedNodes || [], function (n) { if (n.nodeType === 1) fix(n); }); });
-      }).observe(document.documentElement, { childList: true, subtree: true });
+        muts.forEach(function (mu) {
+          if (mu.type === 'attributes') fix(mu.target);   // link podmieniany w miejscu (np. dymek na mapie: a.href = …)
+          else [].forEach.call(mu.addedNodes || [], function (n) { if (n.nodeType === 1) fix(n); });
+        });
+      }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
     } catch (e) {}
     function sync(kind, id, l) {
       if (!id) return;
