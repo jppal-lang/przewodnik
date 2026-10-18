@@ -58,6 +58,9 @@ Klucze localStorage do listy w `docs/BACKEND.md` §6: `qc.kid.avatar`, `qc.kid.n
   - plan dnia rodzica — zablokowany; pierwszy przystanek widoczny jako próbka;
   - gra dziecka (misje, zagadki, obrazek-nagroda) i kod QR — zablokowane; QR generuje się tylko dla trasy odblokowanej.
 - **Konta założone przed 1 czerwca 2027** zachowują darmową trasę oraz miasta, w które dziecko już grało (album na koncie).
+- **Trasy darmowe dla wszystkich** (JP 2026-10-18): miejsca, które są atrakcją same w sobie (np. Grotte di Frasassi,
+  Energylandia, Kopalnia Soli w Wieliczce), mają `cities.access = 'free'` — nie wymagają zakupu i **nie zużywają**
+  darmowego wyboru konta. Pozostałe trasy: `access = 'standard'`.
 - Odblokowanie innych tras: zakup albo kod `free_trip` (§2). Zapis: `entitlements` z `source = free | purchase | code | early`
   (`early` = miasta rozegrane przed startem płatności); jedna pozycja `free` na konto (indeks unikalny).
 - Kontrola dostępu musi być na serwerze (PostgREST z weryfikacją JWT z GoTrue + RLS), nie tylko w przeglądarce —

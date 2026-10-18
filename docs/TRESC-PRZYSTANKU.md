@@ -31,6 +31,7 @@ Podział ma być **jasny na pierwszy rzut oka**, bez mieszania bloków:
   w popkulturze” — z nazwami bloków, które przystanek naprawdę ma (stan `found`), bez treści i bez rozmytych podglądów.
 - **Zalogowany:** pod opisem bloki Legenda / Ciekawostka / W popkulturze jako osobne, nazwane karty, zawsze w tej kolejności.
 - Od 06.2027 ten sam podział, tylko warunkiem jest wykupiona trasa (`docs/KONTO-RODZICA.md` §4).
+  Trasy darmowe dla wszystkich (`cities.access = 'free'`, np. Frasassi, Wieliczka) nie wymagają zakupu.
 - Każdy blok ma **stan**: `found` (treść + przypisy) albo `none` z polem `checked` (gdzie szukano). Puste pole bez `checked`
   = błąd walidatora. Na stronie blok `none` się nie pokazuje.
 - Wszystkie bloki tłumaczone na 17 języków; przypisy `[n]` przechodzą przez tłumaczenie bez zmian.
@@ -100,9 +101,16 @@ Wszystkie opublikowane i szkicowane trasy przechodzą raz pełną ścieżkę:
 
 ## 7. Wdrożenie (kolejność)
 
-1. Baza: kolumny `legend`, `curiosity`, `fun_fact`, `pop_culture`, `sources` (jsonb) w `stop_translations` / `stops`;
-   widok publiczny: cały `desc_paragraphs` (bez znaczników `[n]`), tylko nazwy dostępnych bloków 2–4, bez `sources`
-   (zamiast obecnego `desc_paragraphs[1:2]`); bloki 2–4 dla zalogowanego, `sources` tylko dla redakcji.
+1. Baza — **gotowe** (`sql/2026-10-18-tresc-przystanku.sql`):
+   - `public.stop_blocks (stop_id, lang, legend, curiosity, fun_fact, pop_culture)` — czysty tekst, tłumaczony;
+     bez dostępu dla `web_anon` (strona dostaje go tylko przez `trip_full`). Tabela odrzuca tekst z przypisami.
+   - `ops.stop_research (stop_id, marked, state, sources, check_result)` — wersja PL z przypisami, stan bloków
+     (`found`/`none` + `checked`), źródła, wynik kontroli. Tylko redakcja i AI.
+   - `ops.stop_publish_pl(stop_id)` — kopiuje wersję redakcyjną do strony bez przypisów.
+   - `ops.stop_content_status` — stan każdego przystanku: bloki, liczba źródeł, przypisy bez źródła, źródła bez przypisu.
+   - `cities.access` (`standard` | `free`), `cities.content_v2` (miasto przerobione).
+   - `public_stops`: miasto z `content_v2` → cały opis; pozostałe → akapity 1–2 jak dotąd; kolumna `blocks` = nazwy
+     dostępnych bloków (pas „Po zalogowaniu…”). `trip_full`: dodane `stop_blocks`, przypisy wycięte, `stops.sources` usunięte.
 2. Hermes: research z pytaniami §2, pisanie bloków z przypisami, kontrola §5, format `pl.json` i import.
 3. Walidator i skill `quolino-trip-writing` zgodne z tym dokumentem.
 4. Strona: pas „Po zalogowaniu…” (niezalogowany), karty Legenda / Ciekawostka / W popkulturze (zalogowany),
