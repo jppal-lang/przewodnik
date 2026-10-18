@@ -240,6 +240,21 @@ function findBySeg(cities, lang, country, region, city) {
   for (const c of cities) for (const s of Object.values(c.seg)) if (s.country === country && s.region === region && s.city === city) return { meta: c, exact: false };
   return null;
 }
+// Napisy szablonu (nagłówek, menu, okno języków) w języku strony już na serwerze — bez tego Google i czytniki widzą
+// polskie „Wybierz region”, „Wesprzyj”… na stronach /de/, /fr/ itd. (inspektor językowy 2026-10-18).
+// Skrypty i style chronione: w JS są ciągi z data-ui-…, których nie wolno ruszać.
+function localizeUi(html, ui) {
+  const keep = [];
+  const prot = html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, (m) => { keep.push(m); return `\u0001${keep.length - 1}\u0001`; });
+  const out = prot
+    .replace(/(<[^>]*\bdata-ui(?:-local)?="([^"]+)"[^>]*>)([^<]*)(?=<)/g, (m, tag, key, text) => (ui[key] ? tag + esc(ui[key]) : m))
+    .replace(/<[^>]*\bdata-ui-aria="([^"]+)"[^>]*>/g, (tag, key) => {
+      if (!ui[key]) return tag;
+      return /\baria-label="[^"]*"/.test(tag) ? tag.replace(/\baria-label="[^"]*"/, `aria-label="${esc(ui[key])}"`)
+                                              : tag.replace(/\s*\/?>$/, (end) => ` aria-label="${esc(ui[key])}"${end}`);
+    });
+  return out.replace(/\u0001(\d+)\u0001/g, (m, i) => keep[+i]);
+}
 async function renderCity(lang, country, region, slug, oldSchema) {
   const cities = await publishedCities();
   const found = oldSchema ? null : (country && findBySeg(cities, lang, country, region, slug));
@@ -254,7 +269,7 @@ async function renderCity(lang, country, region, slug, oldSchema) {
   if (!d) return { status: 404 };
   const [ui, names] = await Promise.all([uiDict(lang), crumbNames(meta, lang)]);
   const { title, head } = headExtra(d, lang, langs, ui, meta, names);
-  let html = absolutize(template())
+  let html = localizeUi(absolutize(template()), ui)
     .replace(/<html lang="[^"]*">/, `<html lang="${esc(lang)}">`)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
     .replace('</head>', head + '</head>');
