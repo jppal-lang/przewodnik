@@ -313,7 +313,7 @@ async function renderPlace(kind, place, lang, langs) {
   const u = (k, f) => ui[k] ?? f;
   const table = kind === 'region' ? `region_translations?region_slug=eq.${encodeURIComponent(place.slug)}`
                                   : `country_translations?country_slug=eq.${encodeURIComponent(place.code)}`;
-  const rows = await cached(`place:${kind}:${place.slug ?? place.code}`, () => api(`${table}&lang=in.(${lang},${FALLBACK})&select=*`).catch(() => []));
+  const rows = await cached(`place:${kind}:${place.slug ?? place.code}:${lang}`, () => api(`${table}&lang=in.(${lang},${FALLBACK})&select=*`).catch(() => []));
   const tr = rows.find(r => r.lang === lang) ?? rows.find(r => r.lang === FALLBACK) ?? {};
   const name = tr.name || place.slug || place.code.toUpperCase();
   const title = `${name} ${u('seo.with_kids', 'z dziećmi')} — ${u('seo.trip_plans', 'gotowe plany wycieczek')} | Quolino`;
