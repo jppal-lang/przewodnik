@@ -110,12 +110,25 @@ W POPKULTURZE
 3. Znana osoba związana z miejscem — urodziła się, mieszkała, występowała?`;
 }
 
+// ponowienie wywołania modelu (np. Claude CLI kończy się kodem null przy długim researchu) — 3 próby z przerwą
+async function retry(label, fn, tries = 3) {
+  for (let i = 1; ; i++) {
+    try { return await fn(); }
+    catch (e) {
+      if (i >= tries) throw e;
+      log(`  ${label}: błąd (${String(e.message).slice(0, 120)}) — ponawiam ${i + 1}/${tries} za 30 s`);
+      await new Promise(r => setTimeout(r, 30_000));
+    }
+  }
+}
+
 async function research(stop, city) {
   const f = join(dir, `stop-${stop.id}-research.md`);
   if (existsSync(f) && !FRESH) { log(`  ${stop.id}: research z pliku ${f}`); return readFileSync(f, 'utf8'); }
   log(`  ${stop.id}: research (Claude + sieć)`);
   const prior = (loadResearch(slug) ?? '').slice(0, 40_000);
-  const text = await claude('quolino-trip-writing', `RESEARCH PRZYSTANKU według docs/TRESC-PRZYSTANKU.md §2 (bez pisania tekstu dla rodziny).
+  const ask = (p) => claude('quolino-trip-writing', p, { web: true });
+  const text = await retry(`${stop.id}: research`, () => ask(`RESEARCH PRZYSTANKU według docs/TRESC-PRZYSTANKU.md §2 (bez pisania tekstu dla rodziny).
 Miasto/trasa: ${city.title} (${city.region_slug}, ${city.country}). Przystanek: ${stop.name} (kategoria ${stop.category}${stop.year_built ? `, ${stop.year_built}` : ''}).
 ${stop.maps_query ? `Lokalizacja: ${stop.maps_query}\n` : ''}${stop.wiki_article ? `Artykuł Wikipedii: ${stop.wiki_article}\n` : ''}${stop.website ? `Strona: ${stop.website}\n` : ''}
 Szukaj w tej kolejności: strona oficjalna (zabytek, gmina, diecezja, muzeum, operator) → Wikipedia w języku kraju (${city.country === 'it' ? 'włoska' : 'lokalna'}), potem angielska → inne rzetelne
@@ -136,13 +149,13 @@ WYNIK: Markdown w tej kolejności:
 ## Fun fact
 ## W popkulturze
 ## Sprzeczności i luki
-${stop.desc?.length ? `\nDOTYCHCZASOWY OPIS (materiał do sprawdzenia — fakty bez źródła potwierdź albo oznacz jako niepotwierdzone):\n${stop.desc.join('\n\n')}\n` : ''}${Array.isArray(stop.sources) && stop.sources.length ? `\nDOTYCHCZASOWE ŹRÓDŁA PRZYSTANKU: ${stop.sources.map(x => typeof x === 'string' ? x : x?.url ?? JSON.stringify(x)).join(' · ')}\n` : ''}${prior ? `\nWCZEŚNIEJSZY RESEARCH MIASTA (z trip-draft; użyj tego, co dotyczy przystanku, i sprawdź źródła):\n${prior}\n` : ''}`, { web: true });
+${stop.desc?.length ? `\nDOTYCHCZASOWY OPIS (materiał do sprawdzenia — fakty bez źródła potwierdź albo oznacz jako niepotwierdzone):\n${stop.desc.join('\n\n')}\n` : ''}${Array.isArray(stop.sources) && stop.sources.length ? `\nDOTYCHCZASOWE ŹRÓDŁA PRZYSTANKU: ${stop.sources.map(x => typeof x === 'string' ? x : x?.url ?? JSON.stringify(x)).join(' · ')}\n` : ''}${prior ? `\nWCZEŚNIEJSZY RESEARCH MIASTA (z trip-draft; użyj tego, co dotyczy przystanku, i sprawdź źródła):\n${prior}\n` : ''}`));
   writeFileSync(f, text);
   return text;
 }
 
 // ── b) pisanie ─────────────────────────────────────────────────────────────────────────────────
-async function write(stop, city, researchMd, { current = null, errors = [] } = {}) {
+async function write(stop, city, researchMd, { current = null, errors = [], by = writer } = {}) {
   const prompt = `PISANIE TREŚCI PRZYSTANKU — rekord redakcyjny z przypisami (ops.stop_research). Po polsku.
 Trasa: ${city.title}. Przystanek: ${stop.name} (stop_id ${stop.id}, kategoria ${stop.category}${stop.year_built ? `, ${stop.year_built}` : ''}).
 ${errors.length ? `POPRAW KAŻDY BŁĄD (walidator i kontrola Claude) — reszta zostaje bez zmian:\n${errors.map(e => `- [${e.block ?? '?'}] ${e.problem}${e.fix ? ' → ' + e.fix : ''}`).join('\n')}\n` : ''}
@@ -153,14 +166,14 @@ Progi liczą się bez przypisów [n]. Końcowy krótki akapit „Praktycznie: �
 
 ${rulesText()}
 Używaj WYŁĄCZNIE faktów z researchu poniżej i tylko ze źródłami, które research podaje (numery [n] możesz nadać od nowa, byle spójnie).
-Fakt bez źródła — usuń albo napisz „sprawdź na miejscu”. Blok, dla którego research mówi „brak — sprawdzono: …”, ma stan none i to „checked”.
+Fakt bez źródła — usuń albo napisz „sprawdź na miejscu”. KAŻDE zdanie z liczbą, datą, rokiem albo wiekiem (we wszystkich blokach, także w ciekawostce i legendzie) kończy się przypisem [n]; jeśli źródła brak — usuń liczbę albo całe zdanie. Każde źródło z sources musi mieć co najmniej jeden przypis w tekście. Blok, dla którego research mówi „brak — sprawdzono: …”, ma stan none i to „checked”.
 
 ${examplesText()}
 
 ${RECORD_FORMAT}
 
 ${current ? `AKTUALNA WERSJA (do poprawy):\n${JSON.stringify(current)}\n\n` : ''}RESEARCH:\n${researchMd.slice(0, 80_000)}`;
-  if (writer === 'gpt') {
+  if (by === 'gpt') {
     const { model, json } = await openrouterJson('quolino-trip-writing', prompt, 'draft');
     return { raw: json, model };
   }
@@ -168,10 +181,10 @@ ${current ? `AKTUALNA WERSJA (do poprawy):\n${JSON.stringify(current)}\n\n` : ''
 }
 
 // pisanie + walidator lokalny (najwyżej 3 próby)
-async function writeValid(stop, city, researchMd, { current = null, errors = [] } = {}) {
+async function writeValid(stop, city, researchMd, { current = null, errors = [], by = writer } = {}) {
   let feedback = errors, last = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { raw, model } = await write(stop, city, researchMd, { current: last?.rec ?? current, errors: feedback });
+    const { raw, model } = await write(stop, city, researchMd, { current: last?.rec ?? current, errors: feedback, by });
     const rec = normalizeRecord(raw, { category: stop.category, today: TODAY });
     const v = validateStop(rec, { category: stop.category });
     last = { rec, v, model, gap: raw?.gap ?? null };
@@ -224,13 +237,20 @@ async function processStop(stop, city) {
   const researchMd = await research(stop, city);
   let w = await writeValid(stop, city, researchMd);
   const models = new Set([w.model]);
-  let ck = await check(stop, city, w.rec);
+  let ck = await retry(`${stop.id}: kontrola`, () => check(stop, city, w.rec));
   log(`  ${stop.id}: kontrola Claude 1: ${ck.verdict}${ck.errors.length ? ` (${ck.errors.length} błędów)` : ''}; walidator: ${w.v.errors.length} błędów`);
   for (let round = 1; round <= 2 && (ck.verdict !== 'ok' || w.v.errors.length); round++) {
     w = await writeValid(stop, city, researchMd, { current: w.rec, errors: [...w.v.errors, ...ck.errors] });
     models.add(w.model);
-    ck = await check(stop, city, w.rec);
+    ck = await retry(`${stop.id}: kontrola`, () => check(stop, city, w.rec));
     log(`  ${stop.id}: kontrola Claude ${round + 1}: ${ck.verdict}${ck.errors.length ? ` (${ck.errors.length} błędów)` : ''}; walidator: ${w.v.errors.length} błędów`);
+  }
+  if ((ck.verdict !== 'ok' || w.v.errors.length) && writer !== 'claude') {
+    // ostatnia runda: poprawki pisze Claude (lepiej trzyma się listy błędów niż GPT)
+    w = await writeValid(stop, city, researchMd, { current: w.rec, errors: [...w.v.errors, ...ck.errors], by: 'claude' });
+    models.add(w.model);
+    ck = await retry(`${stop.id}: kontrola`, () => check(stop, city, w.rec));
+    log(`  ${stop.id}: kontrola Claude (poprawki Claude): ${ck.verdict}${ck.errors.length ? ` (${ck.errors.length} błędów)` : ''}; walidator: ${w.v.errors.length} błędów`);
   }
   const v = validateStop(w.rec, { category: stop.category });   // ponowny walidator na wersji końcowej
   const verdict = ck.verdict === 'ok' && !v.errors.length ? 'ok' : 'fix';
