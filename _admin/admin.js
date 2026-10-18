@@ -7,6 +7,9 @@
  * v3 (2026-10-16): arkusz szkicu pokazuje WSZYSTKIE pola; przy każdym polu formularz uwag dla Hermesa
  * (tabela admin.draft_comments — kontrakt w README §Uwagi), wersje każdego przystanku liczone z historii
  * city_versions, przyklejone menu przystanków z liczbą otwartych uwag.
+ * v5 (2026-10-18): lista jak sklep z filtrami (kraj, status, uwagi, skorowidz A–Z, wyszukiwarka), grupy krajów bez regionów;
+ * wycieczka w zakładkach — jedna zakładka na wersję (najnowsza pierwsza). Na zakładce wersji widać uwagi wysłane do TEJ wersji
+ * (draft_comments.city_version); starsze wersje tylko do podglądu, uwagi wysyła się wyłącznie w najnowszym szkicu.
  */
 (function () {
   'use strict';
@@ -34,8 +37,8 @@
     ['price', 'Cena'], ['year_built', 'Rok'], ['maps_query', 'Mapa'], ['optional', 'Opcjonalny', yesNo], ['sunset_spot', 'Na zachód słońca', yesNo], ['lat', 'Szerokość geogr.'], ['lon', 'Długość geogr.']];
   var VER_FIELDS = [['stop_number', 'Numer']].concat(STOP_FIELDS);   // do liczenia wersji punktu liczy się też numer
 
-  var state = { queue: [], demo: null, current: null, comments: [], ctx: null, poll: null };
-  var $q = document.getElementById('queue');
+  var SITE = 'https://quolino.com';   // podgląd szkicu na stronie: city.html?draft=<klucz>&v=N (jak draft-lib.mjs previewUrl)
+  var state = { trips: null, demo: null, current: null, comments: [], poll: null, trip: null, versions: null, tabVersion: null, readOnly: false, drafts: {} };
   var $d = document.getElementById('detail');
   var $count = document.getElementById('count');
 
@@ -86,9 +89,12 @@
         { id: 2, city_slug: 'spello', city_version: 2, stop_key: 'belvedere-panoramico', field: 'time_label', field_label: 'Godzina', stop_version: 2,
           body: 'Zachód słońca w październiku ok. 18:30 — przesuń na 17:45.', status: 'seen', hermes_reply: null, created_at: '2026-10-16T09:02:00Z' }
       ];
+      demoMore(d);
       state.demo = d; return d;
     });
     return load.then(function (d) {
+      if (/^\/admin_trips/.test(path)) return demoTrips(d);
+      if (path === '/rpc/admin_preview_token') return null;
       if (path === '/admin_queue') return d.queue.slice();
       if (/^\/admin_versions\?status=eq\.draft/.test(path)) return d.versions.filter(function (v) { return v.status === 'draft'; })
         .map(function (v) { return { city_slug: v.city_slug, version: v.version, region: ((v.content || {}).city || {}).region_slug || null }; });
@@ -121,6 +127,53 @@
         return new Promise(function (res) { setTimeout(function () { res({ city_slug: b.p_slug, version: b.p_version, status: /approve/.test(path) ? 'published' : 'rejected' }); }, 500); });
       }
       throw new Error('demo: brak ' + path);
+    });
+  }
+
+  // dane testowe v5: Spello z trzema wersjami (uwagi wysłane do v2, poprawione w v3) i kilka miast z innych krajów
+  function demoMore(d) {
+    var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+    var sp = d.versions.filter(function (v) { return v.city_slug === 'spello'; });
+    if (sp.length === 2) {
+      var v2 = sp[1], v3 = clone(v2);
+      v2.status = 'archived'; v2.note = 'Cały dzień zamiast pół, Belvedere na zachód słońca'; v2.source = 'manual'; v2.created_at = '2026-10-16T08:12:00Z';
+      v3.version = 3; v3.status = 'draft'; v3.source = 'revise'; v3.note = 'Poprawki z uwag #2, #3'; v3.created_at = '2026-10-18T07:40:00Z';
+      (v3.content.stops || []).forEach(function (s) { if (s.stop_key === 'belvedere-panoramico') s.time_label = '17:45'; });
+      d.versions.push(v3);
+      d.queue.forEach(function (q) { if (q.city_slug === 'spello') { q.version = 3; q.note = v3.note; q.created_at = v3.created_at; } });
+      d.comments.forEach(function (c) { if (c.stop_key && c.field && c.field.indexOf('.') < 0) c.field = 'stop.' + c.field; });   // jak w bazie: stop.<kolumna>
+      d.comments[0].resolved_in_version = 2;
+      d.comments[1].status = 'done'; d.comments[1].hermes_reply = 'Przesunięte na 17:45.'; d.comments[1].resolved_in_version = 3;
+      d.comments.push({ id: 3, city_slug: 'spello', city_version: 2, stop_key: null, field: 'city.lead', field_label: 'Wstęp', stop_version: null,
+        body: 'Wstęp za długi — dwa zdania wystarczą.', status: 'done', hermes_reply: 'Skrócone do dwóch zdań.', resolved_in_version: 3, created_at: '2026-10-16T09:05:00Z' });
+    }
+    var base = sp[0];
+    [['assisi', 'Asyż', 'it', 'umbria', 'published'], ['urbino', 'Urbino', 'it', 'marche', 'published'], ['ancona', 'Ankona', 'it', 'marche', 'draft'],
+      ['krakow', 'Kraków', 'pl', 'malopolska', 'published'], ['wieliczka', 'Wieliczka', 'pl', 'malopolska', 'draft'],
+      ['zakopane', 'Zakopane', 'pl', 'malopolska', 'rejected'], ['rovinj', 'Rovinj', 'hr', 'istria', 'published']].forEach(function (x, i) {
+      if (!base || d.versions.some(function (v) { return v.city_slug === x[0]; })) return;
+      var v = clone(base);
+      v.city_slug = x[0]; v.version = 1; v.status = x[4]; v.source = 'import'; v.note = null; v.created_at = '2026-10-1' + i + 'T10:00:00Z';
+      v.content.city.slug = x[0]; v.content.city.country = x[2]; v.content.city.region_slug = x[3]; v.content.city.region = x[3];
+      (v.content.city_translations || []).forEach(function (t) { if (t.lang === 'pl') t.title = x[1]; });
+      d.versions.push(v);
+      if (x[4] === 'draft') d.queue.push({ city_slug: x[0], version: 1, source: 'import', note: 'Nowa wycieczka', created_at: v.created_at,
+        stops_count: (v.content.stops || []).length, duration: 'half_day', city_name: x[1], bandana_color: v.content.city.bandana_color,
+        published_version: null, published_stops_count: null, published_duration: null });
+    });
+  }
+  function demoTrips(d) {
+    var by = {};
+    d.versions.forEach(function (v) { (by[v.city_slug] = by[v.city_slug] || []).push(v); });
+    return Object.keys(by).map(function (k) {
+      var vs = by[k].sort(function (a, b) { return a.version - b.version; }), l = vs[vs.length - 1], c = l.content.city || {};
+      var pick = function (st) { var r = vs.filter(function (v) { return v.status === st; }).pop(); return r ? r.version : null; };
+      var cm = d.comments.filter(function (x) { return x.city_slug === k; });
+      return { city_slug: k, city_name: trOf(l.content.city_translations, 'pl').title || k, country: c.country, region_slug: c.region_slug,
+        bandana_color: c.bandana_color, latest_version: l.version, latest_status: l.status, latest_at: l.created_at || '2026-10-0' + l.version + 'T10:00:00Z',
+        stops_count: (l.content.stops || []).length, draft_version: pick('draft'), published_version: pick('published'), versions_count: vs.length,
+        comments_working: cm.filter(function (x) { return x.status === 'sent' || x.status === 'seen'; }).length,
+        comments_unsent: cm.filter(function (x) { return x.status === 'new'; }).length };
     });
   }
 
@@ -170,91 +223,340 @@
     return n ? 'n-' + slug(n) : 'id-' + s.id;
   }
 
-  // ── kolejka ──────────────────────────────────────────
-  // regiony szkiców do grupowania kolejki (JP 2026-10-17): region z treści szkicu, bez zmian w API (ścieżka JSON w select)
-  var REGION_PL = { umbria: 'Umbria', marche: 'Marche', 'emilia-romagna': 'Emilia-Romania', toscana: 'Toskania', lazio: 'Lacjum',
-    veneto: 'Wenecja Euganejska', lombardia: 'Lombardia', liguria: 'Liguria', piemonte: 'Piemont', campania: 'Kampania', sicilia: 'Sycylia' };
-  function regionName(slug) {
-    if (!slug) return 'Bez regionu';
-    return REGION_PL[slug] || slug.split('-').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join('-');
+  // ── lista wycieczek: filtry jak w sklepie (JP 2026-10-18) ──
+  // Kraj (jak fora na Discordzie: jedno forum = jeden kraj, bez poziomu regionu), status, uwagi, skorowidz A–Z i wyszukiwarka.
+  // Wyniki: grupy krajów, w kraju alfabetycznie. Źródło: admin.admin_trips (SQL 2026-10-18-admin-wersje.sql);
+  // bez tego widoku lista składa się z admin_queue + admin_versions (nazwy miast bez szkicu wtedy ze sluga).
+  var FILTERS = 'adm.filters';          // stan filtrów (tylko wygoda; nowy klucz, adm.outbox bez zmian)
+  var COUNTRY_PL = { it: 'Włochy', pl: 'Polska', hr: 'Chorwacja', fr: 'Francja', de: 'Niemcy', at: 'Austria', es: 'Hiszpania',
+    pt: 'Portugalia', si: 'Słowenia', cz: 'Czechy', sk: 'Słowacja', gr: 'Grecja', ch: 'Szwajcaria', sm: 'San Marino', va: 'Watykan', mt: 'Malta' };
+  var TST = { draft: 'Do zatwierdzenia', published: 'Opublikowane', rejected: 'Odrzucone', archived: 'Archiwum' };
+  var TST_ORDER = ['draft', 'published', 'rejected', 'archived'];
+  var FLAGS = { working: 'Hermes poprawia', unsent: 'Niewysłane uwagi' };
+  var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  var $browse = document.getElementById('browse');
+  var $res = document.getElementById('results');
+  var $abc = document.getElementById('abc');
+  var $fq = document.getElementById('fq');
+  var $fBox = document.getElementById('fBox');
+  var listScroll = 0;
+
+  function fold(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l'); }
+  function countryName(c) {
+    if (!c) return 'Bez kraju';
+    if (COUNTRY_PL[c]) return COUNTRY_PL[c];
+    try { var n = new Intl.DisplayNames(['pl'], { type: 'region' }).of(c.toUpperCase()); if (n && n !== c.toUpperCase()) return n; } catch (e) { /* stara przeglądarka */ }
+    return c.toUpperCase();
   }
-  function loadRegions() {
-    return api('/admin_versions?status=eq.draft&select=city_slug,version,region:content->city->>region_slug')
-      .then(function (rows) { var m = {}; (rows || []).forEach(function (r) { m[r.city_slug + ':' + r.version] = r.region || ''; }); return m; })
-      .catch(function () { return null; });            // bez regionów: zwykła lista
+  function titleCase(s) { return String(s || '').split('-').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' '); }
+  function letterOf(name) { var ch = fold(name).charAt(0).toUpperCase(); return /[A-Z]/.test(ch) ? ch : '#'; }
+  function dayMonth(iso) { if (!iso) return ''; var d = new Date(iso); return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2); }
+  function plWyc(n) { var d = n % 10, t = n % 100; return n + (n === 1 ? ' wycieczka' : (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? ' wycieczki' : ' wycieczek'); }
+  function plWer(n) { var d = n % 10, t = n % 100; return n + (n === 1 ? ' wersja' : (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? ' wersje' : ' wersji'); }
+  function outboxBy() { var m = {}; (lsGet(OUTBOX) || []).forEach(function (c) { m[c.city_slug] = (m[c.city_slug] || 0) + 1; }); return m; }
+
+  function filters() {
+    var f = state.f;
+    if (!f) {
+      var s = lsGet(FILTERS) || {};
+      f = state.f = { countries: Array.isArray(s.countries) ? s.countries : [], statuses: Array.isArray(s.statuses) ? s.statuses : ['draft'],
+        flags: Array.isArray(s.flags) ? s.flags : [], letter: typeof s.letter === 'string' ? s.letter : '', q: typeof s.q === 'string' ? s.q : '' };
+    }
+    return f;
   }
-  function itemHtml(it, i) {
-    var delta = it.published_stops_count == null ? it.stops_count + ' przyst.' : (it.stops_count === it.published_stops_count ? it.stops_count + ' przyst.' :
-      it.published_stops_count + '→' + it.stops_count + ' przyst.');
-    return '<button class="adm-item" type="button" data-i="' + i + '" style="--team:' + esc(it.bandana_color || '#0B4EA2') + '"' + (it.note ? ' title="' + esc(it.note) + '"' : '') + '>' +
-      '<span class="adm-item__team" aria-hidden="true"></span><span class="adm-item__body">' +
-      '<span class="adm-item__top"><span class="adm-item__name">' + esc(it.city_name || it.city_slug) + '</span><span class="adm-item__ver">v' + it.version + '</span></span>' +
-      '<span class="adm-item__meta">' + (it.published_version == null ? '<span class="adm-chip adm-chip--new">nowa</span>' : '<span class="adm-chip adm-chip--chg">zmiana</span>') +
-      '<span>' + esc(delta) + '</span><span>' + esc(when(it.created_at)) + '</span></span></span></button>';
+  function saveFilters() { lsSet(FILTERS, state.f); }
+
+  function tripOf(r, box) {
+    var t = { slug: r.city_slug, name: r.city_name || titleCase(r.city_slug), country: r.country ? String(r.country).toLowerCase() : '',
+      region: r.region_slug || '', color: r.bandana_color || '#0B4EA2', latest: r.latest_version, latestStatus: r.latest_status,
+      latestAt: r.latest_at, stops: r.stops_count, draft: r.draft_version, published: r.published_version,
+      versions: r.versions_count || 1, working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
+    t.status = t.draft != null ? 'draft' : t.published != null ? 'published' : (t.latestStatus || 'archived');
+    t.letter = letterOf(t.name);
+    return t;
   }
-  function loadQueue(selectFirst) {
-    return Promise.all([api('/admin_queue'), loadRegions()]).then(function (res) {
-      var rows = res[0], reg = res[1];
-      state.queue = rows || [];
-      $count.textContent = state.queue.length;
-      if (!state.queue.length) {
-        $q.innerHTML = '<p class="adm-empty">Nic nie czeka. Wszystkie szkice są rozpatrzone.</p>';
-        return;
-      }
-      if (!reg) {
-        $q.innerHTML = state.queue.map(itemHtml).join('');
-      } else {
-        // grupy regionami (alfabetycznie, „Bez regionu” na końcu); w grupie kolejność kolejki (najnowsze pierwsze)
-        var groups = {}, order = [];
-        state.queue.forEach(function (it, i) {
-          var name = regionName(reg[it.city_slug + ':' + it.version]);
-          if (!groups[name]) { groups[name] = []; order.push(name); }
-          groups[name].push(itemHtml(it, i));
-        });
-        order.sort(function (a, b) { return a === 'Bez regionu' ? 1 : b === 'Bez regionu' ? -1 : a.localeCompare(b, 'pl'); });
-        // kolejność przycisków w DOM = kolejność na ekranie, więc „pierwszy” to pierwszy w pierwszej grupie
-        $q.innerHTML = order.map(function (name) {
-          return '<section class="adm-qgroup" aria-label="' + esc(name) + '"><h3 class="adm-qgroup__h">' + esc(name) +
-            ' <b class="adm-n">' + groups[name].length + '</b></h3>' + groups[name].join('') + '</section>';
-        }).join('');
-      }
-      if (selectFirst) { var first = $q.querySelector('.adm-item'); if (first) open(+first.getAttribute('data-i')); }
-    }).catch(function (e) {
-      $count.textContent = '!';
-      $q.innerHTML = '<p class="adm-empty">Nie mogę połączyć się z API admina (' + esc(e.message) + ').<br><br>' +
-        'Instrukcja wejścia w <code>_admin/README.md</code>. Podgląd na danych testowych: <a href="?demo=1">?demo=1</a>.</p>';
-      $d.innerHTML = '';
+  // bez widoku admin_trips: lista z kolejki szkiców + lekkich wierszy wszystkich wersji (ścieżki JSON w select, bez treści)
+  function tripsFallback() {
+    return Promise.all([
+      api('/admin_queue'),
+      api('/admin_versions?select=city_slug,version,status,created_at,country:content->city->>country,region:content->city->>region_slug,color:content->city->>bandana_color&order=version.asc'),
+      api('/draft_comments?select=city_slug,city_version,status').catch(function () { return []; })
+    ]).then(function (res) {
+      var by = {}, names = {}, stops = {};
+      (res[0] || []).forEach(function (q) { names[q.city_slug] = q.city_name; stops[q.city_slug] = q.stops_count; });
+      (res[1] || []).forEach(function (v) {
+        var r = by[v.city_slug] = by[v.city_slug] || { city_slug: v.city_slug, versions_count: 0, comments_working: 0, comments_unsent: 0 };
+        r.versions_count++;
+        if (r.latest_version == null || v.version > r.latest_version) {
+          r.latest_version = v.version; r.latest_status = v.status; r.latest_at = v.created_at;
+          r.country = v.country; r.region_slug = v.region; r.bandana_color = v.color;
+        }
+        if (v.status === 'draft' && (r.draft_version == null || v.version > r.draft_version)) r.draft_version = v.version;
+        if (v.status === 'published') r.published_version = v.version;
+      });
+      (res[2] || []).forEach(function (c) {
+        var r = by[c.city_slug]; if (!r) return;
+        if (c.status === 'sent' || c.status === 'seen') r.comments_working++;
+        else if (c.status === 'new') r.comments_unsent++;
+      });
+      return Object.keys(by).map(function (k) { var r = by[k]; r.city_name = names[k] || null; r.stops_count = stops[k] != null ? stops[k] : null; return r; });
     });
   }
+  function loadTrips() {
+    return api('/admin_trips?order=city_slug.asc').then(function (rows) { state.tripsApi = true; return rows; },
+      function (e) { if (e.session) throw e; state.tripsApi = false; return tripsFallback(); })
+      .then(function (rows) {
+        var box = outboxBy();
+        state.trips = (rows || []).map(function (r) { return tripOf(r, box); });
+        var f = filters(), have = {};
+        state.trips.forEach(function (t) { have['c:' + t.country] = 1; have['s:' + t.status] = 1; });
+        f.countries = f.countries.filter(function (c) { return have['c:' + c]; });     // kraj, którego już nie ma, nie chowa wszystkiego
+        if (f.statuses.length && !f.statuses.some(function (s) { return have['s:' + s]; })) f.statuses = [];
+        $count.textContent = state.trips.filter(function (t) { return t.status === 'draft'; }).length;
+        renderList();
+      }).catch(function (e) {
+        $count.textContent = '!';
+        $res.innerHTML = '<p class="adm-empty">Nie mogę połączyć się z API admina (' + esc(e.message) + ').<br><br>' +
+          'Instrukcja wejścia w <code>_admin/README.md</code>. Podgląd na danych testowych: <a href="?demo=1">?demo=1</a>.</p>';
+      });
+  }
 
-  $q.addEventListener('click', function (e) {
-    var b = e.target.closest('.adm-item');
-    if (b) open(+b.getAttribute('data-i'));
+  function match(t, f, skip) {
+    if (skip !== 'countries' && f.countries.length && f.countries.indexOf(t.country) < 0) return false;
+    if (skip !== 'statuses' && f.statuses.length && f.statuses.indexOf(t.status) < 0) return false;
+    if (skip !== 'flags' && f.flags.length && !f.flags.some(function (k) { return t[k] > 0; })) return false;
+    if (skip !== 'letter' && f.letter && t.letter !== f.letter) return false;
+    if (skip !== 'q' && f.q && fold(t.name + ' ' + t.slug).indexOf(fold(f.q.trim())) < 0) return false;
+    return true;
+  }
+  function facet(group, keys, label, f) {
+    var cnt = {};
+    state.trips.forEach(function (t) {
+      if (!match(t, f, group)) return;
+      if (group === 'flags') keys.forEach(function (k) { if (t[k] > 0) cnt[k] = (cnt[k] || 0) + 1; });
+      else { var k = group === 'countries' ? t.country : t.status; cnt[k] = (cnt[k] || 0) + 1; }
+    });
+    return keys.map(function (k) {
+      var on = f[group].indexOf(k) > -1, n = cnt[k] || 0;
+      return '<label class="adm-check' + (n || on ? '' : ' is-empty') + '"><input type="checkbox" data-fg="' + group + '" value="' + esc(k) + '"' + (on ? ' checked' : '') + '>' +
+        '<span class="adm-check__t">' + esc(label(k)) + '</span><span class="adm-check__n">' + n + '</span></label>';
+    }).join('');
+  }
+  function renderList() {
+    var f = filters(), T = state.trips || [];
+    var countries = {}; T.forEach(function (t) { countries[t.country] = 1; });
+    var ck = Object.keys(countries).sort(function (a, b) { return !a ? 1 : !b ? -1 : countryName(a).localeCompare(countryName(b), 'pl'); });
+    var sk = TST_ORDER.filter(function (s) { return T.some(function (t) { return t.status === s; }); });
+    T.forEach(function (t) { if (sk.indexOf(t.status) < 0) sk.push(t.status); });
+    var fk = Object.keys(FLAGS).filter(function (k) { return T.some(function (t) { return t[k] > 0; }) || f.flags.indexOf(k) > -1; });
+    document.getElementById('fCountry').innerHTML = facet('countries', ck, countryName, f);
+    document.getElementById('fStatus').innerHTML = facet('statuses', sk, function (s) { return TST[s] || VST[s] || s; }, f);
+    document.getElementById('fFlags').innerHTML = facet('flags', fk, function (k) { return FLAGS[k]; }, f);
+    document.getElementById('fFlagsBox').hidden = !fk.length;
+    if ($fq.value !== f.q) $fq.value = f.q;
+
+    // skorowidz: litera bez miejscowości (przy pozostałych filtrach) jest wyłączona
+    var lc = {}; T.forEach(function (t) { if (match(t, f, 'letter')) lc[t.letter] = (lc[t.letter] || 0) + 1; });
+    var letters = ABC.slice(); T.forEach(function (t) { if (letters.indexOf(t.letter) < 0) letters.push(t.letter); });
+    $abc.innerHTML = '<button type="button" class="adm-abc__b adm-abc__all" data-letter="" aria-pressed="' + (!f.letter) + '">Wszystkie</button>' +
+      letters.map(function (L) {
+        var n = lc[L] || 0, on = f.letter === L;
+        return '<button type="button" class="adm-abc__b" data-letter="' + esc(L) + '" aria-pressed="' + on + '"' + (n || on ? '' : ' disabled') +
+          ' aria-label="' + esc(L) + ': ' + plWyc(n) + '">' + esc(L) + '</button>';
+      }).join('');
+
+    var act = f.countries.length + f.statuses.length + f.flags.length + (f.letter ? 1 : 0) + (f.q.trim() ? 1 : 0);
+    var $a = document.getElementById('fActive'); $a.textContent = act; $a.classList.toggle('is-zero', !act);
+    document.getElementById('fClear').hidden = !act;
+
+    var shown = T.filter(function (t) { return match(t, f); });
+    document.getElementById('rCount').textContent = plWyc(shown.length) + (shown.length !== T.length ? ' z ' + T.length : '');
+    if (!T.length) { $res.innerHTML = '<p class="adm-empty">Brak wycieczek w bazie.</p>'; return; }
+    if (!shown.length) { $res.innerHTML = '<p class="adm-empty">Żadna wycieczka nie pasuje do filtrów. <button type="button" class="adm-linkbtn" data-fclear>Wyczyść filtry</button></p>'; return; }
+    var groups = {};
+    shown.forEach(function (t) { (groups[t.country] = groups[t.country] || []).push(t); });
+    $res.innerHTML = ck.filter(function (c) { return groups[c]; }).map(function (c) {
+      var list = groups[c].sort(function (a, b) { return a.name.localeCompare(b.name, 'pl'); });
+      return '<section class="adm-cgroup" aria-label="' + esc(countryName(c)) + '"><h3 class="adm-cgroup__h">' + esc(countryName(c)) +
+        ' <b class="adm-n">' + list.length + '</b></h3><div class="adm-cards">' + list.map(cardHtml).join('') + '</div></section>';
+    }).join('');
+  }
+  function cardHtml(t) {
+    var chip = t.status === 'draft'
+      ? '<span class="adm-chip ' + (t.published == null ? 'adm-chip--new">nowa · szkic v' : 'adm-chip--chg">zmiana · szkic v') + esc(t.draft) + '</span>'
+      : t.status === 'published' ? '<span class="adm-chip adm-chip--new">na stronie v' + esc(t.published) + '</span>'
+      : '<span class="adm-chip' + (t.status === 'rejected' ? ' adm-chip--del' : '') + '">' + esc(VST[t.status] || t.status) + '</span>';
+    var extra = (t.working ? '<span class="adm-tc__flag">Hermes poprawia: ' + t.working + '</span>' : '') +
+      (t.unsent ? '<span class="adm-tc__flag adm-tc__flag--unsent">Niewysłane: ' + t.unsent + '</span>' : '');
+    return '<a class="adm-tc" href="#/' + encodeURIComponent(t.slug) + '" style="--team:' + esc(t.color) + '">' +
+      '<span class="adm-item__team" aria-hidden="true"></span><span class="adm-tc__body">' +
+      '<span class="adm-tc__top"><span class="adm-tc__name">' + esc(t.name) + '</span><span class="adm-tc__ver">v' + esc(t.latest) + '</span></span>' +
+      '<span class="adm-tc__meta">' + chip + (t.region ? '<span>' + esc(regionName(t.region)) + '</span>' : '') +
+      '<span>' + plWer(t.versions) + '</span><span>' + esc(dayMonth(t.latestAt)) + '</span></span>' +
+      (extra ? '<span class="adm-tc__flags">' + extra + '</span>' : '') + '</span></a>';
+  }
+  var REGION_PL = { umbria: 'Umbria', marche: 'Marche', 'emilia-romagna': 'Emilia-Romania', toscana: 'Toskania', lazio: 'Lacjum',
+    veneto: 'Wenecja Euganejska', lombardia: 'Lombardia', liguria: 'Liguria', piemonte: 'Piemont', campania: 'Kampania', sicilia: 'Sycylia' };
+  function regionName(slug) { return REGION_PL[slug] || titleCase(slug).replace(/ /g, '-'); }
+
+  document.getElementById('fBox').addEventListener('change', function (e) {
+    var cb = e.target.closest('input[data-fg]'); if (!cb) return;
+    var f = filters(), g = cb.getAttribute('data-fg'), i = f[g].indexOf(cb.value);
+    if (cb.checked && i < 0) f[g].push(cb.value); else if (!cb.checked && i > -1) f[g].splice(i, 1);
+    saveFilters(); renderList();
+  });
+  $fq.addEventListener('input', function () { filters().q = $fq.value; saveFilters(); renderList(); });
+  $abc.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-letter]'); if (!b || b.disabled) return;
+    var f = filters(), L = b.getAttribute('data-letter');
+    f.letter = f.letter === L ? '' : L;                 // druga litera tego samego = wyłącz
+    saveFilters(); renderList();
+    var h = document.getElementById('rh'); if (h && h.getBoundingClientRect().top < 0) h.scrollIntoView({ block: 'start' });
+  });
+  function clearFilters() { state.f = { countries: [], statuses: [], flags: [], letter: '', q: '' }; saveFilters(); renderList(); }
+  document.getElementById('fClear').addEventListener('click', clearFilters);
+  $res.addEventListener('click', function (e) { if (e.target.closest('[data-fclear]')) clearFilters(); });
+
+  // ── nawigacja: #/ lista, #/<miasto> najnowsza wersja, #/<miasto>/v<N> starsza wersja, #/baza-wiedzy ──
+  function showList() {
+    clearInterval(state.poll);
+    state.current = null; state.trip = null; state.versions = null;
+    $d.hidden = true; $d.innerHTML = '';
+    if ($browse.hidden) { $browse.hidden = false; window.scrollTo(0, listScroll); if (state.trips) loadTrips(); }   // liczniki uwag mogły się zmienić
+    document.title = 'Do zatwierdzenia · Quolino admin';
+  }
+  function showDetail() {
+    if (!$browse.hidden) listScroll = window.scrollY || 0;
+    $browse.hidden = true; $d.hidden = false;
+  }
+  function route() {
+    var h = location.hash;
+    if (h === '#/baza-wiedzy') { showDetail(); window.scrollTo(0, 0); openRules(); return; }
+    var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
+    if (m) { openTrip(decodeURIComponent(m[1]), m[2] ? +m[2] : null); return; }
+    showList();
+  }
+  window.addEventListener('hashchange', function () { var h = location.hash; if (!h || h === '#' || h.indexOf('#/') === 0) route(); });
+  // kotwice w szkicu (#st-…, #send) przewijamy ręcznie — adres zostaje #/<miasto>, więc „wstecz” i odświeżenie działają
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[href^="#st-"], a[href="#send"]');
+    if (!a) return;
+    var el = document.getElementById(a.getAttribute('href').slice(1));
+    e.preventDefault();
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // ── szczegóły ────────────────────────────────────────
-  function open(i) {
-    var it = state.queue[i];
-    if (!it) return;
-    state.current = it;
+  // ── wycieczka: zakładki wersji (najnowsza pierwsza) ──
+  function loadToken(slug) {
+    if (DEMO) return Promise.resolve(null);
+    return api('/rpc/admin_preview_token', { method: 'POST', body: { p_slug: slug } })
+      .then(function (t) { return typeof t === 'string' && t.length >= 24 ? t : null; }, function () { return null; });   // bez SQL: brak linku
+  }
+  function openTrip(slug, ver) {
+    if (state.trip && state.trip.slug === slug && state.versions) { showDetail(); showTab(ver); return; }
+    showDetail(); window.scrollTo(0, 0);
     clearInterval(state.poll);
-    [].forEach.call($q.querySelectorAll('.adm-item'), function (b) { b.setAttribute('aria-current', b.getAttribute('data-i') === String(i) ? 'true' : 'false'); });
-    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję v' + it.version + ' · ' + esc(it.city_name || it.city_slug) + '…</p></div>';
-    var slugQ = encodeURIComponent(it.city_slug);
+    state.trip = { slug: slug }; state.versions = null; state.current = null; state.drafts = {};
+    var known = (state.trips || []).filter(function (t) { return t.slug === slug; })[0];
+    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję ' + esc(known ? known.name : slug) + '…</p></div>';
     Promise.all([
-      api('/admin_versions?city_slug=eq.' + slugQ + '&select=city_slug,version,status,source,note,created_at,content&order=version.asc'),
-      loadComments(it.city_slug)
+      api('/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content&order=version.asc'),
+      loadComments(slug),
+      loadToken(slug)
     ]).then(function (res) {
-      var all = (res[0] || []).slice().sort(function (a, b) { return a.version - b.version; });
-      var draft = null, pub = null;
-      all.forEach(function (r) { if (r.version === it.version) draft = r.content; if (r.version === it.published_version) pub = r.content; });
-      if (!draft) throw new Error('brak treści szkicu');
-      render(it, draft, pub, all);
+      if (!state.trip || state.trip.slug !== slug) return;            // JP zdążył przejść gdzie indziej
+      var all = (res[0] || []).filter(function (r) { return r.content; }).sort(function (a, b) { return a.version - b.version; });
+      if (!all.length) throw new Error('brak wersji tej wycieczki');
+      var newest = all[all.length - 1], pub = all.filter(function (r) { return r.status === 'published'; }).pop() || null;
+      var c = newest.content.city || {};
+      var name = trOf(newest.content.city_translations, 'pl').title || (known && known.name) || titleCase(slug);
+      state.versions = all; state.token = res[2];
+      state.trip = { slug: slug, name: name, country: String(c.country || (known && known.country) || '').toLowerCase(), region: c.region_slug || '',
+        newest: newest.version, published: pub ? pub.version : null };
+      state.current = { city_slug: slug, version: newest.version, status: newest.status, city_name: name,
+        published_version: pub ? pub.version : null, bandana_color: c.bandana_color };
+      document.title = name + ' · Quolino admin';
+      $d.innerHTML = '<div class="adm-trip">' +
+        '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
+        '<p class="adm-trip__where">' + esc([countryName(state.trip.country), state.trip.region ? regionName(state.trip.region) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
+        '<div class="adm-tabs" role="tablist" aria-label="Wersje wycieczki ' + esc(name) + '" id="vTabs">' + tabsHtml() + '</div>' +
+        '<div id="tabPanel" role="tabpanel" tabindex="-1"></div></div>';
+      showTab(ver);
       flushOutbox();
       state.poll = setInterval(refreshComments, 30000);   // także w tle: zapytanie co 30 s podtrzymuje sesję panelu (30 min bez ruchu = wylogowanie)
-      if (window.matchMedia('(max-width:900px)').matches) $d.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }).catch(function (e) { $d.innerHTML = '<div class="adm-placeholder"><p>Nie udało się wczytać szkicu: ' + esc(e.message) + '</p></div>'; });
+    }).catch(function (e) {
+      $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div>' +
+        '<div class="adm-placeholder"><p>Nie udało się wczytać wycieczki: ' + esc(e.message) + '</p></div>';
+      state.versions = null;
+    });
   }
+  function verComments(v) { return state.comments.filter(function (c) { return +c.city_version === +v; }); }
+  function isSent(c) { return c.status !== 'new' && c.status !== 'local'; }
+  function tabsHtml() {
+    return state.versions.slice().reverse().map(function (r) {
+      var sent = verComments(r.version).filter(isSent).length, cur = r.version === state.tabVersion, newest = r.version === state.trip.newest;
+      return '<button type="button" role="tab" class="adm-tab adm-tab--' + esc(r.status) + '" id="tab-v' + r.version + '" data-ver="' + r.version + '" aria-controls="tabPanel"' +
+        ' aria-selected="' + cur + '" tabindex="' + (cur ? 0 : -1) + '"><span class="adm-tab__v">v' + r.version + ' · ' + esc(dayMonth(r.created_at)) + '</span>' +
+        '<span class="adm-tab__s">' + esc(VST[r.status] || r.status) + (newest ? ' · najnowsza' : '') + '</span>' +
+        (sent ? '<b class="adm-n adm-tab__n" title="uwagi wysłane do tej wersji">' + sent + '</b>' : '') + '</button>';
+    }).join('');
+  }
+  function refreshTabs() {
+    var t = document.getElementById('vTabs');
+    if (!t || !state.versions) return;
+    var had = t.contains(document.activeElement);
+    t.innerHTML = tabsHtml();
+    if (had) { var b = t.querySelector('[aria-selected="true"]'); if (b) b.focus(); }
+  }
+  // tekst wpisany (bez Entera) w najnowszej wersji nie ginie przy zmianie zakładki
+  function keepDrafts() {
+    if (state.tabVersion !== (state.trip && state.trip.newest)) return;
+    [].forEach.call($d.querySelectorAll('.adm-cm'), function (box) {
+      var ta = box.querySelector('textarea'); if (!ta) return;
+      var k = ck(box.getAttribute('data-stop') || null, box.getAttribute('data-field') || null);
+      if (ta.value) state.drafts[k] = ta.value; else delete state.drafts[k];
+    });
+  }
+  function restoreDrafts() {
+    [].forEach.call($d.querySelectorAll('.adm-cm'), function (box) {
+      var ta = box.querySelector('textarea'), v = state.drafts[ck(box.getAttribute('data-stop') || null, box.getAttribute('data-field') || null)];
+      if (ta && v) { ta.value = v; autosize(ta); }
+    });
+  }
+  function showTab(ver) {
+    var all = state.versions, T = state.trip;
+    if (!all) return;
+    var row = all.filter(function (r) { return r.version === ver; })[0] || all[all.length - 1];
+    keepDrafts();
+    state.tabVersion = row.version;
+    var isNewest = row.version === T.newest;
+    try { history.replaceState(null, '', '#/' + encodeURIComponent(T.slug) + (isNewest ? '' : '/v' + row.version)); } catch (e) { /* file:// */ }
+    // porównanie: najnowszy szkic → z wersją na stronie (co się zmieni po zatwierdzeniu); pozostałe → z poprzednią wersją
+    var base = null;
+    if (isNewest && row.status === 'draft' && T.published != null && T.published !== row.version) base = all.filter(function (r) { return r.version === T.published; })[0];
+    else base = all.filter(function (r) { return r.version < row.version; }).pop() || null;
+    var c = row.content.city || {};
+    var it = { city_slug: T.slug, version: row.version, status: row.status, source: row.source, note: row.note, created_at: row.created_at,
+      city_name: T.name, bandana_color: c.bandana_color, published_version: base ? base.version : null,
+      baseIsLive: !!(base && base.version === T.published && isNewest), isNewest: isNewest };
+    state.readOnly = !(isNewest && row.status === 'draft');
+    refreshTabs();
+    render(it, row.content, base ? base.content : null, all);
+    if (!state.readOnly) restoreDrafts();
+  }
+  $d.addEventListener('click', function (e) {
+    var b = e.target.closest('.adm-tab'); if (b) { showTab(+b.getAttribute('data-ver')); return; }
+    var g = e.target.closest('[data-goto]'); if (g) { showTab(+g.getAttribute('data-goto')); var t = document.getElementById('vTabs'); if (t) t.scrollIntoView({ block: 'start' }); }
+  });
+  $d.addEventListener('keydown', function (e) {
+    var b = e.target.closest && e.target.closest('.adm-tab');
+    if (!b || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End')) return;
+    var tabs = [].slice.call(document.querySelectorAll('.adm-tab')), i = tabs.indexOf(b);
+    i = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    e.preventDefault();
+    showTab(+tabs[i].getAttribute('data-ver'));
+    var n = document.getElementById('tab-v' + tabs[i].getAttribute('data-ver')); if (n) n.focus();
+  });
 
   // ── wersje punktów: kiedy dany przystanek zmienił się w historii miasta ──
   function stopSig(s, content) {
@@ -294,14 +596,15 @@
       });
   }
   function ck(stop, field) { return (stop || '_city') + '|' + (field || '_all'); }
+  // przy polach tylko uwagi napisane do wersji z otwartej zakładki
   function commentsFor(stop, field) {
-    return state.comments.filter(function (c) { return ck(c.stop_key, c.field) === ck(stop, field); });
+    return state.comments.filter(function (c) { return +c.city_version === +state.tabVersion && ck(c.stop_key, c.field) === ck(stop, field); });
   }
   function isOpen(c) { return c.status === 'new' || c.status === 'sent' || c.status === 'seen' || c.status === 'local'; }
   function unsent() { return state.comments.filter(function (c) { return c.status === 'new' || c.status === 'local'; }); }
 
   function commentItem(c) {
-    var cur = state.current, other = cur && c.city_version !== cur.version;
+    var other = state.tabVersion != null && +c.city_version !== +state.tabVersion;
     return '<li class="adm-cm__it adm-cm__it--' + esc(c.status) + '"><p>' + esc(c.body) + '</p>' +
       '<span class="adm-cm__meta"><span class="adm-cm__st">' + esc(CST[c.status] || c.status) + '</span>' +
       (other ? '<span>do v' + esc(c.city_version) + '</span>' : '') + '<span>' + esc(when(c.created_at)) + '</span></span>' +
@@ -311,27 +614,46 @@
     var list = commentsFor(stop, field);
     return '<div class="adm-cm" data-stop="' + esc(stop || '') + '" data-field="' + esc(field || '') + '" data-label="' + esc(label) + '"' + (stopVer ? ' data-sv="' + stopVer + '"' : '') + '>' +
       '<ul class="adm-cm__list">' + list.map(commentItem).join('') + '</ul>' +
-      '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="Uwaga dla Hermesa…"></textarea>' +
-      '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form></div>';
+      (state.readOnly ? '' : '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="Uwaga dla Hermesa…"></textarea>' +
+      '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form>') + '</div>';
+  }
+  // wszystkie uwagi do wersji z zakładki, w jednym miejscu (także te do przystanków, których w tej wersji już nie ma)
+  function verCommentsHtml() {
+    var list = verComments(state.tabVersion), sent = list.filter(isSent);
+    if (!state.readOnly && !sent.length) return '';
+    var h = '<h3>Uwagi wysłane do v' + esc(state.tabVersion) + ' <b class="adm-n' + (sent.length ? '' : ' is-zero') + '">' + sent.length + '</b></h3>';
+    if (!list.length) return h + '<p class="adm-vc__none">Do tej wersji nie wysyłano uwag.</p>';
+    var res = {}; sent.forEach(function (c) { if (c.resolved_in_version) res[c.resolved_in_version] = 1; });
+    var fixed = Object.keys(res).map(Number).sort(function (a, b) { return a - b; });
+    return h + (fixed.length ? '<p class="adm-vc__sum">Poprawki z tych uwag: ' + fixed.map(function (v) {
+      return '<button type="button" class="adm-linkbtn" data-goto="' + v + '">v' + v + '</button>'; }).join(', ') + '</p>' : '') +
+      '<ol class="adm-vc__list">' + list.map(function (c) {
+        var where = (c.stop_key ? (stopName(c.stop_key) || c.stop_key) : 'Opis miasta') + ' · ' + (c.field_label || 'całość');
+        return '<li class="adm-cm__it adm-cm__it--' + esc(c.status) + '"><span class="adm-send__where">' + esc(where) + '</span>' + commentItem(c).replace(/^<li[^>]*>|<\/li>$/g, '') + '</li>';
+      }).join('') + '</ol>';
   }
   function updateCommentUi() {
     [].forEach.call($d.querySelectorAll('.adm-cm'), function (box) {
       var list = commentsFor(box.getAttribute('data-stop') || null, box.getAttribute('data-field') || null);
       box.querySelector('.adm-cm__list').innerHTML = list.map(commentItem).join('');
     });
+    var vc = document.getElementById('verComments');
+    if (vc) { vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML; }
+    refreshTabs();
     updateCounts();
   }
   function updateCounts() {
+    // najnowszy szkic: otwarte uwagi; starsza wersja (tylko podgląd): wszystkie uwagi tej wersji
     var openBy = {}, doneBy = {}, total = 0;
-    state.comments.forEach(function (c) {
+    verComments(state.tabVersion).forEach(function (c) {
       var k = c.stop_key || '_city';
-      if (isOpen(c)) { openBy[k] = (openBy[k] || 0) + 1; total++; } else doneBy[k] = (doneBy[k] || 0) + 1;
+      if (state.readOnly || isOpen(c)) { openBy[k] = (openBy[k] || 0) + 1; total++; } else doneBy[k] = (doneBy[k] || 0) + 1;
     });
     [].forEach.call(document.querySelectorAll('[data-count]'), function (el) {
       var k = el.getAttribute('data-count'), n = k === '_all' ? total : (openBy[k] || 0), dn = doneBy[k] || 0;
       el.textContent = n;
       el.classList.toggle('is-zero', !n);
-      el.title = n + ' otwartych uwag' + (dn ? ', ' + dn + ' załatwionych' : '');
+      el.title = state.readOnly ? n + ' uwag do tej wersji' : n + ' otwartych uwag' + (dn ? ', ' + dn + ' załatwionych' : '');
     });
     var warn = document.getElementById('cmWarn');
     if (warn) warn.hidden = state.commentsApi !== false;
@@ -343,7 +665,8 @@
     var list = unsent();
     if (!list.length) return '<p class="adm-empty">Brak nowych uwag. Wpisz uwagę przy polu i naciśnij Enter — zapisze się tutaj.</p>';
     return '<ol class="adm-send__list">' + list.map(function (c) {
-      var where = (c.stop_key ? (stopName(c.stop_key) || c.stop_key) : 'Opis miasta') + ' · ' + (c.field_label || 'całość');
+      var where = (c.stop_key ? (stopName(c.stop_key) || c.stop_key) : 'Opis miasta') + ' · ' + (c.field_label || 'całość') +
+        (state.current && +c.city_version !== +state.current.version ? ' · napisana do v' + c.city_version : '');
       return '<li><a href="#st-' + esc(c.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a><p>' + esc(c.body) + '</p></li>';
     }).join('') + '</ol>';
   }
@@ -514,12 +837,23 @@
     var route = routeUrl(c, newStops, draft.stop_translations, title);
     var html = '<article class="adm-sheet" style="--team:' + esc(team) + '">' +
       '<header class="adm-sheet__head' + (isLight(team) ? ' is-light' : '') + '"><div>' +
-      '<p class="label" style="color:inherit;opacity:.8">' + esc(it.city_slug) + ' · szkic v' + it.version + (it.published_version != null ? ' zamiast v' + it.published_version : ' · pierwsza publikacja') + '</p>' +
+      '<p class="label" style="color:inherit;opacity:.8">' + esc(it.city_slug) + ' · ' + esc(sheetLabel(it)) + '</p>' +
       '<h2 class="adm-sheet__title">' + esc(title) + '</h2>' +
       (it.note ? '<p class="adm-sheet__sub">' + esc(it.note) + '</p>' : '') + '</div>' +
       '<div class="adm-sheet__acts">' +
       (route ? '<a class="qc-btn qc-btn--sm adm-route" href="' + esc(route) + '" target="_blank" rel="noopener">' + PIN + ' Cała trasa w Google Maps</a>' : '') +
+      (state.token ? '<a class="qc-btn qc-btn--sm adm-preview" href="' + esc(SITE + '/city.html?draft=' + encodeURIComponent(state.token) + '&v=' + it.version) +
+        '" target="_blank" rel="noopener">Podgląd v' + esc(it.version) + ' na stronie</a>' : '') +
       '<span class="adm-chip">' + esc(SRC[it.source] || it.source) + ' · ' + esc(when(it.created_at)) + '</span></div></header>';
+
+    if (state.readOnly) {
+      var nw = state.trip ? state.trip.newest : null;
+      html += '<p class="adm-ro">' + (it.isNewest
+        ? 'Ta wycieczka nie ma szkicu w toku (najnowsza wersja: ' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyła się do szkicu.'
+        : 'Wersja v' + esc(it.version) + ' (' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyłasz w najnowszej wersji. ' +
+          '<button type="button" class="adm-linkbtn" data-goto="' + esc(nw) + '">Przejdź do v' + esc(nw) + '</button>') + '</p>';
+    }
+    html += '<section class="adm-sheet__sec adm-vc" id="verComments"></section>';
 
     html += '<p class="adm-cmwarn" id="cmWarn" hidden>Baza nie przyjmuje jeszcze uwag (brak tabeli <code>admin.draft_comments</code>). Uwagi zapisują się w tej przeglądarce i wyślą się same, gdy Hermes ją doda.</p>';
 
@@ -543,19 +877,20 @@
     html += '<section class="adm-sheet__sec"><h3>Przystanki</h3><div class="adm-stops">' +
       (stops.length ? stops.map(function (x) { return stopHtml(x, it, pub); }).join('') : '<p class="adm-empty">Brak przystanków.</p>') + '</div></section>';
 
-    html += '<section class="adm-sheet__sec adm-send" id="send"><h3>Uwagi do wysłania</h3>' +
+    if (!state.readOnly) html += '<section class="adm-sheet__sec adm-send" id="send"><h3>Uwagi do wysłania</h3>' +
       '<p class="adm-send__sub">Uwagi zapisane przy polach. Hermes zaczyna poprawki dopiero po kliknięciu przycisku — wszystkie naraz, w jednej nowej wersji szkicu.</p>' +
       '<div id="sendList">' + sendList() + '</div>' +
       '<div class="adm-send__row"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
       '<span class="adm-msg" id="sendMsg" role="status"></span></div><p class="adm-send__hint" id="sendHint"></p></section>';
 
-    html += '<form class="adm-decide" id="decide" autocomplete="off">' +
+    if (!state.readOnly) html += '<form class="adm-decide" id="decide" autocomplete="off">' +
       '<label for="note">Notatka do historii wersji (opcjonalnie)</label>' +
       '<textarea id="note" name="note" rows="1" placeholder="Notatka do wersji (opcjonalnie)"></textarea>' +
       '<div class="adm-decide__row">' +
       '<button type="button" class="qc-btn adm-btn-ok" data-act="approve"' + (newStops.length ? '' : ' disabled data-lock title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>' +
       '<button type="button" class="qc-btn adm-btn-no" data-act="reject">Odrzuć szkic</button>' +
-      '<span class="adm-msg" id="msg" role="status"></span></div></form></article>';
+      '<span class="adm-msg" id="msg" role="status"></span></div></form>';
+    html += '</article>';
 
     // przyklejone menu przystanków z licznikami uwag
     var toc = '<nav class="adm-toc" aria-label="Przystanki szkicu"><p class="adm-toc__h">Uwagi <b class="adm-n" data-count="_all">0</b></p><ol>' +
@@ -563,15 +898,23 @@
       stops.map(function (x) {
         return '<li class="adm-toc__' + x.kind + '"><a href="#st-' + esc(x.key) + '" data-to="' + esc(x.key) + '"><span class="adm-toc__no">' + num(x.s.stop_number) + '</span>' +
           '<span class="adm-toc__nm">' + esc(x.t.name || '(bez nazwy)') + '</span><b class="adm-n" data-count="' + esc(x.key) + '">0</b></a></li>';
-      }).join('') + '</ol><div class="adm-toc__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
-      '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div></nav>';
+      }).join('') + '</ol>' + (state.readOnly ? '' : '<div class="adm-toc__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
+      '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div>') + '</nav>';
 
-    $d.innerHTML = '<div class="adm-split">' + html + toc + '</div>';
+    var $p = document.getElementById('tabPanel') || $d;
+    $p.innerHTML = '<div class="adm-split">' + html + toc + '</div>';
+    $p.setAttribute('aria-labelledby', 'tab-v' + it.version);
+    var vc = document.getElementById('verComments');
+    vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML;    // po wstawieniu menu: nazwy przystanków z menu
     drawMap(newStops, draft.stop_translations);
     updateCounts();
     spy();
   }
 
+  function sheetLabel(it) {
+    if (it.isNewest && it.status === 'draft') return 'szkic v' + it.version + (it.published_version != null ? (it.baseIsLive ? ' zamiast v' + it.published_version + ' (na stronie)' : ' · zmiany względem v' + it.published_version) : ' · pierwsza publikacja');
+    return (VST[it.status] || it.status) + ' v' + it.version + (it.published_version != null ? ' · zmiany względem v' + it.published_version : ' · pierwsza wersja');
+  }
   function stopHtml(x, it, pub) {
     var s = x.s, t = x.t, ver = x.hist.length || 1;
     var chip = { first: '', new: '<span class="adm-chip adm-chip--new">nowy</span>', chg: '<span class="adm-chip adm-chip--chg">zmieniony</span>',
@@ -777,8 +1120,10 @@
       $d.innerHTML = '<div class="adm-sheet"><div class="adm-done"><h3>' + (act === 'approve' ? 'Opublikowane' : 'Odrzucone') + '</h3><p>' +
         esc(it.city_name || it.city_slug) + ' v' + it.version + (act === 'approve' ? ' jest teraz wersją na stronie. Poprzednia trafiła do historii.' : ' trafił do historii jako odrzucony.') +
         (act === 'approve' ? '</p><p style="margin-top:14px"><a href="../city.html?c=' + encodeURIComponent(it.city_slug) + '" target="_blank" rel="noopener">Otwórz stronę miasta</a>' : '') +
-        '</p></div></div>';
-      loadQueue(false);
+        '</p><p class="adm-done__acts"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
+        '<button type="button" class="qc-btn qc-btn--sm" data-reopen="' + esc(it.city_slug) + '">Wersje tej wycieczki</button></p></div></div>';
+      state.trip = null; state.versions = null; state.current = null;
+      loadTrips();
     }).catch(function (err) {
       [].forEach.call($d.querySelectorAll('[data-act]'), function (x) { x.disabled = x.hasAttribute('data-lock'); x.textContent = label[x.getAttribute('data-act')]; });
       $msg.className = 'adm-msg adm-msg--err'; $msg.textContent = 'Nie zapisano: ' + err.message;
@@ -821,12 +1166,11 @@
     return h;
   }
   function openRules() {
-    state.current = null; clearInterval(state.poll);
-    [].forEach.call($q.querySelectorAll('.adm-item'), function (b) { b.setAttribute('aria-current', 'false'); });
+    state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję bazę wiedzy…</p></div>';
     loadRules().then(function () {
       var R = state.rules, by = function (st) { return R.filter(function (r) { return r.status === st; }); };
-      var html = '<article class="adm-sheet adm-kb"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Baza wiedzy redakcji</p>' +
+      var html = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><article class="adm-sheet adm-kb"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Baza wiedzy redakcji</p>' +
         '<h2 class="adm-sheet__title">Reguły z uwag</h2><p class="adm-sheet__sub">Hermes zamienia powtarzalne uwagi w reguły. Zatwierdzone reguły dostaje każde pisanie, poprawka, tłumaczenie i walidacja wycieczek — ten sam błąd nie wraca w kolejnych miastach.</p></div></header>';
       if (state.rulesApi === false) html += '<p class="adm-cmwarn">Baza nie ma jeszcze tabeli reguł (' + esc(state.rulesErr || '') + '). Pojawi się po approve SQL 2026-10-17-draft-send-kb-v2.sql.</p>';
       [['proposed', 'Do zatwierdzenia'], ['active', 'Obowiązują'], ['retired', 'Wyłączone']].forEach(function (g) {
@@ -842,7 +1186,8 @@
       $d.innerHTML = html;
     });
   }
-  if ($kb) $kb.addEventListener('click', openRules);
+  if ($kb) $kb.addEventListener('click', function () { if (location.hash === '#/baza-wiedzy') route(); else location.hash = '#/baza-wiedzy'; });
+  $d.addEventListener('click', function (e) { var b = e.target.closest('[data-reopen]'); if (b) openTrip(b.getAttribute('data-reopen'), null); });
   $d.addEventListener('click', function (e) {
     var b = e.target.closest('[data-rule-act]');
     if (!b) return;
@@ -868,6 +1213,14 @@
   env.title = DEMO ? 'Nic nie trafia do bazy' : 'Decyzje zmieniają stronę';
   if (!DEMO) env.className = 'adm-env adm-env--live';
   document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshComments(); });
-  loadQueue(!window.matchMedia('(max-width:900px)').matches);
+  // filtry: na komputerze zawsze rozwinięte (kolumna po lewej), na telefonie zwinięte nad wynikami
+  var wide = window.matchMedia('(min-width:901px)');
+  function fitFilters() { if (wide.matches) $fBox.open = true; }
+  if (!wide.matches) $fBox.open = false;
+  fitFilters();
+  if (wide.addEventListener) wide.addEventListener('change', fitFilters);
+  $fBox.addEventListener('toggle', function () { if (wide.matches && !$fBox.open) $fBox.open = true; });
+  loadTrips();
+  route();
   loadRules();
 })();

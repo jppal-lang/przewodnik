@@ -122,6 +122,22 @@ Błędy: zwykły format PostgREST (`message`) — front pokazuje go pod przycisk
 
 ---
 
+## Lista z filtrami + wersje w zakładkach (od v5, 2026-10-18)
+
+Lista jak w sklepie: kolumna filtrów (kraj, status, uwagi, wyszukiwarka; na telefonie zwinięta nad wynikami),
+skorowidz A–Z, wyniki w grupach krajów, w kraju alfabetycznie — bez poziomu regionu (jak fora na Discordzie).
+Stan filtrów: `localStorage` klucz `adm.filters` (tylko wygoda). `adm.outbox` bez zmian.
+
+Wycieczka (`#/<miasto>`, starsza wersja `#/<miasto>/v<N>`): jedna zakładka na wersję, najnowsza pierwsza. Zakładka
+pokazuje uwagi wysłane do tej wersji (`draft_comments.city_version`) i link „Podgląd vN na stronie”
+(`city.html?draft=<klucz>&v=N`). Uwagi wpisuje się i wysyła tylko w najnowszej wersji, gdy jest szkicem; starsze — tylko podgląd.
+
+- `GET /api/admin_trips?order=city_slug.asc` — jeden wiersz na miasto (`city_name`, `country`, `region_slug`, `latest_version`,
+  `latest_status`, `draft_version`, `published_version`, `versions_count`, `comments_working`, `comments_unsent`).
+  Bez widoku panel składa listę z `admin_queue` + `admin_versions` (nazwy miast bez szkicu wtedy ze sluga).
+- `POST /api/rpc/admin_preview_token {p_slug}` → klucz podglądu albo `null`. Bez funkcji — brak linku do podglądu.
+- SQL: `_content/claude-skills/sql/2026-10-18-admin-wersje.sql` (wymaga approve).
+
 ## Wyślij uwagi do poprawki + baza wiedzy (od v4, 2026-10-17)
 
 Uwaga wpisana przy polu i zatwierdzona Enterem jest **zapisana** (`new`), ale Hermes jeszcze jej nie poprawia.

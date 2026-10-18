@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css?v=26">
-<link rel="stylesheet" href="admin.css?v=8">
+<link rel="stylesheet" href="admin.css?v=9">
 </head>
 <body class="adm">
 
@@ -24,24 +24,38 @@
   <div class="wrap-wide">
     <p class="label adm-head__eyebrow">Panel redakcji</p>
     <h1 class="adm-head__title">Do zatwierdzenia <span class="adm-count" id="count">·</span></h1>
-    <p class="adm-head__sub">Szkice wycieczek czekające na publikację. Strona pokazuje zawsze wersję opublikowaną — szkic trafia na nią dopiero po zatwierdzeniu.</p>
+    <p class="adm-head__sub">Wycieczki według krajów, jak na Discordzie: jeden kraj, w nim miejscowości od A do Z. Strona pokazuje zawsze wersję opublikowaną — szkic trafia na nią dopiero po zatwierdzeniu.</p>
   </div>
 </header>
 
 <main class="wrap-wide adm-layout">
-  <section class="adm-queue" aria-labelledby="qh">
-    <h2 class="label" id="qh">Kolejka</h2>
-    <div id="queue" class="adm-queue__list" aria-live="polite"><p class="adm-empty">Ładuję…</p></div>
-    <button type="button" class="adm-kbbtn" id="kbOpen"><span>Baza wiedzy redakcji</span><b class="adm-n is-zero" id="kbCount" title="reguły do zatwierdzenia">0</b></button>
-  </section>
+  <div class="adm-browse" id="browse">
+    <aside class="adm-filters" aria-label="Filtry wycieczek">
+      <details class="adm-fbox" id="fBox" open>
+        <summary class="adm-fbox__sum"><span>Filtry</span><b class="adm-n is-zero" id="fActive" title="aktywne filtry">0</b>
+          <svg class="adm-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="adm-fbox__body">
+          <label class="adm-f__lbl" for="fq">Szukaj miejscowości</label>
+          <input class="adm-search" id="fq" type="search" placeholder="np. Spello" autocomplete="off" spellcheck="false">
+          <fieldset class="adm-f"><legend>Kraj</legend><div id="fCountry"></div></fieldset>
+          <fieldset class="adm-f"><legend>Status</legend><div id="fStatus"></div></fieldset>
+          <fieldset class="adm-f" id="fFlagsBox" hidden><legend>Uwagi</legend><div id="fFlags"></div></fieldset>
+          <button type="button" class="qc-btn qc-btn--sm adm-fclear" id="fClear" hidden>Wyczyść filtry</button>
+        </div>
+      </details>
+      <button type="button" class="adm-kbbtn" id="kbOpen"><span>Baza wiedzy redakcji</span><b class="adm-n is-zero" id="kbCount" title="reguły do zatwierdzenia">0</b></button>
+    </aside>
 
-  <section class="adm-detail" id="detail" aria-live="polite" tabindex="-1">
-    <div class="adm-placeholder">
-      <p>Wybierz szkic z kolejki, żeby zobaczyć, co się zmieni na stronie.</p>
-    </div>
-  </section>
+    <section class="adm-results" aria-labelledby="rh">
+      <nav class="adm-abc" id="abc" aria-label="Skorowidz miejscowości A–Z"></nav>
+      <h2 class="adm-results__h" id="rh"><span id="rCount">Ładuję…</span></h2>
+      <div id="results" aria-live="polite"><p class="adm-empty">Ładuję…</p></div>
+    </section>
+  </div>
+
+  <section class="adm-detail" id="detail" aria-live="polite" tabindex="-1" hidden></section>
 </main>
 
-<script src="admin.js?v=12"></script>
+<script src="admin.js?v=13"></script>
 </body>
 </html>
