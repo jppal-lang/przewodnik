@@ -250,8 +250,10 @@ function localizeUi(html, ui) {
     .replace(/(<[^>]*\bdata-ui(?:-local)?="([^"]+)"[^>]*>)([^<]*)(?=<)/g, (m, tag, key, text) => (ui[key] ? tag + esc(ui[key]) : m))
     .replace(/<[^>]*\bdata-ui-aria="([^"]+)"[^>]*>/g, (tag, key) => {
       if (!ui[key]) return tag;
-      return /\baria-label="[^"]*"/.test(tag) ? tag.replace(/\baria-label="[^"]*"/, `aria-label="${esc(ui[key])}"`)
-                                              : tag.replace(/\s*\/?>$/, (end) => ` aria-label="${esc(ui[key])}"${end}`);
+      const v = esc(ui[key]);
+      const t = /\baria-label="[^"]*"/.test(tag) ? tag.replace(/\baria-label="[^"]*"/, `aria-label="${v}"`)
+                                                 : tag.replace(/\s*\/?>$/, (end) => ` aria-label="${v}"${end}`);
+      return t.replace(/\btitle="[^"]*"/, `title="${v}"`);   // podpowiedź (title) w tym samym języku co aria-label
     });
   return out.replace(/\u0001(\d+)\u0001/g, (m, i) => keep[+i]);
 }

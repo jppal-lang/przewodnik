@@ -69,7 +69,7 @@
     document.documentElement.lang = l;
     document.querySelectorAll('[data-ui-aria]').forEach(function (el) {
       var v = t(el.getAttribute('data-ui-aria'), l);
-      if (v) el.setAttribute('aria-label', v);
+      if (v) { el.setAttribute('aria-label', v); if (el.hasAttribute('title')) el.setAttribute('title', v); }
     });
     document.querySelectorAll('[data-ui-local]').forEach(function (el) {
       var v = t(el.getAttribute('data-ui-local'), l);
