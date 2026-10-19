@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
 /* =====================================================================
-   QUOLINO — Design System v4 „Album naklejek”
-   Każde miasto to strona albumu (tradycja Panini, Modena): przystanki są
-   numerowanymi naklejkami, rodzinny dzień to kompletowanie strony.
+   QUOLINO — Design System v5 „Quo się budzi”
+   Ewolucja albumu naklejek: przystanki są numerowanymi naklejkami,
+   rodzinny dzień to kompletowanie strony. Nowa typografia (Caveat
+   dla nagłówków dziecięcych), ciemne tło --notte, etykiety .lbl 13px.
    Jedno źródło prawdy dla index / country / region / city.
    Stare strony /wlochy/ korzystają z legacy.css.
    ===================================================================== */
@@ -42,6 +44,8 @@
   --wide:1240px;
   --gut:clamp(20px,4vw,48px);
   --ease:cubic-bezier(.16,1,.3,1);
+  /* v5 „Quo się budzi" */
+  --notte:#062A58;
   /* aliasy dla kodu JS, który wstrzykuje var(--terra) itd. */
   --terra:var(--azzurro);--terra-h:var(--azzurro-ink);--parchment:var(--card);
   --line:var(--rule);--label:var(--muted);--olive:var(--verde);--sea:var(--azzurro);
@@ -65,6 +69,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:3px solid var(--sun);outline-offset:3px;border-radius:4px}
 html{scrollbar-color:var(--slot) var(--page)}
 a:not([class]):not(.crumbs a):not(.qc-crumbs a){text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--slot)}
+
+/* ---------- v5 utility ---------- */
+.lbl{font-size:13px;line-height:1.3;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.notte{background-color:var(--notte);color:#fff}
 
 .wrap-wide,.wrap{max-width:var(--wide);margin:0 auto;padding:0 var(--gut)}
 
@@ -97,8 +105,6 @@ h3{font-size:24px;font-weight:800;line-height:1.2;letter-spacing:-.01em}
 .nav-pill,.nav-lang-btn{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;border:2px solid var(--rule);border-radius:var(--r-btn);background:var(--card);font-size:17px;font-weight:700;color:var(--ink);transition:border-color .15s,background .15s}
 .nav-pill:hover,.nav-lang-btn:hover{border-color:var(--azzurro);background:var(--azzurro-50)}
 .nav-lang-btn img{width:22px;height:15px;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(14,26,43,.12)}
-.bmc-link{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;border-radius:var(--r-btn);background:var(--sun);color:var(--sun-ink);font-size:17px;font-weight:800;box-shadow:var(--lift-1);transition:transform .2s var(--ease)}
-.bmc-link:hover{transform:translateY(-1px)}
 @media(max-width:799px){.nav-desktop{display:none!important}}
 @media(min-width:800px){.nav-mobile{display:none!important}}
 
@@ -388,7 +394,6 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .qc-tab{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:var(--r-btn);background:var(--card);font-size:17px;font-weight:700;color:var(--ink2);box-shadow:inset 0 0 0 2px var(--rule);white-space:nowrap}
 .qc-tab:hover{box-shadow:inset 0 0 0 2px var(--azzurro);color:var(--azzurro-ink)}
 .qc-tab[aria-current="true"]{background:var(--azzurro);color:#fff;box-shadow:none}
-.qc-tab--support{background:var(--sun);color:var(--sun-ink);box-shadow:none}
 
 /* układ */
 .qc-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:48px;padding:24px 0 80px}
@@ -542,10 +547,6 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .qc-box--fest{background:var(--sun-50)}
 .qc-box__title{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:28px;line-height:1;color:#4A3600;margin-bottom:8px}
 .qc-box--fest p{color:#4A3600}
-.qc-box--support{background:var(--sun);text-align:center;transition:transform .3s var(--ease)}
-.qc-box--support:hover{transform:translateY(-3px)}
-.qc-box--support p{color:var(--sun-ink)}
-.qc-box--support p:first-child{font-weight:800;font-size:20px}
 
 /* =====================================================================
    WIDOK DZIECKA — zbieranie naklejek
@@ -566,8 +567,6 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .qc[data-view="kid"] #telefony,
 .qc[data-view="kid"] .qc-stop-toggle,
 .qc[data-view="kid"] #qcKidToggle{display:none!important}
-body:has(.qc[data-view="kid"]) .bmc-link,
-body:has(.qc[data-view="kid"]) a[href*="buymeacoffee"]{display:none!important}
 .qc[data-view="kid"] .qc-layout{grid-template-columns:minmax(0,1fr)}
 .qc[data-view="kid"] .qc-stop__head{grid-template-areas:"icon title chev"}
 .qc[data-view="kid"] .qc-facts > .qc-album-count{font-size:20px;padding:10px 18px}
@@ -607,7 +606,7 @@ body:has(.qc[data-view="kid"]) a[href*="buymeacoffee"]{display:none!important}
 }
 
 @media print{
-  .sticky-nav,.qc-tabs,.qc-box--support,.qc-intro__actions{display:none}
+  .sticky-nav,.qc-tabs,.qc-intro__actions{display:none}
   .band{box-shadow:none;clip-path:none;background:#fff;color:#000}
   .qc-stop__body{display:flex!important}
   .qc-stop{break-inside:avoid;box-shadow:none;border:1px solid #ccc}
@@ -1011,7 +1010,6 @@ body:has(.qc[data-view="kid"]) .qc-pager__btn--next{background:var(--card);color
 /* telefon: zakładki i pasek przystanków mieszczą się w 360 px */
 @media(max-width:767px){
   .qc-tabs__list{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-  .qc-tabs .qc-tab--support{display:none}
   .qc-tabs__list .qc-tab{justify-content:center;text-align:center;white-space:normal;line-height:1.1;padding:4px 6px;min-height:48px}
   .qc-pager{grid-template-columns:auto minmax(0,1fr) auto}
   .qc-pager__btn--prev{min-width:52px;padding:0 14px}
@@ -1269,10 +1267,6 @@ html.qk-lock{overflow:hidden}
 @media(min-width:901px){.route--6{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:44px}.route--6::before{display:none}}
 .route-sos{margin:28px 0 0;padding:14px 18px;border-radius:12px;background:var(--sun-50);color:#5A3E00;font-size:18px;max-width:72ch}
 
-/* Przyciski „Wesprzyj” / Buy Me a Coffee wyłączone (decyzja JP 2026-10-17, przed planami płatnymi).
-   Przywrócenie: usunąć tę regułę. */
-a[href*="buymeacoffee.com"]{display:none!important}
-.cta-note:has(> a[href*="buymeacoffee.com"]:only-child){display:none}
 
 /* Ikona konta rodzica na pasku (JP 2026-10-17) — widoczna na telefonie i komputerze; stan „zalogowany” dojdzie z logowaniem */
 .nav-acc{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;color:var(--ink);background:var(--card,#fff);

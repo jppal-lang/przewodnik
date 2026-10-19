@@ -517,8 +517,6 @@ body.kid-mode .city-menu{display:none}
 .nav-lang-btn{height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:transparent;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer}
 .nav-lang-btn:hover{border-color:var(--terra)}
 .nav-lang-btn img{width:20px;height:14px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover}
-.bmc-link{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;background:#FFC629;color:#3B2A00;border-radius:999px;font-size:15px;font-weight:700;box-shadow:var(--sh1)}
-.bmc-link:hover{background:#FFD45A}
 /* Lang popup */
 .lang-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(56,48,38,.4);place-items:center;padding:20px}
 .lang-overlay.open{display:grid}

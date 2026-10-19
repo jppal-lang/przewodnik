@@ -15,7 +15,7 @@ dziecko dostaje misje i zagadki. Dwa widoki, jedno zwiedzanie.
 - **Etymologia:** Quolino = **Quo** (łac. „gdzie") + **-lino** (zdrobnienie) → „Dokąd, mały?"
 - **Maskotka:** Quo — imię postaci chronione w ramach znaku Quolino® (bez osobnej rejestracji)
 - **Slogan:** Let's Explore!
-- **Model:** wszystko za darmo, wsparcie przez Buy Me a Coffee
+- **Model:** wszystko za darmo do 1.06.2027, potem płatne (4 €)
 - **Domena:** quolino.com (strona i SSR z VPS przez Traefik; API: api.quolino.com, panel: admin.quolino.com). questini.com i www → 301 na quolino.com. Plik CNAME usunięty 2026-10-13 (GitHub Pages już nie obsługuje domeny).
 - **Repo:** github.com/jppal-lang/przewodnik, branch `main`
 - **Hosting treści:** GitHub Pages (statyczny HTML/CSS/JS)

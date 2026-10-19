@@ -20,7 +20,7 @@ Jeden plan, dwa widoki: przewodnik dla dorosłego i gra terenowa dla dziecka nad
 ## Operating Context
 - Kolejność: landing → kraj → region → miasto (city.html, dane z Supabase) → widok dziecka.
 - W terenie: Google Maps (nawigacja do przystanków), WhatsApp do restauracji, QR do przekazania widoku dziecku.
-- Wsparcie projektu przez Buy Me a Coffee (tylko widok rodzica).
+- Wszystko za darmo do 1.06.2027, potem płatne (4 €).
 
 ## Capabilities and Constraints
 - Statyczny HTML/CSS/JS na GitHub Pages, zero frameworków i build stepu; dane i tłumaczenia z Supabase; 13+ języków (layout musi znieść +30% dłuższy tekst).

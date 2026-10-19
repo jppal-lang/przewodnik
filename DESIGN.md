@@ -174,7 +174,7 @@ Chłodna, nasycona paleta z jednym dominującym granatem-azzurro, słonecznym ż
 - **Azzurro blade** (`azzurro-50`): tło ilustracji w naklejkach przystanków, karteczek misji, hover elementów nawigacji, plakietek czasu trwania.
 
 ### Secondary
-- **Słońce** (`sun`): przycisk akcji na pasie drużyny („Trasa”), link Buy Me a Coffee, pierścień fokusu, zaznaczenie tekstu, kropka w logo, kreska podpisu arkusza. Na żółtym zawsze tekst `sun-ink`.
+- **Słońce** (`sun`): przycisk akcji na pasie drużyny („Trasa”), pierścień fokusu, zaznaczenie tekstu, kropka w logo, kreska podpisu arkusza. Na żółtym zawsze tekst `sun-ink`.
 - **Słońce blade** (`sun-50`): karteczki misji fotograficznych, ramka festiwalu, notatka „smak”.
 
 ### Tertiary
