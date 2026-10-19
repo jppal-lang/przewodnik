@@ -47,6 +47,9 @@
     KEYS.forEach(function (k, i) { d[k] = v[i]; });
     DICT[l] = d;
   });
+  // tłumaczenia: przycisk „Wróć do mapy" na ekranie finałowym
+  var _BACK = {pl:'Wróć do mapy',en:'Back to map',de:'Zurück zur Karte',it:'Torna alla mappa',cs:'Zpět na mapu',da:'Tilbage til kort',es:'Volver al mapa',fr:'Retour à la carte',hr:'Natrag na kartu',hu:'Vissza a térképre',nl:'Terug naar kaart',no:'Tilbake til kart',pt:'Voltar ao mapa',ro:'Înapoi la hartă',sk:'Späť na mapu',sv:'Tillbaka till karta',uk:'Назад до мапи'};
+  Object.keys(_BACK).forEach(function (l) { if (DICT[l]) DICT[l].back = _BACK[l]; });
 
   var S = { av: null, lang: 'pl', slug: '', city: '', hero: '', country: '', region: '', total: 0, got: 0, cells: null, groups: null, prevGot: -1, root: null, built: false };
 
@@ -85,7 +88,7 @@
         return '<button type="button" class="qk-color" role="radio" aria-checked="' + (i === sel.color) + '" data-color="' + i + '" style="--c:' + c + '" aria-label="' + (i + 1) + '"></button>';
       }).join('') + '</div>' +
       '<label class="qk-nick"><span>' + esc(t('nick')) + '</span><span class="qk-nick__row"><input type="text" maxlength="20" autocomplete="off" value="' + esc(prev.nick || '') + '">' +
-      '<button type="button" class="qk-dice" data-dice aria-label="' + esc(t('random')) + '" title="' + esc(t('random')) + '">🎲</button></span><small>' + esc(t('nick_hint')) + '</small></label>' +
+      '<button type="button" class="qk-dice" data-dice aria-label="' + esc(t('random')) + '">🎲 ' + esc(t('random')) + '</button></span><small>' + esc(t('nick_hint')) + '</small></label>' +
       (nicks.length ? '<div class="qk-nicks">' + nicks.map(function (n) { return '<button type="button" data-nick="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
       '<button type="button" class="qc-btn qc-btn--primary qk-go">' + esc(t('start')) + '</button>', 'qkPickT');
     function paint() {
@@ -141,7 +144,7 @@
   }
   // siatka ~16:9; komórek ≥ kawałków; kawałek = grupa komórek (ostatni dostaje resztę)
   function layout(total) {
-    var n = Math.max(1, total), cols = Math.max(1, Math.round(Math.sqrt(n * 16 / 9))), rows = Math.ceil(n / cols);
+    var n = Math.max(1, total), cols = Math.max(1, Math.round(Math.sqrt(n * 3 / 2))), rows = Math.ceil(n / cols);
     while (cols * rows < n) rows++;
     var cells = cols * rows, order = shuffle(Array.apply(null, { length: cells }).map(function (_, i) { return i; }), seed(S.slug + ':' + n));
     var groups = [], per = Math.floor(cells / n), extra = cells - per * n, at = 0;
@@ -158,7 +161,7 @@
       cover += '<span class="qk-cell' + (g < S.got ? ' is-open' : '') + '" data-g="' + g + '"><b>' + (g + 1) + '</b></span>';
     }
     return '<div class="qk-puzzle' + (big ? ' qk-puzzle--big' : '') + (S.got >= S.total && S.total ? ' is-done' : '') + '" style="--cols:' + L.cols + ';--rows:' + L.rows + '">' +
-      '<img src="' + esc(S.hero) + '-hero-' + (big ? '1200' : '800') + '.webp" alt="' + esc(S.city) + '" width="1200" height="675" decoding="async">' +
+      '<img src="' + esc(S.hero) + '-hero-' + (big ? '1200' : '800') + '.webp" alt="' + esc(S.city) + '" width="1200" height="800" decoding="async">' +
       '<div class="qk-cover" aria-hidden="true">' + cover + '</div></div>';
   }
 
@@ -178,11 +181,14 @@
       (done ? actionsHtml() : '<p class="qk-card__hint">' + esc(t('hint')) + '</p>');
   }
   function actionsHtml() {
+    var backHref = S.region ? ('/region.html?slug=' + encodeURIComponent(S.region) + '&country=' + encodeURIComponent(S.country)) : '/';
     return '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-qk="dl">' + DL + ' ' + esc(t('download')) + '</button>' +
-      '<button type="button" class="qc-btn" data-qk="color">' + PEN + ' ' + esc(t('coloring')) + '</button></div>';
+      '<button type="button" class="qc-btn" data-qk="color">' + PEN + ' ' + esc(t('coloring')) + '</button></div>' +
+      '<a href="' + esc(backHref) + '" class="qk-back">' + ARROW_BACK + ' ' + esc(t('back')) + '</a>';
   }
   var DL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
   var PEN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>';
+  var ARROW_BACK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M5 12l6-6M5 12l6 6"/></svg>';
 
   function openPuzzle(newPiece) {
     var done = S.total && S.got >= S.total;
@@ -255,7 +261,7 @@
   function downloadPicture() {
     var a = S.av || avatar() || lsGet(K_AVATAR) || { pose: 1, color: 0 };
     Promise.all([loadImg(S.hero + '-hero-1200.webp'), loadImg(poseUrl(a.pose, 256)).catch(function () { return null; })]).then(function (r) {
-      var img = r[0], ava = r[1], W = 1200, H = 675, F = 170, P = 28;
+      var img = r[0], ava = r[1], W = 1200, H = 800, F = 170, P = 28;
       var cv = document.createElement('canvas'); cv.width = W + P * 2; cv.height = H + F + P * 2;
       var x = cv.getContext('2d');
       x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, cv.width, cv.height);
