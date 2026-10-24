@@ -43,7 +43,7 @@ let SEARCH = !argv.includes('--no-search');   // darmowy klucz: wyszukiwarka Goo
 async function gemini(prompt, { search = false, json = false, label = 'gemini' } = {}) {
   if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
   if (cost.usd >= DAILY_USD) throw new Error(`budżet ${DAILY_USD} $ wyczerpany (${cost.usd.toFixed(3)} $) — przerwane przed: ${label}`);
-  const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } };
+  const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 65536 } };
   if (search) body.tools = [{ google_search: {} }];
   if (json && !search) body.generationConfig.responseMimeType = 'application/json';
   for (let i = 1; ; i++) {
@@ -90,11 +90,10 @@ async function pageText(url) {
   } catch { return null; }
 }
 async function sourcesPack(topic, label, limit = 60_000) {
-  const { text } = await gemini(`Wskaż źródła do researchu: ${topic}. Kraj: ${country}.
+  const want = (await geminiJson(`Wskaż źródła do researchu: ${topic}. Kraj: ${country}.
 Podaj tytuły artykułów Wikipedii (dokładne tytuły w języku ${WLANG} i po angielsku), które istnieją i opisują te miejsca, oraz adresy oficjalnych stron
 (zabytek, park, gmina, diecezja, muzeum, konsorcjum, biuro turystyczne), które na pewno istnieją. Nie zgaduj adresów podstron — tylko strony główne
-albo adresy, których jesteś pewien. JSON: {"wiki": [{"lang": "${WLANG}", "title": "…"}, {"lang": "en", "title": "…"}], "urls": ["https://…"]}`, { json: true, label: `źródła ${label}` });
-  const want = asJson(text) ?? {};
+albo adresy, których jesteś pewien. JSON: {"wiki": [{"lang": "${WLANG}", "title": "…"}, {"lang": "en", "title": "…"}], "urls": ["https://…"]}`, `źródła ${label}`)) ?? {};
   const got = [], seen = new Set();
   for (const w of (want.wiki ?? []).slice(0, 10)) { const x = await wikiText(w.lang || WLANG, w.title); if (x && !seen.has(x.url)) { seen.add(x.url); got.push(x); } }
   for (const u of (want.urls ?? []).slice(0, 8)) { if (!/^https?:\/\//.test(u)) continue; const x = await pageText(u); if (x && !seen.has(x.url)) { seen.add(x.url); got.push(x); } }
@@ -118,6 +117,21 @@ ${pack.body}`, { label });
 }
 
 const asJson = (t) => { try { return JSON.parse(t); } catch { return extractJson(t); } };
+// JSON od Gemini z naprawą: przy błędzie parsowania (np. prosty " w tekście) Gemini dostaje błąd i zwraca ten sam JSON poprawiony (najwyżej 2 razy)
+async function geminiJson(prompt, label) {
+  let { text } = await gemini(prompt, { json: true, label });
+  for (let i = 0; ; i++) {
+    try { return asJson(text); } catch (e) {
+      writeFileSync(join(dir, `v2-bad-json-${label.replace(/[^a-z0-9]+/gi, '-')}-${i}.txt`), text);
+      if (i >= 2) throw new Error(`${label}: niepoprawny JSON po 2 naprawach (${e.message})`);
+      log(`${label}: niepoprawny JSON (${e.message}) — naprawa ${i + 1}/2`);
+      ({ text } = await gemini(`Poniższy JSON nie parsuje się: ${e.message}. Zwróć DOKŁADNIE tę samą treść jako poprawny JSON — bez zmian merytorycznych,
+bez skracania. Wewnątrz tekstów zamień każdy prosty cudzysłów " na „ albo ”, usuń przecinki przed } i ], domknij nawiasy.
+
+${text}`, { json: true, label: `${label} (naprawa JSON)` }));
+    }
+  }
+}
 
 const RULES = `TWARDE ZASADY QUOLINO: rodzinna wycieczka piesza dla rodziców z dziećmi. NIGDY czasów dojazdu, kilometrów, minut jazdy ani godzin
 wyjazdu z bazy — tylko czas zwiedzania na miejscu, godziny otwarcia, kolejność przystanków. Nie wymyślaj faktów: ceny, godziny, telefony
@@ -172,7 +186,7 @@ stop_key: krótki, stały, małe litery i myślniki (parking-…, nazwa-zabytku)
 
 async function writeTrip(research) {
   log(`${slug}: ② szkic wycieczki (Gemini)`);
-  const { text } = await gemini(`Napisz po polsku szkic wycieczki Quolino na podstawie researchu poniżej — WYŁĄCZNIE z faktów z researchu.
+  const trip = await geminiJson(`Napisz po polsku szkic wycieczki Quolino na podstawie researchu poniżej — WYŁĄCZNIE z faktów z researchu.
 ${name}, ${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}. Życzenia JP: ${brief || 'brak szczególnych'}.
 Rodzic dostaje plan dnia od parkingu po finał, dziecko — misję i zadanie foto na każdym przystanku.
 ${RULES}
@@ -183,8 +197,7 @@ ${SKELETON()}
 Odpowiedz wyłącznie poprawnym JSON-em. ${JSON_QUOTE_RULE}
 
 RESEARCH:
-${research}`, { json: true, label: 'szkic' });
-  const trip = asJson(text);
+${research}`, 'szkic');
   if (!trip?.meta?.stops?.length || !trip?.content?.stops) throw new Error('Gemini: szkic bez przystanków albo w złym formacie');
   Object.assign(trip.meta.city, { slug, region_slug: region, country, status: 'draft' });
   trip.content.lang = 'pl';
@@ -202,7 +215,7 @@ ${researchQuestions(cat)}
 Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …”.`, `${pl.name} (${name}, ${region}) — historia, legendy, ciekawostki, popkultura`, `research ${tag}`);
   writeFileSync(join(dir, `v2-stop-${meta.stop_number}-research.md`), r.text);
   const write = async (fix) => {
-    const { text } = await gemini(`Napisz treść przystanku Quolino po polsku według standardu — WYŁĄCZNIE z faktów z researchu poniżej.
+    const raw = await geminiJson(`Napisz treść przystanku Quolino po polsku według standardu — WYŁĄCZNIE z faktów z researchu poniżej.
 Przystanek: ${pl.name} (kategoria ${cat}). Trasa: ${cityTitle}.
 ${STANDARD}
 ${DEPTH_TEXT}
@@ -214,8 +227,7 @@ OBECNY OPIS SZKICU:
 ${(pl.desc_paragraphs ?? []).join('\n\n')}
 
 RESEARCH PRZYSTANKU:
-${r.text}`, { json: true, label: `bloki ${tag}` });
-    const raw = asJson(text);
+${r.text}`, `bloki ${tag}`);
     return { rec: normalizeRecord(raw, { category: cat, today: TODAY }), gap: raw?.gap ?? null };
   };
   let w = await write(null), v = validateStop(w.rec, { category: cat });
