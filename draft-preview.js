@@ -10,6 +10,23 @@
   var TOKEN = qs.get('draft');
   if (!TOKEN) { window.QDraft = null; return; }
   var VER = parseInt(qs.get('v'), 10) || null;
+  // widok w podglądzie (panel admina, JP 2026-10-24): as=guest — jak niezalogowany; domyślnie jak zalogowany; view=kid — widok dziecka
+  var AS = qs.get('as') === 'guest' ? 'guest' : 'member';
+  var stripRefs = function (t) { return String(t == null ? '' : t).replace(/\s*\[\d{1,3}\]/g, '').replace(/\s+([.,;:!?…])/g, '$1').trim(); };
+  var BLOCKS = ['legend', 'curiosity', 'fun_fact', 'pop_culture'];
+  // bloki nowych wytycznych (content.stop_blocks_v2, wersja z przypisami) → kształt stop_blocks strony, bez przypisów [n]
+  function blocksOf(rec) {
+    if (!rec || !rec.marked) return null;
+    var m = rec.marked, st = rec.state || {}, out = { lang: FALLBACK_PL }, any = false;
+    BLOCKS.forEach(function (b) {
+      var v = m[b]; if (!v || (st[b] && st[b].state === 'none')) return;
+      if (b === 'pop_culture') v = { items: (v.items || []).map(function (i) { return { title: i.title, year: i.year, text: stripRefs(i.text) }; }) };
+      else { var o = {}; for (var k in v) o[k] = stripRefs(v[k]); v = o; }
+      out[b] = v; any = true;
+    });
+    return any ? out : null;
+  }
+  var FALLBACK_PL = 'pl';
 
   var LABELS = {
     title: 'tytuł', subtitle: 'podtytuł', lead: 'wstęp', good_to_know: 'dobrze wiedzieć', hero_note: 'notka',
@@ -90,6 +107,17 @@
         return (c.stops || []).slice().sort(byOrder).map(function (s) {
           var o = {}; for (var k in s) o[k] = s[k];
           o.stop_translations = tr.filter(function (t) { return t.stop_id === s.id; });
+          var bl = blocksOf((c.stop_blocks_v2 || {})[s.stop_key]);
+          if (bl) o.stop_blocks = [bl];
+          if (AS === 'guest') {   // jak gość: opis (nowe wytyczne — cały, stare — akapity 1–2), nazwy bloków zamiast treści, bez misji
+            var v2 = c.workflow === 'v2';
+            o.stop_translations = o.stop_translations.map(function (t) {
+              var d = t.desc_paragraphs || [];
+              return { lang: t.lang, name: t.name, desc_paragraphs: v2 ? d : d.slice(0, 2), paragraphs_total: d.length,
+                has_mission: !!(t.kids_box || t.hint), blocks: bl ? BLOCKS.filter(function (b) { return b !== 'fun_fact' && bl[b]; }) : [] };
+            });
+            delete o.stop_blocks;
+          }
           var pl = o.stop_translations.filter(function (t) { return t.lang === FALLBACK; })[0];
           names[s.stop_key] = pl ? pl.name : s.stop_key;
           return o;
@@ -283,5 +311,5 @@
     if (/[?&]historia\b/.test(location.search)) open(true);
   }
 
-  window.QDraft = { token: TOKEN, version: VER, info: null, core: core, chrome: chrome };
+  window.QDraft = { token: TOKEN, version: VER, info: null, core: core, chrome: chrome, asGuest: AS === 'guest' };
 })();

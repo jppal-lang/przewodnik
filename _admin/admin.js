@@ -808,6 +808,14 @@
   $d.addEventListener('input', function (e) { if (e.target.matches('.adm-cm__form textarea')) autosize(e.target); });
 
   // ── arkusz szkicu ────────────────────────────────────
+  // podgląd wersji na stronie w trzech widokach (JP 2026-10-24): niezalogowany (as=guest), zalogowany (domyślnie), dziecko (view=kid)
+  function previewLinks(token, v) {
+    var base = SITE + '/city.html?draft=' + encodeURIComponent(token) + '&v=' + v;
+    var L = [['&as=guest', 'Niezalogowany'], ['', 'Zalogowany'], ['&view=kid', 'Dziecko']];
+    return '<span class="adm-views"><span class="adm-views__l">Podgląd v' + esc(v) + ':</span>' + L.map(function (x) {
+      return '<a class="qc-btn qc-btn--sm adm-preview" href="' + esc(base + x[0]) + '" target="_blank" rel="noopener">' + x[1] + '</a>';
+    }).join('') + '</span>';
+  }
   function cell(label, oldV, newV, fmt, hasOld, cm) {
     var changed = hasOld && !same(oldV, newV);
     return '<div class="adm-row' + (changed ? ' is-chg' : '') + '"><small class="adm-row__k">' + esc(label) + (changed ? '<span class="adm-dot" title="zmienione"></span>' : '') + '</small>' +
@@ -860,8 +868,7 @@
       (it.note ? '<p class="adm-sheet__sub">' + esc(it.note) + '</p>' : '') + '</div>' +
       '<div class="adm-sheet__acts">' +
       (route ? '<a class="qc-btn qc-btn--sm adm-route" href="' + esc(route) + '" target="_blank" rel="noopener">' + PIN + ' Cała trasa w Google Maps</a>' : '') +
-      (state.token ? '<a class="qc-btn qc-btn--sm adm-preview" href="' + esc(SITE + '/city.html?draft=' + encodeURIComponent(state.token) + '&v=' + it.version) +
-        '" target="_blank" rel="noopener">Podgląd v' + esc(it.version) + ' na stronie</a>' : '') +
+      (state.token ? previewLinks(state.token, it.version) : '') +
       '<span class="adm-chip">' + esc(SRC[it.source] || it.source) + ' · ' + esc(when(it.created_at)) + '</span></div></header>';
 
     if (state.readOnly) {
