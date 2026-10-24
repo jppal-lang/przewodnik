@@ -33,8 +33,10 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const MODEL = env('GEMINI_MODEL') || 'gemini-3-flash-preview';
 const KEY = env('GOOGLE_API_KEY') || env('GEMINI_API_KEY');
 if (!KEY) { console.error('Brak GOOGLE_API_KEY'); process.exit(2); }
-// cena orientacyjna (USD za 1 mln tokenów) — do pilnowania budżetu; nadpisz GEMINI_PRICE_IN / GEMINI_PRICE_OUT
-const PRICE_IN = +(env('GEMINI_PRICE_IN') ?? 0.5), PRICE_OUT = +(env('GEMINI_PRICE_OUT') ?? 3);
+// Koszt: klucz bez płatności (darmowy plan Google AI Studio) = 0 $ — Google nic nie nalicza, tylko limituje zapytania.
+// Budżet QUOLINO_DAILY_USD liczy się dopiero przy GEMINI_BILLING=1 (włączone płatności); ceny: GEMINI_PRICE_IN / GEMINI_PRICE_OUT (USD / 1 mln tokenów).
+const BILLING = env('GEMINI_BILLING') === '1';
+const PRICE_IN = BILLING ? +(env('GEMINI_PRICE_IN') ?? 0.5) : 0, PRICE_OUT = BILLING ? +(env('GEMINI_PRICE_OUT') ?? 3) : 0;
 const dir = join(WORK, slug); mkdirSync(dir, { recursive: true });
 const cost = { usd: 0, calls: 0 };
 
@@ -52,7 +54,7 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
     if (r.ok) {
       const j = await r.json();
       const u = j.usageMetadata ?? {};
-      cost.calls++; cost.usd += ((u.promptTokenCount ?? 0) * PRICE_IN + ((u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0)) * PRICE_OUT) / 1e6;
+      cost.calls++; cost.tokens = (cost.tokens ?? 0) + (u.totalTokenCount ?? 0); cost.usd += ((u.promptTokenCount ?? 0) * PRICE_IN + ((u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0)) * PRICE_OUT) / 1e6;
       const cand = j.candidates?.[0];
       const text = (cand?.content?.parts ?? []).map(p => p.text ?? '').join('').trim();
       if (!text) throw new Error(`${label}: pusta odpowiedź (${cand?.finishReason ?? 'brak kandydata'})`);
@@ -274,24 +276,33 @@ async function main() {
   await notify(channel, `🔎 ${name} — nowy proces: research i szkic pisze Gemini, fakty sprawdza Claude. Dam znać tutaj.`);
 
   const research = await researchCity();
-  let trip = await writeTrip(research);
-  writeFileSync(join(dir, 'v2-trip-gemini.json'), JSON.stringify(trip, null, 2));
+  // wznowienie: przerwany przebieg (limit, błąd) zaczyna od miejsca przerwania — szkic i gotowe przystanki z plików; --fresh = od zera
+  const fTrip = join(dir, 'v2-trip-gemini.json'), fBlocks = join(dir, 'v2-blocks.json');
+  const resume = !FRESH && existsSync(fTrip);
+  let trip = resume ? JSON.parse(readFileSync(fTrip, 'utf8')) : await writeTrip(research);
+  if (resume) log(`${slug}: wznowienie — szkic z pliku, gotowe przystanki zostają`);
+  writeFileSync(fTrip, JSON.stringify(trip, null, 2));
   const cityTitle = trip.content.city?.title ?? name;
 
-  const blocks = {};
+  const blocks = resume && existsSync(fBlocks) ? JSON.parse(readFileSync(fBlocks, 'utf8')) : {};
   for (const m of trip.meta.stops) {
     const pl = trip.content.stops[m.stop_key];
     if (!pl) { log(`  ${m.stop_key}: brak treści PL — pomijam`); continue; }
+    if (blocks[m.stop_key]) { log(`  ${m.stop_number} ${pl.name}: bloki gotowe (wznowienie)`); continue; }
     const b = await stopBlocks(m, pl, cityTitle);
-    if (b.rec.marked.desc_paragraphs.length) pl.desc_paragraphs = b.rec.marked.desc_paragraphs.map(stripRefs);   // strona: opis bez przypisów
     blocks[m.stop_key] = { ...b.rec, gap: b.gap, validator: b.validator };
-    writeFileSync(join(dir, 'v2-blocks.json'), JSON.stringify(blocks, null, 2));
+    writeFileSync(fBlocks, JSON.stringify(blocks, null, 2));
+  }
+  for (const m of trip.meta.stops) {   // strona: opis bez przypisów (także dla przystanków ze wznowienia)
+    const pl = trip.content.stops[m.stop_key], b = blocks[m.stop_key];
+    if (pl && b?.marked?.desc_paragraphs?.length) pl.desc_paragraphs = b.marked.desc_paragraphs.map(stripRefs);
   }
 
   let rv = null;
   if (CHECK) {
     for (const m of trip.meta.stops) {
       const b = blocks[m.stop_key]; if (!b) continue;
+      if (b.check && !FRESH) continue;   // wznowienie: kontrola już jest
       if (PRACTICAL_CATS.has(m.category) && !b.sources.length) { b.check = { verdict: 'ok', summary: 'przystanek praktyczny bez faktów do sprawdzenia', errors: [], warnings: [] }; continue; }
       log(`${slug}: ④ kontrola Claude — ${m.stop_number} ${trip.content.stops[m.stop_key].name}`);
       try { b.check = await check(trip.content.stops[m.stop_key], m.category, cityTitle, { marked: b.marked, state: b.state, sources: b.sources }); }
@@ -317,7 +328,7 @@ async function main() {
   const out = { slug, version: saved.version, stops: saved.stops, model: MODEL, review: rv?.verdict ?? null, cost_usd: +cost.usd.toFixed(4), calls: cost.calls,
     preview: previewUrl(saved.token), panel: `https://admin.quolino.com/_admin/#/${slug}` };
   writeFileSync(join(dir, 'v2-last.json'), JSON.stringify(out, null, 2));
-  await notify(channel, `📝 **${name} — szkic v${saved.version} · nowe wytyczne** (${saved.stops} przystanków, Gemini ${MODEL}, ~${out.cost_usd} $)\n` +
+  await notify(channel, `📝 **${name} — szkic v${saved.version} · nowe wytyczne** (${saved.stops} przystanków, Gemini ${MODEL}, ${BILLING ? `~${out.cost_usd} $` : 'darmowy plan, 0 $'}, ${cost.calls} zapytań)\n` +
     `${lines.join('\n')}\n${rv ? verdictLine(rv) + (rv.summary ? ` — ${rv.summary}` : '') + '\n' : ''}` +
     `Panel: ${out.panel}\nPodgląd: ${out.preview}\nUwagi w panelu albo „zatwierdzam”. Tłumaczenia dopiero po akceptacji.`);
   console.log(JSON.stringify(out, null, 2));
