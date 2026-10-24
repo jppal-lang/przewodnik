@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css?v=26">
-<link rel="stylesheet" href="admin.css?v=9">
+<link rel="stylesheet" href="admin.css?v=10">
 </head>
 <body class="adm">
 
@@ -38,6 +38,13 @@
           <label class="adm-f__lbl" for="fq">Szukaj miejscowości</label>
           <input class="adm-search" id="fq" type="search" placeholder="np. Spello" autocomplete="off" spellcheck="false">
           <fieldset class="adm-f"><legend>Kraj</legend><div id="fCountry"></div></fieldset>
+          <label class="adm-f__lbl" for="fSort">Sortuj</label>
+          <select class="adm-search adm-sort" id="fSort">
+            <option value="new">Najnowsze zmiany</option>
+            <option value="old">Najstarsze zmiany</option>
+            <option value="az">Kraj, potem A–Z</option>
+          </select>
+          <fieldset class="adm-f"><legend>Wytyczne</legend><div id="fStd"></div></fieldset>
           <fieldset class="adm-f"><legend>Status</legend><div id="fStatus"></div></fieldset>
           <fieldset class="adm-f" id="fFlagsBox" hidden><legend>Uwagi</legend><div id="fFlags"></div></fieldset>
           <button type="button" class="qc-btn qc-btn--sm adm-fclear" id="fClear" hidden>Wyczyść filtry</button>
@@ -56,6 +63,6 @@
   <section class="adm-detail" id="detail" aria-live="polite" tabindex="-1" hidden></section>
 </main>
 
-<script src="admin.js?v=13"></script>
+<script src="admin.js?v=14"></script>
 </body>
 </html>

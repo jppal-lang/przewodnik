@@ -122,6 +122,16 @@ Błędy: zwykły format PostgREST (`message`) — front pokazuje go pod przycisk
 
 ---
 
+## Sortowanie po dacie + znacznik wytycznych (od v14, 2026-10-24)
+
+- **Sortuj:** „Najnowsze zmiany” (domyślnie), „Najstarsze zmiany” — płaska lista po dacie najnowszej wersji (data i godzina na karcie);
+  „Kraj, potem A–Z” — dawny układ w grupach krajów. Wybór zapamiętany w `adm.filters`.
+- **Wytyczne:** karta ma znacznik „nowe wytyczne” tylko wtedy, gdy najnowsza wersja ma `content.workflow = 'v2'`.
+  Ustawia go wyłącznie nowy proces (Gemini research → szkic PL z blokami i przypisami → kontrola Claude). Wszystko bez znacznika
+  = „stare wytyczne (archiwum)” (decyzja JP 2026-10-20: wszystkie dotychczasowe treści do archiwum, bez wyjątków).
+- SQL: `_content/claude-skills/sql/2026-10-24-admin-wytyczne.sql` (kolumna `workflow` w `admin.admin_trips`). Bez niego panel
+  działa, a wszystkie trasy pokazuje jako stare.
+
 ## Lista z filtrami + wersje w zakładkach (od v5, 2026-10-18)
 
 Lista jak w sklepie: kolumna filtrów (kraj, status, uwagi, wyszukiwarka; na telefonie zwinięta nad wynikami),

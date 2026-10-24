@@ -233,6 +233,11 @@
   var TST = { draft: 'Do zatwierdzenia', published: 'Opublikowane', rejected: 'Odrzucone', archived: 'Archiwum' };
   var TST_ORDER = ['draft', 'published', 'rejected', 'archived'];
   var FLAGS = { working: 'Hermes poprawia', unsent: 'Niewysłane uwagi' };
+  // Wytyczne (JP 2026-10-24): „nowe” = najnowsza wersja powstała w nowym procesie (Gemini research → szkic → kontrola),
+  // znacznik content.workflow = 'v2' ustawia pipeline przy zapisie wersji. Wszystko bez znacznika = stare wytyczne (archiwum).
+  var STD = { v2: 'Nowe wytyczne', old: 'Stare wytyczne (archiwum)' };
+  var STD_ORDER = ['v2', 'old'];
+  var SORTS = { new: 'Najnowsze zmiany', old: 'Najstarsze zmiany', az: 'Kraj, potem A–Z' };
   var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   var $browse = document.getElementById('browse');
   var $res = document.getElementById('results');
@@ -260,7 +265,7 @@
     if (!f) {
       var s = lsGet(FILTERS) || {};
       f = state.f = { countries: Array.isArray(s.countries) ? s.countries : [], statuses: Array.isArray(s.statuses) ? s.statuses : ['draft'],
-        flags: Array.isArray(s.flags) ? s.flags : [], letter: typeof s.letter === 'string' ? s.letter : '', q: typeof s.q === 'string' ? s.q : '' };
+        flags: Array.isArray(s.flags) ? s.flags : [], std: Array.isArray(s.std) ? s.std : [], sort: SORTS[s.sort] ? s.sort : 'new', letter: typeof s.letter === 'string' ? s.letter : '', q: typeof s.q === 'string' ? s.q : '' };
     }
     return f;
   }
@@ -270,7 +275,7 @@
     var t = { slug: r.city_slug, name: r.city_name || titleCase(r.city_slug), country: r.country ? String(r.country).toLowerCase() : '',
       region: r.region_slug || '', color: r.bandana_color || '#0B4EA2', latest: r.latest_version, latestStatus: r.latest_status,
       latestAt: r.latest_at, stops: r.stops_count, draft: r.draft_version, published: r.published_version,
-      versions: r.versions_count || 1, working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
+      versions: r.versions_count || 1, std: r.workflow === 'v2' ? 'v2' : 'old', working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
     t.status = t.draft != null ? 'draft' : t.published != null ? 'published' : (t.latestStatus || 'archived');
     t.letter = letterOf(t.name);
     return t;
@@ -279,7 +284,7 @@
   function tripsFallback() {
     return Promise.all([
       api('/admin_queue'),
-      api('/admin_versions?select=city_slug,version,status,created_at,country:content->city->>country,region:content->city->>region_slug,color:content->city->>bandana_color&order=version.asc'),
+      api('/admin_versions?select=city_slug,version,status,created_at,country:content->city->>country,region:content->city->>region_slug,color:content->city->>bandana_color,workflow:content->>workflow&order=version.asc'),
       api('/draft_comments?select=city_slug,city_version,status').catch(function () { return []; })
     ]).then(function (res) {
       var by = {}, names = {}, stops = {};
@@ -289,7 +294,7 @@
         r.versions_count++;
         if (r.latest_version == null || v.version > r.latest_version) {
           r.latest_version = v.version; r.latest_status = v.status; r.latest_at = v.created_at;
-          r.country = v.country; r.region_slug = v.region; r.bandana_color = v.color;
+          r.country = v.country; r.region_slug = v.region; r.bandana_color = v.color; r.workflow = v.workflow;
         }
         if (v.status === 'draft' && (r.draft_version == null || v.version > r.draft_version)) r.draft_version = v.version;
         if (v.status === 'published') r.published_version = v.version;
@@ -324,6 +329,7 @@
   function match(t, f, skip) {
     if (skip !== 'countries' && f.countries.length && f.countries.indexOf(t.country) < 0) return false;
     if (skip !== 'statuses' && f.statuses.length && f.statuses.indexOf(t.status) < 0) return false;
+    if (skip !== 'std' && f.std.length && f.std.indexOf(t.std) < 0) return false;
     if (skip !== 'flags' && f.flags.length && !f.flags.some(function (k) { return t[k] > 0; })) return false;
     if (skip !== 'letter' && f.letter && t.letter !== f.letter) return false;
     if (skip !== 'q' && f.q && fold(t.name + ' ' + t.slug).indexOf(fold(f.q.trim())) < 0) return false;
@@ -334,7 +340,7 @@
     state.trips.forEach(function (t) {
       if (!match(t, f, group)) return;
       if (group === 'flags') keys.forEach(function (k) { if (t[k] > 0) cnt[k] = (cnt[k] || 0) + 1; });
-      else { var k = group === 'countries' ? t.country : t.status; cnt[k] = (cnt[k] || 0) + 1; }
+      else { var k = group === 'countries' ? t.country : group === 'std' ? t.std : t.status; cnt[k] = (cnt[k] || 0) + 1; }
     });
     return keys.map(function (k) {
       var on = f[group].indexOf(k) > -1, n = cnt[k] || 0;
@@ -351,6 +357,8 @@
     var fk = Object.keys(FLAGS).filter(function (k) { return T.some(function (t) { return t[k] > 0; }) || f.flags.indexOf(k) > -1; });
     document.getElementById('fCountry').innerHTML = facet('countries', ck, countryName, f);
     document.getElementById('fStatus').innerHTML = facet('statuses', sk, function (s) { return TST[s] || VST[s] || s; }, f);
+    document.getElementById('fStd').innerHTML = facet('std', STD_ORDER, function (k) { return STD[k]; }, f);
+    var $so = document.getElementById('fSort'); if ($so.value !== f.sort) $so.value = f.sort;
     document.getElementById('fFlags').innerHTML = facet('flags', fk, function (k) { return FLAGS[k]; }, f);
     document.getElementById('fFlagsBox').hidden = !fk.length;
     if ($fq.value !== f.q) $fq.value = f.q;
@@ -365,7 +373,7 @@
           ' aria-label="' + esc(L) + ': ' + plWyc(n) + '">' + esc(L) + '</button>';
       }).join('');
 
-    var act = f.countries.length + f.statuses.length + f.flags.length + (f.letter ? 1 : 0) + (f.q.trim() ? 1 : 0);
+    var act = f.countries.length + f.statuses.length + f.std.length + f.flags.length + (f.letter ? 1 : 0) + (f.q.trim() ? 1 : 0);
     var $a = document.getElementById('fActive'); $a.textContent = act; $a.classList.toggle('is-zero', !act);
     document.getElementById('fClear').hidden = !act;
 
@@ -373,15 +381,21 @@
     document.getElementById('rCount').textContent = plWyc(shown.length) + (shown.length !== T.length ? ' z ' + T.length : '');
     if (!T.length) { $res.innerHTML = '<p class="adm-empty">Brak wycieczek w bazie.</p>'; return; }
     if (!shown.length) { $res.innerHTML = '<p class="adm-empty">Żadna wycieczka nie pasuje do filtrów. <button type="button" class="adm-linkbtn" data-fclear>Wyczyść filtry</button></p>'; return; }
+    if (f.sort !== 'az') {
+      var dir = f.sort === 'old' ? 1 : -1;
+      shown.sort(function (a, b) { return dir * ((Date.parse(a.latestAt) || 0) - (Date.parse(b.latestAt) || 0)) || a.name.localeCompare(b.name, 'pl'); });
+      $res.innerHTML = '<div class="adm-cards">' + shown.map(function (t) { return cardHtml(t, true); }).join('') + '</div>';
+      return;
+    }
     var groups = {};
     shown.forEach(function (t) { (groups[t.country] = groups[t.country] || []).push(t); });
     $res.innerHTML = ck.filter(function (c) { return groups[c]; }).map(function (c) {
       var list = groups[c].sort(function (a, b) { return a.name.localeCompare(b.name, 'pl'); });
       return '<section class="adm-cgroup" aria-label="' + esc(countryName(c)) + '"><h3 class="adm-cgroup__h">' + esc(countryName(c)) +
-        ' <b class="adm-n">' + list.length + '</b></h3><div class="adm-cards">' + list.map(cardHtml).join('') + '</div></section>';
+        ' <b class="adm-n">' + list.length + '</b></h3><div class="adm-cards">' + list.map(function (t) { return cardHtml(t, false); }).join('') + '</div></section>';
     }).join('');
   }
-  function cardHtml(t) {
+  function cardHtml(t, byDate) {
     var chip = t.status === 'draft'
       ? '<span class="adm-chip ' + (t.published == null ? 'adm-chip--new">nowa · szkic v' : 'adm-chip--chg">zmiana · szkic v') + esc(t.draft) + '</span>'
       : t.status === 'published' ? '<span class="adm-chip adm-chip--new">na stronie v' + esc(t.published) + '</span>'
@@ -391,8 +405,10 @@
     return '<a class="adm-tc" href="#/' + encodeURIComponent(t.slug) + '" style="--team:' + esc(t.color) + '">' +
       '<span class="adm-item__team" aria-hidden="true"></span><span class="adm-tc__body">' +
       '<span class="adm-tc__top"><span class="adm-tc__name">' + esc(t.name) + '</span><span class="adm-tc__ver">v' + esc(t.latest) + '</span></span>' +
-      '<span class="adm-tc__meta">' + chip + (t.region ? '<span>' + esc(regionName(t.region)) + '</span>' : '') +
-      '<span>' + plWer(t.versions) + '</span><span>' + esc(dayMonth(t.latestAt)) + '</span></span>' +
+      '<span class="adm-tc__meta">' + chip + (byDate ? '<span>' + esc(countryName(t.country)) + '</span>' : '') +
+      (t.region ? '<span>' + esc(regionName(t.region)) + '</span>' : '') +
+      '<span>' + plWer(t.versions) + '</span><span title="ostatnia wersja">' + esc(byDate ? when(t.latestAt) : dayMonth(t.latestAt)) + '</span>' +
+      '<span class="adm-std adm-std--' + t.std + '">' + (t.std === 'v2' ? 'nowe wytyczne' : 'stare wytyczne') + '</span></span>' +
       (extra ? '<span class="adm-tc__flags">' + extra + '</span>' : '') + '</span></a>';
   }
   var REGION_PL = { umbria: 'Umbria', marche: 'Marche', 'emilia-romagna': 'Emilia-Romania', toscana: 'Toskania', lazio: 'Lacjum',
@@ -405,6 +421,7 @@
     if (cb.checked && i < 0) f[g].push(cb.value); else if (!cb.checked && i > -1) f[g].splice(i, 1);
     saveFilters(); renderList();
   });
+  document.getElementById('fSort').addEventListener('change', function (e) { filters().sort = e.target.value; saveFilters(); renderList(); });
   $fq.addEventListener('input', function () { filters().q = $fq.value; saveFilters(); renderList(); });
   $abc.addEventListener('click', function (e) {
     var b = e.target.closest('[data-letter]'); if (!b || b.disabled) return;
@@ -413,7 +430,7 @@
     saveFilters(); renderList();
     var h = document.getElementById('rh'); if (h && h.getBoundingClientRect().top < 0) h.scrollIntoView({ block: 'start' });
   });
-  function clearFilters() { state.f = { countries: [], statuses: [], flags: [], letter: '', q: '' }; saveFilters(); renderList(); }
+  function clearFilters() { state.f = { countries: [], statuses: [], std: [], flags: [], letter: '', q: '', sort: filters().sort }; saveFilters(); renderList(); }
   document.getElementById('fClear').addEventListener('click', clearFilters);
   $res.addEventListener('click', function (e) { if (e.target.closest('[data-fclear]')) clearFilters(); });
 
