@@ -39,7 +39,9 @@ const dir = join(WORK, slug); mkdirSync(dir, { recursive: true });
 const cost = { usd: 0, calls: 0 };
 
 // ── Gemini ───────────────────────────────────────────────────────────────────────────────────
+let SEARCH = !argv.includes('--no-search');   // darmowy klucz: wyszukiwarka Google ma limit 0 → źródła pobiera skrypt (Wikipedia + strony oficjalne)
 async function gemini(prompt, { search = false, json = false, label = 'gemini' } = {}) {
+  if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
   if (cost.usd >= DAILY_USD) throw new Error(`budżet ${DAILY_USD} $ wyczerpany (${cost.usd.toFixed(3)} $) — przerwane przed: ${label}`);
   const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } };
   if (search) body.tools = [{ google_search: {} }];
@@ -59,11 +61,62 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
       return { text, web };
     }
     const msg = (await r.text()).slice(0, 300);
+    if (search && r.status === 429) {   // limit wyszukiwarki (free tier = 0) — nie czekamy, przechodzimy na źródła pobrane przez skrypt
+      SEARCH = false; log(`${label}: wyszukiwarka Gemini bez limitu (429) — dalej źródła pobiera skrypt`);
+      throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
+    }
     if (i >= 3 || ![0, 429, 500, 503].includes(r.status)) throw new Error(`${label}: Gemini ${r.status} ${msg}`);
     log(`${label}: Gemini ${r.status} — ponawiam ${i + 1}/3 za ${20 * i} s`);
     await new Promise(res => setTimeout(res, 20_000 * i));
   }
 }
+// ── źródła pobierane przez skrypt (gdy brak wyszukiwarki): Gemini wskazuje artykuły i strony, skrypt je pobiera, Gemini pisze tylko z nich ──
+const WLANG = country === 'it' ? 'it' : country === 'pl' ? 'pl' : 'en';
+const plainHtml = (h) => String(h).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<nav[\s\S]*?<\/nav>|<footer[\s\S]*?<\/footer>/gi, ' ')
+  .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#039;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
+async function wikiText(lang, title) {
+  const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=extracts&explaintext=1&titles=${encodeURIComponent(title)}`;
+  const j = await (await fetch(u, { headers: { 'User-Agent': 'QuolinoBot/1.0 (quolino.com)' } })).json().catch(() => null);
+  const pg = Object.values(j?.query?.pages ?? {})[0];
+  if (!pg || pg.missing !== undefined || !pg.extract) return null;
+  return { url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(pg.title.replace(/ /g, '_'))}`, title: `${pg.title} — Wikipedia (${lang})`, text: pg.extract };
+}
+async function pageText(url) {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (QuolinoBot; quolino.com)' }, redirect: 'follow', signal: AbortSignal.timeout(20_000) });
+    if (!r.ok || !/text\/html|text\/plain/.test(r.headers.get('content-type') ?? '')) return null;
+    const h = await r.text(); const t = (h.match(/<title[^>]*>([^<]*)/i)?.[1] ?? url).trim();
+    const text = plainHtml(h); return text.length > 300 ? { url: r.url || url, title: t, text } : null;
+  } catch { return null; }
+}
+async function sourcesPack(topic, label, limit = 60_000) {
+  const { text } = await gemini(`Wskaż źródła do researchu: ${topic}. Kraj: ${country}.
+Podaj tytuły artykułów Wikipedii (dokładne tytuły w języku ${WLANG} i po angielsku), które istnieją i opisują te miejsca, oraz adresy oficjalnych stron
+(zabytek, park, gmina, diecezja, muzeum, konsorcjum, biuro turystyczne), które na pewno istnieją. Nie zgaduj adresów podstron — tylko strony główne
+albo adresy, których jesteś pewien. JSON: {"wiki": [{"lang": "${WLANG}", "title": "…"}, {"lang": "en", "title": "…"}], "urls": ["https://…"]}`, { json: true, label: `źródła ${label}` });
+  const want = asJson(text) ?? {};
+  const got = [], seen = new Set();
+  for (const w of (want.wiki ?? []).slice(0, 10)) { const x = await wikiText(w.lang || WLANG, w.title); if (x && !seen.has(x.url)) { seen.add(x.url); got.push(x); } }
+  for (const u of (want.urls ?? []).slice(0, 8)) { if (!/^https?:\/\//.test(u)) continue; const x = await pageText(u); if (x && !seen.has(x.url)) { seen.add(x.url); got.push(x); } }
+  let left = limit;
+  const body = got.map((x, i) => { const t = x.text.slice(0, Math.max(0, Math.min(left, 15_000))); left -= t.length; return t ? `=== ŹRÓDŁO ${i + 1}: ${x.title}\nURL: ${x.url}\n${t}` : ''; }).filter(Boolean).join('\n\n');
+  log(`${label}: pobrane źródła ${got.length} (${got.map(x => x.url.replace(/^https?:\/\//, '').slice(0, 50)).join(', ')})`);
+  writeFileSync(join(dir, `v2-sources-${label.replace(/[^a-z0-9]+/gi, '-').slice(0, 40)}.txt`), body);
+  return { body, list: got.map(x => ({ url: x.url, title: x.title })) };
+}
+// research z wyszukiwarką, a bez niej — z pakietu źródeł pobranych przez skrypt (te same pytania, przypisy tylko do tych URL)
+async function researchCall(prompt, topic, label) {
+  if (SEARCH) { try { return await gemini(prompt, { search: true, label }); } catch (e) { if (!e.noSearch) throw e; } }
+  const pack = await sourcesPack(topic, label);
+  if (!pack.list.length) throw new Error(`${label}: nie udało się pobrać żadnego źródła`);
+  return gemini(`${prompt}
+
+BEZ WYSZUKIWARKI: korzystaj WYŁĄCZNIE z tekstów źródeł poniżej. Każdy fakt przypisz do URL źródła, w którym jest (dokładnie ten URL).
+Czego nie ma w tych źródłach — „brak w źródłach” (nie uzupełniaj z pamięci).
+
+${pack.body}`, { label });
+}
+
 const asJson = (t) => { try { return JSON.parse(t); } catch { return extractJson(t); } };
 
 const RULES = `TWARDE ZASADY QUOLINO: rodzinna wycieczka piesza dla rodziców z dziećmi. NIGDY czasów dojazdu, kilometrów, minut jazdy ani godzin
@@ -76,7 +129,7 @@ async function researchCity() {
   const f = join(dir, 'research-v2.md');
   if (existsSync(f) && !FRESH) { log(`${slug}: research z pliku ${f}`); return readFileSync(f, 'utf8'); }
   log(`${slug}: ① research (Gemini + Google)`);
-  const { text, web } = await gemini(`Jesteś redaktorem-researcherem Quolino. Zbierz materiał do rodzinnej wycieczki pieszej (${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}):
+  const { text, web } = await researchCall(`Jesteś redaktorem-researcherem Quolino. Zbierz materiał do rodzinnej wycieczki pieszej (${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}):
 ${name} (region ${region}, kraj ${country}). Życzenia JP: ${brief || 'brak szczególnych'}.
 ${RULES}
 Szukaj w sieci. Źródła w kolejności: oficjalne (zabytek, gmina, diecezja, muzeum, park) → Wikipedia w języku kraju → inne rzetelne.
@@ -87,8 +140,8 @@ temperatura, obuwie, rezerwacja). Restauracja na finał: ocena Google ≥ 4,1 i 
 toaleta, plac zabaw. Logika dnia: kolejność, przerwy, finał.
 Legend, ciekawostek i popkultury NIE zbieraj tutaj — każdy przystanek dostanie osobny research bloków.
 Każdy fakt z adresem strony (pełny URL strony, na której fakt jest). Czego nie znajdziesz — napisz „brak w źródłach”.
-Wynik: Markdown, sekcja na przystanek („### nazwa”), na końcu „## Źródła” z listą URL.`, { search: true, label: 'research miasta' });
-  const out = `${text}\n\n## Wyszukiwarka (adresy pośrednie Google, do wglądu)\n${web.map(w => `- ${w.title ?? ''} ${w.uri}`).join('\n')}\n`;
+Wynik: Markdown, sekcja na przystanek („### nazwa”), na końcu „## Źródła” z listą URL.`, `${name} (${region}): miejsce, zabytki i atrakcje w okolicy, parking, zasady zwiedzania`, 'research miasta');
+  const out = `${text}\n\n## Wyszukiwarka (adresy pośrednie Google, do wglądu)\n${(web ?? []).map(w => `- ${w.title ?? ''} ${w.uri}`).join('\n')}\n`;
   writeFileSync(f, out);
   return out;
 }
@@ -143,10 +196,10 @@ async function stopBlocks(meta, pl, cityTitle) {
   const cat = meta.category;
   const tag = `${meta.stop_number} ${pl.name}`;
   log(`${slug}: ③ przystanek ${tag} (${cat}) — research bloków`);
-  const r = await gemini(`Research bloków przystanku Quolino. Miejsce: ${pl.name} (${cat}), trasa: ${cityTitle}, ${name}, ${region}, ${country}.
+  const r = await researchCall(`Research bloków przystanku Quolino. Miejsce: ${pl.name} (${cat}), trasa: ${cityTitle}, ${name}, ${region}, ${country}.
 Szukaj w sieci (oficjalne → Wikipedia w języku kraju → inne rzetelne). Każdy fakt z PEŁNYM URL strony, na której jest.
 ${researchQuestions(cat)}
-Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …”.`, { search: true, label: `research ${tag}` });
+Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …”.`, `${pl.name} (${name}, ${region}) — historia, legendy, ciekawostki, popkultura`, `research ${tag}`);
   writeFileSync(join(dir, `v2-stop-${meta.stop_number}-research.md`), r.text);
   const write = async (fix) => {
     const { text } = await gemini(`Napisz treść przystanku Quolino po polsku według standardu — WYŁĄCZNIE z faktów z researchu poniżej.
