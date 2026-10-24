@@ -63,8 +63,8 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
       return { text, web };
     }
     const full = await r.text(), msg = full.slice(0, 300) + (/PerDay/.test(full) ? ' PerDay' : '');
-    if (search && r.status === 429) {   // limit wyszukiwarki (free tier = 0) — nie czekamy, przechodzimy na źródła pobrane przez skrypt
-      SEARCH = false; log(`${label}: wyszukiwarka Gemini bez limitu (429) — dalej źródła pobiera skrypt`);
+    if (search && [400, 403, 429].includes(r.status)) {   // limit wyszukiwarki (free tier = 0) — nie czekamy, przechodzimy na źródła pobrane przez skrypt
+      SEARCH = false; log(`${label}: wyszukiwarka Gemini niedostępna (${r.status}) — dalej źródła pobiera skrypt`);
       throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
     }
     if (r.status === 429 && /PerDay|per_day|RequestsPerDay/i.test(msg + (r.headers?.get?.('x-quota') ?? '')))
