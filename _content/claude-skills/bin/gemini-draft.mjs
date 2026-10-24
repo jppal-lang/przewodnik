@@ -14,6 +14,7 @@
 // Model: GEMINI_MODEL (domyślnie gemini-3-flash-preview), klucz GOOGLE_API_KEY. Budżet: QUOLINO_DAILY_USD (0,5 $) — szacunek z usageMetadata.
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { spawn } from 'node:child_process';
 import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText } from './quality-lib.mjs';
@@ -41,8 +42,34 @@ const dir = join(WORK, slug); mkdirSync(dir, { recursive: true });
 const cost = { usd: 0, calls: 0 };
 
 // ── Gemini ───────────────────────────────────────────────────────────────────────────────────
+// ── Antigravity CLI (agy) na koncie Google AI Pro JP (JP 2026-10-24): Gemini z wyszukiwarką Google, limity planu Pro zamiast 20 zapytań/dobę.
+// Uruchamiany w pustym katalogu /tmp/gq (agent nie widzi plików Quolino ani .env), bez kluczy API w środowisku, --sandbox.
+const AGY = '/opt/data/home/.local/bin/agy';
+let USE_AGY = !argv.includes('--no-agy') && existsSync(AGY);
+function agy(prompt, label) {
+  if (prompt.length > 120_000) prompt = prompt.slice(0, 120_000) + '\n\n[materiał skrócony do limitu]';
+  return new Promise((resolve, reject) => {
+    mkdirSync('/tmp/gq', { recursive: true });
+    const env = { ...process.env, HOME: '/opt/data/home' }; delete env.GOOGLE_API_KEY; delete env.GEMINI_API_KEY;
+    const p = spawn(AGY, ['-p', prompt, '--output-format', 'json', '--print-timeout', '900s', '--sandbox'], { cwd: '/tmp/gq', env });
+    let out = '', err = '';
+    const t = setTimeout(() => { p.kill('SIGTERM'); }, 16 * 60_000);
+    p.stdout.on('data', d => out += d); p.stderr.on('data', d => err += d);
+    p.on('close', code => {
+      clearTimeout(t);
+      let j = null; try { j = JSON.parse(out.slice(out.indexOf('{'))); } catch {}
+      if (j?.status === 'SUCCESS' && j.response) { cost.calls++; cost.tokens = (cost.tokens ?? 0) + (j.usage?.total_tokens ?? 0); return resolve({ text: String(j.response).trim(), web: [] }); }
+      reject(new Error(`${label}: Antigravity ${j?.status ?? 'kod ' + code} ${(j?.error ?? err ?? out).toString().slice(0, 300)}`));
+    });
+  });
+}
 let SEARCH = !argv.includes('--no-search');   // darmowy klucz: wyszukiwarka Google ma limit 0 → źródła pobiera skrypt (Wikipedia + strony oficjalne)
 async function gemini(prompt, { search = false, json = false, label = 'gemini' } = {}) {
+  if (USE_AGY) {
+    const ask = `${prompt}${json ? '\n\nODPOWIEDZ WYŁĄCZNIE POPRAWNYM JSON-em, bez komentarzy i bez bloków ```.' : ''}${search ? '' : '\n\nNie używaj wyszukiwarki ani narzędzi — pracuj tylko na materiale powyżej.'}`;
+    try { return await agy(ask, label); }
+    catch (e) { log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)}) — zapas: klucz API`); }
+  }
   if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
   if (cost.usd >= DAILY_USD) throw new Error(`budżet ${DAILY_USD} $ wyczerpany (${cost.usd.toFixed(3)} $) — przerwane przed: ${label}`);
   const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 65536 } };
@@ -110,9 +137,25 @@ albo adresy, których jesteś pewien. JSON: {"wiki": [{"lang": "${WLANG}", "titl
 // research z wyszukiwarką, a bez niej — z pakietu źródeł pobranych przez skrypt (te same pytania, przypisy tylko do tych URL)
 // Research (decyzja JP 2026-10-24, wariant 1): robi CLAUDE na serwerze — szuka w sieci i OTWIERA strony, podaje tylko fakty, które na nich są.
 // Gemini pisze potem tekst wyłącznie z tego materiału. --research gemini = dawna droga (wyszukiwarka Gemini albo pakiet źródeł).
-const RESEARCHER = opt('--research') ?? 'claude';
+const RESEARCHER = opt('--research') ?? (existsSync(AGY) && !argv.includes('--no-agy') ? 'agy' : 'claude');
 async function researchCall(prompt, topic, label) {
-  if (RESEARCHER === 'claude') {
+  if (RESEARCHER === 'agy') {
+    log(`${label}: research — Gemini z Google (Antigravity, AI Pro)`);
+    try {
+      const r = await agy(`${prompt}
+
+ZASADY RESEARCHU (twarde):
+- Szukaj w Google. Stronę, z której bierzesz fakt, OTWÓRZ i przeczytaj (nie opieraj się na samym opisie z wyników wyszukiwania).
+- Przy każdym fakcie podaj DOKŁADNY URL strony, na której ten fakt jest napisany — nie stronę ogólną, nie adres wyszukiwarki.
+- Tylko fakty przeczytane na stronach. Niczego nie dopisuj z pamięci. Czego nie znalazłeś — „brak — sprawdzono: <gdzie>”.
+- Przy faktach ze słabszych źródeł (blog, przewodnik, tradycja lokalna) zaznacz to: „(źródło: blog)”.
+- Na końcu „## Źródła” — lista URL, każdy z jednym zdaniem, co potwierdza.
+- Nie twórz żadnych plików, nie uruchamiaj poleceń — odpowiedz samym tekstem (Markdown).`, label);
+      if (r.text.length >= 200) return r;
+      log(`${label}: Antigravity zwrócił za krótki research — zapas: Claude`);
+    } catch (e) { log(`${label}: ${e.message.slice(0, 200)} — zapas: Claude`); }
+  }
+  if (RESEARCHER === 'agy' || RESEARCHER === 'claude') {
     log(`${label}: research — Claude (sieć, otwiera strony)`);
     const text = await claude('quolino-trip-writing', `${prompt}
 
@@ -418,7 +461,7 @@ async function main() {
   const out = { slug, version: saved.version, stops: saved.stops, model: MODEL, review: rv?.verdict ?? null, cost_usd: +cost.usd.toFixed(4), calls: cost.calls,
     preview: previewUrl(saved.token), panel: `https://admin.quolino.com/_admin/#/${slug}` };
   writeFileSync(join(dir, 'v2-last.json'), JSON.stringify(out, null, 2));
-  await notify(channel, `📝 **${name} — szkic v${saved.version} · nowe wytyczne** (${saved.stops} przystanków, Gemini ${MODEL}, ${BILLING ? `~${out.cost_usd} $` : 'darmowy plan, 0 $'}, ${cost.calls} zapytań)\n` +
+  await notify(channel, `📝 **${name} — szkic v${saved.version} · nowe wytyczne** (${saved.stops} przystanków, Gemini ${MODEL}, ${USE_AGY ? 'Antigravity / AI Pro' : BILLING ? `~${out.cost_usd} $` : 'darmowy plan, 0 $'}, ${cost.calls} zapytań)\n` +
     `${lines.join('\n')}\n${rv ? verdictLine(rv) + (rv.summary ? ` — ${rv.summary}` : '') + '\n' : ''}` +
     `Panel: ${out.panel}\nPodgląd: ${out.preview}\nUwagi w panelu albo „zatwierdzam”. Tłumaczenia dopiero po akceptacji.`);
   console.log(JSON.stringify(out, null, 2));
