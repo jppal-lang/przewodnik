@@ -816,6 +816,7 @@
   }
 
   function render(it, draft, pub, all) {
+    state.blocks = (draft && draft.stop_blocks_v2) || null;   // nowe wytyczne: bloki z przypisami (gemini-draft.mjs)
     var c = draft.city || {}, pc = pub ? (pub.city || {}) : null;
     var ctr = trOf(draft.city_translations, 'pl'), pctr = pub ? trOf(pub.city_translations, 'pl') : null;
     var team = c.bandana_color || it.bandana_color || '#0B4EA2';
@@ -950,9 +951,36 @@
       '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver)) + '</div></section>';
     var rows = cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver)) +
       STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver)); }).join('') +
+      blockRows(x.key, ver) +
       STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver)); }).join('');
     return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + rows + '</div></section>';
+  }
+
+  // bloki nowych wytycznych (docs/TRESC-PRZYSTANKU.md): wersja z przypisami [n], źródła i wynik kontroli — tylko dla redakcji
+  var BLK = [['legend', 'Legenda'], ['curiosity', 'Ciekawostka'], ['pop_culture', 'W popkulturze'], ['fun_fact', 'Fun fact (dziecko)']];
+  function blockText(k, v) {
+    if (!v) return '';
+    if (k === 'legend') return [v.text, v.trace ? 'Ślad na miejscu: ' + v.trace : '', v.history ? 'Historia: ' + v.history : ''].filter(Boolean).join('\n\n');
+    if (k === 'pop_culture') return (v.items || []).map(function (i) { return [i.title, i.year].filter(Boolean).join(' (') + (i.year ? ')' : '') + ' — ' + (i.text || ''); }).join('\n\n');
+    return v.text || '';
+  }
+  function blockRows(key, ver) {
+    var b = state.blocks && state.blocks[key]; if (!b) return '';
+    var m = b.marked || {}, st = b.state || {};
+    var rows = BLK.map(function (f) {
+      var s = st[f[0]] || {}, txt = s.state === 'found' ? blockText(f[0], m[f[0]]) : 'brak — sprawdzono: ' + (s.checked || '(nie podano)');
+      return cell(f[1], null, txt, null, false, commentBox(key, 'stop.' + f[0], f[1], ver));
+    }).join('');
+    var src = (b.sources || []).map(function (x) { return '[' + x.n + '] ' + (x.title || '') + ' — ' + x.url; }).join('\n');
+    rows += cell('Źródła (przypisy [n])', null, src || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver));
+    var ck = b.check, va = b.validator, out = [];
+    if (ck) out.push('Claude: ' + (ck.verdict === 'ok' ? 'ok' : 'do poprawy') + (ck.summary ? ' — ' + ck.summary : '') +
+      (ck.errors || []).map(function (e) { return '\n• ' + (e.block ? e.block + ': ' : '') + e.problem + (e.fix ? ' → ' + e.fix : ''); }).join(''));
+    if (va && va.errors && va.errors.length) out.push('Walidator: ' + va.errors.map(function (e) { return '\n• ' + (e.block ? e.block + ': ' : '') + e.problem; }).join(''));
+    if (b.gap) out.push('Luka w researchu: ' + b.gap);
+    if (out.length) rows += cell('Kontrola', null, out.join('\n\n'), null, false, '');
+    return rows;
   }
 
   // podświetlenie bieżącego przystanku w menu

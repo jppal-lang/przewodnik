@@ -236,3 +236,65 @@ export function blocksLine(rec) {
   const ab = { legend: 'legenda', curiosity: 'ciekawostka', fun_fact: 'fun fact', pop_culture: 'popkultura' };
   return BLOCKS.map(b => `${ab[b]} ${rec?.state?.[b]?.state === 'found' ? '✓' : '–'}`).join(' · ');
 }
+
+// ── tekst standardu i pytania researchu (wspólne: stop-content.mjs, gemini-draft.mjs) ──
+export const SIGHT_QS = new Set(['monument', 'church', 'museum', 'castle', 'house', 'synagogue']);
+
+export const STANDARD = `STANDARD TREŚCI PRZYSTANKU (docs/TRESC-PRZYSTANKU.md, JP 2026-10-18):
+- Opis (desc_paragraphs, publiczny): hak, historia i ludzie, „Kim był/była…”, co oglądać z dokładnym miejscem. Legenda, ciekawostka
+  i popkultura NIE wchodzą do opisu — mają własne bloki; w opisie najwyżej jedno zdanie-zapowiedź, a blok jest rozwinięciem (nie powtarza zdania).
+- Legenda (legend: {text, trace?, history?}): text = opowieść z bohaterami, przebiegiem i zakończeniem, wyraźnie jako legenda („Legenda mówi…”,
+  „Według tradycji…”); trace = ślad na miejscu (rzeźba, tablica, nazwa) i gdzie dokładnie; history = co mówi historia (fakt oddzielony od legendy).
+- Ciekawostka (curiosity: {text}) dla RODZICA, 2–4 zdania, zgłębiona: co, dlaczego, w jakim kontekście, gdzie to widać dziś. Dwa niezależne
+  źródła (różne domeny) albo blok none.
+- Fun fact (fun_fact: {text}) dla DZIECKA: JEDNO zdanie zaczynające się od „Czy wiesz, że…”, zrozumiałe dla 9-latka; z liczbą — dwa niezależne
+  źródła. Powstaje z researchu, nie z pamięci.
+- W popkulturze (pop_culture: {items: [{title, year, text}]}): film/serial (która scena), książka, piosenka, gra, obraz, znana osoba — tylko ze źródłem.
+- Każdy blok ma stan: {"state":"found"} (treść + przypisy) albo {"state":"none","checked":"gdzie szukano"} i wtedy treść = null.
+- Przystanek praktyczny (parking, restaurant, icecream, sweets): legenda zawsze none, checked „przystanek praktyczny (…) — legenda nie dotyczy”;
+  ciekawostka dozwolona, gdy jest naprawdę ciekawa i ma dwa źródła.
+- Przypisy [n]: każdy fakt (data, liczba, nazwisko, zdarzenie, przypisanie dzieła) kończy się [n]; numeracja wspólna dla całego przystanku;
+  sources = [{n, url, title, lang, accessed}] — źródło ZAWIERA ten fakt (nie „strona o mieście”). Każde [n] ma źródło, każde źródło jest użyte.
+  Kolejność źródeł: oficjalne (zabytek, gmina, diecezja, muzeum) → Wikipedia w języku kraju → inne rzetelne. Przypisy są tylko dla redakcji.
+- Superlatyw („najstarszy”, „jedyny”, „największy”) — dwa niezależne źródła albo konkretny fakt bez superlatywu.
+- Bez powtórzeń między blokami: fakt stoi w jednym bloku.
+- Twarde zasady: NIGDY czasów dojazdu, kilometrów, minut jazdy, godzin wyjazdu z bazy (czas zwiedzania na miejscu wolno); nie wymyślać faktów
+  (brak źródła → „sprawdź na miejscu” albo usuń zdanie); bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika;
+  bez emoji; nazwy własne w oryginale.`;
+
+export const recordFormat = (TODAY, JSON_QUOTE_RULE) => `FORMAT ODPOWIEDZI — WYŁĄCZNIE JSON w dokładnie tym kształcie (rekord ops.stop_research):
+{"marked": {"desc_paragraphs": ["… [1][2]", …],
+            "legend": null | {"text": "… [n]", "trace": "… [n]" (opcjonalnie), "history": "… [n]" (opcjonalnie)},
+            "curiosity": null | {"text": "… [n][m]"},
+            "fun_fact": null | {"text": "Czy wiesz, że … [n][m]?"},
+            "pop_culture": null | {"items": [{"title": "…", "year": "RRRR", "text": "… [n]"}]}},
+ "state": {"legend": {"state": "found"} | {"state": "none", "checked": "gdzie szukano"}, "curiosity": …, "fun_fact": …, "pop_culture": …},
+ "sources": [{"n": 1, "url": "https://…", "title": "…", "lang": "it", "accessed": "${TODAY}"}],
+ "gap": null | "czego zabrakło w researchu"}
+${JSON_QUOTE_RULE}`;
+
+export function researchQuestions(cat) {
+  if (PRACTICAL_CATS.has(cat)) return `To PRZYSTANEK PRAKTYCZNY (${cat}). Legendy nie szukaj — zapisz: „Legenda: brak — przystanek praktyczny (${cat})”.
+Zbierz: fakty praktyczne ze źródłem (lokalizacja, zasady, koszt, godziny — z datą i źródłem albo „sprawdź na miejscu”).
+Ciekawostka (dla rodzica) — tylko jeśli naprawdę jest: historia miejsca/lokalu, nietypowy detal; dwa niezależne źródła albo „brak — sprawdzono: …”.
+Fun fact i popkultura — pytania jak niżej, ale krótko; brak = „brak — sprawdzono: …”.`;
+  const short = !SIGHT_QS.has(cat);
+  return `${short ? 'To ulica / punkt widokowy / park / miejsce na zdjęcie: odpowiedz na pytania 1–2 z każdej grupy.\n' : ''}PYTANIA §2 — odpowiedz na KAŻDE: fakt + przypis do źródła (URL) albo „brak — sprawdzono: <gdzie szukano>”.
+LEGENDA
+1. Czy z miejscem wiąże się legenda, cud, podanie ludowe? Kto, co się stało, jak się skończyło? (pełna opowieść)
+2. Czy na miejscu jest jej ślad (rzeźba, tablica, odcisk, nazwa ulicy)? Gdzie dokładnie?
+3. Co o tym samym mówi historia (fakt oddzielony od legendy)?
+CIEKAWOSTKA (dla rodzica)
+1. Co zaskoczy dorosłego: dawna funkcja, zmiana przeznaczenia, nietypowe wydarzenie?
+2. Jaki detal turyści zwykle mijają, nie zauważając?
+3. Co tu zniknęło, zostało przeniesione, odnalezione albo odkryte przypadkiem?
+   Ciekawostka zgłębiona: co, dlaczego, w jakim kontekście, gdzie to widać dziś — i DWA niezależne źródła (różne domeny).
+FUN FACT (dla dziecka)
+1. Jaka liczba robi wrażenie (schody, wysokość, wiek, waga dzwonu)? — liczba z dwóch niezależnych źródeł
+2. Co jest zabawne albo dziwne (zwierzę, przezwisko, zwyczaj)?
+W POPKULTURZE
+1. Film lub serial kręcony tutaj — tytuł, rok, która scena?
+2. Książka, piosenka, gra, obraz, w których miejsce występuje?
+3. Znana osoba związana z miejscem — urodziła się, mieszkała, występowała?`;
+}
+
