@@ -184,7 +184,7 @@ content = {
             "hint": "podpowiedź do misji", "local_flavor": null, "practical_note": null, "dress_code": null, "photo_task": "zadanie foto"}, … },
  "day_plan": { "<stop_key>": "HH:MM — co się dzieje na miejscu", … },
  "emergency": { "1": {"label": "…", "description": "…"}, … },
- "_notes": [ {"stop_key": "…", "field": "…", "note": "czego zabrakło w researchu"} ]
+ "_notes": [ {"stop_key": "…", "field": "a|b|c|d|e|f|g", "note": "czego zabrakło w researchu"} ]   (field: a dane, b opis, c misja, d wskazówka, e lokalny smak, f źródła, g uwaga)
 }
 stop_key: krótki, stały, małe litery i myślniki (parking-…, nazwa-zabytku). 6–10 przystanków.`;
 
@@ -311,11 +311,21 @@ async function main() {
       catch (e) { b.check = { verdict: 'fix', summary: `kontrola nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
       writeFileSync(join(dir, 'v2-blocks.json'), JSON.stringify(blocks, null, 2));
     }
-    log(`${slug}: ④ kontrola Claude — cała trasa`);
-    try { rv = await fullReview(slug, trip); } catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
+    const fRv = join(dir, 'v2-review.json');
+    if (resume && existsSync(fRv)) { rv = JSON.parse(readFileSync(fRv, 'utf8')); log(`${slug}: kontrola trasy z pliku (wznowienie)`); }
+    else {
+      log(`${slug}: ④ kontrola Claude — cała trasa`);
+      try { rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
+      catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
+    }
   }
 
   log(`${slug}: ⑤ zapis wersji`);
+  // _notes.field: baza przyjmuje tylko a–g (a dane, b opis, c misja, d wskazówka, e lokalny smak, f źródła, g uwaga) — Gemini podaje nazwy pól
+  const NOTE_FIELD = { desc_paragraphs: 'b', desc: 'b', kids_box: 'c', quest: 'c', photo_task: 'c', hint: 'd', local_flavor: 'e', sources: 'f', source: 'f' };
+  trip.content._notes = (Array.isArray(trip.content._notes) ? trip.content._notes : []).filter(n => n && n.note).map(n => ({
+    stop_key: n.stop_key ?? null, note: String(n.note),
+    field: /^[a-g]$/.test(n.field) ? n.field : NOTE_FIELD[n.field] ?? (/hour|price|cost|ztl|phone|website|time|rating|reserv|lat|lon|maps/i.test(n.field ?? '') ? 'a' : 'g') }));
   const saved = await saveDraft(q, trip, { note: `nowe wytyczne (Gemini ${MODEL})${brief ? ': ' + brief.slice(0, 120) : ''}`, source: 'draft', changes: [], review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`,
