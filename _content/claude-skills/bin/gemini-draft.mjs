@@ -286,7 +286,7 @@ Sprawdź:
    Blokada (403, paywall) przy fakcie z drugim źródłem — uwaga, nie błąd.
 2. POWTÓRZENIA — ten sam fakt w dwóch blokach = błąd.
 3. SENS — chronologia, sprzeczności, legenda nie jako fakt, ciekawostka zaskakuje i ma kontekst, fun fact dla 9-latka.
-4. ZGŁĘBIENIE — superlatywy z dwoma niezależnymi źródłami.
+4. ZGŁĘBIENIE — superlatywy w opisie i legendzie z dwoma niezależnymi źródłami. Ciekawostka i fun fact „z przymrużeniem oka”: jedno źródło wystarczy (JP 2026-10-24) — brak drugiego źródła to NIE błąd.
 5. Zakazy: czasy dojazdu/kilometry, porównania do krajów i nacji, fakty bez źródła, literówki.
 Misja i zadanie foto — tylko uwagi (warnings, block "quest").
 Odpowiedz WYŁĄCZNIE JSON-em: {"verdict": "ok"|"fix", "summary": "1–2 zdania", "errors": [{"block": "…", "problem": "…", "fix": "…"}],

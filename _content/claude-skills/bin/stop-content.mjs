@@ -159,7 +159,7 @@ Sprawdź:
    najwyżej jedno zdanie-zapowiedź; fun fact może rozwijać ciekawostkę dla dziecka, byle nie tym samym zdaniem).
 3. SENS — chronologia (daty, wiek postaci, kolejność), brak sprzeczności między blokami, legenda NIE podana jako fakt, ciekawostka naprawdę
    zaskakuje dorosłego i ma kontekst (co, dlaczego, gdzie widać dziś), fun fact zrozumiały dla 9-latka.
-4. ZGŁĘBIENIE — ciekawostka zgłębiona, superlatywy z dwoma niezależnymi źródłami.
+4. ZGŁĘBIENIE — ciekawostka zgłębiona; superlatywy w opisie i legendzie z dwoma niezależnymi źródłami. Ciekawostka i fun fact: jedno źródło wystarczy (JP 2026-10-24).
 5. Zakazy: czasy dojazdu/kilometry, porównania do innych krajów i nacji, fakty bez źródła, literówki.
 Quest i zadanie foto (kids_box, photo_task) tylko jako kontekst: uwagi o nich dawaj w warnings z block "quest" (ten skrypt ich nie pisze).
 Zestaw stanów: blok none z „checked” jest poprawny, jeśli research naprawdę nic nie znalazł — nie żądaj wymyślania treści.

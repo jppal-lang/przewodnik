@@ -138,15 +138,14 @@ export function validateStop(rec, { category = null } = {}) {
     if (words(plain).length > 40) W('fun_fact', `fun fact ma ${words(plain).length} słów — dla 9-latka krócej`);
   }
 
-  // dwa niezależne źródła (§3): ciekawostka zawsze, fun fact z liczbą, superlatyw w bloku; superlatyw w opisie = uwaga
+  // dwa niezależne źródła (§3): superlatyw w legendzie i popkulturze; superlatyw w opisie = uwaga.
+  // Ciekawostka i fun fact (JP 2026-10-24): „z przymrużeniem oka” — wystarczy jedno źródło, drugie mile widziane; bez wymogu dwóch domen.
   const domains = (ns) => new Set(ns.map(n => byN.get(n)?.url).filter(Boolean).map(domainOf).filter(Boolean));
   const two = (block, where, text, why, soft = false) => {
     const d = domains(refsIn(text));
     if (d.size < 2) (soft ? W : E)(block, `${where}: ${why} — potrzebne dwa niezależne źródła (różne domeny), jest ${d.size}${d.size ? ` (${[...d].join(', ')})` : ''}`);
   };
-  if (m.curiosity?.text) two('curiosity', 'ciekawostka', m.curiosity.text, 'ciekawostka');
-  if (ff && NUMBER.test(stripRefs(ff).replace(/^Czy wiesz, że/u, ''))) two('fun_fact', 'fun fact', ff, 'fun fact z liczbą');
-  for (const t of texts) for (const s of sentences(t.text)) if (SUPERLATIVE.test(stripRefs(s))) {
+  for (const t of texts) for (const s of sentences(t.text)) if (!['curiosity', 'fun_fact'].includes(t.block) && SUPERLATIVE.test(stripRefs(s))) {
     const hit = stripRefs(s).match(SUPERLATIVE)[0];
     two(t.block, `${t.where} („${hit}”)`, s, 'superlatyw', t.block === 'desc');
   }
@@ -245,18 +244,20 @@ export const STANDARD = `STANDARD TREŚCI PRZYSTANKU (docs/TRESC-PRZYSTANKU.md, 
   i popkultura NIE wchodzą do opisu — mają własne bloki; w opisie najwyżej jedno zdanie-zapowiedź, a blok jest rozwinięciem (nie powtarza zdania).
 - Legenda (legend: {text, trace?, history?}): text = opowieść z bohaterami, przebiegiem i zakończeniem, wyraźnie jako legenda („Legenda mówi…”,
   „Według tradycji…”); trace = ślad na miejscu (rzeźba, tablica, nazwa) i gdzie dokładnie; history = co mówi historia (fakt oddzielony od legendy).
-- Ciekawostka (curiosity: {text}) dla RODZICA, 2–4 zdania, zgłębiona: co, dlaczego, w jakim kontekście, gdzie to widać dziś. Dwa niezależne
-  źródła (różne domeny) albo blok none.
-- Fun fact (fun_fact: {text}) dla DZIECKA: JEDNO zdanie zaczynające się od „Czy wiesz, że…”, zrozumiałe dla 9-latka; z liczbą — dwa niezależne
-  źródła. Powstaje z researchu, nie z pamięci.
+- Ciekawostka (curiosity: {text}) dla RODZICA, 2–4 zdania, zgłębiona: co, dlaczego, w jakim kontekście, gdzie to widać dziś.
+  Traktowana „z przymrużeniem oka” (JP 2026-10-24): wystarczy JEDNO źródło z przypisem; drugie potwierdzenie mile widziane — wtedy spokojnie
+  przytocz. Gdy źródło jest słabsze (blog, przewodnik, tradycja lokalna), powiedz to w tekście („podobno”, „mówi się”, „według miejscowych”).
+- Fun fact (fun_fact: {text}) dla DZIECKA: JEDNO zdanie zaczynające się od „Czy wiesz, że…”, zrozumiałe dla 9-latka; jedno źródło wystarczy
+  („z przymrużeniem oka”, JP 2026-10-24). Powstaje z researchu, nie z pamięci.
 - W popkulturze (pop_culture: {items: [{title, year, text}]}): film/serial (która scena), książka, piosenka, gra, obraz, znana osoba — tylko ze źródłem.
 - Każdy blok ma stan: {"state":"found"} (treść + przypisy) albo {"state":"none","checked":"gdzie szukano"} i wtedy treść = null.
 - Przystanek praktyczny (parking, restaurant, icecream, sweets): legenda zawsze none, checked „przystanek praktyczny (…) — legenda nie dotyczy”;
-  ciekawostka dozwolona, gdy jest naprawdę ciekawa i ma dwa źródła.
+  ciekawostka dozwolona, gdy jest naprawdę ciekawa i ma źródło.
 - Przypisy [n]: każdy fakt (data, liczba, nazwisko, zdarzenie, przypisanie dzieła) kończy się [n]; numeracja wspólna dla całego przystanku;
   sources = [{n, url, title, lang, accessed}] — źródło ZAWIERA ten fakt (nie „strona o mieście”). Każde [n] ma źródło, każde źródło jest użyte.
   Kolejność źródeł: oficjalne (zabytek, gmina, diecezja, muzeum) → Wikipedia w języku kraju → inne rzetelne. Przypisy są tylko dla redakcji.
-- Superlatyw („najstarszy”, „jedyny”, „największy”) — dwa niezależne źródła albo konkretny fakt bez superlatywu.
+- Superlatyw („najstarszy”, „jedyny”, „największy”) w opisie i legendzie — dwa niezależne źródła albo konkretny fakt bez superlatywu.
+  W ciekawostce i fun facie wystarczy jedno źródło (z przymrużeniem oka).
 - Bez powtórzeń między blokami: fakt stoi w jednym bloku.
 - Twarde zasady: NIGDY czasów dojazdu, kilometrów, minut jazdy, godzin wyjazdu z bazy (czas zwiedzania na miejscu wolno); nie wymyślać faktów
   (brak źródła → „sprawdź na miejscu” albo usuń zdanie); bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika;
@@ -276,7 +277,7 @@ ${JSON_QUOTE_RULE}`;
 export function researchQuestions(cat) {
   if (PRACTICAL_CATS.has(cat)) return `To PRZYSTANEK PRAKTYCZNY (${cat}). Legendy nie szukaj — zapisz: „Legenda: brak — przystanek praktyczny (${cat})”.
 Zbierz: fakty praktyczne ze źródłem (lokalizacja, zasady, koszt, godziny — z datą i źródłem albo „sprawdź na miejscu”).
-Ciekawostka (dla rodzica) — tylko jeśli naprawdę jest: historia miejsca/lokalu, nietypowy detal; dwa niezależne źródła albo „brak — sprawdzono: …”.
+Ciekawostka (dla rodzica) — tylko jeśli naprawdę jest: historia miejsca/lokalu, nietypowy detal; ze źródłem albo „brak — sprawdzono: …”.
 Fun fact i popkultura — pytania jak niżej, ale krótko; brak = „brak — sprawdzono: …”.`;
   const short = !SIGHT_QS.has(cat);
   return `${short ? 'To ulica / punkt widokowy / park / miejsce na zdjęcie: odpowiedz na pytania 1–2 z każdej grupy.\n' : ''}PYTANIA §2 — odpowiedz na KAŻDE: fakt + przypis do źródła (URL) albo „brak — sprawdzono: <gdzie szukano>”.
@@ -288,9 +289,9 @@ CIEKAWOSTKA (dla rodzica)
 1. Co zaskoczy dorosłego: dawna funkcja, zmiana przeznaczenia, nietypowe wydarzenie?
 2. Jaki detal turyści zwykle mijają, nie zauważając?
 3. Co tu zniknęło, zostało przeniesione, odnalezione albo odkryte przypadkiem?
-   Ciekawostka zgłębiona: co, dlaczego, w jakim kontekście, gdzie to widać dziś — i DWA niezależne źródła (różne domeny).
+   Ciekawostka zgłębiona: co, dlaczego, w jakim kontekście, gdzie to widać dziś — jedno źródło wystarczy, drugie mile widziane.
 FUN FACT (dla dziecka)
-1. Jaka liczba robi wrażenie (schody, wysokość, wiek, waga dzwonu)? — liczba z dwóch niezależnych źródeł
+1. Jaka liczba robi wrażenie (schody, wysokość, wiek, waga dzwonu)? — liczba ze źródłem
 2. Co jest zabawne albo dziwne (zwierzę, przezwisko, zwyczaj)?
 W POPKULTURZE
 1. Film lub serial kręcony tutaj — tytuł, rok, która scena?

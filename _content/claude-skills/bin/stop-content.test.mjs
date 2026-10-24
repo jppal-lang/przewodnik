@@ -85,19 +85,19 @@ test('fun fact z dwóch zdań → błąd', () => {
   assert.ok(has(validateStop(r, { category: 'church' }), 'fun_fact', /jedno zdanie/));
 });
 
-test('fun fact z liczbą z jednego źródła → błąd', () => {
+test('fun fact z liczbą z jednego źródła → bez błędu (JP 2026-10-24: z przymrużeniem oka)', () => {
   const r = load('22-san-vittore.json');
   r.marked.fun_fact.text = 'Czy wiesz, że gad z muzeum miał około 3 metrów długości [12]?';
-  assert.ok(has(validateStop(r, { category: 'church' }), 'fun_fact', /dwa niezależne źródła/));
+  assert.ok(!has(validateStop(r, { category: 'church' }), 'fun_fact', /dwa niezależne źródła/));
 });
 
-test('ciekawostka z jednej domeny (it. i en. Wikipedia) → błąd', () => {
+test('ciekawostka z jednej domeny (it. i en. Wikipedia) → bez błędu (JP 2026-10-24)', () => {
   const r = load('22-san-vittore.json');
   r.marked.curiosity.text = 'W 1976 roku znaleziono tu skamieniałego ichtiozaura [3]. Dopiero w 2017 roku opisano go jako nowy gatunek [12].';
   r.marked.fun_fact = null; r.state.fun_fact = { state: 'none', checked: 'test' };
   r.sources = r.sources.filter(s => [1, 2, 3, 5, 6, 7, 8, 11, 12, 14, 4].includes(s.n));
   const v = validateStop(r, { category: 'church' });
-  assert.ok(has(v, 'curiosity', /dwa niezależne źródła.*wikipedia\.org/), problems(v));
+  assert.ok(!has(v, 'curiosity', /dwa niezależne źródła/), problems(v));
 });
 
 test('tekst bloku powtórzony dosłownie w opisie → błąd', () => {
@@ -133,11 +133,13 @@ test('opis zabytku za krótki → błąd głębokości (descProblems)', () => {
   assert.ok(has(v, 'desc', /minimum 4 akapity i 300 słów/), problems(v));
 });
 
-test('superlatyw w bloku z jednego źródła → błąd; w opisie → uwaga', () => {
+test('superlatyw w legendzie z jednego źródła → błąd; w ciekawostce → nic; w opisie → uwaga', () => {
   const r = load('23-valadier.json');
   r.marked.curiosity.text += ' To najstarsza świątynia w grocie w regionie [2].';
+  assert.ok(!has(validateStop(r, { category: 'church' }), 'curiosity', /superlatyw/));
+  r.marked.legend = { text: 'Legenda mówi, że to najstarsza pustelnia w dolinie [2].' }; r.state.legend = { state: 'found' };
   const v = validateStop(r, { category: 'church' });
-  assert.ok(has(v, 'curiosity', /superlatyw/), problems(v));
+  assert.ok(has(v, 'legend', /superlatyw/), problems(v));
   const g = validateStop(load('21-grotte.json'), { category: 'monument' });   // „największego stalaktytu” [2] w opisie
   assert.ok(g.warnings.some(w => w.block === 'desc' && /superlatyw/.test(w.problem)));
 });

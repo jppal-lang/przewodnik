@@ -63,7 +63,10 @@ Dotyczy zabytków, kościołów, muzeów, zamków, domów, synagog; ulica, punkt
 ## 3. Ciekawostka musi być zgłębiona
 
 - Nie jednozdaniowy „fakt z listy”: **co, dlaczego, w jakim kontekście, gdzie to widać dziś**.
-- Ciekawostka, superlatyw („najstarszy”, „jedyny”) i fun fact z liczbą — **dwa niezależne źródła** albo blok `none`.
+- **Ciekawostka i fun fact — „z przymrużeniem oka”** (decyzja JP 2026-10-24): wystarczy **jedno źródło** z przypisem; drugie
+  potwierdzenie mile widziane — wtedy spokojnie przytoczyć. Od źródła zależy, czy warto je cytować: przy słabszym (blog, przewodnik,
+  tradycja lokalna) tekst to mówi („podobno”, „mówi się”, „według miejscowych”). Brak drugiego źródła nie jest błędem.
+- Superlatyw („najstarszy”, „jedyny”) w opisie i legendzie — **dwa niezależne źródła** albo konkretny fakt bez superlatywu.
 - Fun fact powstaje z ciekawostki lub researchu, nie z pamięci modelu; musi być zrozumiały dla 9-latka.
 
 ## 4. Przypisy — każdy fakt ma źródło
@@ -86,7 +89,7 @@ Dotyczy zabytków, kościołów, muzeów, zamków, domów, synagog; ulica, punkt
 3. **Sens:** czy treść trzyma się kupy — chronologia (daty, wiek postaci, kolejność zdarzeń), brak sprzeczności między
    blokami, legenda nie podana jako fakt, ciekawostka naprawdę zaskakuje, fun fact zrozumiały dla dziecka, quest wykonalny
    na miejscu.
-4. **Zgłębienie:** ciekawostka ma kontekst (§3), superlatywy mają dwa źródła.
+4. **Zgłębienie:** ciekawostka ma kontekst (§3); superlatywy w opisie i legendzie mają dwa źródła (ciekawostka i fun fact — jedno wystarczy).
 5. Walidator mechaniczny: komplet bloków ze stanem, przypisy `[n]` wskazują istniejące `sources`, brak faktów bez przypisu
    w zdaniach z datą/liczbą.
 
