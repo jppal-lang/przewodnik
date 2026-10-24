@@ -46,14 +46,16 @@ const cost = { usd: 0, calls: 0 };
 // Uruchamiany w pustym katalogu /tmp/gq (agent nie widzi plików Quolino ani .env), bez kluczy API w środowisku, --sandbox.
 const AGY = '/opt/data/home/.local/bin/agy';
 let USE_AGY = !argv.includes('--no-agy') && existsSync(AGY);
-function agy(prompt, label) {
+function agy(prompt, label, { tools = true } = {}) {
   if (prompt.length > 120_000) prompt = prompt.slice(0, 120_000) + '\n\n[materiał skrócony do limitu]';
   return new Promise((resolve, reject) => {
     mkdirSync('/tmp/gq', { recursive: true });
     const env = { ...process.env, HOME: '/opt/data/home' }; delete env.GOOGLE_API_KEY; delete env.GEMINI_API_KEY;
-    const p = spawn(AGY, ['-p', prompt, '--output-format', 'json', '--print-timeout', '900s', '--sandbox'], { cwd: '/tmp/gq', env });
+    // pisanie bez narzędzi: tryb plan (agent nie tworzy plików i nie czeka na zgodę) — inaczej potrafił wisieć godzinę (Frasassi 2026-10-24)
+    const args = ['-p', prompt, '--output-format', 'json', '--print-timeout', '600s', '--sandbox'].concat(tools ? [] : ['--mode', 'plan']);
+    const p = spawn(AGY, args, { cwd: '/tmp/gq', env, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '', err = '';
-    const t = setTimeout(() => { p.kill('SIGTERM'); }, 16 * 60_000);
+    const t = setTimeout(() => { log(`${label}: Antigravity bez odpowiedzi 11 min — przerywam`); p.kill('SIGKILL'); }, 11 * 60_000);
     p.stdout.on('data', d => out += d); p.stderr.on('data', d => err += d);
     p.on('close', code => {
       clearTimeout(t);
@@ -67,7 +69,7 @@ let SEARCH = !argv.includes('--no-search');   // darmowy klucz: wyszukiwarka Goo
 async function gemini(prompt, { search = false, json = false, label = 'gemini' } = {}) {
   if (USE_AGY) {
     const ask = `${prompt}${json ? '\n\nODPOWIEDZ WYŁĄCZNIE POPRAWNYM JSON-em, bez komentarzy i bez bloków ```.' : ''}${search ? '' : '\n\nNie używaj wyszukiwarki ani narzędzi — pracuj tylko na materiale powyżej.'}`;
-    try { return await agy(ask, label); }
+    try { return await agy(ask, label, { tools: !!search }); }
     catch (e) { log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)}) — zapas: klucz API`); }
   }
   if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
