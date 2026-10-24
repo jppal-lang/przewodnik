@@ -68,23 +68,32 @@ function agy(prompt, label, { tools = true } = {}) {
     // pisanie bez narzędzi: tryb plan (agent nie tworzy plików i nie czeka na zgodę) — inaczej potrafił wisieć godzinę (Frasassi 2026-10-24)
     const args = ['-p', prompt, '--output-format', 'json', '--print-timeout', '600s', '--sandbox'].concat(tools ? [] : ['--mode', 'plan']);
     const p = spawn(AGY, args, { cwd: '/tmp/gq', env, stdio: ['ignore', 'pipe', 'pipe'] });
-    let out = '', err = '';
-    const t = setTimeout(() => { log(`${label}: Antigravity bez odpowiedzi 11 min — przerywam`); p.kill('SIGKILL'); }, 11 * 60_000);
-    p.stdout.on('data', d => out += d); p.stderr.on('data', d => err += d);
-    p.on('close', code => {
-      clearTimeout(t);
+    let out = '', err = '', done = false;
+    // Antigravity potrafi skończyć odpowiedź i nie zakończyć procesu (Frasassi 2026-10-24: odpowiedź po 1,5 min, proces wisiał) —
+    // bierzemy odpowiedź, gdy tylko przyjdzie kompletny JSON z „status”, i zamykamy proces sami
+    const finish = (code) => {
+      if (done) return;
       let j = null; try { j = JSON.parse(out.slice(out.indexOf('{'))); } catch {}
+      if (!j && code === 'stream') return;
+      done = true; clearTimeout(t);
+      try { p.kill('SIGKILL'); } catch {}
       if (j?.status === 'SUCCESS' && j.response) { cost.calls++; cost.tokens = (cost.tokens ?? 0) + (j.usage?.total_tokens ?? 0); return resolve({ text: String(j.response).trim(), web: [] }); }
       reject(new Error(`${label}: Antigravity ${j?.status ?? 'kod ' + code} ${(j?.error ?? err ?? out).toString().slice(0, 300)}`));
-    });
+    };
+    const t = setTimeout(() => { log(`${label}: Antigravity bez odpowiedzi 6 min — przerywam`); finish('timeout'); }, 6 * 60_000);
+    p.stdout.on('data', d => { out += d; if (/\}\s*$/.test(out)) finish('stream'); });
+    p.stderr.on('data', d => err += d);
+    p.on('close', code => finish(code));
   });
 }
 let SEARCH = !argv.includes('--no-search');   // darmowy klucz: wyszukiwarka Google ma limit 0 → źródła pobiera skrypt (Wikipedia + strony oficjalne)
 async function gemini(prompt, { search = false, json = false, label = 'gemini' } = {}) {
   if (USE_AGY) {
     const ask = `${prompt}${json ? '\n\nODPOWIEDZ WYŁĄCZNIE POPRAWNYM JSON-em, bez komentarzy i bez bloków ```.' : ''}${search ? '' : '\n\nNie używaj wyszukiwarki ani narzędzi — pracuj tylko na materiale powyżej.'}`;
-    try { return await agy(ask, label, { tools: !!search }); }
-    catch (e) { log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)}) — zapas: klucz API`); }
+    for (let i = 1; i <= 2; i++) {   // druga próba po zawieszeniu — zwykle odpowiada w 1–3 min
+      try { return await agy(ask, label + (i > 1 ? ' (ponownie)' : ''), { tools: !!search }); }
+      catch (e) { log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)})${i < 2 ? ' — ponawiam' : ' — zapas: klucz API'}`); }
+    }
   }
   if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
   if (cost.usd >= DAILY_USD) throw new Error(`budżet ${DAILY_USD} $ wyczerpany (${cost.usd.toFixed(3)} $) — przerwane przed: ${label}`);
