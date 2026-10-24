@@ -15,7 +15,7 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
-import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log, db, DAILY_USD } from './lib.mjs';
+import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText } from './quality-lib.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
@@ -31,6 +31,17 @@ if (!slug || !/^[a-z0-9-]+$/.test(slug) || !name || !region) {
   process.exit(2);
 }
 const TODAY = new Date().toISOString().slice(0, 10);
+// ── czujnik postępu (JP 2026-10-24: przebieg wisiał godzinę i nikt nie wiedział) ──
+// każdy wpis w logu = postęp; brak postępu przez 15 min → wiadomość w wątku miasta (i co 15 min dalej)
+let lastStep = Date.now(), lastMsg = 'start', stallSent = 0;
+const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); };
+setInterval(() => {
+  const min = Math.round((Date.now() - lastStep) / 60_000);
+  if (min >= 15 && Date.now() - stallSent > 15 * 60_000) {
+    stallSent = Date.now();
+    notify(channel, `⏳ ${name} (nowy proces): brak postępu od ${min} min. Ostatni krok: ${lastMsg}`).catch(() => {});
+  }
+}, 60_000).unref();
 const MODEL = env('GEMINI_MODEL') || 'gemini-3-flash-preview';
 const KEY = env('GOOGLE_API_KEY') || env('GEMINI_API_KEY');
 if (!KEY) { console.error('Brak GOOGLE_API_KEY'); process.exit(2); }
@@ -386,6 +397,7 @@ async function main() {
   let trip = resume ? JSON.parse(readFileSync(fTrip, 'utf8')) : await writeTrip(research);
   if (resume) log(`${slug}: wznowienie — szkic z pliku, gotowe przystanki zostają`);
   writeFileSync(fTrip, JSON.stringify(trip, null, 2));
+  if (!resume) await notify(channel, `✍️ ${name}: research i szkic gotowe (${trip.meta.stops.length} przystanków). Teraz bloki przystanków po kolei, potem kontrola faktów.`);
   const cityTitle = trip.content.city?.title ?? name;
 
   const blocks = resume && existsSync(fBlocks) ? JSON.parse(readFileSync(fBlocks, 'utf8')) : {};
