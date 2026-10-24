@@ -62,11 +62,13 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
       const web = (cand?.groundingMetadata?.groundingChunks ?? []).map(g => g.web).filter(Boolean);
       return { text, web };
     }
-    const msg = (await r.text()).slice(0, 300);
+    const full = await r.text(), msg = full.slice(0, 300) + (/PerDay/.test(full) ? ' PerDay' : '');
     if (search && r.status === 429) {   // limit wyszukiwarki (free tier = 0) — nie czekamy, przechodzimy na źródła pobrane przez skrypt
       SEARCH = false; log(`${label}: wyszukiwarka Gemini bez limitu (429) — dalej źródła pobiera skrypt`);
       throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
     }
+    if (r.status === 429 && /PerDay|per_day|RequestsPerDay/i.test(msg + (r.headers?.get?.('x-quota') ?? '')))
+      throw new Error(`dzienny limit darmowego Gemini wyczerpany (${MODEL}: 20 zapytań na dobę) — postęp zapisany, wznowienie od tego miejsca po odnowieniu limitu (ok. 9:00)`);
     if (i >= 3 || ![0, 429, 500, 503].includes(r.status)) throw new Error(`${label}: Gemini ${r.status} ${msg}`);
     log(`${label}: Gemini ${r.status} — ponawiam ${i + 1}/3 za ${20 * i} s`);
     await new Promise(res => setTimeout(res, 20_000 * i));
