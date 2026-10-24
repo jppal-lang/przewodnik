@@ -248,7 +248,9 @@ async function fixAfterCheck(meta, pl, cityTitle, b) {
   const cat = meta.category, tag = `${meta.stop_number} ${pl.name}`;
   const fr = join(dir, `v2-stop-${meta.stop_number}-research.md`);
   const research = existsSync(fr) ? readFileSync(fr, 'utf8') : '';
-  const errs = [...(b.check?.errors ?? []).map(e => ({ ...e, by: 'Claude' })), ...(b.validator?.errors ?? []).map(e => ({ ...e, by: 'walidator' }))];
+  // JP 2026-10-24: ciekawostka i fun fact „z przymrużeniem oka” — błędy „brak drugiego źródła” w tych blokach pomijamy (kontrole sprzed zmiany zasady)
+  const twoSrc = (e) => ['curiosity', 'fun_fact'].includes(e.block) && /dw(a|óch) niezależn|drugi\p{L}* źród|jedn\p{L}* (źródł|domen)/iu.test(`${e.problem} ${e.fix ?? ''}`);
+  const errs = [...(b.check?.errors ?? []).map(e => ({ ...e, by: 'Claude' })), ...(b.validator?.errors ?? []).map(e => ({ ...e, by: 'walidator' }))].filter(e => !twoSrc(e));
   const srcNotes = (b.check?.sources_checked ?? []).map(x => `[${x.n}] ${x.ok ? 'OK' : 'NIE POTWIERDZA'}: ${x.note ?? ''}`).join('\n');
   log(`${slug}: ④b poprawki po kontroli — ${tag} (${errs.length} błędów)`);
   const raw = await geminiJson(`POPRAW treść przystanku Quolino po kontroli faktów (Claude otworzył każde źródło). Przystanek: ${pl.name} (${cat}). Trasa: ${cityTitle}.
