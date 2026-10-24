@@ -242,6 +242,40 @@ ${r.text}`, `bloki ${tag}`);
   return { rec: w.rec, gap: w.gap, validator: v };
 }
 
+// ── ④b runda poprawek po kontroli Claude: Gemini usuwa albo przepisuje zdania, których źródła nie potwierdzają ──
+// Nie dodaje faktów spoza researchu. Zdanie z błędnym przypisem: przypis do źródła, które ten fakt ma, albo zdanie znika.
+async function fixAfterCheck(meta, pl, cityTitle, b) {
+  const cat = meta.category, tag = `${meta.stop_number} ${pl.name}`;
+  const fr = join(dir, `v2-stop-${meta.stop_number}-research.md`);
+  const research = existsSync(fr) ? readFileSync(fr, 'utf8') : '';
+  const errs = [...(b.check?.errors ?? []).map(e => ({ ...e, by: 'Claude' })), ...(b.validator?.errors ?? []).map(e => ({ ...e, by: 'walidator' }))];
+  const srcNotes = (b.check?.sources_checked ?? []).map(x => `[${x.n}] ${x.ok ? 'OK' : 'NIE POTWIERDZA'}: ${x.note ?? ''}`).join('\n');
+  log(`${slug}: ④b poprawki po kontroli — ${tag} (${errs.length} błędów)`);
+  const raw = await geminiJson(`POPRAW treść przystanku Quolino po kontroli faktów (Claude otworzył każde źródło). Przystanek: ${pl.name} (${cat}). Trasa: ${cityTitle}.
+${STANDARD}
+${DEPTH_TEXT}
+ZASADY POPRAWKI:
+- Zdanie z faktem, którego źródło NIE potwierdza: daj przypis do innego źródła z listy, które ten fakt NAPRAWDĘ zawiera (sprawdź w researchu), albo USUŃ zdanie.
+- NIE dodawaj żadnych nowych faktów spoza researchu. Lepiej krótszy tekst niż fakt bez źródła.
+- Opis ma mówić o TYM miejscu (parking — o parkingu, most — o moście). Treści o innych miejscach usuń z opisu.
+- Blok, z którego nic nie zostaje: null + state none z „checked” (gdzie szukano).
+- Powtórzenia między blokami: fakt zostaje w jednym bloku.
+- Źródła: zostaw tylko użyte, numeracja ciągła od 1.
+BŁĘDY DO POPRAWY:
+${errs.map(e => `- [${e.by}] ${e.block ?? ''}: ${e.problem}${e.fix ? ' → ' + e.fix : ''}`).join('\n')}
+CO POTWIERDZAJĄ ŹRÓDŁA (wynik kontroli):
+${srcNotes || 'brak listy'}
+${recordFormat(TODAY, JSON_QUOTE_RULE)}
+
+OBECNY REKORD:
+${JSON.stringify({ marked: b.marked, state: b.state, sources: b.sources })}
+
+RESEARCH PRZYSTANKU:
+${research}`, `poprawki ${tag}`);
+  const rec = normalizeRecord(raw, { category: cat, today: TODAY });
+  return { rec, gap: raw?.gap ?? b.gap ?? null, validator: validateStop(rec, { category: cat }) };
+}
+
 // ── ④ kontrola Claude §5 (nic nie pisze) ───────────────────────────────────────────────────────
 async function check(pl, cat, cityTitle, rec) {
   const r = await claudeJson('quolino-trip-writing', `KONTROLA TREŚCI PRZYSTANKU (docs/TRESC-PRZYSTANKU.md §5) — tylko sprawdzasz, nic nie piszesz od nowa.
@@ -311,8 +345,29 @@ async function main() {
       catch (e) { b.check = { verdict: 'fix', summary: `kontrola nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
       writeFileSync(join(dir, 'v2-blocks.json'), JSON.stringify(blocks, null, 2));
     }
+    // ④b jedna runda poprawek dla przystanków z werdyktem „fix”, potem ponowna kontrola Claude (JP 2026-10-24: do JP trafia tekst po poprawkach)
+    let fixed = 0;
+    for (const m of trip.meta.stops) {
+      const b = blocks[m.stop_key], pl = trip.content.stops[m.stop_key];
+      if (!b || !pl || b.fixRound || b.check?.verdict !== 'fix' || !(b.check.errors?.length || b.validator?.errors?.length)) continue;
+      const before = { verdict: b.check.verdict, errors: (b.check.errors ?? []).length };
+      try {
+        const f = await fixAfterCheck(m, pl, cityTitle, b);
+        Object.assign(b, f.rec, { gap: f.gap, validator: f.validator, fixRound: { before, at: new Date().toISOString() } });
+        log(`${slug}: ④ kontrola Claude po poprawkach — ${m.stop_number} ${pl.name}`);
+        try { b.check = await check(pl, m.category, cityTitle, { marked: b.marked, state: b.state, sources: b.sources }); }
+        catch (e) { b.check = { verdict: 'fix', summary: `kontrola nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
+        fixed++;
+      } catch (e) { log(`  ${m.stop_number}: poprawki nie przeszły (${e.message.slice(0, 160)}) — zostaje wersja sprzed poprawek`); if (/dzienny limit/.test(e.message)) throw e; }
+      writeFileSync(fBlocks, JSON.stringify(blocks, null, 2));
+    }
+    for (const m of trip.meta.stops) {   // opisy po poprawkach na stronę (bez przypisów)
+      const pl = trip.content.stops[m.stop_key], b = blocks[m.stop_key];
+      if (pl && b?.marked?.desc_paragraphs?.length) pl.desc_paragraphs = b.marked.desc_paragraphs.map(stripRefs);
+    }
     const fRv = join(dir, 'v2-review.json');
-    if (resume && existsSync(fRv)) { rv = JSON.parse(readFileSync(fRv, 'utf8')); log(`${slug}: kontrola trasy z pliku (wznowienie)`); }
+    if (fixed && existsSync(fRv)) writeFileSync(fRv + '.przed-poprawkami', readFileSync(fRv)), writeFileSync(fRv, '');
+    if (resume && existsSync(fRv) && readFileSync(fRv, 'utf8').trim()) { rv = JSON.parse(readFileSync(fRv, 'utf8')); log(`${slug}: kontrola trasy z pliku (wznowienie)`); }
     else {
       log(`${slug}: ④ kontrola Claude — cała trasa`);
       try { rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
