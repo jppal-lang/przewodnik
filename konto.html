@@ -179,6 +179,10 @@
   ];
 
   var forceDemo = /[?&]demo=1\b/.test(location.search);
+  // podgląd z panelu admina (JP 2026-10-24): ?as=guest — jak niezalogowany, ?as=member — jak zalogowany rodzic; zawsze dane przykładowe
+  var AS = (location.search.match(/[?&]as=(guest|member)\b/) || [])[1] || null;
+  window.QAccAs = AS;
+  if (AS) forceDemo = true;
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* prywatne okno */ } }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -190,7 +194,7 @@
 
   var local = lsGet('qc.album') || [];
   // zalogowany rodzic widzi prawdziwy widok (pusty album = miasta „do zdobycia”); przykładowe dane tylko bez konta albo z ?demo=1
-  var signedIn = !!(window.QAuth && QAuth.current());
+  var signedIn = AS ? AS === 'member' : !!(window.QAuth && QAuth.current());
   var demo = forceDemo || (!signedIn && !local.length);
   var album = demo ? DEMO_ALBUM : local;
   var shared = demo ? ['spello', 'assisi'] : (lsGet('qc.parent.shared') || []);
@@ -199,7 +203,8 @@
   if (demo) {
     var pv = document.getElementById('accPreview');
     pv.hidden = false;
-    pv.innerHTML = '<b>Podgląd na przykładowych danych.</b> Załóż konto albo zaloguj się, żeby zobaczyć swój album. ' +
+    pv.innerHTML = AS ? '<b>Podgląd z panelu redakcji — widok: ' + (AS === 'member' ? 'zalogowany rodzic' : 'niezalogowany') + ', dane przykładowe.</b>' :
+      '<b>Podgląd na przykładowych danych.</b> Załóż konto albo zaloguj się, żeby zobaczyć swój album. ' +
       (local.length ? 'Masz już ' + local.length + ' miejsc na tym urządzeniu: <a href="konto.html">pokaż moje</a>.' : 'Prawdziwe miejsca pojawią się tu, gdy dziecko odsłoni cały obrazek w widoku dziecka.');
   }
 
@@ -500,12 +505,12 @@
   var box = document.getElementById('accAuth'), txt = document.getElementById('accAuthTxt'), act = document.getElementById('accAuthAct');
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function paint() {
-    var s = window.QAuth && QAuth.current();
+    var s = window.QAccAs ? (window.QAccAs === 'member' ? { email: 'Konto przykładowe', preview: true } : null) : (window.QAuth && QAuth.current());
     box.hidden = false;
     if (s) {
       txt.innerHTML = 'Zalogowano jako <b>' + esc(s.email || 'Twoje konto') + '</b>.';
-      act.innerHTML = '<button type="button" class="qc-btn qc-btn--sm" id="accOut">Wyloguj</button>';
-      document.getElementById('accOut').onclick = function () { QAuth.signOut().then(function () { location.reload(); }); };
+      act.innerHTML = '<button type="button" class="qc-btn qc-btn--sm" id="accOut"' + (s.preview ? ' disabled' : '') + '>Wyloguj</button>';
+      if (!s.preview) document.getElementById('accOut').onclick = function () { QAuth.signOut().then(function () { location.reload(); }); };
       document.getElementById('accNavMe').textContent = s.email || 'Konto rodzica';
     } else {
       txt.textContent = 'Nie jesteś zalogowany. Załóż konto, żeby album i kody zostały z Tobą na kolejne wycieczki.';
@@ -513,7 +518,8 @@
       document.getElementById('accNavMe').textContent = 'Konto rodzica';
     }
   }
-  if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
+  if (window.QAccAs) paint();
+  else if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
 })();
 </script>
 </body>
