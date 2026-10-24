@@ -1,29 +1,39 @@
 <!-- quolino-trips:start -->
-## Wycieczki: szkic w rozmowie, sprawdzanie, tłumaczenie (od 2026-10-10)
+## Wycieczki: nowy proces (od 2026-10-24, decyzja JP)
 
-Zasady pisania: umiejętność Claude `quolino-trip-writing`. Role: **GPT pisze, Claude sprawdza, JP decyduje.**
-Ty prowadzisz rozmowę w wątku miasta i uruchamiasz skrypty. Nic nie piszesz do bazy sam.
-Skrypty są w `/opt/data/quolino/`: zawsze najpierw `cd /opt/data/quolino && mkdir -p work/drafts`. Uruchamiaj je **w tle** z `--notify <id tego wątku>`. Skrypt sam
-napisze w wątku, gdy skończy (szkic trwa 10–25 min, poprawka 3–10 min). Ty od razu odpowiedz JP,
-że pracujesz.
+**Wszystkie dotychczasowe szkice to archiwum.** Każda wycieczka powstaje od zera tym procesem:
+1. **Gemini (Antigravity, konto Google AI Pro JP)** — research z wyszukiwarką Google (otwiera strony, dokładny URL przy każdym fakcie) i szkic PL
+   z blokami: opis, legenda, ciekawostka, w popkulturze, fun fact, misje — z przypisami `[n]` (standard: `docs/TRESC-PRZYSTANKU.md`).
+2. **Claude** — kontrola faktów (otwiera każde źródło), jedna runda poprawek Gemini, ponowna kontrola. Nic nie dopisuje sam.
+3. **JP** — akceptacja albo uwagi w panelu (`admin.quolino.com/_admin/`). Uwagi → nowa wersja (Gemini + kontrola Claude) i zasady na przyszłość.
+4. Po akceptacji: tłumaczenie EN (Gemini), potem pozostałe języki.
+Ciekawostka i fun fact „z przymrużeniem oka”: jedno źródło wystarczy. Superlatyw w opisie i legendzie — dwa źródła.
+
+Ty prowadzisz rozmowę w wątku miasta i **dodajesz zadanie do kolejki**. Nic nie piszesz do bazy sam i nie piszesz treści wycieczek.
+Kolejka (`gemini-queue.mjs`, cron co 10 min) bierze jedno miasto naraz. Skrypt sam pisze w wątku: start, „research i szkic gotowe”,
+wynik z linkiem do panelu, błędy, a gdy coś stoi 15 min — „⏳ brak postępu”. Jedno miasto trwa ok. 1 h.
 
 ### 1. Nowa wycieczka („zrób Gubbio”, „szkic Todi, pół dnia”)
-Zanim uruchomisz, ustal (dopytaj tylko o brakujące; reszta ma domyślne):
-- nazwę i slug (bez polskich znaków, wg nazwy polskiej: Asyż → `asyz`),
-- region (`regions.slug`; Marche ≠ Umbria ≠ Emilia-Romagna),
-- `full_day` / `half_day` (domyślnie full_day),
-- życzenia JP: must-see, kolejka, finał, tempo. Przepisz je do `--brief` jego słowami.
-
+Ustal (dopytaj tylko o brakujące): nazwę i slug (bez polskich znaków, wg nazwy polskiej: Asyż → `asyz`), region (`regions.slug`;
+Marche ≠ Umbria ≠ Emilia-Romagna), `full_day` / `half_day` (domyślnie half_day), życzenia JP (must-see, kolejka, finał, tempo) jego słowami.
 ```bash
-nohup node trip-draft.mjs gubbio --name "Gubbio" --region umbria --duration full_day \
-  --brief "kolejka na Monte Ingino, finał z widokiem" --notify <id wątku> > work/drafts/gubbio.log 2>&1 &
+cd /opt/data/quolino && node qdb.mjs job-add gubbio draft gemini '{"name":"Gubbio","region":"umbria","duration":"full_day","brief":"kolejka na Monte Ingino, finał z widokiem"}'
 ```
-Adres strony to `/{lang}/{kraj}/{region}/{miasto}/` z kolumn `url_slug` (nie ze sluga wewnętrznego): oryginalna nazwa lokalna, małe litery,
-bez diakrytyków, myślniki (Asyż → `assisi`, Rawenna → `ravenna`, San Gimignano → `san-gimignano`; alfabet nielaciński → nazwa angielska).
-`trip-draft` bierze go z `--url-slug`, inaczej z propozycji modelu, i zapisuje w `cities.url_slug`. **Nowy region** dostaje `regions.url_slug` przy
-dodawaniu wiersza (Toskania → `toscana`). Wewnętrzne slugi, wątki Discorda, pliki mediów i `work/` zostają bez zmian.
+Odpowiedz JP: „W kolejce (#id). Dam znać w tym wątku.” Stan kolejki: `node qdb.mjs jobs`. Od nowa (bez wznowienia): dodaj `"fresh": true`.
+Nie uruchamiaj `trip-draft.mjs` ani `stop-content.mjs` — to stary proces (archiwum).
 
 ### 2. Rozmowa o szkicu (każda uwaga JP)
+**Szkic nowego procesu** (panel: znacznik „nowe wytyczne”) — najprościej: JP wpisuje uwagi przy polach w panelu i klika „Wyślij uwagi do poprawki”;
+`draft-comments.mjs` sam przekaże je do Gemini (`gemini-draft.mjs --revise`). Uwagi z wątku: po „Robię?” i „tak” zapisz je jako JSON i uruchom:
+```bash
+cd /opt/data/quolino && cat > work/drafts/gubbio-uwagi.json <<'X'
+[{"stop_key":"palazzo-dei-consoli","field":"stop.kids_box","field_label":"Misja dla dzieci","body":"quest prostszy dla 9-latka: liczenie, nie daty"}]
+X
+nohup node gemini-draft.mjs gubbio --revise --comments work/drafts/gubbio-uwagi.json --context work/drafts/gubbio-ctx.txt --notify <id wątku> \
+  > work/drafts/gubbio-revise.log 2>&1 &
+```
+(`stop_key` z panelu albo `null` dla całej wycieczki). Punkty poniżej (`trip-revise.mjs`) dotyczą tylko starych szkiców.
+
 1. Zrozum uwagę i przełóż ją na konkret: który przystanek, które pole (opis, quest, wskazówka, godziny,
    kolejność, nowy albo usunięty przystanek). Stan szkicu: `node trip-revise.mjs <slug> --show`.
 2. Gdy uwaga jest niejednoznaczna, dopytaj jednym pytaniem. Gdy jest jasna, powiedz w 1–3 punktach,

@@ -57,12 +57,18 @@ async function revise(slug, rows, thread) {
   mkdirSync(dir, { recursive: true });
   const ctxFile = join(dir, 'comments-ctx.txt');
   writeFileSync(ctxFile, rows.map(r => `JP (panel, ${r.field_label ?? r.field ?? 'całość'}${r.stop_key ? ', ' + r.stop_key : ''}): ${r.body}`).join('\n'));
+  // szkic nowego procesu (content.workflow = 'v2', gemini-draft.mjs) → poprawki przez Gemini na AI Pro + kontrola Claude (JP 2026-10-24)
+  const [v] = await q(`SELECT content->>'workflow' AS wf FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  const v2 = v?.wf === 'v2';
+  const cmFile = join(dir, 'comments.json');
+  if (v2) writeFileSync(cmFile, JSON.stringify(rows.map(r => ({ id: r.id, stop_key: r.stop_key ?? null, field: r.field ?? null, field_label: r.field_label ?? null, body: r.body }))));
   try {
     const env = { ...process.env, PATH: `/opt/data/.local/bin:${process.env.PATH}` };
-    const { stdout } = await sh('node', [join(DIR, 'trip-revise.mjs'), slug, '--say', say, '--context', ctxFile, '--notify', thread],
-      { env, timeout: 40 * 60 * 1000, maxBuffer: 20e6 });
+    const args = v2 ? [join(DIR, 'gemini-draft.mjs'), slug, '--revise', '--comments', cmFile, '--context', ctxFile, '--notify', thread]
+      : [join(DIR, 'trip-revise.mjs'), slug, '--say', say, '--context', ctxFile, '--notify', thread];
+    const { stdout } = await sh('node', args, { env, timeout: 60 * 60 * 1000, maxBuffer: 20e6 });
     return JSON.parse(stdout.slice(stdout.indexOf('{')));
-  } finally { try { unlinkSync(ctxFile); } catch { /* brak pliku */ } }
+  } finally { for (const f of [ctxFile, cmFile]) { try { unlinkSync(f); } catch { /* brak pliku */ } } }
 }
 
 function replyOf(out) {

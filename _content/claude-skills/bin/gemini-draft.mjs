@@ -17,17 +17,20 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
-import { loadRules, rulesText } from './quality-lib.mjs';
+import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
-const name = opt('--name'), region = opt('--region'), country = opt('--country') ?? 'it';
+// --revise --comments <plik.json> [--context <plik>]: poprawki JP z panelu do szkicu nowego procesu (wywołuje draft-comments.mjs)
+const REVISE = argv.includes('--revise');
+let name = opt('--name') ?? (REVISE ? slug : undefined);
+const region = opt('--region') ?? (REVISE ? '-' : undefined), country = opt('--country') ?? 'it';
 const duration = opt('--duration') ?? 'half_day', brief = opt('--brief') ?? '', channel = opt('--notify');
 const FRESH = argv.includes('--fresh'), CHECK = !argv.includes('--no-check');
-if (!slug || !/^[a-z0-9-]+$/.test(slug) || !name || !region) {
-  console.error('Użycie: gemini-draft.mjs <slug> --name "Nazwa" --region <region_slug> [--country it] [--duration half_day|full_day] [--brief "…"] [--notify kanał] [--fresh] [--no-check]');
+if (!slug || !/^[a-z0-9-]+$/.test(slug) || !name || !region || (REVISE && !opt('--comments'))) {
+  console.error('Użycie: gemini-draft.mjs <slug> --revise --comments uwagi.json [--context plik] [--notify kanał]\n   albo: gemini-draft.mjs <slug> --name "Nazwa" --region <region_slug> [--country it] [--duration half_day|full_day] [--brief "…"] [--notify kanał] [--fresh] [--no-check]');
   process.exit(2);
 }
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -481,6 +484,88 @@ async function main() {
   console.log(JSON.stringify(out, null, 2));
 }
 
-try { await main(); }
+// ── poprawki JP z panelu (nowy proces) ─────────────────────────────────────────────────────────
+// Uwagi pogrupowane po przystankach; Gemini poprawia tylko wskazane pola (i bloki z przypisami), Claude sprawdza zmienione przystanki,
+// zapis jako nowa wersja (source revise, workflow v2), a Claude rozstrzyga, czy poprawka uczy zasady na przyszłość (editorial_rules).
+async function reviseMain() {
+  const comments = JSON.parse(readFileSync(opt('--comments'), 'utf8'));
+  const context = opt('--context') && existsSync(opt('--context')) ? readFileSync(opt('--context'), 'utf8') : '';
+  const [cur] = await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu do poprawy`);
+  const trip = { meta: cur.trip.meta, content: cur.trip.content };
+  const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
+  const cityTitle = trip.content.city?.title ?? slug; name = cityTitle;
+  await loadRules(q);
+  const by = {};
+  for (const cm of comments) (by[cm.stop_key ?? '_city'] ??= []).push(cm);
+  const changes = [], summaries = [];
+  const list = (cs) => cs.map(x => `- [${x.field_label ?? x.field ?? 'całość'}] ${x.body}`).join('\n');
+  for (const [key, cs] of Object.entries(by)) {
+    if (key === '_city') {
+      log(`${slug}: poprawki — opis miasta (${cs.length})`);
+      const out = await geminiJson(`Popraw opis wycieczki Quolino według uwag JP. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
+${RULES}
+${rulesText()}
+UWAGI JP:
+${list(cs)}
+OBECNY OPIS MIASTA I PLAN DNIA:
+${JSON.stringify({ city: trip.content.city, day_plan: trip.content.day_plan, meta_city: trip.meta.city })}
+Odpowiedz JSON-em: {"city": {…tylko zmienione pola…}, "day_plan": {…tylko zmienione…}, "meta_city": {…tylko zmienione…}, "summary": "1 zdanie po polsku, co zmieniłeś"}. ${JSON_QUOTE_RULE}`, 'poprawki miasta');
+      for (const [k, v] of Object.entries(out.city ?? {})) { changes.push({ path: `content.city.${k}`, before: trip.content.city[k] ?? null, after: v, why: list(cs) }); trip.content.city[k] = v; }
+      for (const [k, v] of Object.entries(out.day_plan ?? {})) { changes.push({ path: `content.day_plan.${k}`, before: trip.content.day_plan?.[k] ?? null, after: v, why: list(cs) }); (trip.content.day_plan ??= {})[k] = v; }
+      for (const [k, v] of Object.entries(out.meta_city ?? {})) if (!['slug', 'country', 'region_slug', 'status'].includes(k)) { changes.push({ path: `meta.city.${k}`, before: trip.meta.city[k] ?? null, after: v, why: list(cs) }); trip.meta.city[k] = v; }
+      if (out.summary) summaries.push(out.summary);
+      continue;
+    }
+    const m = trip.meta.stops.find(x => x.stop_key === key), pl = trip.content.stops[key];
+    if (!m || !pl) { summaries.push(`${key}: nie ma takiego przystanku w szkicu — uwagi pominięte`); continue; }
+    const b = blocks[key];
+    const fr = join(dir, `v2-stop-${m.stop_number}-research.md`);
+    log(`${slug}: poprawki — ${m.stop_number} ${pl.name} (${cs.length})`);
+    const out = await geminiJson(`Popraw przystanek wycieczki Quolino według uwag JP. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
+Uwaga do opisu, legendy, ciekawostki, popkultury albo fun factu = popraw rekord bloków (z przypisami [n], źródła z listy). Nowe fakty tylko z researchu poniżej
+albo — jeśli JP sam podał fakt w uwadze — z uwagi JP (wtedy bez przypisu, opisz to w "summary").
+${STANDARD}
+${DEPTH_TEXT}
+${RULES}
+${rulesText()}
+UWAGI JP:
+${list(cs)}
+OBECNY PRZYSTANEK:
+${JSON.stringify({ meta: m, pl, record: b ? { marked: b.marked, state: b.state, sources: b.sources } : null })}
+${existsSync(fr) ? `RESEARCH PRZYSTANKU:\n${readFileSync(fr, 'utf8')}` : ''}
+Odpowiedz JSON-em: {"meta": {…tylko zmienione pola…}, "pl": {…tylko zmienione pola (bez desc_paragraphs, jeśli zmieniasz rekord)…},
+ "record": null | {"marked": …, "state": …, "sources": …} (cały rekord, gdy zmieniasz opis albo bloki), "summary": "1 zdanie po polsku, co zmieniłeś"}. ${JSON_QUOTE_RULE}`, `poprawki ${m.stop_number}`);
+    for (const [k, v] of Object.entries(out.meta ?? {})) if (k !== 'stop_key') { changes.push({ path: `meta.stops.${key}.${k}`, before: m[k] ?? null, after: v, why: list(cs) }); m[k] = v; }
+    for (const [k, v] of Object.entries(out.pl ?? {})) { changes.push({ path: `content.stops.${key}.${k}`, before: pl[k] ?? null, after: v, why: list(cs) }); pl[k] = v; }
+    if (out.record) {
+      const rec = normalizeRecord(out.record, { category: m.category, today: TODAY });
+      changes.push({ path: `blocks.${key}`, before: b ? { marked: b.marked } : null, after: { marked: rec.marked }, why: list(cs) });
+      blocks[key] = { ...(b ?? {}), ...rec, validator: validateStop(rec, { category: m.category }), revisedBy: 'JP', fixRound: b?.fixRound };
+      if (rec.marked.desc_paragraphs.length) pl.desc_paragraphs = rec.marked.desc_paragraphs.map(stripRefs);
+      if (CHECK) {
+        log(`${slug}: ④ kontrola Claude po poprawkach JP — ${m.stop_number} ${pl.name}`);
+        try { blocks[key].check = await check(pl, m.category, cityTitle, rec); }
+        catch (e) { blocks[key].check = { verdict: 'fix', summary: `kontrola nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
+      }
+    }
+    if (out.summary) summaries.push(`${pl.name}: ${out.summary}`);
+  }
+  if (!changes.length) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
+  const fails = Object.values(blocks).filter(x => x?.check?.verdict === 'fix').length;
+  const rv = { verdict: fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: [], warnings: [] };
+  const saved = await saveDraft(q, trip, { note: `poprawki JP (${comments.length} uwag, nowy proces)`, source: 'revise', changes, review: rv });
+  await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
+             trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks)]);
+  let learned = [];
+  try { learned = await learn(q, { slug, version: saved.version, say: comments.map(x => x.body).join('\n'), context, changes, trip }); }
+  catch (e) { log(`zasady: ${e.message.slice(0, 160)}`); }
+  const out = { slug, version: saved.version, from: cur.version, changes: changes.length, summary: rv.summary, verdict: rv.verdict, learned, preview: previewUrl(saved.token) };
+  await notify(channel, `✅ **${cityTitle} — szkic v${saved.version}** po Twoich poprawkach (${changes.length} zmian${fails ? `, kontrola Claude zgłasza uwagi przy ${fails} przystankach` : ''}).\n` +
+    `${rv.summary}\n${learned?.length ? `Zapamiętane zasady: ${learned.length}\n` : ''}Panel: https://admin.quolino.com/_admin/#/${slug}`);
+  console.log(JSON.stringify(out, null, 2));
+}
+
+try { await (REVISE ? reviseMain() : main()); }
 catch (e) { console.error('BŁĄD:', e.message); await notify(channel, `⚠️ ${name} (nowy proces): ${e.message.slice(0, 500)}`); process.exitCode = 1; }
 finally { await c.end(); }
