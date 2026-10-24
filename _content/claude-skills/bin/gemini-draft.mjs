@@ -3,9 +3,9 @@
 //   node gemini-draft.mjs <slug> --name "Frasassi" --region marche [--country it] [--duration half_day|full_day]
 //        [--brief "co JP chce"] [--notify <kanał>] [--fresh] [--no-check]
 //
-// ① GEMINI + wyszukiwarka Google — research miasta według docs/TRESC-PRZYSTANKU.md (fakty z linkami)
+// ① CLAUDE (sieć, otwiera strony) — research miasta według docs/TRESC-PRZYSTANKU.md (fakty z dokładnymi linkami); --research gemini = Gemini
 // ② GEMINI — szkic PL całej wycieczki (plan dnia, przystanki, misje dzieci)
-// ③ GEMINI + wyszukiwarka — każdy przystanek: pytania §2 → bloki legenda / ciekawostka / fun fact / popkultura z przypisami [n]
+// ③ CLAUDE research pytań §2 dla każdego przystanku → GEMINI pisze bloki legenda / ciekawostka / fun fact / popkultura z przypisami [n]
 //    + walidator mechaniczny (stop-content-lib) i najwyżej jedna runda poprawek Gemini
 // ④ CLAUDE — kontrola §5 każdego przystanku (otwiera źródła) + kontrola całej trasy (trip-review). Nic nie poprawia — wynik idzie do JP.
 // ⑤ ZAPIS — nowa wersja „draft” ze znacznikiem content.workflow = 'v2' (panel: „nowe wytyczne”), bloki w content.stop_blocks_v2
@@ -14,7 +14,7 @@
 // Model: GEMINI_MODEL (domyślnie gemini-3-flash-preview), klucz GOOGLE_API_KEY. Budżet: QUOLINO_DAILY_USD (0,5 $) — szacunek z usageMetadata.
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { claudeJson, extractJson, JSON_QUOTE_RULE, env, log, db, DAILY_USD } from './lib.mjs';
+import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText } from './quality-lib.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
@@ -108,7 +108,23 @@ albo adresy, których jesteś pewien. JSON: {"wiki": [{"lang": "${WLANG}", "titl
   return { body, list: got.map(x => ({ url: x.url, title: x.title })) };
 }
 // research z wyszukiwarką, a bez niej — z pakietu źródeł pobranych przez skrypt (te same pytania, przypisy tylko do tych URL)
+// Research (decyzja JP 2026-10-24, wariant 1): robi CLAUDE na serwerze — szuka w sieci i OTWIERA strony, podaje tylko fakty, które na nich są.
+// Gemini pisze potem tekst wyłącznie z tego materiału. --research gemini = dawna droga (wyszukiwarka Gemini albo pakiet źródeł).
+const RESEARCHER = opt('--research') ?? 'claude';
 async function researchCall(prompt, topic, label) {
+  if (RESEARCHER === 'claude') {
+    log(`${label}: research — Claude (sieć, otwiera strony)`);
+    const text = await claude('quolino-trip-writing', `${prompt}
+
+ZASADY RESEARCHU (twarde):
+- Szukaj w sieci (WebSearch), a KAŻDĄ stronę, z której bierzesz fakt, OTWÓRZ (WebFetch) i przeczytaj.
+- Przy każdym fakcie podaj DOKŁADNY URL strony, na której ten fakt jest napisany — nie stronę ogólną o mieście, nie stronę z wyszukiwarki.
+- Tylko fakty, które przeczytałeś na otwartej stronie. Niczego nie dopisuj z pamięci. Czego nie znalazłeś — „brak — sprawdzono: <gdzie>”.
+- Przy faktach ze słabszych źródeł (blog, przewodnik, tradycja lokalna) zaznacz to: „(źródło: blog)”.
+- Na końcu „## Źródła” — lista URL, które otworzyłeś, każdy z jednym zdaniem, co potwierdza.`, { web: true });
+    if (!text || text.length < 200) throw new Error(`${label}: Claude zwrócił pusty research`);
+    return { text, web: [] };
+  }
   if (SEARCH) { try { return await gemini(prompt, { search: true, label }); } catch (e) { if (!e.noSearch) throw e; } }
   const pack = await sourcesPack(topic, label);
   if (!pack.list.length) throw new Error(`${label}: nie udało się pobrać żadnego źródła`);
@@ -120,6 +136,8 @@ Czego nie ma w tych źródłach — „brak w źródłach” (nie uzupełniaj z 
 ${pack.body}`, { label });
 }
 
+// research przystanku z pliku tylko, gdy zrobił go ten sam badacz (po zmianie na Claude stare pliki Gemini nie wracają)
+const STOP_RESEARCH_OK = { has: (f) => { try { return readFileSync(f + '.by', 'utf8').trim() === RESEARCHER; } catch { return false; } } };
 const asJson = (t) => { try { return JSON.parse(t); } catch { return extractJson(t); } };
 // JSON od Gemini z naprawą: przy błędzie parsowania (np. prosty " w tekście) Gemini dostaje błąd i zwraca ten sam JSON poprawiony (najwyżej 2 razy)
 async function geminiJson(prompt, label) {
@@ -145,7 +163,7 @@ bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnik
 // ── ① research miasta ─────────────────────────────────────────────────────────────────────────
 async function researchCity() {
   const f = join(dir, 'research-v2.md');
-  if (existsSync(f) && !FRESH) { log(`${slug}: research z pliku ${f}`); return readFileSync(f, 'utf8'); }
+  if (existsSync(f) && !FRESH && STOP_RESEARCH_OK.has(f)) { log(`${slug}: research z pliku ${f}`); return readFileSync(f, 'utf8'); }
   log(`${slug}: ① research (Gemini + Google)`);
   const { text, web } = await researchCall(`Jesteś redaktorem-researcherem Quolino. Zbierz materiał do rodzinnej wycieczki pieszej (${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}):
 ${name} (region ${region}, kraj ${country}). Życzenia JP: ${brief || 'brak szczególnych'}.
@@ -160,7 +178,7 @@ Legend, ciekawostek i popkultury NIE zbieraj tutaj — każdy przystanek dostani
 Każdy fakt z adresem strony (pełny URL strony, na której fakt jest). Czego nie znajdziesz — napisz „brak w źródłach”.
 Wynik: Markdown, sekcja na przystanek („### nazwa”), na końcu „## Źródła” z listą URL.`, `${name} (${region}): miejsce, zabytki i atrakcje w okolicy, parking, zasady zwiedzania`, 'research miasta');
   const out = `${text}\n\n## Wyszukiwarka (adresy pośrednie Google, do wglądu)\n${(web ?? []).map(w => `- ${w.title ?? ''} ${w.uri}`).join('\n')}\n`;
-  writeFileSync(f, out);
+  writeFileSync(f, out); writeFileSync(f + '.by', RESEARCHER);
   return out;
 }
 
@@ -212,12 +230,15 @@ ${research}`, 'szkic');
 async function stopBlocks(meta, pl, cityTitle) {
   const cat = meta.category;
   const tag = `${meta.stop_number} ${pl.name}`;
+  const fRes = join(dir, `v2-stop-${meta.stop_number}-research.md`);
+  const r = !FRESH && existsSync(fRes) && STOP_RESEARCH_OK.has(fRes) ? { text: readFileSync(fRes, 'utf8') } : await (async () => {
   log(`${slug}: ③ przystanek ${tag} (${cat}) — research bloków`);
-  const r = await researchCall(`Research bloków przystanku Quolino. Miejsce: ${pl.name} (${cat}), trasa: ${cityTitle}, ${name}, ${region}, ${country}.
+  return researchCall(`Research bloków przystanku Quolino. Miejsce: ${pl.name} (${cat}), trasa: ${cityTitle}, ${name}, ${region}, ${country}.
 Szukaj w sieci (oficjalne → Wikipedia w języku kraju → inne rzetelne). Każdy fakt z PEŁNYM URL strony, na której jest.
 ${researchQuestions(cat)}
-Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …”.`, `${pl.name} (${name}, ${region}) — historia, legendy, ciekawostki, popkultura`, `research ${tag}`);
-  writeFileSync(join(dir, `v2-stop-${meta.stop_number}-research.md`), r.text);
+Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …”.`, `${pl.name} (${name}, ${region}) — historia, legendy, ciekawostki, popkultura`, `research ${tag}`); })();
+  writeFileSync(fRes, r.text);
+  writeFileSync(fRes + '.by', RESEARCHER);
   const write = async (fix) => {
     const raw = await geminiJson(`Napisz treść przystanku Quolino po polsku według standardu — WYŁĄCZNIE z faktów z researchu poniżej.
 Przystanek: ${pl.name} (kategoria ${cat}). Trasa: ${cityTitle}.
