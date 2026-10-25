@@ -455,9 +455,10 @@
   }
   function route() {
     var h = location.hash;
-    document.body.classList.toggle('is-prog', h === '#/postep');
+    document.body.classList.toggle('is-prog', h === '#/postep' || h === '#/koszty');
     if (h === '#/baza-wiedzy') { showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { showDetail(); window.scrollTo(0, 0); openProgress(); return; }
+    if (h === '#/koszty') { showDetail(); window.scrollTo(0, 0); openCosts(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
     if (m) { openTrip(decodeURIComponent(m[1]), m[2] ? +m[2] : null); return; }
     showList();
@@ -1329,6 +1330,91 @@
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję postęp prac…</p></div>';
     draw(); state.poll = setInterval(function () { if (location.hash === '#/postep') draw(); }, 30000);
     document.title = 'Postęp prac · Quolino admin';
+  }
+
+  // ── Koszty AI (JP 2026-10-25): wszystkie modele, za co odpowiadają, tokeny i kwoty; tygodnie / miesiące ──
+  // Źródło: admin.ai_usage_daily (SQL 2026-10-25-koszty-ai.sql), zasila ai-usage-import.mjs z work/costs.jsonl.
+  var AI = {
+    gemini: { name: 'Gemini', who: 'Google, abonament AI Pro (Antigravity); zapas: darmowy klucz API', does: 'research z wyszukiwarką Google, pisanie szkicu, bloki przystanków, poprawki' },
+    claude: { name: 'Claude', who: 'Anthropic, Claude Code na serwerze', does: 'kontrola faktów przystanków i całej trasy, kontrola po poprawkach, zasady z uwag' },
+    openrouter: { name: 'OpenRouter', who: 'modele zewnętrzne przez OpenRouter (płatne i darmowe)', does: 'tłumaczenia, starsze skrypty treści, przegląd lokali' }
+  };
+  var BILL = { abonament: 'abonament', darmowe: 'darmowe', api: 'płatne API' };
+  function demoCosts() {
+    var out = [], d = new Date();
+    for (var i = 0; i < 45; i++) {
+      var day = new Date(d.getTime() - i * 864e5).toISOString().slice(0, 10);
+      out.push({ day: day, provider: 'gemini', model: 'Antigravity (AI Pro)', role: i % 3 ? 'research z Google' : 'poprawki', billing: 'abonament', calls: 12, tokens_in: 380000, tokens_out: 52000, usd: 0, usd_equiv: 0 });
+      out.push({ day: day, provider: 'claude', model: 'claude-opus', role: i % 2 ? 'kontrola faktów przystanków' : 'kontrola całej trasy', billing: 'abonament', calls: 9, tokens_in: 1100000, tokens_out: 40000, usd: 0, usd_equiv: 2.41 });
+      if (i % 4 === 0) out.push({ day: day, provider: 'openrouter', model: 'deepseek/deepseek-v3.2', role: 'trip-translate', billing: 'api', calls: 30, tokens_in: 210000, tokens_out: 90000, usd: 0.12, usd_equiv: 0.12 });
+    }
+    return out;
+  }
+  function usd(n) { n = +n || 0; return n === 0 ? '0 $' : n < 0.01 ? '< 0,01 $' : n.toFixed(2).replace('.', ',') + ' $'; }
+  function isoWeek(day) {
+    var t = new Date(day + 'T12:00:00Z'), dn = (t.getUTCDay() + 6) % 7; t.setUTCDate(t.getUTCDate() - dn + 3);
+    var y = t.getUTCFullYear(), w1 = new Date(Date.UTC(y, 0, 4)), w = 1 + Math.round(((t - w1) / 864e5 - 3 + ((w1.getUTCDay() + 6) % 7)) / 7);
+    var mon = new Date(day + 'T12:00:00Z'); mon.setUTCDate(mon.getUTCDate() - dn);
+    return { key: y + '-T' + (w < 10 ? '0' : '') + w, label: 'tydzień ' + w + ' · od ' + mon.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) };
+  }
+  var MONTHS = ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'];
+  function periodOf(day, mode) { if (mode === 'w') return isoWeek(day); var y = day.slice(0, 4), m = +day.slice(5, 7); return { key: day.slice(0, 7), label: MONTHS[m - 1] + ' ' + y }; }
+  function add(a, r) { a.calls += +r.calls || 0; a.tok += (+r.tokens_in || 0) + (+r.tokens_out || 0); a.usd += +r.usd || 0; a.eq += +r.usd_equiv || 0; return a; }
+  function zero() { return { calls: 0, tok: 0, usd: 0, eq: 0 }; }
+  function openCosts() {
+    state.current = null; state.trip = null; clearInterval(state.poll);
+    var mode = 'm'; try { mode = localStorage.getItem('adm.costMode') || 'm'; } catch (e) { /* brak */ }
+    var rows = null, err = null;
+    function draw() {
+      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a><a class="qc-btn qc-btn--sm" href="#/postep">Postęp prac</a></div><section class="pg">';
+      if (err) { $d.innerHTML = h + '<p class="adm-empty">Koszty AI niedostępne: ' + esc(err) + '<br>Potrzebny SQL 2026-10-25-koszty-ai.sql (zatwierdzenie wdrożenia).</p></section>'; return; }
+      var per = {}, keys = [], prov = {}, roles = {};
+      rows.forEach(function (r) {
+        var p = periodOf(r.day, mode);
+        if (!per[p.key]) { per[p.key] = { label: p.label, all: zero(), by: {} }; keys.push(p.key); }
+        add(per[p.key].all, r); add(per[p.key].by[r.provider] = per[p.key].by[r.provider] || zero(), r);
+        var pk = r.provider; prov[pk] = prov[pk] || { all: zero(), bills: {}, models: {} }; add(prov[pk].all, r); prov[pk].bills[r.billing] = 1; prov[pk].models[r.model] = 1;
+        var rk = pk + '|' + r.role; roles[rk] = roles[rk] || { provider: pk, role: r.role, billing: r.billing, s: zero() }; add(roles[rk].s, r);
+      });
+      keys.sort().reverse();
+      var cur = keys[0] ? per[keys[0]] : { label: '—', all: zero(), by: {} };
+      var total = keys.reduce(function (a, k) { a.usd += per[k].all.usd; a.eq += per[k].all.eq; a.tok += per[k].all.tok; return a; }, zero());
+      h += '<header class="pg-head"><div><p class="label">Koszty AI</p><h2>Modele, tokeny, kwoty</h2></div>' +
+        '<div class="pg-seg" role="group" aria-label="Okres"><button type="button" data-mode="w" aria-pressed="' + (mode === 'w') + '">Tygodnie</button><button type="button" data-mode="m" aria-pressed="' + (mode === 'm') + '">Miesiące</button></div></header>';
+      h += '<div class="pg-card pg-card--running"><p class="pg-step__now"><small>Bieżący okres · ' + esc(cur.label) + '</small></p><dl class="pg-big">' +
+        '<div><dt>Zapłacone</dt><dd>' + usd(cur.all.usd) + '</dd><p>realne opłaty za płatne API</p></div>' +
+        '<div><dt>Równowartość cennika API</dt><dd>' + usd(cur.all.eq) + '</dd><p>tyle kosztowałoby to bez abonamentów</p></div>' +
+        '<div><dt>Tokeny</dt><dd>' + tok(cur.all.tok) + '</dd><p>' + esc(cur.all.calls) + ' zapytań</p></div></dl>' +
+        '<p class="pg-trend">Od początku dziennika: zapłacone <b>' + usd(total.usd) + '</b> · równowartość <b>' + usd(total.eq) + '</b> · <b>' + tok(total.tok) + '</b> tokenów. Abonamenty (AI Pro, Claude) to stała opłata miesięczna, nie wliczona w „zapłacone”.</p></div>';
+      h += '<h3 class="pg-h3">Kto za co odpowiada</h3><div class="pg-ai">' + Object.keys(prov).sort(function (a, b) { return prov[b].all.tok - prov[a].all.tok; }).map(function (pk) {
+        var P = prov[pk], meta = AI[pk] || { name: pk, who: '', does: '' };
+        var rs = Object.keys(roles).filter(function (k) { return roles[k].provider === pk; }).map(function (k) { return roles[k]; }).sort(function (a, b) { return b.s.tok - a.s.tok; });
+        return '<article class="pg-card pg-ai__card pg-ai--' + esc(pk) + '"><header class="pg-card__head"><div><div class="pg-card__title"><span class="pg-ai__name">' + esc(meta.name) + '</span>' +
+          Object.keys(P.bills).map(function (b) { return '<span class="pg-pill pg-pill--' + (b === 'api' ? 'bad' : b === 'abonament' ? 'running' : 'done') + '">' + esc(BILL[b] || b) + '</span>'; }).join('') + '</div>' +
+          '<p class="pg-ai__who">' + esc(meta.who) + '</p><p class="pg-ai__does"><b>Odpowiada za:</b> ' + esc(meta.does) + '</p></div>' +
+          '<dl class="pg-ai__sum"><div><dt>tokeny</dt><dd>' + tok(P.all.tok) + '</dd></div><div><dt>zapłacone</dt><dd>' + usd(P.all.usd) + '</dd></div><div><dt>równowartość</dt><dd>' + usd(P.all.eq) + '</dd></div></dl></header>' +
+          '<table class="pg-tab"><thead><tr><th scope="col">Zadanie</th><th scope="col">Zapytania</th><th scope="col">Tokeny</th><th scope="col">Zapłacone</th><th scope="col">Równowartość</th></tr></thead><tbody>' +
+          rs.map(function (x) { return '<tr><th scope="row">' + esc(x.role) + '</th><td>' + esc(x.s.calls) + '</td><td>' + tok(x.s.tok) + '</td><td>' + usd(x.s.usd) + '</td><td>' + usd(x.s.eq) + '</td></tr>'; }).join('') +
+          '</tbody></table><p class="pg-ai__models">Modele: ' + esc(Object.keys(P.models).join(', ')) + '</p></article>';
+      }).join('') + '</div>';
+      var provs = Object.keys(prov);
+      h += '<h3 class="pg-h3">' + (mode === 'w' ? 'Tygodnie' : 'Miesiące') + '</h3><div class="pg-card"><table class="pg-tab pg-tab--periods"><thead><tr><th scope="col">Okres</th>' +
+        provs.map(function (p) { return '<th scope="col">' + esc((AI[p] || { name: p }).name) + '</th>'; }).join('') + '<th scope="col">Razem</th></tr></thead><tbody>' +
+        keys.map(function (k) {
+          var P = per[k];
+          return '<tr><th scope="row">' + esc(P.label) + '</th>' + provs.map(function (p) { var x = P.by[p]; return '<td>' + (x ? tok(x.tok) + '<small>' + usd(x.usd) + (x.eq > x.usd ? ' · ekw. ' + usd(x.eq) : '') + '</small>' : '—') + '</td>'; }).join('') +
+            '<td><b>' + tok(P.all.tok) + '</b><small>' + usd(P.all.usd) + (P.all.eq > P.all.usd ? ' · ekw. ' + usd(P.all.eq) : '') + '</small></td></tr>';
+        }).join('') + '</tbody></table></div>';
+      $d.innerHTML = h + '</section>';
+    }
+    $d.onclick = function (e) {
+      var b = e.target.closest && e.target.closest('[data-mode]'); if (!b) return;
+      mode = b.getAttribute('data-mode'); try { localStorage.setItem('adm.costMode', mode); } catch (x) { /* brak */ } draw();
+    };
+    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję koszty AI…</p></div>';
+    (DEMO ? Promise.resolve(demoCosts()) : api('/ai_usage_daily?order=day.desc&limit=5000')).then(function (r) { rows = r || []; draw(); })
+      .catch(function (e) { err = e.message; draw(); });
+    document.title = 'Koszty AI · Quolino admin';
   }
 
   // ── baza wiedzy redakcji: reguły z uwag (JP 2026-10-17, docs/BAZA-WIEDZY.md) ──

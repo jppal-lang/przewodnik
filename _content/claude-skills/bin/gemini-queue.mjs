@@ -10,6 +10,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { db, log } from './lib.mjs';
 import { WORK, notify } from './draft-lib.mjs';
+import { importUsage } from './ai-usage-import.mjs';
 
 const sh = promisify(execFile);
 const argv = process.argv.slice(2);
@@ -17,6 +18,8 @@ const ADMIN = '1558873867643134073';   // #admin, gdy miasto nie ma jeszcze wąt
 const DIR = new URL('.', import.meta.url).pathname;
 const LOCK = join(WORK, '..', 'gemini-queue.lock');
 
+// karta „Koszty AI”: dziennik zużycia do bazy co 10 min, także gdy kolejka pracuje albo czeka na noc
+{ const c0 = await db(); try { await importUsage(async (sql, p) => (await c0.query(sql, p)).rows); } catch (e) { log(`ai_usage: ${e.message.slice(0, 160)}`); } finally { await c0.end(); } }
 if (argv.includes('--night')) {
   const h = +new Intl.DateTimeFormat('pl-PL', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Warsaw' }).format(new Date());
   if (h >= 7 && h < 22) process.exit(0);
