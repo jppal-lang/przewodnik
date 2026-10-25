@@ -53,6 +53,8 @@ function event(msg, { stage = null, status = 'running' } = {}) {
      claudeUsage.input + claudeUsage.output, claudeUsage.calls]).catch(() => {});
 }
 const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); event(lastMsg); };
+// zatrzymanie procesu (kill, restart) = wpis „przerwane” na dashboardzie, zamiast wiszącego „stoi ≥ 15 min” (JP 2026-10-25)
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { event('przerwane: proces zatrzymany', { status: 'stopped' }); setTimeout(() => process.exit(143), 1500); });
 setInterval(() => {
   const min = Math.round((Date.now() - lastStep) / 60_000);
   if (min >= 15 && Date.now() - stallSent > 15 * 60_000) {

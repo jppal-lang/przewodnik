@@ -1201,7 +1201,7 @@
   // ── Postęp prac (JP 2026-10-25): etap każdej wycieczki, sygnatury czasu, tokeny ──
   // Źródło: admin.pipeline_runs / pipeline_events / pipeline_queue (SQL 2026-10-25-postep-prac.sql), zapisuje gemini-draft.mjs.
   var STAGES = ['Research', 'Szkic', 'Bloki przystanków', 'Kontrola przystanków', 'Kontrola całej trasy', 'Zapis', 'Gotowe'];
-  var RUNST = { running: 'pracuje', done: 'gotowe', error: 'błąd', stalled: 'stoi ≥ 15 min' };
+  var RUNST = { running: 'pracuje', done: 'gotowe', error: 'błąd', stalled: 'stoi ≥ 15 min', stopped: 'przerwane' };
   function demoPipeline(path) {
     var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
     if (/pipeline_runs/.test(path)) return [
@@ -1247,7 +1247,7 @@
         }).join('') + '</ul></section>';
         html += '<section class="adm-sheet__sec"><h3>Przebiegi</h3>' + (runs.length ? '<div class="adm-prog__list">' + runs.map(function (r) {
           return '<details class="adm-prog__run adm-prog__run--' + esc(r.status) + '" data-run="' + esc(r.run_id) + '"><summary>' +
-            '<span class="adm-prog__name"><a href="#/' + esc(r.city_slug) + '">' + esc(titleCase(r.city_slug)) + '</a> <span class="adm-chip' + (r.status === 'done' ? ' adm-chip--new' : r.status === 'running' ? ' adm-chip--chg' : ' adm-chip--del') + '">' + esc(RUNST[r.status] || r.status) + '</span>' +
+            '<span class="adm-prog__name"><a href="#/' + esc(r.city_slug) + '">' + esc(titleCase(r.city_slug)) + '</a> <span class="adm-chip' + (r.status === 'done' ? ' adm-chip--new' : r.status === 'running' ? ' adm-chip--chg' : r.status === 'stopped' ? '' : ' adm-chip--del') + '">' + esc(RUNST[r.status] || r.status) + '</span>' +
             (r.kind === 'revise' ? ' <span class="adm-chip">poprawki</span>' : '') + '</span>' + stageBar(r) +
             '<span class="adm-prog__meta"><span>start ' + esc(when(r.started_at)) + '</span><span>ostatni krok ' + esc(when(r.last_at)) + ' (' + esc(ago(r.last_at)) + ')</span><span>czas ' + esc(dur(r.seconds)) + '</span>' +
             '<span>Gemini ' + esc(tok(r.gemini_tokens)) + ' tok. · ' + esc(r.gemini_calls) + ' zapytań</span><span>Claude ' + esc(tok(r.claude_tokens)) + ' tok. · ' + esc(r.claude_calls) + ' wywołań</span></span>' +
