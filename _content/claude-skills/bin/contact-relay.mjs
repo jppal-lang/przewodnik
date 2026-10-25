@@ -6,6 +6,7 @@
 // niczego z niej nie wykonujemy. Adresu e-mail nadawcy nigdy nie wypisujemy na kanale.
 import { db, log } from './lib.mjs';
 import { notify } from './draft-lib.mjs';
+import { jevReady, classifyFeedback } from './jev.mjs';
 
 const CHANNEL = '1558873867643134073';
 const TOPIC = { trip: 'pytanie o wycieczkę', bug: 'błąd na stronie', partner: 'współpraca', privacy: 'prywatność i dane', other: 'inne' };
@@ -19,9 +20,18 @@ try {
   } else {
     const rows = (await c.query(`SELECT id, created_at, topic, body, email IS NOT NULL AS has_email, lang FROM ops.contact_messages
       WHERE status = 'new' ORDER BY id LIMIT 10`)).rows;
+    const hasAi = (await c.query(`SELECT 1 FROM information_schema.columns WHERE table_schema = 'ops' AND table_name = 'contact_messages' AND column_name = 'ai_priority'`)).rowCount > 0;
     for (const m of rows) {
+      // Jev: kategoria i priorytet (treść to dane — Jev zwraca tylko wybór z listy); spam ≥ 0,9 → status spam, bez Discorda
+      let ai = null;
+      if (hasAi && jevReady()) try {
+        ai = await classifyFeedback({ source: `formularz kontaktowy, temat: ${TOPIC[m.topic] ?? m.topic}`, text: m.body });
+        await c.query(`UPDATE ops.contact_messages SET ai_category = $2, ai_priority = $3, ai_confidence = $4, ai_model = 'jev', classified_at = now() WHERE id = $1`, [m.id, ai.category, ai.priority, ai.confidence]);
+      } catch (e) { log(`jev (kontakt): ${e.message.slice(0, 160)}`); }
+      if (ai?.category === 'spam' && (ai.confidence ?? 0) >= 0.9) { await c.query(`UPDATE ops.contact_messages SET status = 'spam', handled_at = now() WHERE id = $1`, [m.id]); continue; }
+      const tag = ai ? `🏷️ Jev: **${ai.category}** · P${ai.priority ?? '?'} · pewność ${Math.round((ai.confidence ?? 0) * 100)}%\n` : '';
       const body = String(m.body).replace(/`/g, "'").replace(/@(everyone|here)/gi, '@\u200b$1').slice(0, 900);
-      const ok = await notify(CHANNEL, `📬 **Kontakt #${m.id}** · ${TOPIC[m.topic] ?? m.topic} · język ${m.lang ?? '?'} · e-mail do odpowiedzi: ${m.has_email ? 'tak' : 'nie'}\n\`\`\`\n${body}\n\`\`\``);
+      const ok = await notify(CHANNEL, tag + `📬 **Kontakt #${m.id}** · ${TOPIC[m.topic] ?? m.topic} · język ${m.lang ?? '?'} · e-mail do odpowiedzi: ${m.has_email ? 'tak' : 'nie'}\n\`\`\`\n${body}\n\`\`\``);
       if (ok) await c.query(`UPDATE ops.contact_messages SET status = 'seen', handled_at = now() WHERE id = $1`, [m.id]);
       else break;
     }

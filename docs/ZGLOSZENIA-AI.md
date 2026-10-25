@@ -1,6 +1,9 @@
 # ZGLOSZENIA-AI.md — kategoryzacja zgłoszeń i opinii przez AI
 
-Pomysł JP 2026-10-16. Status: plan do wdrożenia przez Hermesa (backend), zmiany w bazie po approve JP.
+Pomysł JP 2026-10-16. Status (2026-10-25): etap 1–2 wdrożony z **Jev** (TypeSafe System One): kategoria, priorytet i pewność
+dla zgłoszeń, opinii z komentarzem i formularza kontaktowego. Zapis w kolumnach `ai_*` (SQL `2026-10-25-zgloszenia-ai.sql`),
+linia „🏷️ Jev” w wiadomości na Discordzie, spam z pewnością ≥ 0,9 bez Discorda, P1 / bezpieczeństwo / zamknięte dodatkowo na #admin.
+Jev nie pisze tekstu, więc `summary_pl` i `action` na razie pomijamy. Kod: `bin/jev.mjs`, `reports-relay.mjs`, `contact-relay.mjs`.
 
 **Cel:** JP nie czyta każdego zgłoszenia. AI sortuje, łączy duplikaty i kieruje sprawę tam, gdzie zostanie naprawiona.
 Do JP trafia tylko to, co wymaga jego decyzji, oraz piątkowe podsumowanie.
@@ -24,7 +27,7 @@ nowe zgłoszenie
   → 5. zamknięcie: status + wersja wycieczki z poprawką
 ```
 
-- **Model:** darmowy lub tani przez OpenRouter (np. Qwen), tak jak przy tłumaczeniach. Przy pewności < 0,7 albo
+- **Model:** Jev (TypeSafe, `jev-latest`, wejście 0,042 $ / 1 mln tokenów, decyzje z listy z pewnością); wcześniej planowany Qwen przez OpenRouter. Przy pewności < 0,7 albo
   kategorii P1 druga opinia mocniejszego modelu. Wolumen jest mały (kilkadziesiąt dziennie po starcie), koszt pomijalny.
 - **Do modelu idzie tylko tekst zgłoszenia + nazwa miasta i przystanku + fragment opisu przystanku.**
   Bez identyfikatorów urządzenia, IP i konta.

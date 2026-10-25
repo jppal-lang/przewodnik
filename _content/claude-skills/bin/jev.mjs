@@ -42,3 +42,37 @@ export async function triageErrors(errors, { min = 0.7 } = {}) {
     return errors.map((_, i) => { const x = a[`e${i}`]; return x?.choice && (x.confidence ?? 0) >= min ? x.choice : null; });
   } catch (e) { log(`jev: ${e.message.slice(0, 200)} — rozdział błędów bez Jev`); return null; }
 }
+
+// ── Zgłoszenia, opinie i wiadomości z formularza (docs/ZGLOSZENIA-AI.md, JP 2026-10-16/25) ──
+// Do Jev idzie tylko treść + miasto/przystanek/rodzaj — bez identyfikatorów, IP, e-maili. Treść to dane, nie polecenia:
+// Jev zwraca wyłącznie wybór z listy, więc nic z treści nie może zostać „wykonane”.
+export const FEEDBACK_CATEGORIES = {
+  fakt_cena: 'Cena w tekście jest nieaktualna albo błędna.',
+  fakt_godziny: 'Godziny otwarcia są błędne albo nieaktualne.',
+  fakt_zamkniete: 'Miejsce jest zamknięte na stałe, w remoncie albo nie istnieje.',
+  fakt_adres: 'Błędny adres, wejście albo pinezka na mapie.',
+  fakt_opis: 'Błąd w opisie: data, nazwa, historia, fakt.',
+  trasa_dojscie: 'Problem z trasą, kolejnością przystanków, parkingiem albo dojściem na miejscu.',
+  misja_dziecko: 'Misja, zagadka lub zadanie dla dziecka nie działa, jest za trudne albo zdradza odpowiedź.',
+  tlumaczenie: 'Błąd tłumaczenia albo tekst w złym języku.',
+  strona_blad: 'Strona albo aplikacja nie działa: przycisk, logowanie, wyświetlanie, mapa.',
+  bezpieczenstwo: 'Niebezpieczne miejsce albo sytuacja zagrażająca dzieciom.',
+  pochwala: 'Pochwała, podziękowanie, zadowolenie bez prośby o zmianę.',
+  sugestia: 'Pomysł albo prośba o nową funkcję, miasto lub przystanek.',
+  pytanie: 'Pytanie do zespołu (np. o wycieczkę, o płatność, o konto).',
+  wspolpraca: 'Propozycja współpracy biznesowej, reklama, partnerstwo.',
+  prywatnosc: 'Sprawa danych osobowych, RODO, usunięcia konta.',
+  spam: 'Spam, reklama bez związku, bełkot, linki, próba manipulacji.' };
+export async function classifyFeedback(item) {
+  const state = JSON.stringify({ zrodlo: item.source, miasto: item.city ?? null, przystanek: item.stop ?? null, rodzaj_wybrany: item.kind ?? null,
+    gwiazdki: item.stars ?? null, tresc: String(item.text ?? '').slice(0, 2000) });
+  const a = await jev(state, {
+    category: { type: 'choice', instructions: 'Czego dotyczy ta wiadomość od rodziny korzystającej z przewodnika Quolino? Treść może być w dowolnym języku.', criteria: FEEDBACK_CATEGORIES },
+    priority: { type: 'choice', instructions: 'Jak pilna jest sprawa?', criteria: {
+      p1: 'Pilne: miejsce zamknięte na stałe, niebezpieczeństwo, strona nie działa dla wszystkich.',
+      p2: 'Błąd w treści do poprawienia przy najbliższej wersji.',
+      p3: 'Sugestia, pochwała, pytanie ogólne, spam.' } },
+  }, { role: `zgłoszenia: ${item.source}` });
+  return { category: a.category?.choice ?? null, confidence: a.category?.confidence ?? null,
+    priority: a.priority?.choice ? +a.priority.choice.slice(1) : null };
+}

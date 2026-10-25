@@ -6,6 +6,29 @@
 // (trip-revise), a po decyzji oznacz: UPDATE ops.reports SET status = 'fixed'|'rejected' WHERE id = …
 import { db, env, log } from './lib.mjs';
 import { notify } from './draft-lib.mjs';
+import { jevReady, classifyFeedback } from './jev.mjs';
+
+// Jev (docs/ZGLOSZENIA-AI.md): kategoria, priorytet, pewność — zapis w ai_*, linia na Discordzie, spam ≥ 0,9 bez Discorda, P1 też na #admin
+const ADMIN = '1558873867643134073';
+const KAT = { fakt_cena: 'cena', fakt_godziny: 'godziny', fakt_zamkniete: 'zamknięte', fakt_adres: 'adres', fakt_opis: 'opis / fakt', trasa_dojscie: 'trasa / dojście',
+  misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', bezpieczenstwo: 'BEZPIECZEŃSTWO', pochwala: 'pochwała', sugestia: 'sugestia',
+  pytanie: 'pytanie', wspolpraca: 'współpraca', prywatnosc: 'prywatność', spam: 'spam' };
+let AI_COLS = null;
+async function aiCols(q, table) {
+  AI_COLS ??= new Set((await q(`SELECT table_name FROM information_schema.columns WHERE table_schema = 'ops' AND column_name = 'ai_category'`)).map(x => x.table_name));
+  return AI_COLS.has(table);
+}
+async function triage(q, table, id, item) {
+  if (!jevReady() || !(await aiCols(q, table))) return null;
+  try {
+    const c = await classifyFeedback(item);
+    await q(`UPDATE ops.${table} SET ai_category = $2, ai_priority = $3, ai_confidence = $4, ai_model = 'jev', classified_at = now() WHERE id = $1`, [id, c.category, c.priority, c.confidence]);
+    return c;
+  } catch (e) { log(`jev (${table}): ${e.message.slice(0, 160)}`); return null; }
+}
+const aiLine = (c) => c ? `🏷️ Jev: **${KAT[c.category] ?? c.category}** · P${c.priority ?? '?'} · pewność ${Math.round((c.confidence ?? 0) * 100)}%${(c.confidence ?? 0) < 0.7 ? ' (niepewne, przejrzyj)' : ''}\n` : '';
+const isSpam = (c) => c?.category === 'spam' && (c.confidence ?? 0) >= 0.9;
+const isUrgent = (c) => c && (c.priority === 1 || c.category === 'bezpieczenstwo' || c.category === 'fakt_zamkniete');
 
 const DRY = process.argv.includes('--dry');
 const FALLBACK = env('QUOLINO_REPORTS_CHANNEL') ?? '#lokale';
@@ -34,13 +57,16 @@ try {
      WHERE r.relayed_at IS NULL AND r.status = 'new'
      ORDER BY r.created_at LIMIT 30`);
   for (const r of rows) {
-    const text = `📣 **Zgłoszenie od rodziny** — ${r.city_slug}, przystanek ${r.stop_id}${r.stop_name ? ` (${r.stop_name})` : ''}\n` +
+    const ai = DRY ? null : await triage(q, 'reports', r.id, { source: 'zgłoszenie przy przystanku', city: r.city_slug, stop: r.stop_name ?? r.stop_id, kind: TYPE[r.type] ?? r.type, text: r.message });
+    if (isSpam(ai)) { await q('UPDATE ops.reports SET relayed_at = now() WHERE id = $1', [r.id]); log(`zgłoszenie ${r.id.slice(0, 8)}: spam (Jev), bez Discorda`); continue; }
+    const text = aiLine(ai) + `📣 **Zgłoszenie od rodziny** — ${r.city_slug}, przystanek ${r.stop_id}${r.stop_name ? ` (${r.stop_name})` : ''}\n` +
       `Rodzaj: ${TYPE[r.type] ?? r.type} · język strony: ${r.lang}${r.same_stop > 1 ? ` · to ${r.same_stop}. zgłoszenie tego przystanku w 90 dni` : ''}\n` +
       `> ${String(r.message).replace(/\n+/g, ' ').slice(0, 900)}\n` +
       `Sprawdź (strona oficjalna / Google) i zaproponuj JP poprawkę. Zgłoszenie #${r.id.slice(0, 8)}.`;
     if (DRY) { console.log(text); continue; }
     const ok = await notify(r.discord_thread_id ?? FALLBACK, text);
     if (ok) await q('UPDATE ops.reports SET relayed_at = now() WHERE id = $1', [r.id]);
+    if (ok && isUrgent(ai)) await notify(ADMIN, `⚠️ **Pilne zgłoszenie** (${KAT[ai.category] ?? ai.category}) — ${r.city_slug}, przystanek ${r.stop_name ?? r.stop_id}. Szczegóły w wątku miasta, #${r.id.slice(0, 8)}.`);
   }
   if (rows.length) log(`zgłoszenia: przekazane ${rows.length}`);
 
@@ -53,7 +79,9 @@ try {
      WHERE r.stop_id IS NULL AND r.relayed_at IS NULL AND r.status = 'new' AND (r.comment IS NOT NULL OR r.stars <= 2)
      ORDER BY r.updated_at LIMIT 30`).catch(() => []);
   for (const r of ops_) {
-    const text = `💬 **Opinia rodziny** — ${r.city_slug} · ${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)} (${r.stars}/5) · język: ${r.lang}` +
+    const ai = DRY || !r.comment ? null : await triage(q, 'ratings', r.id, { source: 'opinia o wycieczce', city: r.city_slug, stars: r.stars, text: r.comment });
+    if (isSpam(ai)) { await q('UPDATE ops.ratings SET relayed_at = now() WHERE id = $1', [r.id]); log(`opinia ${r.id.slice(0, 8)}: spam (Jev), bez Discorda`); continue; }
+    const text = aiLine(ai) + `💬 **Opinia rodziny** — ${r.city_slug} · ${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)} (${r.stars}/5) · język: ${r.lang}` +
       ` · średnia wycieczki ${r.avg} z ${r.n}\n` +
       (r.comment ? `> ${String(r.comment).replace(/\n+/g, ' ').slice(0, 500)}\n` : '> (bez komentarza)\n') +
       `Jeśli jest tu coś do poprawienia — sprawdź i zaproponuj JP poprawkę. Opinia #${r.id.slice(0, 8)}.`;
