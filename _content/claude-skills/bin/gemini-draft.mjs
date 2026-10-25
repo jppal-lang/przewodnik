@@ -16,7 +16,7 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
+import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
@@ -38,7 +38,21 @@ const TODAY = new Date().toISOString().slice(0, 10);
 // ── czujnik postępu (JP 2026-10-24: przebieg wisiał godzinę i nikt nie wiedział) ──
 // każdy wpis w logu = postęp; brak postępu przez 15 min → wiadomość w wątku miasta (i co 15 min dalej)
 let lastStep = Date.now(), lastMsg = 'start', stallSent = 0;
-const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); };
+// ── postęp do bazy (dashboard „Postęp prac” w panelu admina, JP 2026-10-25): każdy krok = wiersz w public.pipeline_events
+// z etapem, sygnaturą czasu i narastającym zużyciem tokenów (Gemini przez Antigravity, Claude przez Claude Code).
+const RUN = `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}-${process.pid}`;
+let STOPS_N = null, STAGE = 0;
+const STAGE_OF = (m) => /⑤ zapis/.test(m) ? 6 : /④c|cała trasa/.test(m) ? 5 : /④/.test(m) ? 4 : /③|bloki /.test(m) ? 3 : /②/.test(m) ? 2 : /①|research miasta/.test(m) ? 1 : /poprawki — /.test(m) && REVISE ? 8 : null;
+function event(msg, { stage = null, status = 'running' } = {}) {
+  const st = stage ?? STAGE_OF(msg); if (st) STAGE = Math.max(STAGE, st);
+  const k = +(msg.match(/(?:przystanek|kontrola Claude(?: po poprawkach[^—]*)? —|poprawki(?: po kontroli)? —) (\d+)/)?.[1] ?? 0) || null;
+  const q2 = globalThis.__q; if (!q2) return;
+  q2(`INSERT INTO public.pipeline_events (run_id, city_slug, kind, stage, stop_k, stops_n, message, status, gemini_tokens, gemini_calls, claude_tokens, claude_calls)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    [RUN, slug, REVISE ? 'revise' : 'draft', st ?? STAGE, k, STOPS_N, msg.slice(0, 400), status, cost.tokens ?? 0, cost.calls,
+     claudeUsage.input + claudeUsage.output, claudeUsage.calls]).catch(() => {});
+}
+const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); event(lastMsg); };
 setInterval(() => {
   const min = Math.round((Date.now() - lastStep) / 60_000);
   if (min >= 15 && Date.now() - stallSent > 15 * 60_000) {
@@ -399,6 +413,7 @@ ${JSON.stringify(rec)}`, { web: true, rawFile: join(dir, `v2-check-${slug}-${Dat
 // ── przebieg ─────────────────────────────────────────────────────────────────────────────────────
 const c = await db();
 const q = async (sql, p) => (await c.query(sql, p)).rows;
+globalThis.__q = q;
 async function main() {
   const [reg] = await q('SELECT slug FROM public.regions WHERE slug = $1', [region]);
   if (!reg) throw new Error(`nie ma regionu ${region} w bazie`);
@@ -410,6 +425,7 @@ async function main() {
   const fTrip = join(dir, 'v2-trip-gemini.json'), fBlocks = join(dir, 'v2-blocks.json');
   const resume = !FRESH && existsSync(fTrip);
   let trip = resume ? JSON.parse(readFileSync(fTrip, 'utf8')) : await writeTrip(research);
+  STOPS_N = trip.meta.stops.length;
   if (resume) log(`${slug}: wznowienie — szkic z pliku, gotowe przystanki zostają`);
   writeFileSync(fTrip, JSON.stringify(trip, null, 2));
   if (!resume) await notify(channel, `✍️ ${name}: research i szkic gotowe (${trip.meta.stops.length} przystanków). Teraz bloki przystanków po kolei, potem kontrola faktów.`);
@@ -510,6 +526,7 @@ async function main() {
   const out = { slug, version: saved.version, stops: saved.stops, model: MODEL, review: rv?.verdict ?? null, cost_usd: +cost.usd.toFixed(4), calls: cost.calls,
     preview: previewUrl(saved.token), panel: `https://admin.quolino.com/_admin/#/${slug}` };
   writeFileSync(join(dir, 'v2-last.json'), JSON.stringify(out, null, 2));
+  event(`gotowe: szkic v${saved.version} · wytyczne ${gl ?? '?'} · ${rv?.verdict === 'ok' ? 'kontrola bez uwag' : `kontrola: ${rv?.errors?.length ?? 0} uwag`}`, { stage: 7, status: 'done' });
   await notify(channel, `📝 **${name} — szkic v${saved.version} · wytyczne ${gl ?? '?'}${rv?.verdict === 'ok' ? ' ✓' : ' (kontrola zgłasza uwagi)'}**`
     + (rv?.before ? ` · błędy całej trasy: ${rv.before.errors} → ${rv.errors?.length ?? 0} po poprawkach` : '') + ` \n(${saved.stops} przystanków, Gemini ${MODEL}, ${USE_AGY ? 'Antigravity / AI Pro' : BILLING ? `~${out.cost_usd} $` : 'darmowy plan, 0 $'}, ${cost.calls} zapytań)\n` +
     `${lines.join('\n')}\n${rv ? verdictLine(rv) + (rv.summary ? ` — ${rv.summary}` : '') + '\n' : ''}` +
@@ -626,6 +643,7 @@ async function reviseMain() {
   let learned = [];
   if (!argv.includes('--no-learn')) try { learned = await learn(q, { slug, version: saved.version, say: comments.map(x => x.body).join('\n'), context, changes, trip }); }
   catch (e) { log(`zasady: ${e.message.slice(0, 160)}`); }
+  event(`gotowe: szkic v${saved.version} po poprawkach (${changes.length} zmian) · wytyczne ${gl ?? '?'}`, { stage: 7, status: 'done' });
   const out = { slug, version: saved.version, from: cur.version, changes: changes.length, summary: rv.summary, verdict: rv.verdict, learned, preview: previewUrl(saved.token) };
   await notify(channel, `✅ **${cityTitle} — szkic v${saved.version} · wytyczne ${gl ?? '?'}** po ${argv.includes('--no-learn') ? 'poprawkach z kontroli Claude' : 'Twoich poprawkach'} (${changes.length} zmian${fails ? `, kontrola Claude zgłasza uwagi przy ${fails} przystankach` : ''}).\n` +
     `${rv.summary}\n${learned?.length ? `Zapamiętane zasady: ${learned.length}\n` : ''}Panel: https://admin.quolino.com/_admin/#/${slug}`);
@@ -633,5 +651,5 @@ async function reviseMain() {
 }
 
 try { await (REVISE ? reviseMain() : main()); }
-catch (e) { console.error('BŁĄD:', e.message); await notify(channel, `⚠️ ${name} (nowy proces): ${e.message.slice(0, 500)}`); process.exitCode = 1; }
+catch (e) { console.error('BŁĄD:', e.message); event(`błąd: ${e.message}`, { status: 'error' }); await new Promise(r => setTimeout(r, 500)); await notify(channel, `⚠️ ${name} (nowy proces): ${e.message.slice(0, 500)}`); process.exitCode = 1; }
 finally { await c.end(); }

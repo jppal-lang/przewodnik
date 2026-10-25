@@ -26,6 +26,7 @@ export function run(cmd, args, { input, timeout = 15 * 60_000 } = {}) {
 
 // Claude Code w trybie nieinteraktywnym: umiejętność jako instrukcja systemowa, treść przez stdin.
 // Bez narzędzi zapisu — Claude tylko odpowiada, zapis robi skrypt po kontroli.
+export const claudeUsage = { calls: 0, input: 0, output: 0 };
 export async function claude(skillName, prompt, { web = false } = {}) {
   const skill = readFileSync(`${SKILLS}/${skillName}/SKILL.md`, 'utf8');
   const args = ['-p', '--output-format', 'json', '--append-system-prompt', skill,
@@ -34,6 +35,9 @@ export async function claude(skillName, prompt, { web = false } = {}) {
   const r = await run('claude', args, { input: prompt });
   let res;
   try { res = JSON.parse(r.out); } catch { throw new Error(`claude: nieczytelna odpowiedź (kod ${r.code}) ${r.err.slice(-400)}`); }
+  const u = res.usage ?? {};   // zużycie tokenów Claude w tym procesie (dashboard postępu w panelu admina)
+  claudeUsage.calls++; claudeUsage.input += (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+  claudeUsage.output += u.output_tokens ?? 0;
   if (res.is_error) throw new Error(`claude: ${res.result ?? res.subtype}`);
   return res.result;
 }
