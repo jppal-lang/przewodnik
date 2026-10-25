@@ -1423,11 +1423,11 @@
   // Źródło: admin.feedback_ai, zapis: rpc admin_feedback_set (SQL 2026-10-25-zgloszenia-ai.sql). Treść to dane od obcych: tylko esc().
   var FB_SRC = { report: 'Zgłoszenie', rating: 'Opinia', contact: 'Formularz' };
   var FB_KAT = { fakt_cena: 'cena', fakt_godziny: 'godziny', fakt_zamkniete: 'zamknięte', fakt_adres: 'adres', fakt_opis: 'opis / fakt', trasa_dojscie: 'trasa / dojście',
-    misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', bezpieczenstwo: 'bezpieczeństwo', pochwala: 'pochwała', sugestia: 'sugestia',
+    misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', platnosc_dostep: 'płatność / dostęp', bezpieczenstwo: 'bezpieczeństwo', pochwala: 'pochwała', sugestia: 'sugestia',
     pytanie: 'pytanie', wspolpraca: 'współpraca', prywatnosc: 'prywatność', spam: 'spam' };
   var FB_ST = { 'new': 'nowe', seen: 'przeczytane', reviewed: 'przejrzane', noted: 'odnotowane', fixed: 'poprawione', rejected: 'odrzucone', answered: 'odpowiedziane', spam: 'spam', done: 'załatwione' };
   var FB_OPEN = { 'new': 1, seen: 1 };
-  var FB_KIND = { closed: 'zamknięte', wrong_hours: 'godziny', wrong_price: 'cena', wrong_address: 'adres / dojście', other: 'inne', trip: 'pytanie o wycieczkę', bug: 'błąd na stronie', partner: 'współpraca', privacy: 'prywatność', other_: 'inne' };
+  var FB_KIND = { closed: 'zamknięte', wrong_hours: 'godziny', wrong_price: 'cena', wrong_address: 'adres / dojście', other: 'inne', trip: 'pytanie o wycieczkę', bug: 'błąd na stronie', payment: 'płatność lub dostęp', partner: 'współpraca', privacy: 'prywatność', other_: 'inne' };
   function demoFeedback() {
     var now = Date.now(), iso = function (h) { return new Date(now - h * 3600000).toISOString(); };
     return [

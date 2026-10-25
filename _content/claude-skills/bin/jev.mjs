@@ -55,7 +55,8 @@ export const FEEDBACK_CATEGORIES = {
   trasa_dojscie: 'Problem z trasą, kolejnością przystanków, parkingiem albo dojściem na miejscu.',
   misja_dziecko: 'Misja, zagadka lub zadanie dla dziecka nie działa, jest za trudne albo zdradza odpowiedź.',
   tlumaczenie: 'Błąd tłumaczenia albo tekst w złym języku.',
-  strona_blad: 'Strona albo aplikacja nie działa: przycisk, logowanie, wyświetlanie, mapa.',
+  strona_blad: 'Strona albo aplikacja nie działa: przycisk, wyświetlanie, mapa (bez płatności).',
+  platnosc_dostep: 'Problem z płatnością, zakupem, kodem rabatowym, logowaniem do konta albo odblokowaniem wycieczki.',
   bezpieczenstwo: 'Niebezpieczne miejsce albo sytuacja zagrażająca dzieciom.',
   pochwala: 'Pochwała, podziękowanie, zadowolenie bez prośby o zmianę.',
   sugestia: 'Pomysł albo prośba o nową funkcję, miasto lub przystanek.',
@@ -82,6 +83,8 @@ export async function classifyFeedback(item) {
 export const ROUTE = {
   fakt_cena: 'miasto', fakt_godziny: 'miasto', fakt_zamkniete: 'miasto', fakt_adres: 'miasto', fakt_opis: 'miasto',
   trasa_dojscie: 'miasto', misja_dziecko: 'miasto',
-  tlumaczenie: 'zgl-tlumaczenia', strona_blad: 'zgl-strona', bezpieczenstwo: 'miasto',
+  tlumaczenie: 'zgl-tlumaczenia', strona_blad: 'zgl-strona', platnosc_dostep: 'zgl-platnosci', bezpieczenstwo: 'miasto',
   pochwala: 'zgl-opinie', sugestia: 'zgl-sugestie', pytanie: 'zgl-pytania', wspolpraca: 'zgl-wspolpraca', prywatnosc: 'zgl-prywatnosc', spam: null };
+// niepewne (< 0,7) albo bez klasyfikacji poza wątkiem miasta → #zgl-niewiem (nic ze zgłoszeń nie idzie na #admin, JP 2026-10-25)
+export const UNSURE = 'zgl-niewiem';
 export const isUrgentAi = (c) => !!c && (c.priority === 1 || c.category === 'bezpieczenstwo' || c.category === 'fakt_zamkniete');

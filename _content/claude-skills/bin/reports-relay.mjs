@@ -6,11 +6,11 @@
 // (trip-revise), a po decyzji oznacz: UPDATE ops.reports SET status = 'fixed'|'rejected' WHERE id = …
 import { db, env, log } from './lib.mjs';
 import { notify, ensureChannel } from './draft-lib.mjs';
-import { jevReady, classifyFeedback, ROUTE, isUrgentAi } from './jev.mjs';
+import { jevReady, classifyFeedback, ROUTE, isUrgentAi, UNSURE } from './jev.mjs';
 
 // Jev (docs/ZGLOSZENIA-AI.md): kategoria, priorytet, pewność — zapis w ai_*, linia na Discordzie, spam ≥ 0,9 bez Discorda, P1 też na #admin
 const KAT = { fakt_cena: 'cena', fakt_godziny: 'godziny', fakt_zamkniete: 'zamknięte', fakt_adres: 'adres', fakt_opis: 'opis / fakt', trasa_dojscie: 'trasa / dojście',
-  misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', bezpieczenstwo: 'BEZPIECZEŃSTWO', pochwala: 'pochwała', sugestia: 'sugestia',
+  misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', platnosc_dostep: 'płatność / dostęp', bezpieczenstwo: 'BEZPIECZEŃSTWO', pochwala: 'pochwała', sugestia: 'sugestia',
   pytanie: 'pytanie', wspolpraca: 'współpraca', prywatnosc: 'prywatność', spam: 'spam' };
 let AI_COLS = null;
 async function aiCols(q, table) {
@@ -31,7 +31,8 @@ const isUrgent = isUrgentAi;
 // dokąd: kategoria „miasto” (albo brak klasyfikacji) → wątek miasta; inne → kanał w kategorii „Zgłoszenia”
 async function target(ai, thread) {
   const r = ai ? ROUTE[ai.category] : 'miasto';
-  if (!r || r === 'miasto') return thread ?? FALLBACK;
+  if (!r || r === 'miasto') return thread ?? (await ensureChannel(UNSURE)) ?? FALLBACK;
+  if ((ai.confidence ?? 0) < 0.7) return thread ?? (await ensureChannel(UNSURE)) ?? FALLBACK;   // niepewne: zostaje w wątku miasta
   return (await ensureChannel(r)) ?? thread ?? FALLBACK;
 }
 
