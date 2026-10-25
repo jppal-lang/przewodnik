@@ -88,3 +88,31 @@ export const ROUTE = {
 // niepewne (< 0,7) albo bez klasyfikacji poza wątkiem miasta → #zgl-niewiem (nic ze zgłoszeń nie idzie na #admin, JP 2026-10-25)
 export const UNSURE = 'zgl-niewiem';
 export const isUrgentAi = (c) => !!c && (c.priority === 1 || c.category === 'bezpieczenstwo' || c.category === 'fakt_zamkniete');
+
+// ── Próg kontroli (JP 2026-10-25, „proces trzeba poprawić”): wersję blokują tylko cztery rodzaje błędów ──
+// 1) fakt sprzeczny ze źródłem, 2) quest/wskazówka zdradza odpowiedź, 3) niewykonalny albo sprzeczny plan godzin,
+// 4) brak wymaganego elementu / opis poniżej minimum walidatora; do tego literówki i rażące błędy językowe (widać je od razu).
+// Reszta („tego nie ma w źródle” przy fakcie niespornym, powtórzenia, styl) → ostrzeżenia dla JP, nie blokuje.
+const BLOCK = [/Niezgodne ze źródłem/i, /zdradz/i, /niewykonaln|nie zgadzaj|sprzeczn\w* (godzin|plan)|kolizj/i,
+  /Walidator:|brak (legendy|ciekawostki|fun fact|questu|misji|zadania)/i, /literówk|błąd gramatyczn|błąd składni/i];
+const SOFT = [/Zasada #10|nie stoi w źródle|nie ma w źródle|nie ma (żadnego )?oparcia|bez źródła|dopowiedzeni|nie stoją w źródle/i,
+  /powtarza|powtórzon|ten sam fakt|tautologi|masło maślane|pleonazm|styl/i];
+export async function gateErrors(errors) {
+  const block = [], soft = [], unsure = [];
+  for (const e of errors ?? []) {
+    const t = `${e.problem ?? ''} ${e.fix ?? ''}`;
+    if (BLOCK.some(re => re.test(t))) block.push(e);
+    else if (SOFT.some(re => re.test(t))) soft.push(e);
+    else unsure.push(e);
+  }
+  if (unsure.length && jevReady()) {
+    try {
+      const qs = {}; unsure.forEach((e, i) => { qs[`e${i}`] = { type: 'choice', instructions: `Uwaga nr ${i}: czy blokuje oddanie przewodnika rodzinie?`,
+        criteria: { blokuje: 'Fakt nieprawdziwy, zdradzona odpowiedź zagadki, niewykonalny plan, brak wymaganej części, błąd widoczny dla czytelnika.',
+                    ostrzezenie: 'Uwaga redakcyjna albo stylistyczna, dopowiedzenie niespornego faktu, drobiazg.' } }; });
+      const a = await jev(JSON.stringify(unsure.map((e, i) => ({ nr: i, problem: String(e.problem).slice(0, 500) }))), qs, { role: 'próg kontroli' });
+      unsure.forEach((e, i) => ((a[`e${i}`]?.choice === 'ostrzezenie' && (a[`e${i}`].confidence ?? 0) >= 0.6) ? soft : block).push(e));
+    } catch (e) { log(`jev (próg): ${e.message.slice(0, 120)}`); block.push(...unsure); }
+  } else block.push(...unsure);
+  return { block, soft };
+}

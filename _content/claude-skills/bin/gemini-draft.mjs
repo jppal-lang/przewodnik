@@ -19,7 +19,7 @@ import { spawn } from 'node:child_process';
 import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
-import { triageErrors } from './jev.mjs';
+import { triageErrors, gateErrors } from './jev.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -596,7 +596,7 @@ function applyReplacements(trip, blocks, errors) {
 }
 
 // ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
-const MAX_ROUNDS = +(opt('--rounds') ?? 3);
+const MAX_ROUNDS = +(opt('--rounds') ?? 1);   // JP 2026-10-25: jedna runda poprawek, potem próg i do JP
 async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
   const first = rv, history = [{ round: 0, errors: rv?.errors?.length ?? 0, facts: rv?.facts ?? null }];
   for (let round = 1; round <= MAX_ROUNDS && rv?.errors?.length; round++) {
@@ -629,6 +629,12 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
   }
   rv.before = { errors: first?.errors?.length ?? 0, warnings: (first?.warnings ?? []).length, facts: first?.facts ?? null };
   rv.rounds = history;
+  // próg: zostają tylko błędy blokujące, reszta → ostrzeżenia (nie zatrzymują wersji)
+  const g = await gateErrors(rv.errors ?? []);
+  if (g.soft.length) log(`${slug}: próg — ${g.block.length} blokuje, ${g.soft.length} do ostrzeżeń`);
+  rv.warnings = [...(rv.warnings ?? []), ...g.soft.map(e => ({ ...e, problem: `[nie blokuje] ${e.problem}` }))];
+  rv.errors = g.block; rv.verdict = g.block.length ? 'fix' : 'ok';
+  if (history.length) history[history.length - 1].blocking = g.block.length;
   return rv;
 }
 
