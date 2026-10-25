@@ -49,6 +49,15 @@ try {
     console.log(`${hit[0].t === 'ratings' ? 'Opinia' : 'Zgłoszenie'} ${r.id} (${r.city_slug}): ${st}`);
     process.exit(0);
   }
+  // --backfill: klasyfikacja Jev starszych spraw (90 dni), które przeszły przed wdrożeniem — bez wysyłania na Discord
+  if (process.argv.includes('--backfill')) {
+    let n = 0;
+    for (const r of await q(`SELECT id, city_slug, stop_id, stop_name, type, message FROM ops.reports WHERE ai_category IS NULL AND created_at > now() - interval '90 days' LIMIT 200`))
+      if (await triage(q, 'reports', r.id, { source: 'zgłoszenie przy przystanku', city: r.city_slug, stop: r.stop_name ?? r.stop_id, kind: TYPE[r.type] ?? r.type, text: r.message })) n++;
+    for (const r of await q(`SELECT id, city_slug, stars, comment FROM ops.ratings WHERE ai_category IS NULL AND stop_id IS NULL AND comment IS NOT NULL AND updated_at > now() - interval '90 days' LIMIT 200`))
+      if (await triage(q, 'ratings', r.id, { source: 'opinia o wycieczce', city: r.city_slug, stars: r.stars, text: r.comment })) n++;
+    console.log(`Jev: sklasyfikowano ${n}`); process.exit(0);
+  }
   const rows = await q(`
     SELECT r.id, r.city_slug, r.stop_id, r.stop_name, r.type, r.message, r.lang, r.created_at, oc.discord_thread_id,
            (SELECT count(*) FROM ops.reports x WHERE x.city_slug = r.city_slug AND x.stop_id = r.stop_id

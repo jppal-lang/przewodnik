@@ -1473,7 +1473,7 @@
           (r.lang ? ' · język ' + esc(r.lang) : '') + (r.has_email ? ' · e-mail do odpowiedzi: tak' : '') + ' · status: <b>' + esc(FB_ST[r.status] || r.status) + '</b></p>' +
           '<blockquote class="fb-body">' + esc(r.body || '(bez treści)') + '</blockquote>' +
           '<div class="fb-acts">' + acts.map(function (a) { return '<button type="button" class="qc-btn qc-btn--sm" data-st="' + a[0] + '"' + (r.status === a[0] ? ' aria-pressed="true"' : '') + '>' + a[1] + '</button>'; }).join('') +
-          '<label class="fb-fix">Kategoria: <select data-cat>' + Object.keys(FB_KAT).map(function (k) { return '<option value="' + k + '"' + (r.category === k ? ' selected' : '') + '>' + FB_KAT[k] + '</option>'; }).join('') + '</select></label></div></article>';
+          '<label class="fb-fix">Kategoria: <select data-cat>' + (r.category ? '' : '<option value="" selected>wybierz</option>') + Object.keys(FB_KAT).map(function (k) { return '<option value="' + k + '"' + (r.category === k ? ' selected' : '') + '>' + FB_KAT[k] + '</option>'; }).join('') + '</select></label></div></article>';
       }).join('') : '<p class="adm-empty">Nic tu nie ma przy tych filtrach.</p>';
       $d.innerHTML = h + '</section>';
     }
@@ -1489,7 +1489,7 @@
     };
     $d.onchange = function (e) {
       var t = e.target;
-      if (t.hasAttribute('data-cat')) { set(t.closest('.fb-item'), { category: t.value }); return; }
+      if (t.hasAttribute('data-cat')) { if (t.value) set(t.closest('.fb-item'), { category: t.value }); return; }
       var k = t.getAttribute('data-f'); if (!k) return;
       f[k] = k === 'open' ? t.checked : t.value; save(); draw();
     };
