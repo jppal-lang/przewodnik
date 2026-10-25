@@ -548,7 +548,7 @@ const stampGuidelines = async (version, label, ok) => label && q(`UPDATE public.
 
 // ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
 const MAX_ROUNDS = +(opt('--rounds') ?? 3);
-async function fixLoop(trip, blocks, cityTitle, rv, persist) {
+async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound) {
   const first = rv, history = [{ round: 0, errors: rv?.errors?.length ?? 0, facts: rv?.facts ?? null }];
   for (let round = 1; round <= MAX_ROUNDS && rv?.errors?.length; round++) {
     log(`${slug}: ④c poprawki po kontroli całej trasy — runda ${round}/${MAX_ROUNDS} (${rv.errors.length} błędów)`);
@@ -563,6 +563,7 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist) {
     history.push({ round, errors: next.errors?.length ?? 0, facts: next.facts ?? null, changes: ap.changes.length });
     const better = (next.errors?.length ?? 0) < rv.errors.length;
     rv = next;
+    if (onRound) { next.before = { errors: first?.errors?.length ?? 0, warnings: (first?.warnings ?? []).length, facts: first?.facts ?? null }; next.rounds = history.slice(); await onRound(round, next, ap); }
     if (!better) { log(`${slug}: runda ${round} nie zmniejszyła liczby błędów — koniec pętli`); break; }
   }
   rv.before = { errors: first?.errors?.length ?? 0, warnings: (first?.warnings ?? []).length, facts: first?.facts ?? null };
@@ -581,17 +582,26 @@ async function recheckMain() {
   log(`${slug}: ④ kontrola Claude — cała trasa (szkic v${cur.version})`);
   let rv;
   try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
-  rv = await fixLoop(trip, blocks, cityTitle, rv, null);
-  log(`${slug}: ⑤ zapis wersji`);
-  trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
-  const saved = await saveDraft(q, trip, { note: `kontrola całej trasy i poprawki (${rv.rounds.length - 1} rund)`, source: 'revise', changes: [], review: rv });
-  await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
-             trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks)]);
+  // każda runda = podwersja szkicu: v5 → v5a, v5b, v5c (JP 2026-10-25). Numer w bazie rośnie jak zwykle, etykieta w content.label.
+  const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)[1];
   const gl = await guidelinesVersion();
-  await stampGuidelines(saved.version, gl, rv.verdict === 'ok');
+  let saved = null, label = null;
+  const saveRound = async (round, rvr, ap) => {
+    const [n] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
+    label = `v${base}${String.fromCharCode(97 + n.n)}`;
+    log(`${slug}: ⑤ zapis ${label} (runda ${round})`);
+    const t = { meta: trip.meta, content: noDash(trip.content) };
+    for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
+    saved = await saveDraft(q, t, { note: `${label}: poprawki po kontroli całej trasy, runda ${round} (błędy ${rvr.rounds.map(x => x.errors).join(' → ')})`, source: 'revise', changes: ap.changes ?? [], review: rvr });
+    await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
+               trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks), label]);
+    await stampGuidelines(saved.version, gl, rvr.verdict === 'ok');
+  };
+  rv = await fixLoop(trip, blocks, cityTitle, rv, null, saveRound);
+  if (!saved) { await notify(channel, `✅ ${cityTitle}: kontrola całej trasy v${base} bez błędów — nic do poprawy.`); return; }
   const path = rv.rounds.map(x => x.errors).join(' → ');
-  event(`gotowe: szkic v${saved.version} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });
-  await notify(channel, `📝 **${cityTitle} — szkic v${saved.version} · wytyczne ${gl ?? '?'}${rv.verdict === 'ok' ? ' ✓' : ''}** po kontroli całej trasy i poprawkach.\n` +
+  event(`gotowe: szkic ${label} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });
+  await notify(channel, `📝 **${cityTitle} — szkic ${label} · wytyczne ${gl ?? '?'}${rv.verdict === 'ok' ? ' ✓' : ''}** po kontroli całej trasy i poprawkach.\n` +
     `Błędy w kolejnych rundach: ${path}${rv.facts ? ` · fakty: ✓ ${rv.facts.confirmed} · ✗ ${rv.facts.contradicted} · bez źródła ${rv.facts.unverified}` : ''}\n` +
     `${rv.errors?.length ? `Zostało do decyzji JP:\n${rv.errors.slice(0, 8).map(e => `• ${e.stop_key ?? 'trasa'}: ${String(e.problem).slice(0, 140)}`).join('\n')}\n` : ''}` +
     `Panel: https://admin.quolino.com/_admin/#/${slug}`);

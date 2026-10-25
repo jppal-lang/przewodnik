@@ -435,6 +435,8 @@
     saveFilters(); renderList();
     var h = document.getElementById('rh'); if (h && h.getBoundingClientRect().top < 0) h.scrollIntoView({ block: 'start' });
   });
+  // etykieta wersji: rundy poprawek to podwersje v5a, v5b… (content.label), reszta vN
+  function vlab(r) { return (r && r.content && r.content.label) || 'v' + r.version; }
   function clearFilters() { state.f = { countries: [], statuses: [], std: [], flags: [], letter: '', q: '', sort: filters().sort }; saveFilters(); renderList(); }
   document.getElementById('fClear').addEventListener('click', clearFilters);
   $res.addEventListener('click', function (e) { if (e.target.closest('[data-fclear]')) clearFilters(); });
@@ -519,7 +521,7 @@
     return state.versions.slice().reverse().map(function (r) {
       var sent = verComments(r.version).filter(isSent).length, cur = r.version === state.tabVersion, newest = r.version === state.trip.newest;
       return '<button type="button" role="tab" class="adm-tab adm-tab--' + esc(r.status) + '" id="tab-v' + r.version + '" data-ver="' + r.version + '" aria-controls="tabPanel"' +
-        ' aria-selected="' + cur + '" tabindex="' + (cur ? 0 : -1) + '"><span class="adm-tab__v">v' + r.version + ' · ' + esc(dayMonth(r.created_at)) + '</span>' +
+        ' aria-selected="' + cur + '" tabindex="' + (cur ? 0 : -1) + '"><span class="adm-tab__v">' + esc(vlab(r)) + ' · ' + esc(dayMonth(r.created_at)) + '</span>' +
         '<span class="adm-tab__s">' + esc(VST[r.status] || r.status) + (newest ? ' · najnowsza' : '') + '</span>' +
         (sent ? '<b class="adm-n adm-tab__n" title="uwagi wysłane do tej wersji">' + sent + '</b>' : '') + '</button>';
     }).join('');
@@ -559,7 +561,7 @@
     if (isNewest && row.status === 'draft' && T.published != null && T.published !== row.version) base = all.filter(function (r) { return r.version === T.published; })[0];
     else base = all.filter(function (r) { return r.version < row.version; }).pop() || null;
     var c = row.content.city || {};
-    var it = { city_slug: T.slug, version: row.version, status: row.status, source: row.source, note: row.note, created_at: row.created_at,
+    var it = { label: (row.content || {}).label || null, city_slug: T.slug, version: row.version, status: row.status, source: row.source, note: row.note, created_at: row.created_at,
       city_name: T.name, bandana_color: c.bandana_color, published_version: base ? base.version : null,
       baseIsLive: !!(base && base.version === T.published && isNewest), isNewest: isNewest };
     state.readOnly = !(isNewest && row.status === 'draft');
@@ -881,7 +883,7 @@
       var nw = state.trip ? state.trip.newest : null;
       html += '<p class="adm-ro">' + (it.isNewest
         ? 'Ta wycieczka nie ma szkicu w toku (najnowsza wersja: ' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyła się do szkicu.'
-        : 'Wersja v' + esc(it.version) + ' (' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyłasz w najnowszej wersji. ' +
+        : 'Wersja ' + esc(it.label || 'v' + it.version) + ' (' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyłasz w najnowszej wersji. ' +
           '<button type="button" class="adm-linkbtn" data-goto="' + esc(nw) + '">Przejdź do v' + esc(nw) + '</button>') + '</p>';
     }
     html += '<section class="adm-sheet__sec adm-vc" id="verComments"></section>';
@@ -943,7 +945,7 @@
   }
 
   function sheetLabel(it) {
-    if (it.isNewest && it.status === 'draft') return 'szkic v' + it.version + (it.published_version != null ? (it.baseIsLive ? ' zamiast v' + it.published_version + ' (na stronie)' : ' · zmiany względem v' + it.published_version) : ' · pierwsza publikacja');
+    if (it.isNewest && it.status === 'draft') return 'szkic ' + (it.label || 'v' + it.version) + (it.published_version != null ? (it.baseIsLive ? ' zamiast v' + it.published_version + ' (na stronie)' : ' · zmiany względem v' + it.published_version) : ' · pierwsza publikacja');
     return (VST[it.status] || it.status) + ' v' + it.version + (it.published_version != null ? ' · zmiany względem v' + it.published_version : ' · pierwsza wersja');
   }
   function stopHtml(x, it, pub) {
