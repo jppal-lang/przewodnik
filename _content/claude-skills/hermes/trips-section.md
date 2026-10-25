@@ -4,7 +4,10 @@
 **Wszystkie dotychczasowe szkice to archiwum.** Każda wycieczka powstaje od zera tym procesem:
 1. **Gemini (Antigravity, konto Google AI Pro JP)** — research z wyszukiwarką Google (otwiera strony, dokładny URL przy każdym fakcie) i szkic PL
    z blokami: opis, legenda, ciekawostka, w popkulturze, fun fact, misje — z przypisami `[n]` (standard: `docs/TRESC-PRZYSTANKU.md`).
-2. **Claude** — kontrola faktów (otwiera każde źródło), jedna runda poprawek Gemini, ponowna kontrola. Nic nie dopisuje sam.
+2. **Claude** — kontrola faktów każdego przystanku (otwiera źródła) → poprawki Gemini → ponowna kontrola; potem kontrola CAŁEJ trasy
+   (plan dnia, misje, sprzeczności, Wikipedia) → poprawki Gemini → ponowna kontrola. Dopiero wtedy szkic trafia do JP. Claude nic nie dopisuje sam.
+   Szkic dostaje **wersję wytycznych** (`content.guidelines`, np. `v02`; tabela `guideline_versions`): zmiana standardu albo zasad JP = nowa wersja,
+   zakładana automatycznie. W panelu filtr „Wytyczne” — po latach widać, które trasy sprawdzono według starszych wytycznych.
 3. **JP** — akceptacja albo uwagi w panelu (`admin.quolino.com/_admin/`). Uwagi → nowa wersja (Gemini + kontrola Claude) i zasady na przyszłość.
 4. Po akceptacji: tłumaczenie EN (Gemini), potem pozostałe języki.
 Ciekawostka i fun fact „z przymrużeniem oka”: jedno źródło wystarczy. Superlatyw w opisie i legendzie — dwa źródła.

@@ -307,3 +307,4 @@
 .adm-views{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
 .adm-views__l{font-weight:800}
 .adm-accviews{padding:14px;margin:12px 0}.adm-accviews__note{font-size:16px;color:var(--ink2,#3E4C63);margin:8px 0 0}
+.adm-std--fix{background:#fde9c8;color:#6b4200}

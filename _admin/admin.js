@@ -235,8 +235,9 @@
   var FLAGS = { working: 'Hermes poprawia', unsent: 'Niewysłane uwagi' };
   // Wytyczne (JP 2026-10-24): „nowe” = najnowsza wersja powstała w nowym procesie (Gemini research → szkic → kontrola),
   // znacznik content.workflow = 'v2' ustawia pipeline przy zapisie wersji. Wszystko bez znacznika = stare wytyczne (archiwum).
-  var STD = { v2: 'Nowe wytyczne', old: 'Stare wytyczne (archiwum)' };
-  var STD_ORDER = ['v2', 'old'];
+  // Wersje wytycznych (JP 2026-10-25): content.guidelines = 'v02', 'v03'… — wersja, z którą szkic przeszedł kontrolę i poprawki.
+  // „old” = sprzed nowego procesu (archiwum). Filtr pokazuje wersje od najnowszej: za dwa lata „v51” vs starsze → co uzupełnić.
+  function stdLabel(k) { return k === 'old' ? 'Stare (archiwum)' : 'Wytyczne ' + k; }
   var SORTS = { new: 'Najnowsze zmiany', old: 'Najstarsze zmiany', az: 'Kraj, potem A–Z' };
   var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   var $browse = document.getElementById('browse');
@@ -275,7 +276,7 @@
     var t = { slug: r.city_slug, name: r.city_name || titleCase(r.city_slug), country: r.country ? String(r.country).toLowerCase() : '',
       region: r.region_slug || '', color: r.bandana_color || '#0B4EA2', latest: r.latest_version, latestStatus: r.latest_status,
       latestAt: r.latest_at, stops: r.stops_count, draft: r.draft_version, published: r.published_version,
-      versions: r.versions_count || 1, std: r.workflow === 'v2' ? 'v2' : 'old', working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
+      versions: r.versions_count || 1, std: r.guidelines || (r.workflow === 'v2' ? 'v02' : 'old'), glOk: r.guidelines_ok === true, working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
     t.status = t.draft != null ? 'draft' : t.published != null ? 'published' : (t.latestStatus || 'archived');
     t.letter = letterOf(t.name);
     return t;
@@ -284,7 +285,7 @@
   function tripsFallback() {
     return Promise.all([
       api('/admin_queue'),
-      api('/admin_versions?select=city_slug,version,status,created_at,country:content->city->>country,region:content->city->>region_slug,color:content->city->>bandana_color,workflow:content->>workflow&order=version.asc'),
+      api('/admin_versions?select=city_slug,version,status,created_at,country:content->city->>country,region:content->city->>region_slug,color:content->city->>bandana_color,workflow:content->>workflow,guidelines:content->>guidelines,glok:content->>guidelines_ok&order=version.asc'),
       api('/draft_comments?select=city_slug,city_version,status').catch(function () { return []; })
     ]).then(function (res) {
       var by = {}, names = {}, stops = {};
@@ -294,7 +295,7 @@
         r.versions_count++;
         if (r.latest_version == null || v.version > r.latest_version) {
           r.latest_version = v.version; r.latest_status = v.status; r.latest_at = v.created_at;
-          r.country = v.country; r.region_slug = v.region; r.bandana_color = v.color; r.workflow = v.workflow;
+          r.country = v.country; r.region_slug = v.region; r.bandana_color = v.color; r.workflow = v.workflow; r.guidelines = v.guidelines; r.guidelines_ok = v.glok === 'true';
         }
         if (v.status === 'draft' && (r.draft_version == null || v.version > r.draft_version)) r.draft_version = v.version;
         if (v.status === 'published') r.published_version = v.version;
@@ -357,7 +358,9 @@
     var fk = Object.keys(FLAGS).filter(function (k) { return T.some(function (t) { return t[k] > 0; }) || f.flags.indexOf(k) > -1; });
     document.getElementById('fCountry').innerHTML = facet('countries', ck, countryName, f);
     document.getElementById('fStatus').innerHTML = facet('statuses', sk, function (s) { return TST[s] || VST[s] || s; }, f);
-    document.getElementById('fStd').innerHTML = facet('std', STD_ORDER, function (k) { return STD[k]; }, f);
+    var stdKeys = {}; T.forEach(function (t) { stdKeys[t.std] = 1; }); f.std.forEach(function (k) { stdKeys[k] = 1; });
+    var stdOrder = Object.keys(stdKeys).sort(function (a, b) { return a === 'old' ? 1 : b === 'old' ? -1 : b.localeCompare(a, 'pl', { numeric: true }); });
+    document.getElementById('fStd').innerHTML = facet('std', stdOrder, stdLabel, f);
     var $so = document.getElementById('fSort'); if ($so.value !== f.sort) $so.value = f.sort;
     document.getElementById('fFlags').innerHTML = facet('flags', fk, function (k) { return FLAGS[k]; }, f);
     document.getElementById('fFlagsBox').hidden = !fk.length;
@@ -408,7 +411,8 @@
       '<span class="adm-tc__meta">' + chip + (byDate ? '<span>' + esc(countryName(t.country)) + '</span>' : '') +
       (t.region ? '<span>' + esc(regionName(t.region)) + '</span>' : '') +
       '<span>' + plWer(t.versions) + '</span><span title="ostatnia wersja">' + esc(byDate ? when(t.latestAt) : dayMonth(t.latestAt)) + '</span>' +
-      '<span class="adm-std adm-std--' + t.std + '">' + (t.std === 'v2' ? 'nowe wytyczne' : 'stare wytyczne') + '</span></span>' +
+      '<span class="adm-std adm-std--' + (t.std === 'old' ? 'old' : t.glOk ? 'v2' : 'fix') + '" title="wersja wytycznych, z którą szkic przeszedł kontrolę i poprawki">' +
+        (t.std === 'old' ? 'stare wytyczne' : 'wytyczne ' + esc(t.std) + (t.glOk ? ' ✓' : ' · uwagi')) + '</span></span>' +
       (extra ? '<span class="adm-tc__flags">' + extra + '</span>' : '') + '</span></a>';
   }
   var REGION_PL = { umbria: 'Umbria', marche: 'Marche', 'emilia-romagna': 'Emilia-Romania', toscana: 'Toskania', lazio: 'Lacjum',

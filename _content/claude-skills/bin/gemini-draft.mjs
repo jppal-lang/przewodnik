@@ -14,6 +14,7 @@
 // Model: GEMINI_MODEL (domyślnie gemini-3-flash-preview), klucz GOOGLE_API_KEY. Budżet: QUOLINO_DAILY_USD (0,5 $) — szacunek z usageMetadata.
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
@@ -465,6 +466,22 @@ async function main() {
       try { rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
       catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
     }
+    // ④c poprawki po kontroli CAŁEJ trasy, potem ponowna kontrola — do JP trafia wyłącznie tekst po poprawkach (JP 2026-10-25)
+    const fRv2 = join(dir, 'v2-review-po-poprawkach.json');
+    if (resume && existsSync(fRv2)) { rv = JSON.parse(readFileSync(fRv2, 'utf8')); log(`${slug}: kontrola po poprawkach z pliku (wznowienie)`); }
+    else if (rv?.errors?.length) {
+      log(`${slug}: ④c poprawki po kontroli całej trasy (${rv.errors.length} błędów)`);
+      await notify(channel, `🔧 ${name}: kontrola całej trasy — ${rv.errors.length} błędów. Nanoszę poprawki i sprawdzam ponownie, zanim trafi do Ciebie.`);
+      const cms = rv.errors.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
+        body: String(e.problem) + (e.fix ? ' → ' + e.fix : '') }));
+      const first = rv;
+      const ap = await applyComments(trip, blocks, cms, cityTitle, 'Claude');
+      writeFileSync(fBlocks, JSON.stringify(blocks, null, 2)); writeFileSync(fTrip, JSON.stringify(trip, null, 2));
+      log(`${slug}: ④ kontrola Claude — cała trasa po poprawkach (${ap.changes.length} zmian)`);
+      try { rv = await fullReview(slug, trip); } catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
+      rv.before = { errors: first.errors.length, warnings: (first.warnings ?? []).length, facts: first.facts ?? null };
+      writeFileSync(fRv2, JSON.stringify(rv, null, 2));
+    }
   }
 
   log(`${slug}: ⑤ zapis wersji`);
@@ -477,6 +494,8 @@ async function main() {
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`,
     [slug, saved.version, MODEL, JSON.stringify(blocks)]);
+  const gl = await guidelinesVersion();
+  await stampGuidelines(saved.version, gl, rv?.verdict === 'ok');
 
   const lines = trip.meta.stops.map(m => {
     const b = blocks[m.stop_key]; const ck = b?.check;
@@ -487,35 +506,50 @@ async function main() {
   const out = { slug, version: saved.version, stops: saved.stops, model: MODEL, review: rv?.verdict ?? null, cost_usd: +cost.usd.toFixed(4), calls: cost.calls,
     preview: previewUrl(saved.token), panel: `https://admin.quolino.com/_admin/#/${slug}` };
   writeFileSync(join(dir, 'v2-last.json'), JSON.stringify(out, null, 2));
-  await notify(channel, `📝 **${name} — szkic v${saved.version} · nowe wytyczne** (${saved.stops} przystanków, Gemini ${MODEL}, ${USE_AGY ? 'Antigravity / AI Pro' : BILLING ? `~${out.cost_usd} $` : 'darmowy plan, 0 $'}, ${cost.calls} zapytań)\n` +
+  await notify(channel, `📝 **${name} — szkic v${saved.version} · wytyczne ${gl ?? '?'}${rv?.verdict === 'ok' ? ' ✓' : ' (kontrola zgłasza uwagi)'}**`
+    + (rv?.before ? ` · błędy całej trasy: ${rv.before.errors} → ${rv.errors?.length ?? 0} po poprawkach` : '') + ` \n(${saved.stops} przystanków, Gemini ${MODEL}, ${USE_AGY ? 'Antigravity / AI Pro' : BILLING ? `~${out.cost_usd} $` : 'darmowy plan, 0 $'}, ${cost.calls} zapytań)\n` +
     `${lines.join('\n')}\n${rv ? verdictLine(rv) + (rv.summary ? ` — ${rv.summary}` : '') + '\n' : ''}` +
     `Panel: ${out.panel}\nPodgląd: ${out.preview}\nUwagi w panelu albo „zatwierdzam”. Tłumaczenia dopiero po akceptacji.`);
   console.log(JSON.stringify(out, null, 2));
 }
 
-// ── poprawki JP z panelu (nowy proces) ─────────────────────────────────────────────────────────
-// Uwagi pogrupowane po przystankach; Gemini poprawia tylko wskazane pola (i bloki z przypisami), Claude sprawdza zmienione przystanki,
-// zapis jako nowa wersja (source revise, workflow v2), a Claude rozstrzyga, czy poprawka uczy zasady na przyszłość (editorial_rules).
-async function reviseMain() {
-  const comments = JSON.parse(readFileSync(opt('--comments'), 'utf8'));
-  const context = opt('--context') && existsSync(opt('--context')) ? readFileSync(opt('--context'), 'utf8') : '';
-  const [cur] = await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
-  if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu do poprawy`);
-  const trip = { meta: cur.trip.meta, content: cur.trip.content };
-  const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
-  const cityTitle = trip.content.city?.title ?? slug; name = cityTitle;
-  await loadRules(q);
+// ── wersje wytycznych (JP 2026-10-24) ─────────────────────────────────────────────────────────
+// Wytyczne = standard treści (STANDARD, głębokość opisu, twarde zasady) + aktywne zasady redakcyjne JP (editorial_rules).
+// Każda zmiana któregokolwiek z nich = nowa wersja (v01, v02, …) w public.guideline_versions. Wersja szkicu, która przeszła kontrolę
+// i poprawki, dostaje content.guidelines = 'vNN' (+ guidelines_ok = werdykt końcowy) — za dwa lata filtr „starsze niż v51” pokaże,
+// które wycieczki uzupełnić.
+async function guidelinesVersion() {
+  const hash = createHash('sha1').update([STANDARD, DEPTH_TEXT, RULES, rulesText()].join('\n---\n')).digest('hex').slice(0, 16);
+  try {
+    const [last] = await q('SELECT version, label, hash FROM public.guideline_versions ORDER BY version DESC LIMIT 1');
+    if (last && (last.hash == null || last.hash === hash)) {
+      if (last.hash == null) await q('UPDATE public.guideline_versions SET hash = $2 WHERE version = $1', [last.version, hash]);
+      return last.label;
+    }
+    const v = (last?.version ?? 0) + 1, label = 'v' + String(v).padStart(2, '0');
+    await q(`INSERT INTO public.guideline_versions (version, label, hash, note) VALUES ($1, $2, $3, $4)`,
+      [v, label, hash, 'automatycznie: zmiana standardu treści albo zasad redakcyjnych JP']);
+    log(`wytyczne: nowa wersja ${label}`);
+    return label;
+  } catch (e) { log(`wytyczne: brak tabeli guideline_versions (${e.message.slice(0, 80)}) — bez oznaczenia`); return null; }
+}
+const stampGuidelines = async (version, label, ok) => label && q(`UPDATE public.city_versions SET content = content || jsonb_build_object('guidelines', $3::text, 'guidelines_ok', $4::boolean)
+  WHERE city_slug = $1 AND version = $2`, [slug, version, label, !!ok]);
+
+// ── naniesienie uwag (JP z panelu albo Claude z kontroli całej trasy) na szkic: Gemini poprawia wskazane pola, Claude sprawdza zmienione przystanki ──
+async function applyComments(trip, blocks, comments, cityTitle, who) {
   const by = {};
   for (const cm of comments) (by[cm.stop_key ?? '_city'] ??= []).push(cm);
   const changes = [], summaries = [];
+  const kto = who === 'JP' ? 'uwag JP' : 'uwag z kontroli Claude (sprawdził źródła i całą trasę)';
   const list = (cs) => cs.map(x => `- [${x.field_label ?? x.field ?? 'całość'}] ${x.body}`).join('\n');
   for (const [key, cs] of Object.entries(by)) {
     if (key === '_city') {
       log(`${slug}: poprawki — opis miasta (${cs.length})`);
-      const out = await geminiJson(`Popraw opis wycieczki Quolino według uwag JP. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
+      const out = await geminiJson(`Popraw opis wycieczki Quolino według ${kto}. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
 ${RULES}
 ${rulesText()}
-UWAGI JP:
+UWAGI (${who}):
 ${list(cs)}
 OBECNY OPIS MIASTA I PLAN DNIA:
 ${JSON.stringify({ city: trip.content.city, day_plan: trip.content.day_plan, meta_city: trip.meta.city })}
@@ -531,14 +565,14 @@ Odpowiedz JSON-em: {"city": {…tylko zmienione pola…}, "day_plan": {…tylko 
     const b = blocks[key];
     const fr = join(dir, `v2-stop-${m.stop_number}-research.md`);
     log(`${slug}: poprawki — ${m.stop_number} ${pl.name} (${cs.length})`);
-    const out = await geminiJson(`Popraw przystanek wycieczki Quolino według uwag JP. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
+    const out = await geminiJson(`Popraw przystanek wycieczki Quolino według ${kto}. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
 Uwaga do opisu, legendy, ciekawostki, popkultury albo fun factu = popraw rekord bloków (z przypisami [n], źródła z listy). Nowe fakty tylko z researchu poniżej
 albo — jeśli JP sam podał fakt w uwadze — z uwagi JP (wtedy bez przypisu, opisz to w "summary").
 ${STANDARD}
 ${DEPTH_TEXT}
 ${RULES}
 ${rulesText()}
-UWAGI JP:
+UWAGI (${who}):
 ${list(cs)}
 OBECNY PRZYSTANEK:
 ${JSON.stringify({ meta: m, pl, record: b ? { marked: b.marked, state: b.state, sources: b.sources } : null })}
@@ -550,27 +584,45 @@ Odpowiedz JSON-em: {"meta": {…tylko zmienione pola…}, "pl": {…tylko zmieni
     if (out.record) {
       const rec = normalizeRecord(out.record, { category: m.category, today: TODAY });
       changes.push({ path: `blocks.${key}`, before: b ? { marked: b.marked } : null, after: { marked: rec.marked }, why: list(cs) });
-      blocks[key] = { ...(b ?? {}), ...rec, validator: validateStop(rec, { category: m.category }), revisedBy: 'JP', fixRound: b?.fixRound };
+      blocks[key] = { ...(b ?? {}), ...rec, validator: validateStop(rec, { category: m.category }), revisedBy: who, fixRound: b?.fixRound };
       if (rec.marked.desc_paragraphs.length) pl.desc_paragraphs = rec.marked.desc_paragraphs.map(stripRefs);
       if (CHECK) {
-        log(`${slug}: ④ kontrola Claude po poprawkach JP — ${m.stop_number} ${pl.name}`);
+        log(`${slug}: ④ kontrola Claude po poprawkach (${who}) — ${m.stop_number} ${pl.name}`);
         try { blocks[key].check = await check(pl, m.category, cityTitle, rec); }
         catch (e) { blocks[key].check = { verdict: 'fix', summary: `kontrola nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
       }
     }
     if (out.summary) summaries.push(`${pl.name}: ${out.summary}`);
   }
+  return { changes, summaries };
+}
+
+// ── poprawki JP z panelu (nowy proces) ─────────────────────────────────────────────────────────
+// Uwagi pogrupowane po przystankach; Gemini poprawia tylko wskazane pola (i bloki z przypisami), Claude sprawdza zmienione przystanki,
+// zapis jako nowa wersja (source revise, workflow v2), a Claude rozstrzyga, czy poprawka uczy zasady na przyszłość (editorial_rules).
+async function reviseMain() {
+  const comments = JSON.parse(readFileSync(opt('--comments'), 'utf8'));
+  const context = opt('--context') && existsSync(opt('--context')) ? readFileSync(opt('--context'), 'utf8') : '';
+  const [cur] = await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu do poprawy`);
+  const trip = { meta: cur.trip.meta, content: cur.trip.content };
+  const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
+  const cityTitle = trip.content.city?.title ?? slug; name = cityTitle;
+  await loadRules(q);
+  const { changes, summaries } = await applyComments(trip, blocks, comments, cityTitle, argv.includes('--no-learn') ? 'Claude' : 'JP');
   if (!changes.length) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
   const fails = Object.values(blocks).filter(x => x?.check?.verdict === 'fix').length;
   const rv = { verdict: fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: [], warnings: [] };
   const saved = await saveDraft(q, trip, { note: `poprawki JP (${comments.length} uwag, nowy proces)`, source: 'revise', changes, review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks)]);
+  const gl = await guidelinesVersion();
+  await stampGuidelines(saved.version, gl, rv.verdict === 'ok');
   let learned = [];
   if (!argv.includes('--no-learn')) try { learned = await learn(q, { slug, version: saved.version, say: comments.map(x => x.body).join('\n'), context, changes, trip }); }
   catch (e) { log(`zasady: ${e.message.slice(0, 160)}`); }
   const out = { slug, version: saved.version, from: cur.version, changes: changes.length, summary: rv.summary, verdict: rv.verdict, learned, preview: previewUrl(saved.token) };
-  await notify(channel, `✅ **${cityTitle} — szkic v${saved.version}** po ${argv.includes('--no-learn') ? 'poprawkach z kontroli Claude' : 'Twoich poprawkach'} (${changes.length} zmian${fails ? `, kontrola Claude zgłasza uwagi przy ${fails} przystankach` : ''}).\n` +
+  await notify(channel, `✅ **${cityTitle} — szkic v${saved.version} · wytyczne ${gl ?? '?'}** po ${argv.includes('--no-learn') ? 'poprawkach z kontroli Claude' : 'Twoich poprawkach'} (${changes.length} zmian${fails ? `, kontrola Claude zgłasza uwagi przy ${fails} przystankach` : ''}).\n` +
     `${rv.summary}\n${learned?.length ? `Zapamiętane zasady: ${learned.length}\n` : ''}Panel: https://admin.quolino.com/_admin/#/${slug}`);
   console.log(JSON.stringify(out, null, 2));
 }
