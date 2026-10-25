@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zaloguj się lub załóż konto — Quolino</title>
 <meta name="description" content="Konto rodzica Quolino: załóż konto e-mailem i hasłem albo zaloguj się.">
+<meta name="pt-title" content="page.login.title">
 <meta name="robots" content="noindex, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=30">
+<script src="/page-i18n.js?v=2"></script>
 <style>
   [hidden]{display:none!important}
   .lg{max-width:560px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.55;color:var(--ink)}
@@ -60,84 +62,84 @@
   <div class="lg-head"><h1 id="lgTitle">Konto rodzica</h1>
     <img class="lg-quo" id="lgQuo" src="/media/icons/quo-zaloguj-256.webp" srcset="/media/icons/quo-zaloguj-256.webp 1x, /media/icons/quo-zaloguj-512.webp 2x" width="128" height="128" alt="" decoding="async"></div>
 
-  <div class="tabs" role="tablist" aria-label="Logowanie lub rejestracja" id="lgTabs">
-    <button type="button" role="tab" id="tabIn" aria-controls="vIn" aria-selected="true">Zaloguj się</button>
-    <button type="button" role="tab" id="tabUp" aria-controls="vUp" aria-selected="false">Załóż konto</button>
+  <div class="tabs" role="tablist" data-t-aria="page.login.tabs_aria" aria-label="Logowanie lub rejestracja" id="lgTabs">
+    <button type="button" role="tab" id="tabIn" aria-controls="vIn" aria-selected="true" data-t="page.login.signin">Zaloguj się</button>
+    <button type="button" role="tab" id="tabUp" aria-controls="vUp" aria-selected="false" data-t="page.login.signup">Załóż konto</button>
   </div>
 
   <!-- LOGOWANIE -->
   <form class="card" id="vIn" role="tabpanel" aria-labelledby="tabIn" novalidate>
     <div>
-      <label for="inEmail">E-mail</label>
+      <label for="inEmail" data-t="page.login.email">E-mail</label>
       <input type="email" id="inEmail" maxlength="200" autocomplete="username" inputmode="email" required>
     </div>
     <div>
-      <label for="inPass">Hasło</label>
+      <label for="inPass" data-t="page.login.password">Hasło</label>
       <div class="pwrow"><input type="password" id="inPass" maxlength="72" autocomplete="current-password" required>
-        <button type="button" class="eye" data-eye="inPass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+        <button type="button" class="eye" data-eye="inPass" data-t-aria="page.login.show_pass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
     </div>
-    <button type="submit" class="qc-btn qc-btn--primary" id="inSend">Zaloguj się</button>
+    <button type="submit" class="qc-btn qc-btn--primary" id="inSend" data-t="page.login.signin">Zaloguj się</button>
     <p class="msg" id="inMsg" role="status" aria-live="polite"></p>
-    <button type="button" class="qc-btn" id="inResend" hidden>Wyślij link potwierdzający ponownie</button>
-    <button type="button" class="linkbtn" id="inForgot">Nie pamiętasz hasła?</button>
+    <button type="button" class="qc-btn" id="inResend" hidden data-t="page.login.resend_confirm">Wyślij link potwierdzający ponownie</button>
+    <button type="button" class="linkbtn" id="inForgot" data-t="page.login.forgot">Nie pamiętasz hasła?</button>
   </form>
 
   <!-- REJESTRACJA -->
   <form class="card" id="vUp" role="tabpanel" aria-labelledby="tabUp" novalidate hidden>
     <div>
-      <label for="upEmail">E-mail</label>
+      <label for="upEmail" data-t="page.login.email">E-mail</label>
       <input type="email" id="upEmail" maxlength="200" autocomplete="email" inputmode="email" required>
     </div>
     <div>
-      <label for="upPass">Hasło</label>
+      <label for="upPass" data-t="page.login.password">Hasło</label>
       <div class="pwrow"><input type="password" id="upPass" maxlength="72" autocomplete="new-password" minlength="10" required aria-describedby="upPassHint">
-        <button type="button" class="eye" data-eye="upPass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
-      <p class="hint" id="upPassHint">Co najmniej 10 znaków. Najłatwiej: trzy dowolne słowa.</p>
+        <button type="button" class="eye" data-eye="upPass" data-t-aria="page.login.show_pass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+      <p class="hint" id="upPassHint" data-t="page.login.pass_hint_up">Co najmniej 10 znaków. Najłatwiej: trzy dowolne słowa.</p>
     </div>
     <div class="hp" aria-hidden="true"><label for="upWebsite">Strona www</label><input type="text" id="upWebsite" tabindex="-1" autocomplete="off"></div>
     <altcha-widget id="upAltcha" name="altcha" language="pl" auto="onfocus" type="checkbox"></altcha-widget>
-    <button type="submit" class="qc-btn qc-btn--primary" id="upSend">Załóż konto</button>
+    <button type="submit" class="qc-btn qc-btn--primary" id="upSend" data-t="page.login.signup">Załóż konto</button>
     <p class="msg" id="upMsg" role="status" aria-live="polite"></p>
-    <p class="small">Wyślemy Ci link potwierdzający. Adres e-mail służy tylko do konta — bez reklam i newslettera. Szczegóły: <a href="/cookie-policy.html">Prywatność</a>.</p>
+    <p class="small"><span data-t="page.login.signup_note">Wyślemy Ci link potwierdzający. Adres e-mail służy tylko do konta — bez reklam i newslettera. Szczegóły:</span> <a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a>.</p>
   </form>
 
   <!-- NIE PAMIĘTAM HASŁA -->
   <form class="card" id="vForgot" novalidate hidden>
-    <h2>Nowe hasło</h2>
-    <p class="small" style="font-size:18px;color:var(--ink)">Wpisz e-mail konta. Wyślemy link do ustawienia nowego hasła.</p>
+    <h2 data-t="page.login.newpass_title">Nowe hasło</h2>
+    <p class="small" style="font-size:18px;color:var(--ink)" data-t="page.login.forgot_lead">Wpisz e-mail konta. Wyślemy link do ustawienia nowego hasła.</p>
     <div>
-      <label for="fgEmail">E-mail</label>
+      <label for="fgEmail" data-t="page.login.email">E-mail</label>
       <input type="email" id="fgEmail" maxlength="200" autocomplete="email" inputmode="email" required>
     </div>
     <div class="hp" aria-hidden="true"><label for="fgWebsite">Strona www</label><input type="text" id="fgWebsite" tabindex="-1" autocomplete="off"></div>
     <altcha-widget id="fgAltcha" name="altcha" language="pl" auto="onfocus" type="checkbox"></altcha-widget>
-    <button type="submit" class="qc-btn qc-btn--primary" id="fgSend">Wyślij link</button>
+    <button type="submit" class="qc-btn qc-btn--primary" id="fgSend" data-t="page.login.send_link">Wyślij link</button>
     <p class="msg" id="fgMsg" role="status" aria-live="polite"></p>
-    <button type="button" class="linkbtn" id="fgBack">Wróć do logowania</button>
+    <button type="button" class="linkbtn" id="fgBack" data-t="page.login.back">Wróć do logowania</button>
   </form>
 
   <!-- WYSŁANE (rejestracja albo reset) — sam komunikat, bez formularza -->
   <div class="card" id="vSent" hidden>
     <div class="done" role="status" aria-live="polite">
-      <p class="t">Sprawdź skrzynkę</p>
+      <p class="t" data-t="page.login.check_inbox">Sprawdź skrzynkę</p>
       <p id="sentTxt"></p>
     </div>
-    <p class="small">Nie widzisz wiadomości? Zajrzyj do folderu Spam lub Oferty. Przycisk „Wyślij ponownie” włączy się za chwilę.</p>
+    <p class="small" data-t="page.login.sent_note">Nie widzisz wiadomości? Zajrzyj do folderu Spam lub Oferty. Przycisk „Wyślij ponownie” włączy się za chwilę.</p>
     <p class="msg" id="sentMsg" role="status" aria-live="polite"></p>
     <button type="button" class="qc-btn" id="sentAgain" disabled>Wyślij ponownie</button>
-    <button type="button" class="linkbtn" id="sentBack">Wróć do logowania</button>
+    <button type="button" class="linkbtn" id="sentBack" data-t="page.login.back">Wróć do logowania</button>
   </div>
 
   <!-- USTAW NOWE HASŁO (po kliknięciu linku resetu) -->
   <form class="card" id="vNewPass" novalidate hidden>
-    <h2>Ustaw nowe hasło</h2>
+    <h2 data-t="page.login.setpass_title">Ustaw nowe hasło</h2>
     <div>
-      <label for="npPass">Nowe hasło</label>
+      <label for="npPass" data-t="page.login.newpass_label">Nowe hasło</label>
       <div class="pwrow"><input type="password" id="npPass" maxlength="72" autocomplete="new-password" minlength="10" required aria-describedby="npHint">
-        <button type="button" class="eye" data-eye="npPass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
-      <p class="hint" id="npHint">Co najmniej 10 znaków.</p>
+        <button type="button" class="eye" data-eye="npPass" data-t-aria="page.login.show_pass" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+      <p class="hint" id="npHint" data-t="page.login.pass_hint_new">Co najmniej 10 znaków.</p>
     </div>
-    <button type="submit" class="qc-btn qc-btn--primary" id="npSend">Zapisz hasło</button>
+    <button type="submit" class="qc-btn qc-btn--primary" id="npSend" data-t="page.login.save_pass">Zapisz hasło</button>
     <p class="msg" id="npMsg" role="status" aria-live="polite"></p>
   </form>
 
@@ -145,16 +147,16 @@
   <div class="card" id="vMe" hidden>
     <p style="margin:0;font-size:20px" id="meTxt"></p>
     <div class="row">
-      <a class="qc-btn qc-btn--primary" href="/konto.html">Przejdź do konta</a>
-      <button type="button" class="qc-btn" id="meOut">Wyloguj</button>
+      <a class="qc-btn qc-btn--primary" href="/konto.html" data-t="page.login.go_account">Przejdź do konta</a>
+      <button type="button" class="qc-btn" id="meOut" data-t="page.login.signout">Wyloguj</button>
     </div>
   </div>
 </main>
 
 <div class="footer">
   <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-  <nav class="footer__links"><a href="/kontakt.html">Kontakt</a><a href="/cookie-policy.html">Prywatność</a></nav>
-  <span>© 2026 · Rodzinne przewodniki wypadowe</span>
+  <nav class="footer__links"><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
+  <span>© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki wypadowe</span></span>
 </div>
 <script src="/auth.js?v=2"></script>
 <script src="/vendor/altcha/altcha.min.js?v=3.4.0"></script>
@@ -174,7 +176,12 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
   var VIEWS = ['vIn', 'vUp', 'vForgot', 'vSent', 'vNewPass', 'vMe'];
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   var opened = { vUp: 0, vForgot: 0 };   // czas otwarcia formularza (ochrona przed botami)
-  var sent = null, timer = null;
+  var sent = null, timer = null, titled = null;   // titled: ostatni ekran, który ustawił tytuł (do odświeżenia po wczytaniu tłumaczeń)
+  function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function titleFor(v) {
+    return v === 'vUp' ? PT('page.login.signup', 'Załóż konto') : v === 'vIn' ? PT('page.login.signin', 'Zaloguj się')
+      : v === 'vMe' ? PT('page.login.account', 'Konto rodzica') : v === 'vNewPass' ? PT('page.login.newpass_title', 'Nowe hasło') : null;
+  }
 
   function show(v) {
     VIEWS.forEach(function (id) { $(id).hidden = id !== v; });
@@ -186,20 +193,21 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     // Quo dopasowany do ekranu (ikony z #quo-ikony, JP 2026-10-25); brak ikony → zostaje poprzednia
     var QUO = { vIn: 'zaloguj', vUp: 'rejestracja', vForgot: 'reset-hasla', vSent: 'sprawdz-skrzynke', vNewPass: 'nowe-haslo', vMe: 'zaloguj' };
     if (QUO[v]) { var q = $('lgQuo'); q.src = '/media/icons/quo-' + QUO[v] + '-256.webp'; q.srcset = '/media/icons/quo-' + QUO[v] + '-256.webp 1x, /media/icons/quo-' + QUO[v] + '-512.webp 2x'; }
-    $('lgTitle').textContent = v === 'vUp' ? 'Załóż konto' : v === 'vIn' ? 'Zaloguj się' : v === 'vMe' ? 'Konto rodzica' : $('lgTitle').textContent;
+    var t = v === 'vNewPass' ? null : titleFor(v);   // vNewPass: tytuł ustawia ścieżka odzyskiwania hasła (jak dotąd)
+    if (t) { $('lgTitle').textContent = t; titled = v; }
   }
   function say(el, t, kind) { el.className = 'msg' + (kind ? ' ' + kind : ''); el.textContent = t || ''; }
   function err(r) {
     var c = r.code || '';
-    if (r.status === 0) return 'Brak połączenia z internetem. Spróbuj za chwilę.';
-    if (/^gate_/.test(c)) return r.msg || 'Potwierdź, że nie jesteś robotem.';
-    if (c === 'invalid_credentials') return 'Nieprawidłowy e-mail lub hasło.';
-    if (c === 'email_not_confirmed') return 'Najpierw potwierdź adres e-mail — kliknij link z wiadomości od Quolino.';
-    if (c === 'weak_password') return 'Hasło jest za słabe. Użyj co najmniej 10 znaków, np. trzech dowolnych słów.';
-    if (c === 'user_already_exists' || c === 'email_exists') return 'Konto z tym adresem już istnieje. Zaloguj się albo ustaw nowe hasło.';
-    if (r.status === 429 || /rate_limit/.test(c)) return 'Za dużo prób. Odczekaj minutę i spróbuj ponownie.';
-    if (c === 'validation_failed' || r.status === 422) return 'Sprawdź adres e-mail i hasło.';
-    return 'Coś poszło nie tak. Spróbuj za kilka minut.';
+    if (r.status === 0) return PT('page.login.err_offline', 'Brak połączenia z internetem. Spróbuj za chwilę.');
+    if (/^gate_/.test(c)) return PT.lang === 'pl' && r.msg ? r.msg : PT('page.login.err_gate', 'Potwierdź, że nie jesteś robotem.');
+    if (c === 'invalid_credentials') return PT('page.login.err_credentials', 'Nieprawidłowy e-mail lub hasło.');
+    if (c === 'email_not_confirmed') return PT('page.login.err_not_confirmed', 'Najpierw potwierdź adres e-mail — kliknij link z wiadomości od Quolino.');
+    if (c === 'weak_password') return PT('page.login.err_weak', 'Hasło jest za słabe. Użyj co najmniej 10 znaków, np. trzech dowolnych słów.');
+    if (c === 'user_already_exists' || c === 'email_exists') return PT('page.login.err_exists', 'Konto z tym adresem już istnieje. Zaloguj się albo ustaw nowe hasło.');
+    if (r.status === 429 || /rate_limit/.test(c)) return PT('page.login.err_rate', 'Za dużo prób. Odczekaj minutę i spróbuj ponownie.');
+    if (c === 'validation_failed' || r.status === 422) return PT('page.login.err_validation', 'Sprawdź adres e-mail i hasło.');
+    return PT('page.login.err_generic', 'Coś poszło nie tak. Spróbuj za kilka minut.');
   }
 
   // „Nie jestem robotem” — wyzwanie z naszej bazy (jak w formularzu kontaktowym)
@@ -218,6 +226,19 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     return true;
   }
   if (!setupAltcha()) window.addEventListener('load', setupAltcha);
+  // „Nie jestem robotem” w języku strony (klucze page.altcha.*, wspólne z kontaktem)
+  PT.ready.then(function () {
+    if (PT.lang === 'pl') return;
+    var go = function () {
+      if (!window.$altcha) return false;
+      window.$altcha.i18n.set(PT.lang, { label: PT('page.altcha.label', 'Nie jestem robotem'), verifying: PT('page.altcha.verifying', 'Sprawdzam…'),
+        verified: PT('page.altcha.verified', 'Zweryfikowano'), error: PT('page.altcha.error', 'Weryfikacja nie powiodła się. Spróbuj ponownie.'),
+        expired: PT('page.altcha.expired', 'Weryfikacja wygasła. Zaznacz pole jeszcze raz.'), verificationRequired: PT('page.altcha.required', 'Zaznacz „Nie jestem robotem”.'),
+        waitAlert: PT('page.altcha.wait', 'Trwa sprawdzanie… chwilę.'), footer: '' });
+      ['upAltcha', 'fgAltcha'].forEach(function (id) { $(id).setAttribute('language', PT.lang); }); return true;
+    };
+    if (!go()) window.addEventListener('load', go);
+  });
   function altcha(id) { var v = ''; $(id).querySelectorAll('input[name="altcha"]').forEach(function (i) { if (i.value) v = i.value; }); return v; }
   function resetAltcha(id) { try { $(id).reset(); } catch (e) { /* stary widżet */ } }
 
@@ -226,37 +247,41 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     b.addEventListener('click', function () {
       var i = $(b.getAttribute('data-eye')), on = i.type === 'password';
       i.type = on ? 'text' : 'password'; i.classList.toggle('pw', on);
-      b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Ukryj hasło' : 'Pokaż hasło');
+      b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? PT('page.login.hide_pass', 'Ukryj hasło') : PT('page.login.show_pass', 'Pokaż hasło'));
     });
   });
 
   // ekran „wysłane” + odliczanie do „Wyślij ponownie”
   var COOLDOWN = 60;
+  function sentText() {
+    if (!sent) return;
+    $('sentTxt').innerHTML = sent.kind === 'signup'
+      ? esc(PT('page.login.sent_signup_a', 'Wysłaliśmy link potwierdzający na')) + ' <b></b>. ' + esc(PT('page.login.sent_signup_b', 'Kliknij go w wiadomości od Quolino — konto się aktywuje, a my od razu Cię zalogujemy.'))
+      : esc(PT('page.login.sent_recover_a', 'Jeśli konto z adresem')) + ' <b></b> ' + esc(PT('page.login.sent_recover_b', 'istnieje, wysłaliśmy na niego link do ustawienia nowego hasła.'));
+    $('sentTxt').querySelector('b').textContent = sent.email;
+  }
   function showSent(kind, email) {
     sent = { kind: kind, email: email };
-    $('sentTxt').innerHTML = kind === 'signup'
-      ? 'Wysłaliśmy link potwierdzający na <b></b>. Kliknij go w wiadomości od Quolino — konto się aktywuje, a my od razu Cię zalogujemy.'
-      : 'Jeśli konto z adresem <b></b> istnieje, wysłaliśmy na niego link do ustawienia nowego hasła.';
-    $('sentTxt').querySelector('b').textContent = email;
+    sentText();
     say($('sentMsg'), '');
     show('vSent'); countdown();
   }
   function countdown() {
     var left = COOLDOWN, b = $('sentAgain');
-    b.disabled = true; b.textContent = 'Wyślij ponownie (' + left + ' s)';
+    b.disabled = true; b.textContent = PT('page.login.resend', 'Wyślij ponownie') + ' (' + left + ' s)';
     clearInterval(timer);
     timer = setInterval(function () {
       left--;
-      if (left > 0) { b.textContent = 'Wyślij ponownie (' + left + ' s)'; return; }
-      clearInterval(timer); b.disabled = false; b.textContent = 'Wyślij ponownie';
+      if (left > 0) { b.textContent = PT('page.login.resend', 'Wyślij ponownie') + ' (' + left + ' s)'; return; }
+      clearInterval(timer); b.disabled = false; b.textContent = PT('page.login.resend', 'Wyślij ponownie');
     }, 1000);
   }
   $('sentAgain').addEventListener('click', async function () {
     if (!sent) return;
-    if (sent.kind === 'recover') { $('fgEmail').value = sent.email; show('vForgot'); say($('fgMsg'), 'Zaznacz „Nie jestem robotem” i wyślij jeszcze raz.'); return; }
-    this.disabled = true; say($('sentMsg'), 'Wysyłam…');
+    if (sent.kind === 'recover') { $('fgEmail').value = sent.email; show('vForgot'); say($('fgMsg'), PT('page.login.robot_again', 'Zaznacz „Nie jestem robotem” i wyślij jeszcze raz.')); return; }
+    this.disabled = true; say($('sentMsg'), PT('page.login.sending', 'Wysyłam…'));
     var r = await QAuth.resend(sent.email);
-    if (r.ok) { say($('sentMsg'), 'Wysłaliśmy nowy link. Poprzedni już nie działa.', 'ok'); countdown(); }
+    if (r.ok) { say($('sentMsg'), PT('page.login.resent', 'Wysłaliśmy nowy link. Poprzedni już nie działa.'), 'ok'); countdown(); }
     else { say($('sentMsg'), err(r), 'err'); this.disabled = false; }
   });
   $('sentBack').addEventListener('click', function () { if (sent) $('inEmail').value = sent.email; show('vIn'); });
@@ -272,12 +297,12 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     e.preventDefault();
     var email = $('inEmail').value.trim(), pass = $('inPass').value;
     $('inResend').hidden = true;
-    if (!EMAIL_RE.test(email)) { say($('inMsg'), 'Wpisz pełny adres e-mail.', 'err'); $('inEmail').focus(); return; }
-    if (!pass) { say($('inMsg'), 'Wpisz hasło.', 'err'); $('inPass').focus(); return; }
-    $('inSend').disabled = true; say($('inMsg'), 'Loguję…');
+    if (!EMAIL_RE.test(email)) { say($('inMsg'), PT('page.login.err_email', 'Wpisz pełny adres e-mail.'), 'err'); $('inEmail').focus(); return; }
+    if (!pass) { say($('inMsg'), PT('page.login.err_nopass', 'Wpisz hasło.'), 'err'); $('inPass').focus(); return; }
+    $('inSend').disabled = true; say($('inMsg'), PT('page.login.signing_in', 'Loguję…'));
     var r = await QAuth.signIn(email, pass);
     $('inSend').disabled = false;
-    if (r.ok) { say($('inMsg'), 'Zalogowano.', 'ok'); location.href = nextUrl() || '/konto.html'; return; }
+    if (r.ok) { say($('inMsg'), PT('page.login.signed_in', 'Zalogowano.'), 'ok'); location.href = nextUrl() || '/konto.html'; return; }
     say($('inMsg'), err(r), 'err');
     if (r.code === 'email_not_confirmed') $('inResend').hidden = false;
   });
@@ -292,10 +317,10 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
   $('vUp').addEventListener('submit', async function (e) {
     e.preventDefault();
     var email = $('upEmail').value.trim(), pass = $('upPass').value, a = altcha('upAltcha');
-    if (!EMAIL_RE.test(email)) { say($('upMsg'), 'Wpisz pełny adres e-mail, np. anna@example.com.', 'err'); $('upEmail').focus(); return; }
-    if (pass.length < 10) { say($('upMsg'), 'Hasło musi mieć co najmniej 10 znaków.', 'err'); $('upPass').focus(); return; }
-    if (!a) { say($('upMsg'), 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.', 'err'); return; }
-    $('upSend').disabled = true; say($('upMsg'), 'Zakładam konto…');
+    if (!EMAIL_RE.test(email)) { say($('upMsg'), PT('page.login.err_email_example', 'Wpisz pełny adres e-mail, np. anna@example.com.'), 'err'); $('upEmail').focus(); return; }
+    if (pass.length < 10) { say($('upMsg'), PT('page.login.err_short', 'Hasło musi mieć co najmniej 10 znaków.'), 'err'); $('upPass').focus(); return; }
+    if (!a) { say($('upMsg'), PT('page.login.err_robot', 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.'), 'err'); return; }
+    $('upSend').disabled = true; say($('upMsg'), PT('page.login.signing_up', 'Zakładam konto…'));
     var r = await QAuth.signUp(email, pass, { altcha: a, hp: $('upWebsite').value, ms: Date.now() - opened.vUp }, nextUrl() || '/konto.html');
     $('upSend').disabled = false; resetAltcha('upAltcha');
     if (r.ok) { $('upPass').value = ''; showSent('signup', email); return; }
@@ -306,9 +331,9 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
   $('vForgot').addEventListener('submit', async function (e) {
     e.preventDefault();
     var email = $('fgEmail').value.trim(), a = altcha('fgAltcha');
-    if (!EMAIL_RE.test(email)) { say($('fgMsg'), 'Wpisz pełny adres e-mail.', 'err'); $('fgEmail').focus(); return; }
-    if (!a) { say($('fgMsg'), 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.', 'err'); return; }
-    $('fgSend').disabled = true; say($('fgMsg'), 'Wysyłam…');
+    if (!EMAIL_RE.test(email)) { say($('fgMsg'), PT('page.login.err_email', 'Wpisz pełny adres e-mail.'), 'err'); $('fgEmail').focus(); return; }
+    if (!a) { say($('fgMsg'), PT('page.login.err_robot', 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.'), 'err'); return; }
+    $('fgSend').disabled = true; say($('fgMsg'), PT('page.login.sending', 'Wysyłam…'));
     var r = await QAuth.recover(email, { altcha: a, hp: $('fgWebsite').value, ms: Date.now() - opened.vForgot });
     $('fgSend').disabled = false; resetAltcha('fgAltcha');
     if (r.ok) { showSent('recover', email); return; }
@@ -319,24 +344,38 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
   $('vNewPass').addEventListener('submit', async function (e) {
     e.preventDefault();
     var pass = $('npPass').value;
-    if (pass.length < 10) { say($('npMsg'), 'Hasło musi mieć co najmniej 10 znaków.', 'err'); return; }
-    $('npSend').disabled = true; say($('npMsg'), 'Zapisuję…');
+    if (pass.length < 10) { say($('npMsg'), PT('page.login.err_short', 'Hasło musi mieć co najmniej 10 znaków.'), 'err'); return; }
+    $('npSend').disabled = true; say($('npMsg'), PT('page.login.saving', 'Zapisuję…'));
     var r = await QAuth.setPassword(pass);
     $('npSend').disabled = false;
-    if (r.ok) { say($('npMsg'), 'Hasło zapisane. Przechodzę do konta…', 'ok'); setTimeout(function () { location.href = '/konto.html'; }, 900); return; }
-    say($('npMsg'), r.code === 'same_password' ? 'To jest Twoje obecne hasło — wpisz inne.' : err(r), 'err');
+    if (r.ok) { say($('npMsg'), PT('page.login.saved', 'Hasło zapisane. Przechodzę do konta…'), 'ok'); setTimeout(function () { location.href = '/konto.html'; }, 900); return; }
+    say($('npMsg'), r.code === 'same_password' ? PT('page.login.err_same', 'To jest Twoje obecne hasło — wpisz inne.') : err(r), 'err');
   });
 
-  $('meOut').addEventListener('click', async function () { await QAuth.signOut(); show('vIn'); say($('inMsg'), 'Wylogowano.', 'ok'); });
+  $('meOut').addEventListener('click', async function () { await QAuth.signOut(); show('vIn'); say($('inMsg'), PT('page.login.signed_out', 'Wylogowano.'), 'ok'); });
+
+  function meText(s) {
+    $('meTxt').innerHTML = esc(PT('page.login.me_as', 'Jesteś zalogowany jako')) + ' <b></b>.';
+    $('meTxt').querySelector('b').textContent = s.email || PT('page.login.me_fallback', 'Twoje konto');
+  }
 
   // stan początkowy
   var linkErr = QAuth.lastError();
   QAuth.ready.then(function () {
     var s = QAuth.current();
-    if (s && QAuth.linkType() === 'recovery') { $('lgTitle').textContent = 'Nowe hasło'; show('vNewPass'); $('npPass').focus(); return; }
-    if (s) { $('meTxt').innerHTML = 'Jesteś zalogowany jako <b></b>.'; $('meTxt').querySelector('b').textContent = s.email || 'Twoje konto'; show('vMe'); return; }
+    if (s && QAuth.linkType() === 'recovery') { $('lgTitle').textContent = PT('page.login.newpass_title', 'Nowe hasło'); titled = 'vNewPass'; show('vNewPass'); $('npPass').focus(); return; }
+    if (s) { meText(s); show('vMe'); return; }
     show(location.hash === '#rejestracja' ? 'vUp' : 'vIn');
-    if (linkErr) say($('inMsg'), /expired|otp_expired|invalid/.test(linkErr) ? 'Ten link już wygasł albo został użyty. Zaloguj się albo poproś o nowy.' : 'Link nie zadziałał. Spróbuj jeszcze raz.', 'err');
+    if (linkErr) say($('inMsg'), /expired|otp_expired|invalid/.test(linkErr) ? PT('page.login.err_link_expired', 'Ten link już wygasł albo został użyty. Zaloguj się albo poproś o nowy.') : PT('page.login.err_link', 'Link nie zadziałał. Spróbuj jeszcze raz.'), 'err');
+  });
+
+  // tłumaczenia doszły po narysowaniu ekranu: odśwież teksty ustawiane ze skryptu (statyczne robi page-i18n.js)
+  PT.ready.then(function () {
+    if (PT.lang === 'pl') return;
+    document.title = PT('page.login.title', 'Zaloguj się lub załóż konto') + ' — Quolino';
+    var t = titleFor(titled); if (t) $('lgTitle').textContent = t;
+    if (!$('vMe').hidden && QAuth.current()) meText(QAuth.current());
+    if (!$('vSent').hidden) sentText();
   });
 })();
 </script>
