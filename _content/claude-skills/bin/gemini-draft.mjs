@@ -25,9 +25,9 @@ const argv = process.argv.slice(2);
 const slug = argv[0];
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
 // --revise --comments <plik.json> [--context <plik>]: poprawki JP z panelu do szkicu nowego procesu (wywołuje draft-comments.mjs)
-const REVISE = argv.includes('--revise');
-let name = opt('--name') ?? (REVISE ? slug : undefined);
-const region = opt('--region') ?? (REVISE ? '-' : undefined), country = opt('--country') ?? 'it';
+const REVISE = argv.includes('--revise'), RECHECK = argv.includes('--recheck');
+let name = opt('--name') ?? (REVISE || RECHECK ? slug : undefined);
+const region = opt('--region') ?? (REVISE || RECHECK ? '-' : undefined), country = opt('--country') ?? 'it';
 const duration = opt('--duration') ?? 'half_day', brief = opt('--brief') ?? '', channel = opt('--notify');
 const FRESH = argv.includes('--fresh'), CHECK = !argv.includes('--no-check');
 if (!slug || !/^[a-z0-9-]+$/.test(slug) || !name || !region || (REVISE && !opt('--comments'))) {
@@ -49,7 +49,7 @@ function event(msg, { stage = null, status = 'running' } = {}) {
   const q2 = globalThis.__q; if (!q2) return;
   q2(`INSERT INTO public.pipeline_events (run_id, city_slug, kind, stage, stop_k, stops_n, message, status, gemini_tokens, gemini_calls, claude_tokens, claude_calls)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-    [RUN, slug, REVISE ? 'revise' : 'draft', st ?? STAGE, k, STOPS_N, msg.slice(0, 400), status, cost.tokens ?? 0, cost.calls,
+    [RUN, slug, REVISE || RECHECK ? 'revise' : 'draft', st ?? STAGE, k, STOPS_N, msg.slice(0, 400), status, cost.tokens ?? 0, cost.calls,
      claudeUsage.input + claudeUsage.output, claudeUsage.calls]).catch(() => {});
 }
 const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); event(lastMsg); };
@@ -484,22 +484,11 @@ async function main() {
       try { rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
       catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
     }
-    // ④c poprawki po kontroli CAŁEJ trasy, potem ponowna kontrola — do JP trafia wyłącznie tekst po poprawkach (JP 2026-10-25)
+    // ④c pętla: poprawki po kontroli CAŁEJ trasy → ponowna kontrola, najwyżej 3 rundy (JP 2026-10-25) — do JP trafia tekst po poprawkach
     const fRv2 = join(dir, 'v2-review-po-poprawkach.json');
     if (resume && existsSync(fRv2)) { rv = JSON.parse(readFileSync(fRv2, 'utf8')); log(`${slug}: kontrola po poprawkach z pliku (wznowienie)`); }
-    else if (rv?.errors?.length) {
-      log(`${slug}: ④c poprawki po kontroli całej trasy (${rv.errors.length} błędów)`);
-      await notify(channel, `🔧 ${name}: kontrola całej trasy — ${rv.errors.length} błędów. Nanoszę poprawki i sprawdzam ponownie, zanim trafi do Ciebie.`);
-      const cms = rv.errors.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
-        body: String(e.problem) + (e.fix ? ' → ' + e.fix : '') }));
-      const first = rv;
-      const ap = await applyComments(trip, blocks, cms, cityTitle, 'Claude');
-      writeFileSync(fBlocks, JSON.stringify(blocks, null, 2)); writeFileSync(fTrip, JSON.stringify(trip, null, 2));
-      log(`${slug}: ④ kontrola Claude — cała trasa po poprawkach (${ap.changes.length} zmian)`);
-      try { rv = await fullReview(slug, trip); } catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
-      rv.before = { errors: first.errors.length, warnings: (first.warnings ?? []).length, facts: first.facts ?? null };
-      writeFileSync(fRv2, JSON.stringify(rv, null, 2));
-    }
+    else rv = await fixLoop(trip, blocks, cityTitle, rv, () => { writeFileSync(fBlocks, JSON.stringify(blocks, null, 2)); writeFileSync(fTrip, JSON.stringify(trip, null, 2)); });
+    writeFileSync(fRv2, JSON.stringify(rv, null, 2));
   }
 
   log(`${slug}: ⑤ zapis wersji`);
@@ -557,6 +546,58 @@ async function guidelinesVersion() {
 const stampGuidelines = async (version, label, ok) => label && q(`UPDATE public.city_versions SET content = content || jsonb_build_object('guidelines', $3::text, 'guidelines_ok', $4::boolean)
   WHERE city_slug = $1 AND version = $2`, [slug, version, label, !!ok]);
 
+// ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
+const MAX_ROUNDS = +(opt('--rounds') ?? 3);
+async function fixLoop(trip, blocks, cityTitle, rv, persist) {
+  const first = rv, history = [{ round: 0, errors: rv?.errors?.length ?? 0, facts: rv?.facts ?? null }];
+  for (let round = 1; round <= MAX_ROUNDS && rv?.errors?.length; round++) {
+    log(`${slug}: ④c poprawki po kontroli całej trasy — runda ${round}/${MAX_ROUNDS} (${rv.errors.length} błędów)`);
+    if (round === 1) await notify(channel, `🔧 ${name}: kontrola całej trasy — ${rv.errors.length} błędów. Poprawiam i sprawdzam w rundach (najwyżej ${MAX_ROUNDS}), zanim trafi do Ciebie.`);
+    const cms = rv.errors.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
+      body: String(e.problem) + (e.fix ? ' → ' + e.fix : '') }));
+    const ap = await applyComments(trip, blocks, cms, cityTitle, 'Claude');
+    persist?.();
+    log(`${slug}: ④ kontrola Claude — cała trasa po rundzie ${round} (${ap.changes.length} zmian)`);
+    let next;
+    try { next = await fullReview(slug, trip); } catch (e) { next = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: rv.errors, warnings: [] }; }
+    history.push({ round, errors: next.errors?.length ?? 0, facts: next.facts ?? null, changes: ap.changes.length });
+    const better = (next.errors?.length ?? 0) < rv.errors.length;
+    rv = next;
+    if (!better) { log(`${slug}: runda ${round} nie zmniejszyła liczby błędów — koniec pętli`); break; }
+  }
+  rv.before = { errors: first?.errors?.length ?? 0, warnings: (first?.warnings ?? []).length, facts: first?.facts ?? null };
+  rv.rounds = history;
+  return rv;
+}
+
+// ── ponowna kontrola i poprawki istniejącego szkicu nowego procesu (--recheck), np. po zmianie wytycznych ──
+async function recheckMain() {
+  const [cur] = await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu`);
+  const trip = { meta: cur.trip.meta, content: cur.trip.content };
+  const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
+  const cityTitle = trip.content.city?.title ?? slug; name = cityTitle; STOPS_N = trip.meta.stops.length;
+  await loadRules(q);
+  log(`${slug}: ④ kontrola Claude — cała trasa (szkic v${cur.version})`);
+  let rv;
+  try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
+  rv = await fixLoop(trip, blocks, cityTitle, rv, null);
+  log(`${slug}: ⑤ zapis wersji`);
+  trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
+  const saved = await saveDraft(q, trip, { note: `kontrola całej trasy i poprawki (${rv.rounds.length - 1} rund)`, source: 'revise', changes: [], review: rv });
+  await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
+             trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks)]);
+  const gl = await guidelinesVersion();
+  await stampGuidelines(saved.version, gl, rv.verdict === 'ok');
+  const path = rv.rounds.map(x => x.errors).join(' → ');
+  event(`gotowe: szkic v${saved.version} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });
+  await notify(channel, `📝 **${cityTitle} — szkic v${saved.version} · wytyczne ${gl ?? '?'}${rv.verdict === 'ok' ? ' ✓' : ''}** po kontroli całej trasy i poprawkach.\n` +
+    `Błędy w kolejnych rundach: ${path}${rv.facts ? ` · fakty: ✓ ${rv.facts.confirmed} · ✗ ${rv.facts.contradicted} · bez źródła ${rv.facts.unverified}` : ''}\n` +
+    `${rv.errors?.length ? `Zostało do decyzji JP:\n${rv.errors.slice(0, 8).map(e => `• ${e.stop_key ?? 'trasa'}: ${String(e.problem).slice(0, 140)}`).join('\n')}\n` : ''}` +
+    `Panel: https://admin.quolino.com/_admin/#/${slug}`);
+  console.log(JSON.stringify({ slug, version: saved.version, verdict: rv.verdict, rounds: rv.rounds }, null, 2));
+}
+
 // ── naniesienie uwag (JP z panelu albo Claude z kontroli całej trasy) na szkic: Gemini poprawia wskazane pola, Claude sprawdza zmienione przystanki ──
 async function applyComments(trip, blocks, comments, cityTitle, who) {
   const by = {};
@@ -587,7 +628,7 @@ Odpowiedz JSON-em: {"city": {…tylko zmienione pola…}, "day_plan": {…tylko 
     const fr = join(dir, `v2-stop-${m.stop_number}-research.md`);
     log(`${slug}: poprawki — ${m.stop_number} ${pl.name} (${cs.length})`);
     const out = await geminiJson(`Popraw przystanek wycieczki Quolino według ${kto}. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.
-Uwaga do opisu, legendy, ciekawostki, popkultury albo fun factu = popraw rekord bloków (z przypisami [n], źródła z listy). Nowe fakty tylko z researchu poniżej
+${who === 'Claude' ? 'POPRAWKI Z KONTROLI: NIE dodawaj żadnych nowych faktów, liczb, dat ani nazw. Poprawka = usuń zdanie, przepisz je bez błędu albo przenieś. Fakt bez potwierdzenia w źródle = usuń zdanie. Spójność godzin: time_label i day_plan muszą się zgadzać.\n' : ''}Uwaga do opisu, legendy, ciekawostki, popkultury albo fun factu = popraw rekord bloków (z przypisami [n], źródła z listy). Nowe fakty tylko z researchu poniżej
 albo — jeśli JP sam podał fakt w uwadze — z uwagi JP (wtedy bez przypisu, opisz to w "summary").
 ${STANDARD}
 ${DEPTH_TEXT}
@@ -650,6 +691,6 @@ async function reviseMain() {
   console.log(JSON.stringify(out, null, 2));
 }
 
-try { await (REVISE ? reviseMain() : main()); }
+try { await (RECHECK ? recheckMain() : REVISE ? reviseMain() : main()); }
 catch (e) { console.error('BŁĄD:', e.message); event(`błąd: ${e.message}`, { status: 'error' }); await new Promise(r => setTimeout(r, 500)); await notify(channel, `⚠️ ${name} (nowy proces): ${e.message.slice(0, 500)}`); process.exitCode = 1; }
 finally { await c.end(); }
