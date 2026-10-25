@@ -6,7 +6,8 @@
 //   node quo-icons.mjs ok <N>                           akceptacja: WebP 128/256/512 → repo media/icons/quo-<slug>-<rozmiar>.webp
 //   node quo-icons.mjs status                           lista: czeka / do poprawy / zaakceptowana
 // Referencje: kanoniczny Quo (pose-05) + ikona ze stylem (icon-museum). Wygląd Quo opisuje tylko obrazek, nie słowa.
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { env, log, run, aiUsage } from './lib.mjs';
 import { ensureChannel } from './draft-lib.mjs';
@@ -29,7 +30,36 @@ const icon = (n) => CFG.icons.find(x => x.n === +n) ?? (() => { throw new Error(
 const b64 = (p) => readFileSync(p).toString('base64');
 const mime = (p) => p.endsWith('.webp') ? 'image/webp' : p.endsWith('.jpg') ? 'image/jpeg' : 'image/png';
 
-async function generate(prompt, images) {
+// Antigravity (abonament AI Pro, JP 2026-10-25): podagent image-generator zapisuje obraz w swoim katalogu „brain”,
+// a tryb -p nie czeka na niego — szukamy pliku z naszą nazwą nowszego niż start, potem zamykamy proces.
+const AGY = '/opt/data/home/.local/bin/agy', BRAIN = '/opt/data/home/.gemini/antigravity-cli/brain', GQ = '/tmp/gq/quo';
+function findNew(dir, prefix, since, depth = 0) {
+  let hit = null;
+  for (const e of (() => { try { return readdirSync(dir, { withFileTypes: true }); } catch { return []; } })()) {
+    const f = join(dir, e.name);
+    if (e.isDirectory() && depth < 3) { const h = findNew(f, prefix, since, depth + 1); if (h) hit = h; }
+    else if (e.isFile() && e.name.toLowerCase().startsWith(prefix) && /\.(png|jpe?g|webp)$/i.test(e.name) && statSync(f).mtimeMs > since) hit = f;
+  }
+  return hit;
+}
+async function generateAgy(prompt, images, name) {
+  mkdirSync(GQ, { recursive: true });
+  const refs = images.map((p, i) => { const d = join(GQ, `ref${i + 1}-${p.split('/').pop()}`); copyFileSync(p, d); return d; });
+  const ask = `Use the image generator to create exactly one image named ${name}. Reference images: ${refs.map((p, i) => `${p} (${i === 0 ? 'the character' : i === 1 ? 'the style' : 'the previous attempt'})`).join(', ')}.\n${prompt}\nWhen the image is created, reply DONE.`;
+  const t0 = Date.now();
+  const envv = { ...process.env, HOME: '/opt/data/home' }; delete envv.GOOGLE_API_KEY; delete envv.GEMINI_API_KEY;
+  const p = spawn(AGY, ['-p', ask], { cwd: '/tmp/gq', env: envv, stdio: 'ignore' });
+  try {
+    for (let i = 0; i < 72; i++) {   // do 6 minut
+      await new Promise(r => setTimeout(r, 5000));
+      const f = findNew(BRAIN, name.toLowerCase(), t0);
+      if (f) { await new Promise(r => setTimeout(r, 2000)); aiUsage({ provider: 'gemini', model: 'Antigravity (AI Pro) obraz', role: 'ikony Quo', billing: 'abonament' }); return readFileSync(f); }
+    }
+    throw new Error('Antigravity nie zapisał obrazu w 6 min');
+  } finally { try { p.kill('SIGKILL'); } catch {} }
+}
+async function generate(prompt, images, name) {
+  if (!process.argv.includes('--api')) return generateAgy(prompt, images, name);
   if (!KEY) throw new Error('brak GOOGLE_API_KEY');
   const parts = [...images.map(p => ({ inlineData: { mimeType: mime(p), data: b64(p) } })), { text: prompt }];
   for (let i = 1; i <= 2; i++) {
@@ -68,10 +98,16 @@ async function one(ic, notes = null) {
     prompt += `\n\nThe third image is the previous attempt. Keep what works in it and apply these corrections from the art director (Polish): ${notes}`;
   }
   log(`ikona ${ic.n} ${ic.slug}: generuję${notes ? ' poprawkę' : ''}`);
-  const png = await generate(prompt, refs);
+  const png = await generate(prompt, refs, `quo_${String(ic.n).padStart(2, '0')}_${ic.slug.replace(/-/g, '_')}_v${s.v + 1}`);
   s.v++; s.status = 'review'; s.history.push({ v: s.v, at: new Date().toISOString(), notes });
   const f = join(WORK, `${String(ic.n).padStart(2, '0')}-${ic.slug}-v${s.v}.png`);
-  writeFileSync(f, png); save();
+  if (png[0] === 0x89 && png[1] === 0x50) writeFileSync(f, png);
+  else {   // JPG/WebP z Antigravity → PNG (nazwy plików i podglądy zawsze .png)
+    writeFileSync(f + '.src', png);
+    const c = await run('python3', ['-c', `from PIL import Image\nImage.open(${JSON.stringify(f + '.src')}).convert('RGBA').save(${JSON.stringify(f)},'PNG')`], { timeout: 60_000 });
+    if (c.code !== 0) throw new Error(`PNG: ${c.err.slice(-200)}`);
+  }
+  save();
   await upload(`🎨 **Quo #${ic.n} — ${ic.place}** · wersja ${s.v}${notes ? ` (poprawki: ${notes.slice(0, 200)})` : ''}\nOdpisz: **ok ${ic.n}** albo **${ic.n}: co poprawić**.`, f);
   return f;
 }
