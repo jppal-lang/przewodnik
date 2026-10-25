@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Twoje konto · Quolino</title>
+<meta name="pt-title" content="page.account.title">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=30">
+<script src="/page-i18n.js?v=2"></script>
 <script src="/kid-reward.js?v=3"></script>
 <script src="/auth.js?v=2"></script>
 <style>
@@ -32,26 +34,26 @@
 <nav class="sticky-nav">
   <div class="sticky-nav-inner">
     <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-    <div class="acc-nav__me"><span class="acc-nav__dot" aria-hidden="true"></span><span id="accNavMe">Konto rodzica</span></div>
+    <div class="acc-nav__me"><span class="acc-nav__dot" aria-hidden="true"></span><span id="accNavMe"><span data-t="page.account.nav_me">Konto rodzica</span></span></div>
   </div>
 </nav>
 
 <header class="band acc-head">
   <div class="wrap-wide">
-    <p class="label acc-head__eyebrow">Twoje konto</p>
-    <h1 class="acc-head__title">Album rodziny</h1>
-    <p class="acc-head__sub" id="accSum">Ładuję…</p>
+    <p class="label acc-head__eyebrow" data-t="page.account.title">Twoje konto</p>
+    <h1 class="acc-head__title" data-t="page.account.h1">Album rodziny</h1>
+    <p class="acc-head__sub" id="accSum"><span data-t="page.account.loading">Ładuję…</span></p>
   </div>
 </header>
 
 <div class="acc-tabs">
   <div class="wrap-wide">
-    <div class="acc-tabs__list" role="tablist" aria-label="Sekcje konta">
-      <a role="tab" id="t-album" href="#album" aria-controls="album" data-tab="album">Album</a>
-      <a role="tab" id="t-wyzwania" href="#wyzwania" aria-controls="wyzwania" data-tab="wyzwania">Wyzwania</a>
-      <a role="tab" id="t-dzieci" href="#dzieci" aria-controls="dzieci" data-tab="dzieci">Dzieci</a>
-      <a role="tab" id="t-plan" href="#plan" aria-controls="plan" data-tab="plan">Plan i kody</a>
-      <a role="tab" id="t-prywatnosc" href="#prywatnosc" aria-controls="prywatnosc" data-tab="prywatnosc">Prywatność</a>
+    <div class="acc-tabs__list" role="tablist" aria-label="Sekcje konta" data-t-aria="page.account.tabs_aria">
+      <a role="tab" id="t-album" href="#album" aria-controls="album" data-tab="album" data-t="page.account.tab.album">Album</a>
+      <a role="tab" id="t-wyzwania" href="#wyzwania" aria-controls="wyzwania" data-tab="wyzwania" data-t="page.account.tab.challenges">Wyzwania</a>
+      <a role="tab" id="t-dzieci" href="#dzieci" aria-controls="dzieci" data-tab="dzieci" data-t="page.account.tab.kids">Dzieci</a>
+      <a role="tab" id="t-plan" href="#plan" aria-controls="plan" data-tab="plan" data-t="page.account.tab.plan">Plan i kody</a>
+      <a role="tab" id="t-prywatnosc" href="#prywatnosc" aria-controls="prywatnosc" data-tab="prywatnosc" data-t="page.account.tab.privacy">Prywatność</a>
     </div>
   </div>
 </div>
@@ -68,11 +70,11 @@
   <!-- ═══ ALBUM ═══ -->
   <section class="acc-panel" id="album" role="tabpanel" aria-labelledby="t-album">
     <div class="acc-sec__head">
-      <h2>Zdobyte miejsca</h2>
-      <button type="button" class="qc-btn qc-btn--primary" data-act="share-album">Udostępnij album</button>
+      <h2 data-t="page.account.album_h">Zdobyte miejsca</h2>
+      <button type="button" class="qc-btn qc-btn--primary" data-act="share-album" data-t="page.account.share_album">Udostępnij album</button>
     </div>
     <div class="acc-stats" id="accStats"></div>
-    <div id="accAlbum"><p class="acc-empty">Ładuję album…</p></div>
+    <div id="accAlbum"><p class="acc-empty" data-t="page.account.album_loading">Ładuję album…</p></div>
   </section>
 
   <!-- ═══ WYZWANIA ═══ -->
@@ -80,29 +82,29 @@
     <div class="acc-family">
       <img src="/media/icons/pose-13-celebration-jump-256.webp" alt="" width="160" height="160">
       <div>
-        <p class="label">Od rodziców dla rodziców</p>
-        <h2>Quolino to rodzinny projekt</h2>
-        <p>Robimy go jako rodzice — z myślą o dzieciach, którym nie chce się zwiedzać, i o dorosłych, którzy chcą zobaczyć coś więcej niż plac zabaw. Najlepszą reklamą są dla nas polecenia innych rodzin.</p>
-        <p><b>Pochwalcie się wyprawą na swoich socialach.</b> Po 5 udostępnionych wycieczkach dostaniecie <b>5% zniżki na kolejny zakup</b>.</p>
+        <p class="label" data-t="page.account.family_eyebrow">Od rodziców dla rodziców</p>
+        <h2 data-t="page.account.family_h">Quolino to rodzinny projekt</h2>
+        <p data-t="page.account.family_p1">Robimy go jako rodzice — z myślą o dzieciach, którym nie chce się zwiedzać, i o dorosłych, którzy chcą zobaczyć coś więcej niż plac zabaw. Najlepszą reklamą są dla nas polecenia innych rodzin.</p>
+        <p><b data-t="page.account.family_p2a">Pochwalcie się wyprawą na swoich socialach.</b> <span data-t="page.account.family_p2b">Po 5 udostępnionych wycieczkach dostaniecie</span> <b data-t="page.account.main_reward">5% zniżki na kolejny zakup</b>.</p>
       </div>
     </div>
     <article class="acc-main-ch" id="accMainCh"></article>
-    <h3 class="acc-sub-h">Wycieczki do udostępnienia</h3>
+    <h3 class="acc-sub-h" data-t="page.account.sharelist_h">Wycieczki do udostępnienia</h3>
     <div class="acc-sharelist" id="accShareList"></div>
-    <h3 class="acc-sub-h">Odznaki</h3>
+    <h3 class="acc-sub-h" data-t="page.account.badges_h">Odznaki</h3>
     <div class="acc-ch" id="accBadges"></div>
   </section>
 
   <!-- ═══ DZIECI ═══ -->
   <section class="acc-panel" id="dzieci" role="tabpanel" aria-labelledby="t-dzieci" hidden>
     <div class="acc-narrow">
-      <h2>Dzieci</h2>
-      <p class="acc-sec__sub">Tylko wymyślone ksywki — nie wpisujcie prawdziwych imion. Ksywki zostają na tym urządzeniu, nie wysyłamy ich na serwer. Dziecko wybiera ksywkę i swojego Quo po zeskanowaniu QR.</p>
+      <h2 data-t="page.account.tab.kids">Dzieci</h2>
+      <p class="acc-sec__sub" data-t="page.account.kids_sub">Tylko wymyślone ksywki — nie wpisujcie prawdziwych imion. Ksywki zostają na tym urządzeniu, nie wysyłamy ich na serwer. Dziecko wybiera ksywkę i swojego Quo po zeskanowaniu QR.</p>
       <ul class="acc-kids" id="accKids"></ul>
       <form class="acc-add" id="accAdd" autocomplete="off">
-        <label class="acc-vh" for="accNick">Nowy nick</label>
-        <input id="accNick" maxlength="20" placeholder="np. Szybki Lis">
-        <button type="submit" class="qc-btn">Dodaj</button>
+        <label class="acc-vh" for="accNick" data-t="page.account.kids_new">Nowy nick</label>
+        <input id="accNick" maxlength="20" placeholder="np. Szybki Lis" data-t-ph="page.account.kids_ph">
+        <button type="submit" class="qc-btn" data-t="page.account.kids_add">Dodaj</button>
       </form>
     </div>
   </section>
@@ -111,24 +113,24 @@
   <section class="acc-panel" id="plan" role="tabpanel" aria-labelledby="t-plan" hidden>
     <div class="acc-cols">
       <div class="acc-box">
-        <h2>Twój plan</h2>
-        <p class="acc-plan__now"><b>Darmowa wycieczka</b><span>1 z 1 wykorzystana</span></p>
-        <p class="acc-sec__sub">Od <b>1 czerwca 2027</b> Quolino przechodzi na plany płatne: jedno miasto albo pakiet dni. Pierwsza wycieczka po rejestracji zostaje za darmo.</p>
-        <button type="button" class="qc-btn" disabled>Wybierz plan — od 1 czerwca 2027</button>
+        <h2 data-t="page.account.plan_h">Twój plan</h2>
+        <p class="acc-plan__now"><b data-t="page.account.plan_free">Darmowa wycieczka</b><span data-t="page.account.plan_used">1 z 1 wykorzystana</span></p>
+        <p class="acc-sec__sub"><span data-t="page.account.plan_from">Od</span> <b data-t="page.account.plan_date">1 czerwca 2027</b> <span data-t="page.account.plan_sub">Quolino przechodzi na plany płatne: jedno miasto albo pakiet dni. Pierwsza wycieczka po rejestracji zostaje za darmo.</span></p>
+        <button type="button" class="qc-btn" disabled data-t="page.account.plan_btn">Wybierz plan — od 1 czerwca 2027</button>
         <div class="acc-legal">
-          <p><b>Treść cyfrowa — dostęp od razu.</b> Wycieczki udostępniamy natychmiast po zapłacie. Kupując, zgadzasz się na to i przyjmujesz do wiadomości, że po udostępnieniu treści nie przysługuje prawo odstąpienia od umowy (art. 38 ust. 1 pkt 13 ustawy o prawach konsumenta). Potwierdzenie wyślemy e-mailem. Prawa z tytułu niezgodności treści z umową (reklamacja) pozostają bez zmian.</p>
+          <p><b data-t="page.account.legal_h">Treść cyfrowa — dostęp od razu.</b> <span data-t="page.account.legal_p">Wycieczki udostępniamy natychmiast po zapłacie. Kupując, zgadzasz się na to i przyjmujesz do wiadomości, że po udostępnieniu treści nie przysługuje prawo odstąpienia od umowy (art. 38 ust. 1 pkt 13 ustawy o prawach konsumenta). Potwierdzenie wyślemy e-mailem. Prawa z tytułu niezgodności treści z umową (reklamacja) pozostają bez zmian.</span></p>
           <details><summary>English</summary>
             <p><b>Digital content — instant access.</b> Trips are made available immediately after payment. By purchasing you agree to this and acknowledge that once access is provided you lose the right of withdrawal (Art. 16(m) of Directive 2011/83/EU). We will confirm this by e-mail. Your rights if the content does not conform to the contract are not affected.</p>
           </details>
         </div>
       </div>
       <div class="acc-box">
-        <h2>Masz kod?</h2>
-        <p class="acc-sec__sub">Kod na darmową wycieczkę albo zniżkę — od nas, z wyzwania lub od partnera.</p>
+        <h2 data-t="page.account.code_h">Masz kod?</h2>
+        <p class="acc-sec__sub" data-t="page.account.code_sub">Kod na darmową wycieczkę albo zniżkę — od nas, z wyzwania lub od partnera.</p>
         <form class="acc-code" id="accCode" autocomplete="off" novalidate>
-          <label class="acc-vh" for="accCodeIn">Kod</label>
+          <label class="acc-vh" for="accCodeIn" data-t="page.account.code_label">Kod</label>
           <input id="accCodeIn" placeholder="QUO-XXXX-XXXX" maxlength="14" autocapitalize="characters" spellcheck="false" inputmode="text">
-          <button type="submit" class="qc-btn qc-btn--primary">Użyj kodu</button>
+          <button type="submit" class="qc-btn qc-btn--primary" data-t="page.account.code_btn">Użyj kodu</button>
         </form>
         <p class="acc-code__msg" id="accCodeMsg" role="status"></p>
         <ul class="acc-codes" id="accCodes"></ul>
@@ -139,19 +141,19 @@
   <!-- ═══ PRYWATNOŚĆ ═══ -->
   <section class="acc-panel" id="prywatnosc" role="tabpanel" aria-labelledby="t-prywatnosc" hidden>
     <div class="acc-narrow">
-      <h2>Prywatność</h2>
-      <p class="acc-sec__sub">Przechowujemy tylko Twój adres e-mail. Serwer stoi w UE.</p>
+      <h2 data-t="page.account.tab.privacy">Prywatność</h2>
+      <p class="acc-sec__sub" data-t="page.account.priv_sub">Przechowujemy tylko Twój adres e-mail. Serwer stoi w UE.</p>
       <ul class="acc-priv">
-        <li><b>Na serwerze</b><span>Adres e-mail, a przy nim to, które wycieczki macie odblokowane i zdobyte (miasto i data) oraz kody rabatowe. Bez tego konto nie zadziała.</span></li>
-        <li><b>Tylko w telefonie</b><span>Ksywki i awatary dzieci, postęp misji, zdjęcia z zadań foto. Nie wysyłamy ich na serwer.</span></li>
-        <li><b>Czego nie zbieramy</b><span>Imion, nazwisk, wieku, zdjęć, telefonu ani lokalizacji. Z konta Google bierzemy tylko e-mail.</span></li>
-        <li><b>Bez śledzenia</b><span>Żadnych reklam, pikseli ani cookies śledzących. Statystyki odwiedzin liczymy bez identyfikatorów.</span></li>
-        <li><b>Płatności</b><span>Obsługuje je operator płatności jako sprzedawca (Merchant of Record) — danych karty nie widzimy.</span></li>
-        <li><label class="acc-check"><input type="checkbox" id="accNews"> <span>Newsletter o nowych wycieczkach (raz w miesiącu). Możesz wypisać się w każdej chwili.</span></label></li>
+        <li><b data-t="page.account.priv_server_h">Na serwerze</b><span data-t="page.account.priv_server">Adres e-mail, a przy nim to, które wycieczki macie odblokowane i zdobyte (miasto i data) oraz kody rabatowe. Bez tego konto nie zadziała.</span></li>
+        <li><b data-t="page.account.priv_phone_h">Tylko w telefonie</b><span data-t="page.account.priv_phone">Ksywki i awatary dzieci, postęp misji, zdjęcia z zadań foto. Nie wysyłamy ich na serwer.</span></li>
+        <li><b data-t="page.account.priv_none_h">Czego nie zbieramy</b><span data-t="page.account.priv_none">Imion, nazwisk, wieku, zdjęć, telefonu ani lokalizacji. Z konta Google bierzemy tylko e-mail.</span></li>
+        <li><b data-t="page.account.priv_track_h">Bez śledzenia</b><span data-t="page.account.priv_track">Żadnych reklam, pikseli ani cookies śledzących. Statystyki odwiedzin liczymy bez identyfikatorów.</span></li>
+        <li><b data-t="page.account.priv_pay_h">Płatności</b><span data-t="page.account.priv_pay">Obsługuje je operator płatności jako sprzedawca (Merchant of Record) — danych karty nie widzimy.</span></li>
+        <li><label class="acc-check"><input type="checkbox" id="accNews"> <span data-t="page.account.priv_news">Newsletter o nowych wycieczkach (raz w miesiącu). Możesz wypisać się w każdej chwili.</span></label></li>
       </ul>
       <div class="acc-priv__acts">
-        <button type="button" class="qc-btn" data-act="export">Pobierz moje dane (JSON)</button>
-        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Wkrótce — na razie napisz do nas przez formularz kontaktowy">Usuń konto i dane</button>
+        <button type="button" class="qc-btn" data-act="export" data-t="page.account.export_btn">Pobierz moje dane (JSON)</button>
+        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Wkrótce — na razie napisz do nas przez formularz kontaktowy" data-t="page.account.delete_btn">Usuń konto i dane</button>
       </div>
     </div>
   </section>
@@ -162,15 +164,22 @@
   'use strict';
   var API = 'https://api.quolino.com/rest/v1';
   var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
-  var LANG = 'pl';
-  var COUNTRY = { it: 'Włochy', gr: 'Grecja', fr: 'Francja', pl: 'Polska', cz: 'Czechy', es: 'Hiszpania', hr: 'Chorwacja' };
+  var LANG = (window.PT && PT.lang) || 'pl';
+  function COUNTRY(c) {
+    return ({ it: PT('page.account.country.it', 'Włochy'), gr: PT('page.account.country.gr', 'Grecja'), fr: PT('page.account.country.fr', 'Francja'),
+      pl: PT('page.account.country.pl', 'Polska'), cz: PT('page.account.country.cz', 'Czechy'), es: PT('page.account.country.es', 'Hiszpania'),
+      hr: PT('page.account.country.hr', 'Chorwacja') })[c];
+  }
   var POSES = ['05-curious-sitting', '07-ready-to-spring', '08-running', '09-sprint', '11-leaping-forward', '12-high-jump', '13-celebration-jump', '15-gold-medal'];
   // główne wyzwanie (decyzja JP 2026-10-16): 5 udostępnionych wycieczek → 5% na kolejny zakup
-  var MAIN = { of: 5, reward: '5% zniżki na kolejny zakup' };
-  var BADGES = [
-    { title: 'Podróżnik', text: 'wycieczki w dwóch regionach', of: 2, metric: 'regions', icon: 'pose-11-leaping-forward' },
-    { title: 'Złoty Quo', text: '10 zdobytych miejsc', of: 10, metric: 'places', icon: 'pose-15-gold-medal' }
-  ];
+  var MAIN = { of: 5 };
+  // teksty liczone przy rysowaniu — po wczytaniu tłumaczeń (PT.ready) panel rysuje się jeszcze raz
+  function badges() {
+    return [
+      { title: PT('page.account.badge.traveler', 'Podróżnik'), text: PT('page.account.badge.traveler_text', 'wycieczki w dwóch regionach'), of: 2, metric: 'regions', icon: 'pose-11-leaping-forward' },
+      { title: 'Złoty Quo', text: PT('page.account.badge.gold_text', '10 zdobytych miejsc'), of: 10, metric: 'places', icon: 'pose-15-gold-medal' }
+    ];
+  }
   var DEMO_ALBUM = [
     { slug: 'spello', city: 'Spello', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-spello', pieces: 7, date: '2026-08-12', nick: 'Zosia', pose: 4, color: 5 },
     { slug: 'assisi', city: 'Asyż', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-assisi', pieces: 9, date: '2026-08-13', nick: 'Zosia', pose: 1, color: 0 },
@@ -187,7 +196,7 @@
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* prywatne okno */ } }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
-  function dateLabel(iso) { var d = new Date(iso + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString(LANG, { day: 'numeric', month: 'long', year: 'numeric' }); }
+  function dateLabel(iso) { var d = new Date(iso + 'T12:00:00'); if (isNaN(d)) return ''; var o = { day: 'numeric', month: 'long', year: 'numeric' }; try { return d.toLocaleDateString(LANG, o); } catch (e) { return d.toLocaleDateString('pl', o); } }
   function plural(n, one, few, many) { var m10 = n % 10, m100 = n % 100; return n === 1 ? one : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? few : many; }
   function pose(i, size) { return '/media/icons/pose-' + POSES[(i || 0) % POSES.length] + '-' + (size || 128) + '.webp'; }
   function colors() { return window.QReward ? window.QReward.colors : ['#0B4EA2']; }
@@ -200,12 +209,13 @@
   var shared = demo ? ['spello', 'assisi'] : (lsGet('qc.parent.shared') || []);
   var catalog = [];
 
-  if (demo) {
+  function renderPreview() {
+    if (!demo) return;
     var pv = document.getElementById('accPreview');
     pv.hidden = false;
-    pv.innerHTML = AS ? '<b>Podgląd z panelu redakcji — widok: ' + (AS === 'member' ? 'zalogowany rodzic' : 'niezalogowany') + ', dane przykładowe.</b>' :
-      '<b>Podgląd na przykładowych danych.</b> Załóż konto albo zaloguj się, żeby zobaczyć swój album. ' +
-      (local.length ? 'Masz już ' + local.length + ' miejsc na tym urządzeniu: <a href="konto.html">pokaż moje</a>.' : 'Prawdziwe miejsca pojawią się tu, gdy dziecko odsłoni cały obrazek w widoku dziecka.');
+    pv.innerHTML = AS ? '<b>' + esc(PT('page.account.pv_admin', 'Podgląd z panelu redakcji — widok:')) + ' ' + esc(AS === 'member' ? PT('page.account.pv_member', 'zalogowany rodzic') : PT('page.account.pv_guest', 'niezalogowany')) + ', ' + esc(PT('page.account.pv_sample', 'dane przykładowe.')) + '</b>' :
+      '<b>' + esc(PT('page.account.pv_demo', 'Podgląd na przykładowych danych.')) + '</b> ' + esc(PT('page.account.pv_join', 'Załóż konto albo zaloguj się, żeby zobaczyć swój album.')) + ' ' +
+      (local.length ? esc(PT('page.account.pv_have', 'Masz już')) + ' ' + local.length + ' ' + esc(PT('page.account.pv_have2', 'miejsc na tym urządzeniu:')) + ' <a href="konto.html">' + esc(PT('page.account.pv_mine', 'pokaż moje')) + '</a>.' : esc(PT('page.account.pv_later', 'Prawdziwe miejsca pojawią się tu, gdy dziecko odsłoni cały obrazek w widoku dziecka.')));
   }
 
   // ── zakładki ─────────────────────────────────────────
@@ -271,29 +281,30 @@
     document.getElementById('accAlbum').innerHTML = keys.map(function (k) {
       var p = k.split('|'), list = groups[k], n = list.filter(function (e) { return !e.todo; }).length;
       list.sort(function (a, b) { return (a.todo ? 1 : 0) - (b.todo ? 1 : 0) || String(a.date || '').localeCompare(String(b.date || '')); });
-      return '<div class="acc-group"><h3 class="acc-group__h">' + esc(COUNTRY[p[0]] || p[0].toUpperCase()) + ' · ' + esc(cap(p[1])) +
+      return '<div class="acc-group"><h3 class="acc-group__h">' + esc(COUNTRY(p[0]) || p[0].toUpperCase()) + ' · ' + esc(cap(p[1])) +
         ' <span>' + n + ' / ' + list.length + '</span></h3><div class="acc-grid">' + list.map(stk).join('') + '</div></div>';
-    }).join('') || '<p class="acc-empty">Album jest pusty.</p>';
+    }).join('') || '<p class="acc-empty">' + esc(PT('page.account.album_empty', 'Album jest pusty.')) + '</p>';
     var regs = regionsOf(album).length, ctr = countriesOf(album).length;
     document.getElementById('accStats').innerHTML =
-      stat(album.length, plural(album.length, 'miejsce', 'miejsca', 'miejsc')) + stat(regs, plural(regs, 'region', 'regiony', 'regionów')) +
-      stat(ctr, plural(ctr, 'kraj', 'kraje', 'krajów')) + stat(album.reduce(function (s, e) { return s + (e.pieces || 0); }, 0), 'misji');
+      stat(album.length, places(album.length)) + stat(regs, plural(regs, PT('page.account.region_one', 'region'), PT('page.account.region_few', 'regiony'), PT('page.account.region_many', 'regionów'))) +
+      stat(ctr, plural(ctr, PT('page.account.country_one', 'kraj'), PT('page.account.country_few', 'kraje'), PT('page.account.country_many', 'krajów'))) + stat(album.reduce(function (s, e) { return s + (e.pieces || 0); }, 0), PT('page.account.missions', 'misji'));
     document.getElementById('accSum').textContent = album.length
-      ? 'Zdobyliście ' + album.length + ' ' + plural(album.length, 'miejsce', 'miejsca', 'miejsc') + '. Każde to obrazek odsłonięty przez dziecko misja po misji.'
-      : 'Tu zbierają się miejsca, które dziecko zdobyło w widoku dziecka.';
+      ? PT('page.account.sum_got', 'Zdobyliście') + ' ' + album.length + ' ' + places(album.length) + '. ' + PT('page.account.sum_got2', 'Każde to obrazek odsłonięty przez dziecko misja po misji.')
+      : PT('page.account.sum_empty', 'Tu zbierają się miejsca, które dziecko zdobyło w widoku dziecka.');
   }
+  function places(n) { return plural(n, PT('page.account.place_one', 'miejsce'), PT('page.account.place_few', 'miejsca'), PT('page.account.place_many', 'miejsc')); }
   function stat(n, l) { return '<div class="acc-stat"><b>' + n + '</b><span>' + esc(l) + '</span></div>'; }
   function stk(e) {
     if (e.todo) {
       return '<a class="acc-stk is-todo" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">' +
         '<span class="acc-stk__img"><img src="' + esc(e.hero) + '-hero-480.webp" alt="" loading="lazy" onerror="this.remove()"></span>' +
-        '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">do zdobycia</span></a>';
+        '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">' + esc(PT('page.account.todo', 'do zdobycia')) + '</span></a>';
     }
     var C = colors();
     return '<button type="button" class="acc-stk" data-slug="' + esc(e.slug) + '" style="--ava:' + esc(C[e.color] || C[0]) + '">' +
       '<span class="acc-stk__img"><img src="' + esc(e.hero) + '-hero-480.webp" alt="" loading="lazy">' +
       '<span class="acc-stk__ava"><img src="' + pose(e.pose) + '" alt="" width="40" height="40"></span>' +
-      (shared.indexOf(e.slug) > -1 ? '<span class="acc-stk__shared" title="Udostępnione">✓</span>' : '') + '</span>' +
+      (shared.indexOf(e.slug) > -1 ? '<span class="acc-stk__shared" title="' + esc(PT('page.account.shared_title', 'Udostępnione')) + '">✓</span>' : '') + '</span>' +
       '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">' + esc([e.nick, dateLabel(e.date)].filter(Boolean).join(' · ')) + '</span></button>';
   }
 
@@ -302,26 +313,26 @@
     var n = Math.min(sharedCount(), MAIN.of), done = n >= MAIN.of;
     var dots = ''; for (var i = 0; i < MAIN.of; i++) dots += '<span class="acc-dot5' + (i < n ? ' is-on' : '') + '"></span>';
     document.getElementById('accMainCh').innerHTML =
-      '<div class="acc-main-ch__l"><p class="label">Wyzwanie</p><h3>5 wycieczek na Waszych socialach</h3>' +
-      '<p>Udostępnij zdobyte miejsce — każda wycieczka liczy się raz. Nagroda: <b>' + esc(MAIN.reward) + '</b>.</p></div>' +
-      '<div class="acc-main-ch__r"><div class="acc-dots" role="progressbar" aria-valuemin="0" aria-valuemax="' + MAIN.of + '" aria-valuenow="' + n + '" aria-label="Udostępnione wycieczki">' + dots + '</div>' +
+      '<div class="acc-main-ch__l"><p class="label">' + esc(PT('page.account.ch_label', 'Wyzwanie')) + '</p><h3>' + esc(PT('page.account.ch_h', '5 wycieczek na Waszych socialach')) + '</h3>' +
+      '<p>' + esc(PT('page.account.ch_text', 'Udostępnij zdobyte miejsce — każda wycieczka liczy się raz.')) + ' ' + esc(PT('page.account.ch_reward', 'Nagroda:')) + ' <b>' + esc(PT('page.account.main_reward', '5% zniżki na kolejny zakup')) + '</b>.</p></div>' +
+      '<div class="acc-main-ch__r"><div class="acc-dots" role="progressbar" aria-valuemin="0" aria-valuemax="' + MAIN.of + '" aria-valuenow="' + n + '" aria-label="' + esc(PT('page.account.ch_aria', 'Udostępnione wycieczki')) + '">' + dots + '</div>' +
       '<p class="acc-main-ch__n"><b>' + n + '</b> / ' + MAIN.of + '</p>' +
-      (done ? '<button type="button" class="qc-btn qc-btn--primary" disabled title="Kod wydamy po starcie płatności (1 czerwca 2027)">Odbierz kod −5%</button>'
-            : '<p class="acc-main-ch__hint">Jeszcze ' + (MAIN.of - n) + ' ' + plural(MAIN.of - n, 'wycieczka', 'wycieczki', 'wycieczek') + '.</p>') + '</div>';
+      (done ? '<button type="button" class="qc-btn qc-btn--primary" disabled title="' + esc(PT('page.account.ch_claim_title', 'Kod wydamy po starcie płatności (1 czerwca 2027)')) + '">' + esc(PT('page.account.ch_claim', 'Odbierz kod −5%')) + '</button>'
+            : '<p class="acc-main-ch__hint">' + esc(PT('page.account.ch_left', 'Jeszcze')) + ' ' + (MAIN.of - n) + ' ' + esc(plural(MAIN.of - n, PT('page.account.trip_one', 'wycieczka'), PT('page.account.trip_few', 'wycieczki'), PT('page.account.trip_many', 'wycieczek'))) + '.</p>') + '</div>';
     if (done) document.getElementById('accMainCh').classList.add('is-done');
     var list = album.slice().sort(function (a, b) { return (shared.indexOf(a.slug) > -1 ? 1 : 0) - (shared.indexOf(b.slug) > -1 ? 1 : 0); });
     document.getElementById('accShareList').innerHTML = list.length ? list.map(function (e) {
       var is = shared.indexOf(e.slug) > -1;
       return '<div class="acc-shr' + (is ? ' is-shared' : '') + '"><img src="' + esc(e.hero) + '-hero-480.webp" alt="" width="96" height="54" loading="lazy">' +
-        '<span class="acc-shr__t"><b>' + esc(e.city) + '</b><small>' + esc(is ? 'udostępnione' : dateLabel(e.date)) + '</small></span>' +
-        '<button type="button" class="qc-btn qc-btn--sm' + (is ? '' : ' qc-btn--primary') + '" data-share="' + esc(e.slug) + '">' + (is ? 'Jeszcze raz' : 'Udostępnij') + '</button></div>';
-    }).join('') : '<p class="acc-empty">Najpierw zdobądźcie pierwsze miejsce.</p>';
-    document.getElementById('accBadges').innerHTML = BADGES.map(function (c) {
+        '<span class="acc-shr__t"><b>' + esc(e.city) + '</b><small>' + esc(is ? PT('page.account.shared_small', 'udostępnione') : dateLabel(e.date)) + '</small></span>' +
+        '<button type="button" class="qc-btn qc-btn--sm' + (is ? '' : ' qc-btn--primary') + '" data-share="' + esc(e.slug) + '">' + esc(is ? PT('page.account.share_again', 'Jeszcze raz') : PT('page.account.share', 'Udostępnij')) + '</button></div>';
+    }).join('') : '<p class="acc-empty">' + esc(PT('page.account.share_empty', 'Najpierw zdobądźcie pierwsze miejsce.')) + '</p>';
+    document.getElementById('accBadges').innerHTML = badges().map(function (c) {
       var v = Math.min(c.metric === 'places' ? album.length : regionsOf(album).length, c.of), ok = v >= c.of;
       return '<article class="acc-chc' + (ok ? ' is-done' : '') + '"><img src="/media/icons/' + c.icon + '-128.webp" alt="" width="64" height="64">' +
         '<div class="acc-chc__body"><h3>' + esc(c.title) + '</h3><p>' + esc(c.text) + '</p>' +
         '<div class="acc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + c.of + '" aria-valuenow="' + v + '" aria-label="' + esc(c.title) + '"><span style="width:' + Math.round(v / c.of * 100) + '%"></span></div>' +
-        '<small>' + v + ' / ' + c.of + (ok ? ' · zdobyta' : '') + '</small></div></article>';
+        '<small>' + v + ' / ' + c.of + (ok ? ' · ' + esc(PT('page.account.badge_done', 'zdobyta')) : '') + '</small></div></article>';
     }).join('');
   }
 
@@ -336,9 +347,9 @@
     document.getElementById('accKids').innerHTML = list.length ? list.map(function (n) {
       var mine = album.filter(function (e) { return e.nick === n; }), last = mine[mine.length - 1] || {};
       return '<li><span class="acc-kid__ava" style="--ava:' + esc(C[last.color || 0]) + '"><img src="' + pose(last.pose == null ? 1 : last.pose) + '" alt="" width="44" height="44"></span>' +
-        '<span class="acc-kid__txt"><b>' + esc(n) + '</b><small>' + mine.length + ' ' + plural(mine.length, 'miejsce', 'miejsca', 'miejsc') + '</small></span>' +
-        '<button type="button" class="acc-kid__x" data-del="' + esc(n) + '" aria-label="Usuń nick ' + esc(n) + '">×</button></li>';
-    }).join('') : '<li class="acc-empty">Brak zapisanych nicków.</li>';
+        '<span class="acc-kid__txt"><b>' + esc(n) + '</b><small>' + mine.length + ' ' + esc(places(mine.length)) + '</small></span>' +
+        '<button type="button" class="acc-kid__x" data-del="' + esc(n) + '" aria-label="' + esc(PT('page.account.kid_del', 'Usuń nick')) + ' ' + esc(n) + '">×</button></li>';
+    }).join('') : '<li class="acc-empty">' + esc(PT('page.account.kids_empty', 'Brak zapisanych nicków.')) + '</li>';
   }
   document.getElementById('accAdd').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -366,17 +377,17 @@
     e.preventDefault();
     var c = codeIn.value.trim().toUpperCase();
     codeMsg.className = 'acc-code__msg';
-    if (!CODE_RE.test(c)) { codeMsg.classList.add('is-err'); codeMsg.textContent = 'Kod ma postać QUO-XXXX-XXXX.'; return; }
+    if (!CODE_RE.test(c)) { codeMsg.classList.add('is-err'); codeMsg.textContent = PT('page.account.code_err', 'Kod ma postać') + ' QUO-XXXX-XXXX.'; return; }
     if (demo && c === 'QUO-TEST-MAMA') {
       var mine = lsGet('qc.parent.codes') || [];
       if (mine.indexOf(c) < 0) mine.push(c); lsSet('qc.parent.codes', mine);
-      codeMsg.classList.add('is-ok'); codeMsg.textContent = 'Kod przyjęty (podgląd): darmowa wycieczka do wyboru.'; codeIn.value = ''; renderCodes(); return;
+      codeMsg.classList.add('is-ok'); codeMsg.textContent = PT('page.account.code_ok', 'Kod przyjęty (podgląd): darmowa wycieczka do wyboru.'); codeIn.value = ''; renderCodes(); return;
     }
-    codeMsg.textContent = 'Wpisywanie kodów uruchomimy wkrótce. Zachowaj kod — wpiszesz go tutaj.';
+    codeMsg.textContent = PT('page.account.code_soon', 'Wpisywanie kodów uruchomimy wkrótce. Zachowaj kod — wpiszesz go tutaj.');
   });
   function renderCodes() {
     var mine = demo ? (lsGet('qc.parent.codes') || []) : [];
-    document.getElementById('accCodes').innerHTML = mine.map(function (c) { return '<li><b>' + esc(c) + '</b><span>darmowa wycieczka · do wykorzystania</span></li>'; }).join('');
+    document.getElementById('accCodes').innerHTML = mine.map(function (c) { return '<li><b>' + esc(c) + '</b><span>' + esc(PT('page.account.code_item', 'darmowa wycieczka · do wykorzystania')) + '</span></li>'; }).join('');
   }
 
   // ── udostępnianie ────────────────────────────────────
@@ -412,31 +423,32 @@
     var list = album.filter(function (e) { return slugs.indexOf(e.slug) > -1; });
     if (!list.length) return;
     var one = list.length === 1;
-    var text = one ? 'Zdobyliśmy z dziećmi ' + list[0].city + ' z Quolino — zwiedzanie jako gra terenowa dla rodzin.'
-      : 'Zdobyliśmy z dziećmi ' + list.length + ' ' + plural(list.length, 'miejsce', 'miejsca', 'miejsc') + ' z Quolino — zwiedzanie jako gra terenowa dla rodzin.';
+    var tail = PT('page.account.share_tail', 'z Quolino — zwiedzanie jako gra terenowa dla rodzin.');
+    var text = one ? PT('page.account.share_we', 'Zdobyliśmy z dziećmi') + ' ' + list[0].city + ' ' + tail
+      : PT('page.account.share_we', 'Zdobyliśmy z dziećmi') + ' ' + list.length + ' ' + places(list.length) + ' ' + tail;
     var url = 'https://quolino.com/';
-    var title = one ? 'Zdobyte: ' + list[0].city : 'Nasz album Quolino';
-    var sub = one ? [list[0].nick, dateLabel(list[0].date)].filter(Boolean).join(' · ') : list.length + ' ' + plural(list.length, 'zdobyte miejsce', 'zdobyte miejsca', 'zdobytych miejsc');
+    var title = one ? PT('page.account.img_title_one', 'Zdobyte:') + ' ' + list[0].city : PT('page.account.img_title', 'Nasz album Quolino');
+    var sub = one ? [list[0].nick, dateLabel(list[0].date)].filter(Boolean).join(' · ') : list.length + ' ' + plural(list.length, PT('page.account.got_place_one', 'zdobyte miejsce'), PT('page.account.got_place_few', 'zdobyte miejsca'), PT('page.account.got_place_many', 'zdobytych miejsc'));
     shareImage(list.slice(-6), title, sub).then(function (blob) {
       var file = blob && typeof File === 'function' ? new File([blob], 'quolino.png', { type: 'image/png' }) : null;
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
         return navigator.share({ files: [file], title: 'Quolino', text: text + ' ' + url }).then(function () { markShared(slugs); }).catch(function () {});
       }
-      openShareSheet(text, url, blob, slugs, one ? 'Udostępnij: ' + list[0].city : 'Udostępnij album');
+      openShareSheet(text, url, blob, slugs, one ? PT('page.account.share_one', 'Udostępnij:') + ' ' + list[0].city : PT('page.account.share_album', 'Udostępnij album'));
     });
   }
   function openShareSheet(text, url, blob, slugs, heading) {
     var img = blob ? URL.createObjectURL(blob) : '';
-    var w = sheet('<h2 class="qk-sheet__title" id="shT">' + esc(heading) + '</h2><p class="qk-sheet__sub">Obrazek do wrzucenia na Facebooka lub Instagram i gotowy tekst.</p>' +
+    var w = sheet('<h2 class="qk-sheet__title" id="shT">' + esc(heading) + '</h2><p class="qk-sheet__sub">' + esc(PT('page.account.sheet_sub', 'Obrazek do wrzucenia na Facebooka lub Instagram i gotowy tekst.')) + '</p>' +
       (img ? '<img class="acc-shareimg" src="' + img + '" alt="">' : '') +
-      '<div class="qk-acts">' + (img ? '<a class="qc-btn qc-btn--primary" href="' + img + '" download="quolino.png" data-count>Pobierz obrazek</a>' : '') +
+      '<div class="qk-acts">' + (img ? '<a class="qc-btn qc-btn--primary" href="' + img + '" download="quolino.png" data-count>' + esc(PT('page.account.dl_img', 'Pobierz obrazek')) + '</a>' : '') +
       '<a class="qc-btn" target="_blank" rel="noopener" data-count href="https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) + '">Facebook</a>' +
       '<a class="qc-btn" target="_blank" rel="noopener" data-count href="https://wa.me/?text=' + encodeURIComponent(text + ' ' + url) + '">WhatsApp</a>' +
-      '<button type="button" class="qc-btn" data-copy>Kopiuj tekst</button></div>', 'shT');
+      '<button type="button" class="qc-btn" data-copy>' + esc(PT('page.account.copy', 'Kopiuj tekst')) + '</button></div>', 'shT');
     w.addEventListener('click', function (e) {
       if (e.target.closest('[data-count]')) markShared(slugs);
       var cp = e.target.closest('[data-copy]');
-      if (cp && navigator.clipboard) navigator.clipboard.writeText(text + ' ' + url).then(function () { cp.textContent = 'Skopiowano'; markShared(slugs); });
+      if (cp && navigator.clipboard) navigator.clipboard.writeText(text + ' ' + url).then(function () { cp.textContent = PT('page.account.copied', 'Skopiowano'); markShared(slugs); });
     });
   }
 
@@ -446,7 +458,7 @@
     var back = document.activeElement;
     var w = document.createElement('div');
     w.className = 'qk-sheet';
-    w.innerHTML = '<div class="qk-sheet__box" role="dialog" aria-modal="true" aria-labelledby="' + labelId + '" tabindex="-1"><button type="button" class="qk-x" aria-label="Zamknij">×</button>' + inner + '</div>';
+    w.innerHTML = '<div class="qk-sheet__box" role="dialog" aria-modal="true" aria-labelledby="' + labelId + '" tabindex="-1"><button type="button" class="qk-x" aria-label="' + esc(PT('page.account.close', 'Zamknij')) + '">×</button>' + inner + '</div>';
     document.body.appendChild(w); document.documentElement.classList.add('qk-lock');
     w.querySelector('.qk-sheet__box').focus();
     function close() { w.remove(); document.documentElement.classList.remove('qk-lock'); document.removeEventListener('keydown', onKey); if (back && back.focus) back.focus(); }
@@ -462,10 +474,10 @@
     var e = album.filter(function (x) { return x.slug === slug; })[0];
     if (!e || !window.QReward) return;
     window.QReward.use(e, LANG);
-    var w = sheet('<h2 class="qk-sheet__title" id="stT">' + esc(e.city) + '</h2><p class="qk-sheet__sub">' + esc([e.nick, dateLabel(e.date), e.pieces ? e.pieces + ' misji' : ''].filter(Boolean).join(' · ')) + '</p>' +
+    var w = sheet('<h2 class="qk-sheet__title" id="stT">' + esc(e.city) + '</h2><p class="qk-sheet__sub">' + esc([e.nick, dateLabel(e.date), e.pieces ? e.pieces + ' ' + PT('page.account.missions', 'misji') : ''].filter(Boolean).join(' · ')) + '</p>' +
       '<div class="qk-puzzle is-done"><img src="' + esc(e.hero) + '-hero-1200.webp" alt="' + esc(e.city) + '" width="1200" height="675"></div>' +
-      '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-x="share">Udostępnij</button><button type="button" class="qc-btn" data-x="dl">Pobierz obrazek</button>' +
-      '<button type="button" class="qc-btn" data-x="col">Kolorowanka do druku</button><a class="qc-btn" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">Wycieczka</a></div>', 'stT');
+      '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-x="share">' + esc(PT('page.account.share', 'Udostępnij')) + '</button><button type="button" class="qc-btn" data-x="dl">' + esc(PT('page.account.dl_img', 'Pobierz obrazek')) + '</button>' +
+      '<button type="button" class="qc-btn" data-x="col">' + esc(PT('page.account.coloring', 'Kolorowanka do druku')) + '</button><a class="qc-btn" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">' + esc(PT('page.account.trip', 'Wycieczka')) + '</a></div>', 'stT');
     w.addEventListener('click', function (ev) {
       if (ev.target.closest('[data-x="dl"]')) window.QReward.picture();
       if (ev.target.closest('[data-x="col"]')) { w.close(); window.QReward.coloring(); }
@@ -475,7 +487,7 @@
 
   // ── eksport danych ───────────────────────────────────
   function exportData() {
-    var out = { exported_at: new Date().toISOString(), note: 'Dane z tego urządzenia (konta jeszcze nie działają).', album: local,
+    var out = { exported_at: new Date().toISOString(), note: PT('page.account.export_note', 'Dane z tego urządzenia (konta jeszcze nie działają).'), album: local,
       kid_nicks: lsGet('qc.kid.nicks') || [], shared_trips: lsGet('qc.parent.shared') || [], newsletter: !!lsGet('qc.parent.news') };
     var url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })), a = document.createElement('a');
     a.href = url; a.download = 'quolino-moje-dane.json'; document.body.appendChild(a); a.click(); a.remove();
@@ -494,8 +506,10 @@
   news.checked = !!lsGet('qc.parent.news');
   news.addEventListener('change', function () { lsSet('qc.parent.news', news.checked); });
 
-  renderAlbum(); renderChallenges(); renderKids(); renderCodes();
+  renderPreview(); renderAlbum(); renderChallenges(); renderKids(); renderCodes();
   loadCatalog().then(renderAlbum);
+  // tłumaczenia (page-i18n.js) przychodzą z sieci — po nich rysujemy panele jeszcze raz w wybranym języku
+  if (window.PT && PT.lang !== 'pl') PT.ready.then(function () { renderPreview(); renderAlbum(); renderChallenges(); renderKids(); renderCodes(); });
 })();
 </script>
 <script>
@@ -505,21 +519,22 @@
   var box = document.getElementById('accAuth'), txt = document.getElementById('accAuthTxt'), act = document.getElementById('accAuthAct');
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function paint() {
-    var s = window.QAccAs ? (window.QAccAs === 'member' ? { email: 'Konto przykładowe', preview: true } : null) : (window.QAuth && QAuth.current());
+    var s = window.QAccAs ? (window.QAccAs === 'member' ? { email: PT('page.account.sample_acc', 'Konto przykładowe'), preview: true } : null) : (window.QAuth && QAuth.current());
     box.hidden = false;
     if (s) {
-      txt.innerHTML = 'Zalogowano jako <b>' + esc(s.email || 'Twoje konto') + '</b>.';
-      act.innerHTML = '<button type="button" class="qc-btn qc-btn--sm" id="accOut"' + (s.preview ? ' disabled' : '') + '>Wyloguj</button>';
+      txt.innerHTML = esc(PT('page.account.signed_as', 'Zalogowano jako')) + ' <b>' + esc(s.email || PT('page.account.title', 'Twoje konto')) + '</b>.';
+      act.innerHTML = '<button type="button" class="qc-btn qc-btn--sm" id="accOut"' + (s.preview ? ' disabled' : '') + '>' + esc(PT('page.account.sign_out', 'Wyloguj')) + '</button>';
       if (!s.preview) document.getElementById('accOut').onclick = function () { QAuth.signOut().then(function () { location.reload(); }); };
-      document.getElementById('accNavMe').textContent = s.email || 'Konto rodzica';
+      document.getElementById('accNavMe').textContent = s.email || PT('page.account.nav_me', 'Konto rodzica');
     } else {
-      txt.textContent = 'Nie jesteś zalogowany. Załóż konto, żeby album i kody zostały z Tobą na kolejne wycieczki.';
-      act.innerHTML = '<a class="qc-btn qc-btn--primary qc-btn--sm" href="/zaloguj.html#rejestracja">Załóż konto</a><a class="qc-btn qc-btn--sm" href="/zaloguj.html">Zaloguj się</a>';
-      document.getElementById('accNavMe').textContent = 'Konto rodzica';
+      txt.textContent = PT('page.account.signed_out', 'Nie jesteś zalogowany. Załóż konto, żeby album i kody zostały z Tobą na kolejne wycieczki.');
+      act.innerHTML = '<a class="qc-btn qc-btn--primary qc-btn--sm" href="/zaloguj.html#rejestracja">' + esc(PT('page.account.sign_up', 'Załóż konto')) + '</a><a class="qc-btn qc-btn--sm" href="/zaloguj.html">' + esc(PT('page.account.sign_in', 'Zaloguj się')) + '</a>';
+      document.getElementById('accNavMe').textContent = PT('page.account.nav_me', 'Konto rodzica');
     }
   }
   if (window.QAccAs) paint();
   else if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
+  if (window.PT && PT.lang !== 'pl') PT.ready.then(function () { if (window.QAccAs) paint(); else if (window.QAuth) QAuth.ready.then(paint); });
 })();
 </script>
 </body>
