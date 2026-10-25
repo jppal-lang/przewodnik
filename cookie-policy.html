@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="pt-title" content="page.privacy.h101">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prywatność i pliki w przeglądarce — Quolino</title>
 <meta name="description" content="Quolino nie używa ciasteczek śledzących, Google Analytics, pikseli ani reklam. Co zapisujemy w przeglądarce i jak liczymy odwiedziny.">
@@ -11,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css?v=30">
+<script src="/page-i18n.js?v=2"></script>
 <style>
   .pol{max-width:760px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.6;color:var(--ink)}
   .pol h1{font-size:clamp(34px,7vw,56px);line-height:1.02;margin:.2em 0 .4em}
@@ -31,72 +33,72 @@
 </nav>
 
 <main class="pol" id="mainContent">
-  <h1>Prywatność i pliki w przeglądarce</h1>
-  <p class="lead">Quolino nie używa ciasteczek śledzących, Google Analytics, pikseli reklamowych ani reklam. Nie zbieramy imion, nazwisk ani zdjęć. Adres e-mail zapisujemy tylko wtedy, gdy sam założysz konto rodzica (konto jest dobrowolne). Nie pokazujemy baneru zgody, bo nie używamy niczego, co by jej wymagało.</p>
+  <h1 data-t-html="page.privacy.h101">Prywatność i pliki w przeglądarce</h1>
+  <p class="lead" data-t-html="page.privacy.p02">Quolino nie używa ciasteczek śledzących, Google Analytics, pikseli reklamowych ani reklam. Nie zbieramy imion, nazwisk ani zdjęć. Adres e-mail zapisujemy tylko wtedy, gdy sam założysz konto rodzica (konto jest dobrowolne). Nie pokazujemy baneru zgody, bo nie używamy niczego, co by jej wymagało.</p>
 
-  <h2>Co zapisujemy w Twojej przeglądarce</h2>
-  <p>Tylko w pamięci przeglądarki (<code>localStorage</code>), na Twoim urządzeniu. Nie są to ciasteczka i nie są wysyłane do nas przy każdym wejściu na stronę. Możesz je w każdej chwili usunąć w ustawieniach przeglądarki.</p>
+  <h2 data-t-html="page.privacy.h203">Co zapisujemy w Twojej przeglądarce</h2>
+  <p data-t-html="page.privacy.p04">Tylko w pamięci przeglądarki (<code>localStorage</code>), na Twoim urządzeniu. Nie są to ciasteczka i nie są wysyłane do nas przy każdym wejściu na stronę. Możesz je w każdej chwili usunąć w ustawieniach przeglądarki.</p>
   <ul>
-    <li><code>quolino_lang</code> — wybrany język strony.</li>
-    <li><code>qc.task.…</code> — które misje i zadania foto z wycieczki odhaczyło dziecko (to samo robi album naklejek).</li>
-    <li><code>quolino_missions:…</code>, <code>quolino_family</code>, <code>quolino_active_player</code> — postęp misji i pseudonimy graczy na starszych stronach z widokiem dziecka. Bez wieku i zdjęć.</li>
-    <li><code>qc.pager.…</code> — na którym przystanku skończyłeś czytać wycieczkę na telefonie.</li>
-    <li><code>qc.kid.avatar</code>, <code>qc.kid.nicks</code> — wybrana postać Quo i wymyślone ksywki dzieci (bez imion i wieku), tylko na urządzeniu.</li>
-    <li><code>qc.album</code> — które miejsca zdobyło dziecko (album naklejek), tylko na urządzeniu.</li>
-    <li><code>qc.parent.shared</code>, <code>qc.parent.codes</code>, <code>qc.parent.news</code> — panel rodzica: udostępnione wycieczki, wpisane kody i zgoda na newsletter, tylko na urządzeniu.</li>
-    <li><code>qc.session</code> — sesja logowania do konta rodzica (krótko ważny token i token odświeżania). Znika po wylogowaniu.</li>
-    <li><code>qc.access</code> — klucz dostępu do pełnych wycieczek z linku, który dostałeś. Wysyłamy go tylko do sprawdzenia, czy wycieczka jest dla Ciebie otwarta.</li>
-    <li><code>quolino_album:…</code> — zdjęcia z zadań foto. Zostają wyłącznie na urządzeniu, nie trafiają na serwer.</li>
-    <li><code>quolino_client</code> — losowy numer przeglądarki, używany tylko przy wysłaniu oceny wycieczki, żeby jedno urządzenie nie głosowało wiele razy. Nie zawiera żadnych danych o Tobie.</li>
-    <li><code>quolino_rated_…</code> — informacja, że ta wycieczka jest już oceniona.</li>
-    <li><code>quolino_nostats</code> — wyłącznik statystyk (patrz niżej).</li>
-    <li><code>quolino_migrated</code>, <code>quolino_migration_expiry</code> — jednorazowe przeniesienie ustawień ze starej nazwy serwisu (klucze <code>questini_…</code>).</li>
-    <li>W pamięci sesji (znika po zamknięciu karty): <code>quolino_kidmode</code> — czy włączony jest widok dziecka.</li>
+    <li data-t-html="page.privacy.li05"><code>quolino_lang</code> — wybrany język strony.</li>
+    <li data-t-html="page.privacy.li06"><code>qc.task.…</code> — które misje i zadania foto z wycieczki odhaczyło dziecko (to samo robi album naklejek).</li>
+    <li data-t-html="page.privacy.li07"><code>quolino_missions:…</code>, <code>quolino_family</code>, <code>quolino_active_player</code> — postęp misji i pseudonimy graczy na starszych stronach z widokiem dziecka. Bez wieku i zdjęć.</li>
+    <li data-t-html="page.privacy.li08"><code>qc.pager.…</code> — na którym przystanku skończyłeś czytać wycieczkę na telefonie.</li>
+    <li data-t-html="page.privacy.li09"><code>qc.kid.avatar</code>, <code>qc.kid.nicks</code> — wybrana postać Quo i wymyślone ksywki dzieci (bez imion i wieku), tylko na urządzeniu.</li>
+    <li data-t-html="page.privacy.li10"><code>qc.album</code> — które miejsca zdobyło dziecko (album naklejek), tylko na urządzeniu.</li>
+    <li data-t-html="page.privacy.li11"><code>qc.parent.shared</code>, <code>qc.parent.codes</code>, <code>qc.parent.news</code> — panel rodzica: udostępnione wycieczki, wpisane kody i zgoda na newsletter, tylko na urządzeniu.</li>
+    <li data-t-html="page.privacy.li12"><code>qc.session</code> — sesja logowania do konta rodzica (krótko ważny token i token odświeżania). Znika po wylogowaniu.</li>
+    <li data-t-html="page.privacy.li13"><code>qc.access</code> — klucz dostępu do pełnych wycieczek z linku, który dostałeś. Wysyłamy go tylko do sprawdzenia, czy wycieczka jest dla Ciebie otwarta.</li>
+    <li data-t-html="page.privacy.li14"><code>quolino_album:…</code> — zdjęcia z zadań foto. Zostają wyłącznie na urządzeniu, nie trafiają na serwer.</li>
+    <li data-t-html="page.privacy.li15"><code>quolino_client</code> — losowy numer przeglądarki, używany tylko przy wysłaniu oceny wycieczki, żeby jedno urządzenie nie głosowało wiele razy. Nie zawiera żadnych danych o Tobie.</li>
+    <li data-t-html="page.privacy.li16"><code>quolino_rated_…</code> — informacja, że ta wycieczka jest już oceniona.</li>
+    <li data-t-html="page.privacy.li17"><code>quolino_nostats</code> — wyłącznik statystyk (patrz niżej).</li>
+    <li data-t-html="page.privacy.li18"><code>quolino_migrated</code>, <code>quolino_migration_expiry</code> — jednorazowe przeniesienie ustawień ze starej nazwy serwisu (klucze <code>questini_…</code>).</li>
+    <li data-t-html="page.privacy.li19">W pamięci sesji (znika po zamknięciu karty): <code>quolino_kidmode</code> — czy włączony jest widok dziecka.</li>
   </ul>
 
-  <h2>Konto rodzica</h2>
-  <p>Konto jest bezpłatne i dobrowolne. Bez konta możesz czytać zapowiedzi i opisy miejsc. Konto otwiera pełne wycieczki, legendy, ciekawostki i misje dla dzieci.</p>
+  <h2 data-t-html="page.privacy.h220">Konto rodzica</h2>
+  <p data-t-html="page.privacy.p21">Konto jest bezpłatne i dobrowolne. Bez konta możesz czytać zapowiedzi i opisy miejsc. Konto otwiera pełne wycieczki, legendy, ciekawostki i misje dla dzieci.</p>
   <ul>
-    <li><strong>Co zapisujemy:</strong> adres e-mail, hasło w postaci nieodwracalnego skrótu (samego hasła nie znamy), datę założenia konta i ostatniego logowania. Po wprowadzeniu wyboru darmowej wycieczki i zakupów — także, które trasy są dla Ciebie otwarte.</li>
-    <li><strong>Po co:</strong> żeby założyć konto, zalogować Cię i pokazać treści dostępne dla Twojego konta (podstawa: umowa o korzystanie z serwisu, art. 6 ust. 1 lit. b RODO).</li>
-    <li><strong>Gdzie:</strong> na naszym serwerze w centrum danych we Frankfurcie (Niemcy). Wiadomości z linkiem potwierdzającym i do zmiany hasła wysyła w naszym imieniu firma Brevo (Sendinblue SAS, Paryż, Francja). Nie wysyłamy newslettera bez Twojej osobnej zgody.</li>
-    <li><strong>Ochrona przed botami:</strong> przy zakładaniu konta i zmianie hasła przeglądarka rozwiązuje krótkie zadanie obliczeniowe z naszego serwera (bez zewnętrznych firm). Z adresu IP zapisujemy tylko skrót zmieniany codziennie, żeby ograniczyć liczbę prób; te zapisy usuwamy po 30 dniach.</li>
-    <li><strong>Ograniczenie nadużyć:</strong> przy otwarciu pełnej wycieczki zapisujemy numer konta, miasto, język i czas, żeby wykryć masowe pobieranie treści. Usuwamy to po 30 dniach.</li>
-    <li><strong>Jak długo:</strong> konto, którego nie potwierdzono linkiem z e-maila, usuwamy automatycznie po 48 godzinach. Potwierdzone konto trzymamy, dopóki go nie usuniesz — nie kasujemy go za brak aktywności, bo przechowuje Twoją darmową wycieczkę i zakupy.</li>
-    <li><strong>Po usunięciu konta</strong> zostaje wyłącznie nieodwracalny skrót adresu e-mail z informacją, że darmowa wycieczka została już wykorzystana. Nie da się z niego odczytać adresu. Służy tylko temu, żeby ponowne założenie konta na ten sam adres nie dawało kolejnej darmowej trasy (nasz uzasadniony interes, art. 6 ust. 1 lit. f RODO).</li>
-    <li><strong>Usunięcie konta:</strong> do czasu dodania przycisku w panelu napisz przez formularz kontaktowy z adresu konta — usuniemy je.</li>
+    <li data-t-html="page.privacy.li22"><strong>Co zapisujemy:</strong> adres e-mail, hasło w postaci nieodwracalnego skrótu (samego hasła nie znamy), datę założenia konta i ostatniego logowania. Po wprowadzeniu wyboru darmowej wycieczki i zakupów — także, które trasy są dla Ciebie otwarte.</li>
+    <li data-t-html="page.privacy.li23"><strong>Po co:</strong> żeby założyć konto, zalogować Cię i pokazać treści dostępne dla Twojego konta (podstawa: umowa o korzystanie z serwisu, art. 6 ust. 1 lit. b RODO).</li>
+    <li data-t-html="page.privacy.li24"><strong>Gdzie:</strong> na naszym serwerze w centrum danych we Frankfurcie (Niemcy). Wiadomości z linkiem potwierdzającym i do zmiany hasła wysyła w naszym imieniu firma Brevo (Sendinblue SAS, Paryż, Francja). Nie wysyłamy newslettera bez Twojej osobnej zgody.</li>
+    <li data-t-html="page.privacy.li25"><strong>Ochrona przed botami:</strong> przy zakładaniu konta i zmianie hasła przeglądarka rozwiązuje krótkie zadanie obliczeniowe z naszego serwera (bez zewnętrznych firm). Z adresu IP zapisujemy tylko skrót zmieniany codziennie, żeby ograniczyć liczbę prób; te zapisy usuwamy po 30 dniach.</li>
+    <li data-t-html="page.privacy.li26"><strong>Ograniczenie nadużyć:</strong> przy otwarciu pełnej wycieczki zapisujemy numer konta, miasto, język i czas, żeby wykryć masowe pobieranie treści. Usuwamy to po 30 dniach.</li>
+    <li data-t-html="page.privacy.li27"><strong>Jak długo:</strong> konto, którego nie potwierdzono linkiem z e-maila, usuwamy automatycznie po 48 godzinach. Potwierdzone konto trzymamy, dopóki go nie usuniesz — nie kasujemy go za brak aktywności, bo przechowuje Twoją darmową wycieczkę i zakupy.</li>
+    <li data-t-html="page.privacy.li28"><strong>Po usunięciu konta</strong> zostaje wyłącznie nieodwracalny skrót adresu e-mail z informacją, że darmowa wycieczka została już wykorzystana. Nie da się z niego odczytać adresu. Służy tylko temu, żeby ponowne założenie konta na ten sam adres nie dawało kolejnej darmowej trasy (nasz uzasadniony interes, art. 6 ust. 1 lit. f RODO).</li>
+    <li data-t-html="page.privacy.li29"><strong>Usunięcie konta:</strong> do czasu dodania przycisku w panelu napisz przez formularz kontaktowy z adresu konta — usuniemy je.</li>
   </ul>
-  <p>Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia, przeniesienia, ograniczenia przetwarzania i sprzeciwu, a także prawo skargi do Prezesa Urzędu Ochrony Danych Osobowych.</p>
+  <p data-t-html="page.privacy.p30">Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia, przeniesienia, ograniczenia przetwarzania i sprzeciwu, a także prawo skargi do Prezesa Urzędu Ochrony Danych Osobowych.</p>
 
-  <h2>Statystyki odwiedzin</h2>
-  <p>Liczymy odwiedziny programem <strong>Umami</strong> działającym na naszym własnym serwerze. Skrypt wczytuje się z naszej domeny, a dane nie trafiają do żadnej zewnętrznej firmy analitycznej.</p>
+  <h2 data-t-html="page.privacy.h231">Statystyki odwiedzin</h2>
+  <p data-t-html="page.privacy.p32">Liczymy odwiedziny programem <strong>Umami</strong> działającym na naszym własnym serwerze. Skrypt wczytuje się z naszej domeny, a dane nie trafiają do żadnej zewnętrznej firmy analitycznej.</p>
   <ul>
-    <li><strong>Bez ciasteczek i bez zapisu adresu IP.</strong> Adres IP jest używany w chwili wizyty tylko do wyliczenia nieodwracalnego skrótu (z okresowo zmienianą solą), który odróżnia jedną wizytę od drugiej. Samego adresu nie zapisujemy.</li>
-    <li>Zapisujemy: odwiedzoną stronę, skąd przyszedłeś (strona odsyłająca i oznaczenia <code>utm_…</code> z linku), przybliżoną lokalizację (kraj, region), język i typ przeglądarki oraz urządzenia.</li>
-    <li>Zapisujemy proste zdarzenia, np. „otwarto przystanek 3”, „zmieniono język”. Zawierają wyłącznie miasto, numer przystanku, język i rodzaj akcji, nigdy danych o osobie.</li>
-    <li>Szanujemy ustawienie „Do Not Track” w przeglądarce.</li>
-    <li>Statystyki możesz wyłączyć w tej przeglądarce, otwierając dowolną stronę z dopiskiem <code>?nostats=1</code> w adresie (włączenie z powrotem: <code>?nostats=0</code>).</li>
-  </ul>
-
-  <h2>Zewnętrzne zasoby</h2>
-  <p>Strona wczytuje czcionki z Google Fonts (<code>fonts.googleapis.com</code>) i małe flagi języków z <code>flagcdn.com</code>. Przeglądarka wysyła wtedy do tych serwerów zwykłe żądanie (razem z Twoim adresem IP), tak jak przy każdym zasobie z innej domeny. Linki „Nawiguj” i „WWW” otwierają zewnętrzne serwisy (Mapy Google, strony miejsc), których zasady są już ich własne.</p>
-
-  <h2>Czego nie robimy</h2>
-  <ul>
-    <li>Nie używamy Google Analytics, Meta Pixela ani innych pikseli i skryptów reklamowych.</li>
-    <li>Nie wyświetlamy reklam i nie profilujemy odwiedzających.</li>
-    <li>Nie sprzedajemy ani nie udostępniamy danych.</li>
+    <li data-t-html="page.privacy.li33"><strong>Bez ciasteczek i bez zapisu adresu IP.</strong> Adres IP jest używany w chwili wizyty tylko do wyliczenia nieodwracalnego skrótu (z okresowo zmienianą solą), który odróżnia jedną wizytę od drugiej. Samego adresu nie zapisujemy.</li>
+    <li data-t-html="page.privacy.li34">Zapisujemy: odwiedzoną stronę, skąd przyszedłeś (strona odsyłająca i oznaczenia <code>utm_…</code> z linku), przybliżoną lokalizację (kraj, region), język i typ przeglądarki oraz urządzenia.</li>
+    <li data-t-html="page.privacy.li35">Zapisujemy proste zdarzenia, np. „otwarto przystanek 3”, „zmieniono język”. Zawierają wyłącznie miasto, numer przystanku, język i rodzaj akcji, nigdy danych o osobie.</li>
+    <li data-t-html="page.privacy.li36">Szanujemy ustawienie „Do Not Track” w przeglądarce.</li>
+    <li data-t-html="page.privacy.li37">Statystyki możesz wyłączyć w tej przeglądarce, otwierając dowolną stronę z dopiskiem <code>?nostats=1</code> w adresie (włączenie z powrotem: <code>?nostats=0</code>).</li>
   </ul>
 
-  <h2>Kontakt</h2>
-  <p>Pytania o prywatność: przez formularz kontaktowy na stronie. Adres e-mail podany w formularzu (nieobowiązkowy) służy wyłącznie do odpowiedzi na tę wiadomość i jest usuwany po 90 dniach. Z adresu IP zapisujemy tylko skrót zmieniany codziennie, który służy do ograniczenia spamu.</p>
-  <p class="note">Wersja polska. Pozostałe języki dodamy wkrótce. Ostatnia aktualizacja: 18 października 2026.</p>
+  <h2 data-t-html="page.privacy.h238">Zewnętrzne zasoby</h2>
+  <p data-t-html="page.privacy.p39">Strona wczytuje czcionki z Google Fonts (<code>fonts.googleapis.com</code>) i małe flagi języków z <code>flagcdn.com</code>. Przeglądarka wysyła wtedy do tych serwerów zwykłe żądanie (razem z Twoim adresem IP), tak jak przy każdym zasobie z innej domeny. Linki „Nawiguj” i „WWW” otwierają zewnętrzne serwisy (Mapy Google, strony miejsc), których zasady są już ich własne.</p>
+
+  <h2 data-t-html="page.privacy.h240">Czego nie robimy</h2>
+  <ul>
+    <li data-t-html="page.privacy.li41">Nie używamy Google Analytics, Meta Pixela ani innych pikseli i skryptów reklamowych.</li>
+    <li data-t-html="page.privacy.li42">Nie wyświetlamy reklam i nie profilujemy odwiedzających.</li>
+    <li data-t-html="page.privacy.li43">Nie sprzedajemy ani nie udostępniamy danych.</li>
+  </ul>
+
+  <h2 data-t-html="page.privacy.h244">Kontakt</h2>
+  <p data-t-html="page.privacy.p45">Pytania o prywatność: przez formularz kontaktowy na stronie. Adres e-mail podany w formularzu (nieobowiązkowy) służy wyłącznie do odpowiedzi na tę wiadomość i jest usuwany po 90 dniach. Z adresu IP zapisujemy tylko skrót zmieniany codziennie, który służy do ograniczenia spamu.</p>
+  <p class="note" data-t-html="page.privacy.p46">Wersja polska. Pozostałe języki dodamy wkrótce. Ostatnia aktualizacja: 18 października 2026.</p>
 </main>
 
 <footer class="footer">
   <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-  <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center">Prywatność</a></nav>
-  <span>© 2026 · Rodzinne przewodniki wypadowe</span>
+  <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.contact">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.privacy">Prywatność</a></nav>
+  <span>© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki wypadowe</span></span>
 </footer>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>

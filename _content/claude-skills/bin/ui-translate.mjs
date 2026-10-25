@@ -21,6 +21,7 @@ for (const f of readdirSync(REPO).filter(x => x.endsWith('.html'))) {
   const h = readFileSync(`${REPO}/${f}`, 'utf8');
   for (const m of h.matchAll(/data-t="(page\.[a-z0-9_.-]+)"[^>]*>([^<]+)</g)) PL[m[1]] ??= unesc(m[2]);
   for (const m of h.matchAll(/data-t-(?:ph|aria)="(page\.[a-z0-9_.-]+)"[^>]*?(?:placeholder|aria-label)="([^"]+)"/g)) PL[m[1]] ??= unesc(m[2]);
+  for (const m of h.matchAll(/<(p|li|h1|h2|h3|span|div)\b[^>]*data-t-html="(page\.[a-z0-9_.-]+)"[^>]*>([\s\S]*?)<\/\1>/g)) PL[m[2]] ??= m[3].replace(/\s+/g, ' ').trim();
   for (const m of h.matchAll(/PT\('(page\.[a-z0-9_.-]+)',\s*'((?:[^'\\]|\\.)*)'\)/g)) PL[m[1]] ??= unesc(m[2].replace(/\\'/g, "'"));
 }
 const keys = Object.keys(PL);
@@ -63,7 +64,8 @@ try {
     for (let i = 0; i < todo.length; i += 60) {
       const part = Object.fromEntries(todo.slice(i, i + 60).map(k => [k, PL[k]]));
       const prompt = `Przetłumacz napisy interfejsu strony Quolino (rodzinne przewodniki po miastach Europy, gra terenowa dla dzieci; zwracamy się do rodzica na „ty”, ciepło i prosto) z polskiego na język o kodzie „${lang}”.
-Zasady: naturalny, krótki język interfejsu jak w dobrych aplikacjach w tym języku; zachowaj sens, ton i interpunkcję; nazwy własne Quolino i Quo bez zmian; nie dodawaj nic od siebie; nie używaj długich myślników.
+Zasady: naturalny język strony; znaczniki HTML (<code>, <strong>, <b>, <em>, <br>) zostaw dokładnie jak są, a tekstu w <code> nie tłumacz; nazwy firm, przepisów i serwisów zostaw;
+naturalny, krótki język interfejsu jak w dobrych aplikacjach w tym języku; zachowaj sens, ton i interpunkcję; nazwy własne Quolino i Quo bez zmian; nie dodawaj nic od siebie; nie używaj długich myślników.
 Odpowiedz wyłącznie JSON-em: {"klucz": "tłumaczenie", …} z tymi samymi kluczami.
 ${JSON.stringify(part, null, 1)}`;
       let out;
