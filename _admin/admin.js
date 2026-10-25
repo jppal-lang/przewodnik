@@ -1251,11 +1251,20 @@
         var lab = base + String.fromCharCode(96 + i), st = i < cur || (i === cur && r.status === 'done') ? 'is-done' : i === cur && r.status !== 'stopped' ? 'is-now' : '';
         cells.push('<li class="' + st + '"><b>' + esc(lab) + '</b><span>' + (R.errs[i - 1] != null ? 'do poprawy: ' + R.errs[i - 1] : i === cur ? 'w toku' : 'czeka') + '</span></li>');
       }
-      return '<ol class="pg-rounds" aria-label="Rundy poprawek">' + cells.join('') + '</ol>' +
+      // etap wewnątrz bieżącej rundy — z ostatniego wpisu
+      var last = clean(r.last_message), STEPS = ['Poprawki (Gemini)', 'Kontrola przystanków (Claude)', 'Kontrola całej trasy (Claude)', 'Zapis ' + label];
+      var sn = /zapis/i.test(last) ? 4 : /cała trasa|całej trasy po|kontrola Claude · cała/i.test(last) && !/runda \d/.test(last) ? 3 : /kontrola Claude po poprawkach/i.test(last) ? 2 : 1;
+      if (/szkic v\d+\)/.test(last) && !cur) sn = 3;
+      var where = (last.match(/· (\d+ .+?)(?: \(\d+\))?$/) || [])[1] || '';
+      var steps = r.status === 'running' || r.status === 'stalled' ? '<div class="pg-step"><p class="pg-step__now"><small>Etap ' + sn + ' z 4' + (cur ? ' · runda ' + cur + ' z ' + R.max : ' · kontrola wstępna') + '</small>' +
+        '<b>' + esc(STEPS[sn - 1]) + '</b>' + (where && sn < 3 ? '<span>przystanek ' + esc(where) + '</span>' : '') + '</p>' +
+        '<ol class="pg-stages pg-stages--4">' + STEPS.map(function (l, i) { return '<li class="' + (i + 1 < sn ? 'is-done' : i + 1 === sn ? 'is-now' : '') + '"><span>' + esc(l) + '</span></li>'; }).join('') + '</ol></div>' : '';
+      return steps + '<ol class="pg-rounds" aria-label="Rundy poprawek">' + cells.join('') + '</ol>' +
         '<p class="pg-trend">Błędy w kontroli: <b>' + esc(R.errs.filter(function (x) { return x != null; }).join(' → ') || '—') + '</b></p>';
     }
     var st = Math.min(+r.stage || 0, 7);
-    return '<ol class="pg-stages" aria-label="Etap ' + st + ' z 7">' + STAGES.map(function (l, i) {
+    return (r.status === 'running' || r.status === 'stalled' ? '<div class="pg-step"><p class="pg-step__now"><small>Etap ' + st + ' z 7</small><b>' + esc(STAGES[st - 1] || 'start') + (st === 3 && r.stop_k && r.stops_n ? ' ' + r.stop_k + '/' + r.stops_n : '') + '</b></p></div>' : '') +
+      '<ol class="pg-stages" aria-label="Etap ' + st + ' z 7">' + STAGES.map(function (l, i) {
       var n = i + 1, cls = n < st || (n === st && r.status === 'done') ? 'is-done' : n === st ? 'is-now' : '';
       var extra = n === 3 && n === st && r.stop_k && r.stops_n ? ' ' + r.stop_k + '/' + r.stops_n : '';
       return '<li class="' + cls + '"><span>' + esc(l + extra) + '</span></li>';

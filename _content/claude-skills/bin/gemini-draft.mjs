@@ -16,7 +16,7 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
+import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
@@ -41,6 +41,12 @@ let lastStep = Date.now(), lastMsg = 'start', stallSent = 0;
 // ── postęp do bazy (dashboard „Postęp prac” w panelu admina, JP 2026-10-25): każdy krok = wiersz w public.pipeline_events
 // z etapem, sygnaturą czasu i narastającym zużyciem tokenów (Gemini przez Antigravity, Claude przez Claude Code).
 const RUN = `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}-${process.pid}`;
+// dziennik kosztów AI: za co odpowiada dane zapytanie (karta „Koszty AI”)
+const CLAUDE_ROLE = { 1: 'research (zapas)', 2: 'kontrola szkicu', 3: 'kontrola przystanków', 4: 'kontrola faktów przystanków', 5: 'kontrola całej trasy', 6: 'kontrola całej trasy', 7: 'kontrola całej trasy' };
+globalThis.__aiRun = RUN; globalThis.__aiCity = process.argv[2];
+globalThis.__aiRole = () => CLAUDE_ROLE[STAGE] ?? 'kontrola';
+const geminiRole = (label) => /research/i.test(label) ? 'research z Google' : /szkic|plan/i.test(label) ? 'pisanie szkicu' : /bloki/i.test(label) ? 'bloki przystanków'
+  : /popraw|uwag/i.test(label) ? 'poprawki' : /json|napraw/i.test(label) ? 'naprawa JSON' : String(label).replace(/\d.*$/, '').trim().slice(0, 40) || 'inne';
 let STOPS_N = null, STAGE = 0;
 const STAGE_OF = (m) => /⑤ zapis/.test(m) ? 6 : /④c|cała trasa/.test(m) ? 5 : /④/.test(m) ? 4 : /③|bloki /.test(m) ? 3 : /②/.test(m) ? 2 : /①|research miasta/.test(m) ? 1 : /poprawki — /.test(m) && REVISE ? 8 : null;
 let WORK_LABEL = null;   // wersja, nad którą trwa praca (v5b) — dashboard pokazuje ją na karcie
@@ -96,7 +102,9 @@ function agy(prompt, label, { tools = true } = {}) {
       if (!j && code === 'stream') return;
       done = true; clearTimeout(t);
       try { p.kill('SIGKILL'); } catch {}
-      if (j?.status === 'SUCCESS' && j.response) { cost.calls++; cost.tokens = (cost.tokens ?? 0) + (j.usage?.total_tokens ?? 0); return resolve({ text: String(j.response).trim(), web: [] }); }
+      if (j?.status === 'SUCCESS' && j.response) { cost.calls++; cost.tokens = (cost.tokens ?? 0) + (j.usage?.total_tokens ?? 0);
+        aiUsage({ provider: 'gemini', model: 'Antigravity (AI Pro)', role: geminiRole(label), billing: 'abonament', tin: j.usage?.input_tokens ?? j.usage?.prompt_tokens ?? j.usage?.total_tokens ?? 0, tout: j.usage?.output_tokens ?? j.usage?.completion_tokens ?? 0 });
+        return resolve({ text: String(j.response).trim(), web: [] }); }
       reject(new Error(`${label}: Antigravity ${j?.status ?? 'kod ' + code} ${(j?.error ?? err ?? out).toString().slice(0, 300)}`));
     };
     const t = setTimeout(() => { log(`${label}: Antigravity bez odpowiedzi 6 min — przerywam`); finish('timeout'); }, 6 * 60_000);
@@ -125,7 +133,9 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
     if (r.ok) {
       const j = await r.json();
       const u = j.usageMetadata ?? {};
-      cost.calls++; cost.tokens = (cost.tokens ?? 0) + (u.totalTokenCount ?? 0); cost.usd += ((u.promptTokenCount ?? 0) * PRICE_IN + ((u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0)) * PRICE_OUT) / 1e6;
+      const usd1 = ((u.promptTokenCount ?? 0) * PRICE_IN + ((u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0)) * PRICE_OUT) / 1e6;
+      cost.calls++; cost.tokens = (cost.tokens ?? 0) + (u.totalTokenCount ?? 0); cost.usd += usd1;
+      aiUsage({ provider: 'gemini', model: `${MODEL} (klucz API)`, role: geminiRole(label), billing: BILLING ? 'api' : 'darmowe', tin: u.promptTokenCount ?? 0, tout: (u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0), usd: usd1 });
       const cand = j.candidates?.[0];
       const text = (cand?.content?.parts ?? []).map(p => p.text ?? '').join('').trim();
       if (!text) throw new Error(`${label}: pusta odpowiedź (${cand?.finishReason ?? 'brak kandydata'})`);

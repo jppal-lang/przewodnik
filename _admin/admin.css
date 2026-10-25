@@ -390,3 +390,11 @@
 .is-prog .adm-head{display:none}
 .is-prog .adm-layout{padding-top:20px}
 @media(max-width:560px){.adm-navr{gap:6px}.adm-navr .adm-navlink[href="./"]{display:none}.adm-navlink{min-height:44px;padding:4px 10px;white-space:nowrap}.adm-env{display:none}}
+.pg-step{margin-top:16px}
+.pg-step__now{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:0 0 10px}
+.pg-step__now small{flex-basis:100%;font-stretch:75%;font-weight:800;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.pg-step__now b{font:900 28px/1.1 'Archivo',sans-serif;color:var(--azzurro)}
+.pg-step__now span{font-size:18px;color:var(--ink2)}
+.pg-card--bad .pg-step__now b{color:var(--rosso)}
+.pg-stages--4{grid-template-columns:repeat(4,1fr);margin-top:0}
+@media(max-width:720px){.pg-stages--4{grid-template-columns:1fr}}

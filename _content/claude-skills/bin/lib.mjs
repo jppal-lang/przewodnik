@@ -27,6 +27,16 @@ export function run(cmd, args, { input, timeout = 15 * 60_000 } = {}) {
 // Claude Code w trybie nieinteraktywnym: umiejętność jako instrukcja systemowa, treść przez stdin.
 // Bez narzędzi zapisu — Claude tylko odpowiada, zapis robi skrypt po kontroli.
 export const claudeUsage = { calls: 0, input: 0, output: 0 };
+// Dziennik zużycia AI (karta „Koszty AI” w panelu, JP 2026-10-25): jeden wiersz na zapytanie w work/costs.jsonl,
+// do bazy przenosi ai-usage-import.mjs. usd = realnie zapłacone (liczy się do dziennego limitu), usd_equiv = równowartość cennika API.
+// Rola (za co odpowiada) i przebieg: globalThis.__aiRole() / __aiRun ustawia skrypt (np. gemini-draft.mjs).
+export function aiUsage({ provider, model = null, role = null, billing = 'api', tin = 0, tout = 0, usd = 0, usd_equiv = null, city = null, run = null }) {
+  try {
+    appendFileSync('/opt/data/quolino/work/costs.jsonl', JSON.stringify({ at: new Date().toISOString(), provider, model,
+      task: role ?? globalThis.__aiRole?.() ?? null, billing, tin, tout, usd, usd_equiv: usd_equiv ?? usd,
+      script: process.argv[1]?.split('/').pop(), city: city ?? globalThis.__aiCity ?? process.argv[2] ?? null, run: run ?? globalThis.__aiRun ?? null }) + '\n');
+  } catch { /* dziennik pomocniczy */ }
+}
 export async function claude(skillName, prompt, { web = false } = {}) {
   const skill = readFileSync(`${SKILLS}/${skillName}/SKILL.md`, 'utf8');
   const args = ['-p', '--output-format', 'json', '--append-system-prompt', skill,
@@ -38,6 +48,11 @@ export async function claude(skillName, prompt, { web = false } = {}) {
   const u = res.usage ?? {};   // zużycie tokenów Claude w tym procesie (dashboard postępu w panelu admina)
   claudeUsage.calls++; claudeUsage.input += (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
   claudeUsage.output += u.output_tokens ?? 0;
+  // Claude Code na serwerze: z kluczem API płacimy realnie, bez klucza (logowanie kontem) to abonament — kwota tylko jako równowartość
+  const api = !!process.env.ANTHROPIC_API_KEY, usd = +(res.total_cost_usd ?? 0);
+  aiUsage({ provider: 'claude', model: Object.keys(res.modelUsage ?? {})[0] ?? 'claude', role: globalThis.__aiRole?.() ?? `${skillName}${web ? ' (z wyszukiwaniem)' : ''}`,
+    billing: api ? 'api' : 'abonament', tin: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0), tout: u.output_tokens ?? 0,
+    usd: api ? usd : 0, usd_equiv: usd });
   if (res.is_error) throw new Error(`claude: ${res.result ?? res.subtype}`);
   return res.result;
 }
