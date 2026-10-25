@@ -641,8 +641,8 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
 // ── ponowna kontrola i poprawki istniejącego szkicu nowego procesu (--recheck), np. po zmianie wytycznych ──
 async function recheckMain() {
   const from = opt('--from') ? +String(opt('--from')).replace(/\D/g, '') : null;   // --from 8: start od wskazanej wersji (np. najlepszej v5c)
-  const [cur] = from ? await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, from])
-    : await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  const [cur] = from ? await q(`SELECT version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, from])
+    : await q(`SELECT version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
   if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu`);
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
@@ -664,11 +664,20 @@ async function recheckMain() {
     else log(`${slug}: UWAGA brak pola ${st.path}`);
   }
   // klucze z wartością null spoza formatu (np. „notes”) — walidator ich nie przyjmuje
-  const dropNull = (o) => { if (o && typeof o === 'object') for (const k of Object.keys(o)) { if (k === 'notes' && o[k] == null) delete o[k]; else dropNull(o[k]); } };
+  const dropNull = (o) => { if (o && typeof o === 'object') for (const k of Object.keys(o)) { if ((k === 'notes' || k === '_notes') && o[k] == null) delete o[k]; else dropNull(o[k]); } };
   dropNull(trip.content);
   log(`${slug}: ④ kontrola Claude — cała trasa (szkic v${cur.version})`);
   let rv;
-  try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
+  // --no-review --resolved 0,2,5 --soft 4: bez nowej pełnej kontroli (każda kolejna znajduje „nowe” drobiazgi i proces się nie zbiega).
+  // Bierze kontrolę wersji wyjściowej: błędy poprawione ręcznie znikają, --soft przenosi do ostrzeżeń, reszta zostaje (JP 2026-10-25).
+  if (argv.includes('--no-review') && cur.review) {
+    const idx = (n) => new Set(String(opt(n) ?? '').split(',').filter(Boolean).map(Number));
+    const res = idx('--resolved'), soft = idx('--soft'), prev = cur.review;
+    rv = { ...prev, rounds: [], warnings: [...(prev.warnings ?? []), ...(prev.errors ?? []).filter((_, i) => soft.has(i)).map(e => ({ ...e, problem: `[nie blokuje] ${e.problem}` }))],
+      errors: (prev.errors ?? []).filter((_, i) => !res.has(i) && !soft.has(i)) };
+    rv.verdict = rv.errors.length ? 'fix' : 'ok';
+    log(`${slug}: bez nowej kontroli — poprawione ${res.size}, do ostrzeżeń ${soft.size}, zostaje ${rv.errors.length}`);
+  } else try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
   // każda runda = podwersja szkicu: v5 → v5a, v5b, v5c (JP 2026-10-25). Numer w bazie rośnie jak zwykle, etykieta w content.label.
   const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)[1];
   const gl = await guidelinesVersion();
@@ -764,7 +773,7 @@ Odpowiedz JSON-em: {"meta": {…tylko zmienione pola…}, "pl": {…tylko zmieni
 async function reviseMain() {
   const comments = JSON.parse(readFileSync(opt('--comments'), 'utf8'));
   const context = opt('--context') && existsSync(opt('--context')) ? readFileSync(opt('--context'), 'utf8') : '';
-  const [cur] = await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  const [cur] = await q(`SELECT version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
   if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu do poprawy`);
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
