@@ -61,7 +61,11 @@ async function generateAgy(prompt, images, name) {
   } finally { try { p.kill('SIGKILL'); } catch {} }
 }
 async function generate(prompt, images, name) {
-  if (!process.argv.includes('--api')) return generateAgy(prompt, images, name);
+  if (!process.argv.includes('--api')) {
+    // Antigravity czasem nie odda obrazu w 6 min — ponawiamy raz, potem błąd z wiadomością na Discordzie (JP 2026-10-25)
+    try { return await generateAgy(prompt, images, name); }
+    catch (e) { log(`${name}: ${e.message} — ponawiam`); return generateAgy(prompt, images, name + '_r'); }
+  }
   if (!KEY) throw new Error('brak GOOGLE_API_KEY');
   const parts = [...images.map(p => ({ inlineData: { mimeType: mime(p), data: b64(p) } })), { text: prompt }];
   for (let i = 1; i <= 2; i++) {
@@ -147,7 +151,7 @@ async function upload(text, file) {
   if (!ch || !TOKEN) { log('Discord niedostępny'); return false; }
   const fd = new FormData();
   fd.append('payload_json', JSON.stringify({ content: text.slice(0, 1900), allowed_mentions: { parse: [] } }));
-  fd.append('files[0]', new Blob([readFileSync(file)]), file.split('/').pop());
+  if (file) fd.append('files[0]', new Blob([readFileSync(file)]), file.split('/').pop());
   const r = await fetch(`https://discord.com/api/v10/channels/${ch}/messages`, { method: 'POST', headers: { Authorization: `Bot ${TOKEN}` }, body: fd });
   if (!r.ok) log('Discord upload:', r.status, await r.text());
   return r.ok;
@@ -185,11 +189,12 @@ try {
     let list = CFG.icons.filter(ic => only ? only.includes(ic.n) : (process.argv.includes('--force') || !state[ic.n]?.v));
     if (process.argv.includes('--next')) list = list.slice(0, 1);   // po jednej: JP ocenia, „ok” uruchamia następną
     for (const ic of list) {
-      try { await one(ic); } catch (e) { log(`ikona ${ic.n}: ${e.message}`); if (/429|quota|RESOURCE_EXHAUSTED|403/.test(e.message)) { console.log(`STOP: ${e.message}`); break; } }
+      try { await one(ic); } catch (e) { log(`ikona ${ic.n}: ${e.message}`); await upload(`⚠️ Quo #${ic.n} (${ic.place}) nie wygenerował się: ${e.message}. Napisz **następne**, żeby spróbować jeszcze raz.`, null); if (/429|quota|RESOURCE_EXHAUSTED|403/.test(e.message)) { console.log(`STOP: ${e.message}`); break; } }
     }
   } else if (cmd === 'fix') {
     if (!a2) throw new Error('fix <N> "<uwagi>"');
-    await one(icon(a1), a2);
+    try { await one(icon(a1), a2); }
+    catch (e) { await upload(`⚠️ Poprawka Quo #${a1} nie wygenerowała się: ${e.message}. Napisz uwagi jeszcze raz.`, null); throw e; }
   } else if (cmd === 'cut') {   // przerobienie istniejącej wersji na przezroczyste tło (bez generowania)
     const ic = icon(a1), s = state[ic.n];
     const f = join(WORK, `${String(ic.n).padStart(2, '0')}-${ic.slug}-v${s.v}.png`);
