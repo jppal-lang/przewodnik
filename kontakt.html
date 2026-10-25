@@ -111,12 +111,24 @@
     return true;
   }
   if (!setupAltcha()) window.addEventListener('load', setupAltcha);
+  // „Nie jestem robotem” w języku strony (tłumaczenia z bazy, klucze page.altcha.*)
+  PT.ready.then(function () {
+    if (PT.lang === 'pl') return;
+    var go = function () {
+      if (!window.$altcha) return false;
+      window.$altcha.i18n.set(PT.lang, { label: PT('page.altcha.label', 'Nie jestem robotem'), verifying: PT('page.altcha.verifying', 'Sprawdzam…'),
+        verified: PT('page.altcha.verified', 'Zweryfikowano'), error: PT('page.altcha.error', 'Weryfikacja nie powiodła się. Spróbuj ponownie.'),
+        expired: PT('page.altcha.expired', 'Weryfikacja wygasła. Zaznacz pole jeszcze raz.'), verificationRequired: PT('page.altcha.required', 'Zaznacz „Nie jestem robotem”.'),
+        waitAlert: PT('page.altcha.wait', 'Trwa sprawdzanie… chwilę.'), footer: '' });
+      alt.setAttribute('language', PT.lang); return true;
+    };
+    if (!go()) window.addEventListener('load', go);
+  });
   var f = document.getElementById('ctForm'), body = document.getElementById('ctBody'), email = document.getElementById('ctEmail');
   var msg = document.getElementById('ctMsg'), send = document.getElementById('ctSend'), count = document.getElementById('ctCount');
   var q = new URLSearchParams(location.search);
   if (q.get('t') && document.querySelector('#ctTopic option[value="' + q.get('t').replace(/[^a-z]/g, '') + '"]')) document.getElementById('ctTopic').value = q.get('t');
   body.addEventListener('input', function () { count.textContent = body.value.length + ' / 2000'; });
-  if (PT.lang !== 'pl') alt.setAttribute('language', PT.lang);
   function lang() { try { return (localStorage.getItem('quolino_lang') || 'pl').slice(0, 8); } catch (e) { return 'pl'; } }
   function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function fail(t) { msg.className = 'msg err'; msg.textContent = t; send.disabled = false; }
