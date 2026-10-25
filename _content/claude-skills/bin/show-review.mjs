@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+// Podgląd błędów kontroli szkicu w konsoli (Claude/JP): node show-review.mjs <slug> [--v N] [--grep "tekst"] [--from K]
+import { db } from './lib.mjs';
+const a = process.argv.slice(2), slug = a[0], opt = (n) => { const i = a.indexOf(n); return i < 0 ? null : a[i + 1]; };
+const c = await db();
+const { rows: [r] } = await c.query(opt('--v') ? `SELECT version, content->>'label' AS label, review, trip FROM public.city_versions WHERE city_slug=$1 AND version=$2`
+  : `SELECT version, content->>'label' AS label, review, trip FROM public.city_versions WHERE city_slug=$1 ORDER BY version DESC LIMIT 1`, opt('--v') ? [slug, +opt('--v')] : [slug]);
+await c.end();
+const one = (s, n) => String(s ?? '').replace(/\s+/g, ' ').slice(0, n);
+if (opt('--grep')) {
+  const g = opt('--grep'), seen = new Set();
+  const walk = (o, p) => { if (typeof o === 'string') { let i = o.indexOf(g); if (i >= 0 && !seen.has(p)) { seen.add(p); console.log(`${p}: …${one(o.slice(Math.max(0, i - 120), i + g.length + 160), 300)}…`); } }
+    else if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], `${p}.${k}`); };
+  walk(r.trip, ''); process.exit(0);
+}
+const rv = r.review ?? {}, from = +(opt('--from') ?? 0);
+console.log(`${slug} v${r.version} ${r.label} · błędy ${rv.errors?.length ?? 0} · ostrzeżenia ${rv.warnings?.length ?? 0}`);
+(rv.errors ?? []).slice(from, from + 12).forEach((e, i) => console.log(`#${from + i} [${e.stop_key ?? 'trasa'}] ${one(e.problem, 260)}${e.old ? `\n   OLD: ${one(e.old, 150)}` : ''}${e.new ? `\n   NEW: ${one(e.new, 150)}` : ''}`));
