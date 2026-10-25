@@ -563,6 +563,7 @@ const stampGuidelines = async (version, label, ok) => label && q(`UPDATE public.
 
 // ── podmiany wskazane przez kontrolę Claude: {old, new} w tekście przystanku (albo opisu miasta) i w jego blokach ──
 // Dopasowanie dosłowne, potem bez różnic w spacjach i cudzysłowach; w blokach z przypisami [n] także z pominięciem przypisów.
+const MIN_DESC_WORDS = 300;
 function applyReplacements(trip, blocks, errors) {
   const done = new Set(), changes = [];
   const norm = (t) => t.replace(/[„”"«»]/g, '"').replace(/[’‘]/g, "'").replace(/\s+/g, ' ');
@@ -576,10 +577,19 @@ function applyReplacements(trip, blocks, errors) {
     const sk = e.stop_key ?? null, re = loose(e.old);
     const targets = sk ? [[trip.content.stops, sk], [blocks?.[sk] ?? {}, 'marked']] : [[trip.content, 'city']];
     let hit = false;
+    const snap = targets.map(([obj, key]) => obj?.[key] != null ? JSON.stringify(obj[key]) : null);
+    const words = () => (sk ? trip.content.stops?.[sk]?.desc_paragraphs ?? [] : []).join(' ').split(/\s+/).filter(Boolean).length;
+    const w0 = words();
     for (const [obj, key] of targets) if (obj?.[key] != null) obj[key] = walk(obj[key], (t) => {
       if (!re.test(t)) return t;
       hit = true; return tidy(t.replace(re, e.new));
     });
+    // opis zabytku nie może przez wycięcie spaść poniżej minimum walidatora (Frasassi v5d, JP 2026-10-25) — wtedy cofamy i oddajemy do przepisania
+    const cat = sk ? trip.meta?.stops?.find(x => x.stop_key === sk)?.category : null;
+    if (hit && sk && !PRACTICAL_CATS.includes(cat) && words() < w0 && words() < MIN_DESC_WORDS) {
+      targets.forEach(([obj, key], j) => { if (snap[j] != null) obj[key] = JSON.parse(snap[j]); });
+      hit = false;
+    }
     if (hit) { done.add(i); changes.push({ path: sk ? `stops.${sk}` : 'city', before: e.old, after: e.new, why: String(e.problem).slice(0, 200), auto: true }); }
   });
   return { done, changes };
@@ -624,7 +634,9 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
 
 // ── ponowna kontrola i poprawki istniejącego szkicu nowego procesu (--recheck), np. po zmianie wytycznych ──
 async function recheckMain() {
-  const [cur] = await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  const from = opt('--from') ? +String(opt('--from')).replace(/\D/g, '') : null;   // --from 8: start od wskazanej wersji (np. najlepszej v5c)
+  const [cur] = from ? await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, from])
+    : await q(`SELECT version, trip, content FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
   if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu`);
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
