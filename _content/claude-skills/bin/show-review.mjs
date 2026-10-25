@@ -13,6 +13,13 @@ if (opt('--grep')) {
     else if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], `${p}.${k}`); };
   walk(r.trip, ''); process.exit(0);
 }
+if (opt('--stop')) {   // wszystkie pola przystanku (ścieżka: wartość), pełne teksty
+  const k = opt('--stop');
+  const walk = (o, p, hit) => { if (o == null) return; if (typeof o !== 'object') { if (hit && !/marked|stop_blocks/.test(p)) console.log(`${p}: ${o}${typeof o === 'string' && /desc/.test(p) ? ` (${o.split(/\s+/).length} sł.)` : ''}`); return; }
+    for (const [kk, v] of Object.entries(o)) walk(v, `${p}.${kk}`, hit || kk === k || v?.key === k || v?.slug === k); };
+  walk(r.trip, '', false); process.exit(0);
+}
+if (a.includes('--meta')) { const m = r.trip.meta ?? {}; const st = (m.stops ?? []).map(x => ({ key: x.key, t: x.time_label, d: x.duration_min ?? x.duration })); console.log(one(JSON.stringify({ ...m, stops: st }), 1800)); process.exit(0); }
 const rv = r.review ?? {}, from = +(opt('--from') ?? 0);
 console.log(`${slug} v${r.version} ${r.label} · błędy ${rv.errors?.length ?? 0} · ostrzeżenia ${rv.warnings?.length ?? 0}`);
 (rv.errors ?? []).slice(from, from + 12).forEach((e, i) => console.log(`#${from + i} [${e.stop_key ?? 'trasa'}] ${one(e.problem, 260)}${e.old ? `\n   OLD: ${one(e.old, 150)}` : ''}${e.new ? `\n   NEW: ${one(e.new, 150)}` : ''}`));
