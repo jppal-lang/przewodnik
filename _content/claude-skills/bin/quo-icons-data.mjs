@@ -1,4 +1,5 @@
-{
+// Prompty ikon Quo (dokument „Quo na stronie: miejsca i prompty do Flow”, JP 2026-10-25). Moduł, bo deploy kopiuje tylko skrypty.
+export default {
  "refs": [
   "media/icons/pose-05-curious-sitting-512.webp",
   "media/icons/icon-museum-256.webp"
@@ -149,4 +150,4 @@
    "prompt": "Keep the character exactly as in the first reference image, including his neckerchief. He holds out a smartphone towards the viewer; the screen shows a simple black-and-white square pattern like a QR code, with no letters. He looks excited. Same soft 3D render, lighting and colours as the reference images. Square 1:1 image, the character with the phone centred and filling about 80% of the frame, on a clean pure white #FFFFFF background; the image shows only the character and the phone."
   }
  ]
-}
+};

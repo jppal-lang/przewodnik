@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Ikony Quo na stronę (JP 2026-10-25): Gemini generuje według promptów z dokumentu „Quo na stronie: miejsca i prompty do Flow”
-// (bin/quo-icons.json), każda ikona ląduje na Discordzie (#quo-ikony w kategorii „Grafiki”), JP odpisuje „ok N” albo „N: uwagi”.
+// (bin/quo-icons-data.mjs), każda ikona ląduje na Discordzie (#quo-ikony w kategorii „Grafiki”), JP odpisuje „ok N” albo „N: uwagi”.
 //   node quo-icons.mjs gen [--only 1,2,3] [--force]     generuje brakujące (albo wskazane) i wrzuca na Discord
 //   node quo-icons.mjs fix <N> "<uwagi JP>"             poprawka: poprzednia wersja + uwagi → nowa wersja na Discord
 //   node quo-icons.mjs ok <N>                           akceptacja: WebP 128/256/512 → repo media/icons/quo-<slug>-<rozmiar>.webp
@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from
 import { join } from 'node:path';
 import { env, log, run, aiUsage } from './lib.mjs';
 import { ensureChannel } from './draft-lib.mjs';
+import CFG from './quo-icons-data.mjs';
 
 const DIR = new URL('.', import.meta.url).pathname;
 const REPO = '/opt/data/repo/przewodnik';
@@ -18,7 +19,6 @@ const WORK = '/opt/data/quolino/work/quo-icons';
 const MODEL = env('QUO_IMAGE_MODEL') || 'gemini-3.1-flash-image';
 const KEY = env('GOOGLE_API_KEY') || env('GEMINI_API_KEY');
 const TOKEN = env('DISCORD_BOT_TOKEN');
-const CFG = JSON.parse(readFileSync(join(DIR, 'quo-icons.json'), 'utf8'));
 const [cmd = 'status', a1, a2] = process.argv.slice(2);
 const opt = (n) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : null; };
 mkdirSync(WORK, { recursive: true });
