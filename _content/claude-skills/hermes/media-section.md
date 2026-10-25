@@ -46,4 +46,11 @@ node banner-brief.mjs spello --more --notify <id>   # „baner więcej” / „i
 
 Zasady: nie kasuj plików grafik; poprzednie wersje zostają w historii repo. Nie generuj grafik
 sam (generuje JP w Flow — prompt do banera daje `banner-brief.mjs`, inne prompty piszesz na prośbę). Treść obrazu oceniasz tylko na prośbę JP.
+
+6. **Ikony Quo na stronę** (kanał **#quo-ikony** w kategorii „Grafiki”, JP 2026-10-25). Skrypt wrzuca każdą ikonę
+   z numerem. JP odpisuje w tym kanale:
+   - „ok 7” / „7 ok” / „akceptuję 7” → `node quo-icons.mjs ok 7`
+   - „7: większy klucz, bez cienia” (albo inne uwagi z numerem) → `node quo-icons.mjs fix 7 "większy klucz, bez cienia"`
+   - „następne” / „generuj dalej” → `node quo-icons.mjs gen`; „co z ikonami?” → `node quo-icons.mjs status`
+   Uwagi przekazuj dosłownie, w cudzysłowie. Bez numeru dopytaj jednym pytaniem, której ikony dotyczą.
 <!-- quolino-media:end -->
