@@ -332,6 +332,24 @@ async function resolveChannel(channel, token) {
   return null;
 }
 
+// kanał tekstowy w kategorii Discorda (np. „Zgłoszenia” → #zgl-strona); tworzy kategorię i kanał przy pierwszym użyciu
+export async function ensureChannel(name, category = 'Zgłoszenia') {
+  const key = `${category}/${name}`;
+  if (chanCache[key]) return chanCache[key];
+  const token = env('DISCORD_BOT_TOKEN'), guild = env('DISCORD_GUILD_ID');
+  if (!token || !guild) return null;
+  const H = { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' };
+  const api = async (m, path, body) => { const r = await fetch(`https://discord.com/api/v10${path}`, { method: m, headers: H, body: body ? JSON.stringify(body) : undefined }); if (!r.ok) throw new Error(`${m} ${path} → ${r.status}`); return r.json(); };
+  try {
+    const chans = await api('GET', `/guilds/${guild}/channels`);
+    let cat = chans.find(c => c.type === 4 && c.name.toLowerCase() === category.toLowerCase());
+    cat ??= await api('POST', `/guilds/${guild}/channels`, { name: category, type: 4 });
+    let ch = chans.find(c => c.type === 0 && c.name === name && c.parent_id === cat.id);
+    ch ??= await api('POST', `/guilds/${guild}/channels`, { name, type: 0, parent_id: cat.id });
+    return (chanCache[key] = ch.id);
+  } catch (e) { log(`Discord: kanał ${category}/${name} — ${e.message}`); return null; }
+}
+
 export async function notify(channel, text) {
   const token = env('DISCORD_BOT_TOKEN');
   if (!channel || !token) return false;

@@ -5,11 +5,10 @@
 // Hermes w wątku: oceń zgłoszenie (sprawdź na stronie oficjalnej / w Google), zaproponuj JP poprawkę
 // (trip-revise), a po decyzji oznacz: UPDATE ops.reports SET status = 'fixed'|'rejected' WHERE id = …
 import { db, env, log } from './lib.mjs';
-import { notify } from './draft-lib.mjs';
-import { jevReady, classifyFeedback } from './jev.mjs';
+import { notify, ensureChannel } from './draft-lib.mjs';
+import { jevReady, classifyFeedback, ROUTE, isUrgentAi } from './jev.mjs';
 
 // Jev (docs/ZGLOSZENIA-AI.md): kategoria, priorytet, pewność — zapis w ai_*, linia na Discordzie, spam ≥ 0,9 bez Discorda, P1 też na #admin
-const ADMIN = '1558873867643134073';
 const KAT = { fakt_cena: 'cena', fakt_godziny: 'godziny', fakt_zamkniete: 'zamknięte', fakt_adres: 'adres', fakt_opis: 'opis / fakt', trasa_dojscie: 'trasa / dojście',
   misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', bezpieczenstwo: 'BEZPIECZEŃSTWO', pochwala: 'pochwała', sugestia: 'sugestia',
   pytanie: 'pytanie', wspolpraca: 'współpraca', prywatnosc: 'prywatność', spam: 'spam' };
@@ -28,7 +27,13 @@ async function triage(q, table, id, item) {
 }
 const aiLine = (c) => c ? `🏷️ Jev: **${KAT[c.category] ?? c.category}** · P${c.priority ?? '?'} · pewność ${Math.round((c.confidence ?? 0) * 100)}%${(c.confidence ?? 0) < 0.7 ? ' (niepewne, przejrzyj)' : ''}\n` : '';
 const isSpam = (c) => c?.category === 'spam' && (c.confidence ?? 0) >= 0.9;
-const isUrgent = (c) => c && (c.priority === 1 || c.category === 'bezpieczenstwo' || c.category === 'fakt_zamkniete');
+const isUrgent = isUrgentAi;
+// dokąd: kategoria „miasto” (albo brak klasyfikacji) → wątek miasta; inne → kanał w kategorii „Zgłoszenia”
+async function target(ai, thread) {
+  const r = ai ? ROUTE[ai.category] : 'miasto';
+  if (!r || r === 'miasto') return thread ?? FALLBACK;
+  return (await ensureChannel(r)) ?? thread ?? FALLBACK;
+}
 
 const DRY = process.argv.includes('--dry');
 const FALLBACK = env('QUOLINO_REPORTS_CHANNEL') ?? '#lokale';
@@ -73,9 +78,9 @@ try {
       `> ${String(r.message).replace(/\n+/g, ' ').slice(0, 900)}\n` +
       `Sprawdź (strona oficjalna / Google) i zaproponuj JP poprawkę. Zgłoszenie #${r.id.slice(0, 8)}.`;
     if (DRY) { console.log(text); continue; }
-    const ok = await notify(r.discord_thread_id ?? FALLBACK, text);
+    const ok = await notify(await target(ai, r.discord_thread_id), text);
     if (ok) await q('UPDATE ops.reports SET relayed_at = now() WHERE id = $1', [r.id]);
-    if (ok && isUrgent(ai)) await notify(ADMIN, `⚠️ **Pilne zgłoszenie** (${KAT[ai.category] ?? ai.category}) — ${r.city_slug}, przystanek ${r.stop_name ?? r.stop_id}. Szczegóły w wątku miasta, #${r.id.slice(0, 8)}.`);
+    if (ok && isUrgent(ai)) { const pil = await ensureChannel('zgl-pilne'); if (pil) await notify(pil, `⚠️ **Pilne zgłoszenie** (${KAT[ai.category] ?? ai.category}) — ${r.city_slug}, przystanek ${r.stop_name ?? r.stop_id}. Szczegóły w wątku miasta, #${r.id.slice(0, 8)}.\n> ${String(r.message).replace(/\n+/g, ' ').slice(0, 300)}`); }
   }
   if (rows.length) log(`zgłoszenia: przekazane ${rows.length}`);
 
@@ -95,7 +100,7 @@ try {
       (r.comment ? `> ${String(r.comment).replace(/\n+/g, ' ').slice(0, 500)}\n` : '> (bez komentarza)\n') +
       `Jeśli jest tu coś do poprawienia — sprawdź i zaproponuj JP poprawkę. Opinia #${r.id.slice(0, 8)}.`;
     if (DRY) { console.log(text); continue; }
-    const ok = await notify(r.discord_thread_id ?? FALLBACK, text);
+    const ok = await notify(await target(ai, r.discord_thread_id), text);
     if (ok) await q('UPDATE ops.ratings SET relayed_at = now() WHERE id = $1', [r.id]);
   }
   if (ops_.length) log(`opinie: przekazane ${ops_.length}`);

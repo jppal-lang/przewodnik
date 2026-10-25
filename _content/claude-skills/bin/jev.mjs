@@ -76,3 +76,12 @@ export async function classifyFeedback(item) {
   return { category: a.category?.choice ?? null, confidence: a.category?.confidence ?? null,
     priority: a.priority?.choice ? +a.priority.choice.slice(1) : null };
 }
+
+// Kierowanie po kategorii (JP 2026-10-25): sprawy o treści wycieczki → wątek miasta; reszta → kanał w kategorii „Zgłoszenia”.
+// Pilne (P1, bezpieczeństwo, zamknięte na stałe) dodatkowo na #zgl-pilne zamiast #admin. Spam ≥ 0,9 — nigdzie.
+export const ROUTE = {
+  fakt_cena: 'miasto', fakt_godziny: 'miasto', fakt_zamkniete: 'miasto', fakt_adres: 'miasto', fakt_opis: 'miasto',
+  trasa_dojscie: 'miasto', misja_dziecko: 'miasto',
+  tlumaczenie: 'zgl-tlumaczenia', strona_blad: 'zgl-strona', bezpieczenstwo: 'miasto',
+  pochwala: 'zgl-opinie', sugestia: 'zgl-sugestie', pytanie: 'zgl-pytania', wspolpraca: 'zgl-wspolpraca', prywatnosc: 'zgl-prywatnosc', spam: null };
+export const isUrgentAi = (c) => !!c && (c.priority === 1 || c.category === 'bezpieczenstwo' || c.category === 'fakt_zamkniete');

@@ -2,7 +2,10 @@
 
 Pomysł JP 2026-10-16. Status (2026-10-25): etap 1–2 wdrożony z **Jev** (TypeSafe System One): kategoria, priorytet i pewność
 dla zgłoszeń, opinii z komentarzem i formularza kontaktowego. Zapis w kolumnach `ai_*` (SQL `2026-10-25-zgloszenia-ai.sql`),
-linia „🏷️ Jev” w wiadomości na Discordzie, spam z pewnością ≥ 0,9 bez Discorda, P1 / bezpieczeństwo / zamknięte dodatkowo na #admin.
+linia „🏷️ Jev” w wiadomości na Discordzie, spam z pewnością ≥ 0,9 bez Discorda.
+**Kierowanie (JP 2026-10-25):** treść wycieczki (fakty, trasa, misje, bezpieczeństwo) → wątek miasta; reszta → kanały w kategorii Discorda
+„Zgłoszenia”: #zgl-strona, #zgl-tlumaczenia, #zgl-opinie, #zgl-sugestie, #zgl-pytania, #zgl-wspolpraca, #zgl-prywatnosc,
+#zgl-wycieczki (formularz o wycieczce); pilne dodatkowo #zgl-pilne. #admin tylko, gdy Jev nie odpowie.
 Jev nie pisze tekstu, więc `summary_pl` i `action` na razie pomijamy. Kod: `bin/jev.mjs`, `reports-relay.mjs`, `contact-relay.mjs`.
 
 **Cel:** JP nie czyta każdego zgłoszenia. AI sortuje, łączy duplikaty i kieruje sprawę tam, gdzie zostanie naprawiona.
