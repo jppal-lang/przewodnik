@@ -425,3 +425,4 @@
 .pg-tab small{display:block;font-size:15px;color:var(--muted)}
 .pg-tab--periods{margin-top:0}
 @media(max-width:620px){.pg-tab{font-size:16px}.pg-tab th,.pg-tab td{padding:8px 6px}.pg-card{overflow-x:auto}}
+.pg-ai--jev{border-left-color:#7A3FC4}

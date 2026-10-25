@@ -1337,6 +1337,7 @@
   var AI = {
     gemini: { name: 'Gemini', who: 'Google, abonament AI Pro (Antigravity); zapas: darmowy klucz API', does: 'research z wyszukiwarką Google, pisanie szkicu, bloki przystanków, poprawki' },
     claude: { name: 'Claude', who: 'Anthropic, Claude Code na serwerze', does: 'kontrola faktów przystanków i całej trasy, kontrola po poprawkach, zasady z uwag' },
+    jev: { name: 'Jev', who: 'TypeSafe, System One (płatne API, 0,042 $ / 1 mln tokenów wejścia)', does: 'szybkie decyzje: rozdział błędów z kontroli na drobiazgi, podmiany i przepisanie' },
     openrouter: { name: 'OpenRouter', who: 'modele zewnętrzne przez OpenRouter (płatne i darmowe)', does: 'tłumaczenia, starsze skrypty treści, przegląd lokali' }
   };
   var BILL = { abonament: 'abonament', darmowe: 'darmowe', api: 'płatne API' };

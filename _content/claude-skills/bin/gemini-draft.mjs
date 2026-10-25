@@ -19,6 +19,7 @@ import { spawn } from 'node:child_process';
 import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
+import { triageErrors } from './jev.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -593,9 +594,15 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     log(`${slug}: ④c poprawki po kontroli całej trasy — runda ${round}/${MAX_ROUNDS} (${rv.errors.length} błędów)`);
     if (round === 1) await notify(channel, `🔧 ${name}: kontrola całej trasy — ${rv.errors.length} błędów. Poprawiam i sprawdzam w rundach (najwyżej ${MAX_ROUNDS}), zanim trafi do Ciebie.`);
     // 1) podmiany wskazane przez kontrolę (old → new): skrypt, zero tokenów; 2) reszta przez Gemini (tylko to, czego nie da się podmienić)
+    const before = rv.errors.length;
+    // 0) Jev rozdziela: drobiazg → ostrzeżenie (nie poprawiamy), podmiana → skrypt, przepisanie → Gemini
+    const tri = await triageErrors(rv.errors);
+    const minor = tri ? rv.errors.filter((_, i) => tri[i] === 'drobiazg') : [];
+    if (minor.length) { rv.warnings = [...(rv.warnings ?? []), ...minor.map(e => ({ ...e, problem: `[drobiazg] ${e.problem}` }))];
+      rv.errors = rv.errors.filter((_, i) => tri[i] !== 'drobiazg'); }
     const mech = applyReplacements(trip, blocks, rv.errors);
     const rest = rv.errors.filter((_, i) => !mech.done.has(i));
-    log(`${slug}: poprawki bez modelu: ${mech.done.size} z ${rv.errors.length} · do Gemini: ${rest.length}`);
+    log(`${slug}: ${tri ? `Jev: drobiazgi ${minor.length} (do ostrzeżeń) · ` : ''}poprawki bez modelu: ${mech.done.size} · do Gemini: ${rest.length}`);
     const cms = rest.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
       body: String(e.problem) + (e.fix ? ' → ' + e.fix : '') }));
     const ap = cms.length ? await applyComments(trip, blocks, cms, cityTitle, 'Claude') : { changes: [], summaries: [] };
@@ -605,7 +612,7 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     let next;
     try { next = await fullReview(slug, trip); } catch (e) { next = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: rv.errors, warnings: [] }; }
     history.push({ round, errors: next.errors?.length ?? 0, facts: next.facts ?? null, changes: ap.changes.length });
-    const better = (next.errors?.length ?? 0) < rv.errors.length;
+    const better = (next.errors?.length ?? 0) < before;
     rv = next;
     if (onRound) { next.before = { errors: first?.errors?.length ?? 0, warnings: (first?.warnings ?? []).length, facts: first?.facts ?? null }; next.rounds = history.slice(); await onRound(round, next, ap); }
     if (!better) { log(`${slug}: runda ${round} nie zmniejszyła liczby błędów — koniec pętli`); break; }
