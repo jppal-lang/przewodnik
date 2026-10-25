@@ -19,7 +19,7 @@ import { spawn } from 'node:child_process';
 import { claude, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
-import { validateStop, normalizeRecord, blocksLine, stripRefs, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
+import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -227,7 +227,9 @@ ${text}`, { json: true, label: `${label} (naprawa JSON)` }));
 const RULES = `TWARDE ZASADY QUOLINO: rodzinna wycieczka piesza dla rodziców z dziećmi. NIGDY czasów dojazdu, kilometrów, minut jazdy ani godzin
 wyjazdu z bazy — tylko czas zwiedzania na miejscu, godziny otwarcia, kolejność przystanków. Nie wymyślaj faktów: ceny, godziny, telefony
 tylko ze źródłem, inaczej „sprawdź na miejscu”. Bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika, bez emoji,
-bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.`;
+bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.
+Tekst ma brzmieć naturalnie, jak pisany przez człowieka: NIE używaj długiej pauzy „—” ani półpauzy „–”; zamiast nich zwykły łącznik „-”,
+przecinek albo nowe zdanie.`;
 
 // ── ① research miasta ─────────────────────────────────────────────────────────────────────────
 async function researchCity() {
@@ -490,6 +492,8 @@ async function main() {
   trip.content._notes = (Array.isArray(trip.content._notes) ? trip.content._notes : []).filter(n => n && n.note).map(n => ({
     stop_key: n.stop_key ?? null, note: String(n.note),
     field: /^[a-g]$/.test(n.field) ? n.field : NOTE_FIELD[n.field] ?? (/hour|price|cost|ztl|phone|website|time|rating|reserv|lat|lon|maps/i.test(n.field ?? '') ? 'a' : 'g') }));
+  // bez „—” i „–” (JP 2026-10-25) — mechanicznie, w całej treści i w blokach
+  trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
   const saved = await saveDraft(q, trip, { note: `nowe wytyczne (Gemini ${MODEL})${brief ? ': ' + brief.slice(0, 120) : ''}`, source: 'draft', changes: [], review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`,
@@ -613,6 +617,7 @@ async function reviseMain() {
   if (!changes.length) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
   const fails = Object.values(blocks).filter(x => x?.check?.verdict === 'fix').length;
   const rv = { verdict: fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: [], warnings: [] };
+  trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
   const saved = await saveDraft(q, trip, { note: `poprawki JP (${comments.length} uwag, nowy proces)`, source: 'revise', changes, review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks)]);

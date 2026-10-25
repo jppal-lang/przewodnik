@@ -259,6 +259,8 @@ export const STANDARD = `STANDARD TREŚCI PRZYSTANKU (docs/TRESC-PRZYSTANKU.md, 
 - Superlatyw („najstarszy”, „jedyny”, „największy”) w opisie i legendzie — dwa niezależne źródła albo konkretny fakt bez superlatywu.
   W ciekawostce i fun facie wystarczy jedno źródło (z przymrużeniem oka).
 - Bez powtórzeń między blokami: fakt stoi w jednym bloku.
+- Teksty brzmią naturalnie, jak pisane przez człowieka: BEZ długiej pauzy „—” i półpauzy „–” — zamiast nich zwykły łącznik „-”, przecinek
+  albo nowe zdanie (JP 2026-10-25: pauza od razu wygląda jak tekst AI). Zakresy liczb też z łącznikiem: 10-12.
 - Twarde zasady: NIGDY czasów dojazdu, kilometrów, minut jazdy, godzin wyjazdu z bazy (czas zwiedzania na miejscu wolno); nie wymyślać faktów
   (brak źródła → „sprawdź na miejscu” albo usuń zdanie); bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika;
   bez emoji; nazwy własne w oryginale.`;
@@ -299,3 +301,10 @@ W POPKULTURZE
 3. Znana osoba związana z miejscem — urodziła się, mieszkała, występowała?`;
 }
 
+// JP 2026-10-25: bez „—” i „–” w tekstach dla czytelnika (wygląda jak AI) — zamiana na zwykły łącznik w każdym napisie obiektu
+export function noDash(v) {
+  if (typeof v === 'string') return v.replace(/\s*[—–]\s*/g, (m) => /^\S+$/.test(m) ? '-' : ' - ').replace(/(\d) - (\d)/g, '$1-$2');
+  if (Array.isArray(v)) return v.map(noDash);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, noDash(x)]));
+  return v;
+}

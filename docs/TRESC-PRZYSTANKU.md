@@ -69,6 +69,11 @@ Dotyczy zabytków, kościołów, muzeów, zamków, domów, synagog; ulica, punkt
 - Superlatyw („najstarszy”, „jedyny”) w opisie i legendzie — **dwa niezależne źródła** albo konkretny fakt bez superlatywu.
 - Fun fact powstaje z ciekawostki lub researchu, nie z pamięci modelu; musi być zrozumiały dla 9-latka.
 
+## 3a. Język naturalny
+
+- **Bez długiej pauzy „—” i półpauzy „–”** (decyzja JP 2026-10-25): od razu wyglądają jak tekst AI. Zamiast nich zwykły łącznik „-”,
+  przecinek albo nowe zdanie; zakresy liczb też z łącznikiem (10-12). Skrypt zamienia je mechanicznie przed zapisem szkicu.
+
 ## 4. Przypisy — każdy fakt ma źródło
 
 - W tekście każdego bloku fakt (data, liczba, nazwisko, zdarzenie, przypisanie dzieła) kończy się przypisem `[n]`.
