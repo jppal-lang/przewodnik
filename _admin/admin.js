@@ -267,7 +267,7 @@
     if (!f) {
       var s = lsGet(FILTERS) || {};
       f = state.f = { countries: Array.isArray(s.countries) ? s.countries : [], statuses: Array.isArray(s.statuses) ? s.statuses : ['draft'],
-        flags: Array.isArray(s.flags) ? s.flags : [], std: Array.isArray(s.std) ? s.std : [], sort: SORTS[s.sort] ? s.sort : 'new', letter: typeof s.letter === 'string' ? s.letter : '', q: typeof s.q === 'string' ? s.q : '' };
+        flags: Array.isArray(s.flags) ? s.flags : [], std: Array.isArray(s.std) ? s.std.filter(function (k) { return k === 'old' || /^v\d{2}$/.test(k); }) : [], sort: SORTS[s.sort] ? s.sort : 'new', letter: typeof s.letter === 'string' ? s.letter : '', q: typeof s.q === 'string' ? s.q : '' };
     }
     return f;
   }

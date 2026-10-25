@@ -324,3 +324,8 @@
 .adm-prog__steps time{font-variant-numeric:tabular-nums;font-weight:700}
 .adm-prog__q{margin:0;padding-left:20px;font-size:18px}
 .adm-prog .adm-stat{display:flex;flex-direction:column;gap:4px}.adm-prog .adm-stat b{font:800 26px/1.1 'Archivo',sans-serif}
+
+.adm-navr{display:flex;align-items:center;gap:10px}
+.adm-navlink{min-height:44px;display:inline-flex;align-items:center;padding:6px 14px;border:2px solid var(--rule);border-radius:var(--r-pill);font:800 16px/1 'Archivo',sans-serif;color:var(--ink);text-decoration:none;background:var(--card)}
+.adm-navlink:hover{border-color:var(--azzurro)}
+@media(max-width:480px){.adm-navlink{font-size:14px;padding:6px 10px}}
