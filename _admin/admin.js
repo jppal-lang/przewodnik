@@ -455,10 +455,11 @@
   }
   function route() {
     var h = location.hash;
-    document.body.classList.toggle('is-prog', h === '#/postep' || h === '#/koszty');
+    document.body.classList.toggle('is-prog', h === '#/postep' || h === '#/koszty' || h === '#/zgloszenia');
     if (h === '#/baza-wiedzy') { showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     if (h === '#/koszty') { showDetail(); window.scrollTo(0, 0); openCosts(); return; }
+    if (h === '#/zgloszenia') { showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
     if (m) { openTrip(decodeURIComponent(m[1]), m[2] ? +m[2] : null); return; }
     showList();
@@ -1416,6 +1417,85 @@
     (DEMO ? Promise.resolve(demoCosts()) : api('/ai_usage_daily?order=day.desc&limit=5000')).then(function (r) { rows = r || []; draw(); })
       .catch(function (e) { err = e.message; draw(); });
     document.title = 'Koszty AI · Quolino admin';
+  }
+
+  // ── Zgłoszenia (JP 2026-10-25): zgłoszenia przy przystankach, opinie, formularz — kategoria i priorytet od Jev ──
+  // Źródło: admin.feedback_ai, zapis: rpc admin_feedback_set (SQL 2026-10-25-zgloszenia-ai.sql). Treść to dane od obcych: tylko esc().
+  var FB_SRC = { report: 'Zgłoszenie', rating: 'Opinia', contact: 'Formularz' };
+  var FB_KAT = { fakt_cena: 'cena', fakt_godziny: 'godziny', fakt_zamkniete: 'zamknięte', fakt_adres: 'adres', fakt_opis: 'opis / fakt', trasa_dojscie: 'trasa / dojście',
+    misja_dziecko: 'misja dziecka', tlumaczenie: 'tłumaczenie', strona_blad: 'błąd strony', bezpieczenstwo: 'bezpieczeństwo', pochwala: 'pochwała', sugestia: 'sugestia',
+    pytanie: 'pytanie', wspolpraca: 'współpraca', prywatnosc: 'prywatność', spam: 'spam' };
+  var FB_ST = { 'new': 'nowe', seen: 'przeczytane', reviewed: 'przejrzane', noted: 'odnotowane', fixed: 'poprawione', rejected: 'odrzucone', answered: 'odpowiedziane', spam: 'spam', done: 'załatwione' };
+  var FB_OPEN = { 'new': 1, seen: 1 };
+  var FB_KIND = { closed: 'zamknięte', wrong_hours: 'godziny', wrong_price: 'cena', wrong_address: 'adres / dojście', other: 'inne', trip: 'pytanie o wycieczkę', bug: 'błąd na stronie', partner: 'współpraca', privacy: 'prywatność', other_: 'inne' };
+  function demoFeedback() {
+    var now = Date.now(), iso = function (h) { return new Date(now - h * 3600000).toISOString(); };
+    return [
+      { source: 'report', id: 'a1b2c3d4-1', at: iso(2), city_slug: 'frasassi', stop: 'Grotte di Frasassi', kind: 'wrong_hours', body: 'Na stronie jest 9:30, a pierwsze wejście było o 10:00. W niedzielę kolejka.', lang: 'pl', status: 'new', category: 'fakt_godziny', ai_category: 'fakt_godziny', ai_priority: 2, ai_confidence: 0.91 },
+      { source: 'report', id: 'b2c3d4e5-2', at: iso(5), city_slug: 'spello', stop: 'Parcheggio', kind: 'closed', body: 'Parking zamknięty, remont do wiosny.', lang: 'pl', status: 'new', category: 'fakt_zamkniete', ai_category: 'fakt_zamkniete', ai_priority: 1, ai_confidence: 0.88 },
+      { source: 'rating', id: 'c3d4e5f6-3', at: iso(20), city_slug: 'gubbio', stars: 5, body: 'Dzieci zachwycone misjami, dziękujemy!', lang: 'pl', status: 'new', category: 'pochwala', ai_category: 'pochwala', ai_priority: 3, ai_confidence: 0.97 },
+      { source: 'contact', id: '17', at: iso(30), kind: 'partner', body: 'Hotel w Asyżu, chcemy polecać wasze trasy gościom.', lang: 'pl', status: 'seen', has_email: true, category: 'wspolpraca', ai_category: 'wspolpraca', ai_priority: 3, ai_confidence: 0.64 }];
+  }
+  function openFeedback() {
+    state.current = null; state.trip = null; clearInterval(state.poll);
+    var f = { src: '', cat: '', pri: '', open: true }, rows = null, err = null;
+    try { var sv = JSON.parse(localStorage.getItem('adm.fb') || '{}'); if (sv && typeof sv === 'object') { f.src = sv.src || ''; f.cat = sv.cat || ''; f.pri = sv.pri || ''; f.open = sv.open !== false; } } catch (e) { /* brak */ }
+    function save() { try { localStorage.setItem('adm.fb', JSON.stringify(f)); } catch (e) { /* brak */ } }
+    function load() {
+      return (DEMO ? Promise.resolve(demoFeedback()) : api('/feedback_ai?order=at.desc&limit=500')).then(function (r) { rows = r || []; err = null; draw(); })
+        .catch(function (e) { err = e.message; draw(); });
+    }
+    function draw() {
+      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><section class="pg">';
+      if (err) { $d.innerHTML = h + '<p class="adm-empty">Zgłoszenia niedostępne: ' + esc(err) + '<br>Potrzebny SQL 2026-10-25-zgloszenia-ai.sql (zatwierdzenie wdrożenia).</p></section>'; return; }
+      var open = rows.filter(function (r) { return FB_OPEN[r.status]; });
+      var urgent = open.filter(function (r) { return r.ai_priority === 1 || r.category === 'bezpieczenstwo' || r.category === 'fakt_zamkniete'; });
+      var unsure = open.filter(function (r) { return r.ai_confidence != null && r.ai_confidence < 0.7 && !r.jp_category; });
+      var list = rows.filter(function (r) { return (!f.open || FB_OPEN[r.status]) && (!f.src || r.source === f.src) && (!f.cat || r.category === f.cat) && (!f.pri || String(r.ai_priority) === f.pri); });
+      var cats = {}; open.forEach(function (r) { var k = r.category || 'bez kategorii'; cats[k] = (cats[k] || 0) + 1; });
+      h += '<header class="pg-head"><div><p class="label">Zgłoszenia</p><h2>Od rodzin i z formularza</h2></div>' +
+        '<dl class="pg-kpi"><div><dt>do załatwienia</dt><dd>' + open.length + '</dd></div><div><dt>pilne</dt><dd>' + urgent.length + '</dd></div><div><dt>niepewne</dt><dd>' + unsure.length + '</dd></div><div><dt>90 dni</dt><dd>' + rows.length + '</dd></div></dl></header>';
+      h += '<div class="pg-card fb-filters"><label>Źródło <select data-f="src"><option value="">wszystkie</option>' + Object.keys(FB_SRC).map(function (k) { return '<option value="' + k + '"' + (f.src === k ? ' selected' : '') + '>' + FB_SRC[k] + '</option>'; }).join('') + '</select></label>' +
+        '<label>Kategoria <select data-f="cat"><option value="">wszystkie</option>' + Object.keys(FB_KAT).map(function (k) { return '<option value="' + k + '"' + (f.cat === k ? ' selected' : '') + '>' + FB_KAT[k] + (cats[k] ? ' (' + cats[k] + ')' : '') + '</option>'; }).join('') + '</select></label>' +
+        '<label>Priorytet <select data-f="pri"><option value="">wszystkie</option><option value="1"' + (f.pri === '1' ? ' selected' : '') + '>P1 pilne</option><option value="2"' + (f.pri === '2' ? ' selected' : '') + '>P2 błąd w treści</option><option value="3"' + (f.pri === '3' ? ' selected' : '') + '>P3 reszta</option></select></label>' +
+        '<label class="fb-chk"><input type="checkbox" data-f="open"' + (f.open ? ' checked' : '') + '> tylko do załatwienia</label></div>';
+      h += list.length ? list.map(function (r) {
+        var pri = r.ai_priority, conf = r.ai_confidence != null ? Math.round(r.ai_confidence * 100) : null;
+        var cls = pri === 1 || r.category === 'bezpieczenstwo' ? 'bad' : FB_OPEN[r.status] ? 'running' : 'done';
+        var acts = r.source === 'contact' ? [['answered', 'Odpowiedziane'], ['done', 'Załatwione'], ['spam', 'Spam']] : [['fixed', 'Poprawione'], ['noted', 'Odnotowane'], ['rejected', 'Odrzucone']];
+        return '<article class="pg-card pg-card--' + cls + ' fb-item" data-src="' + esc(r.source) + '" data-id="' + esc(r.id) + '"><header class="pg-card__head"><div class="pg-card__title">' +
+          '<span class="pg-pill">' + esc(FB_SRC[r.source] || r.source) + '</span>' +
+          (r.city_slug ? '<a href="#/' + esc(r.city_slug) + '">' + esc(titleCase(r.city_slug)) + '</a>' : '<span class="fb-none">bez wycieczki</span>') +
+          (r.stop ? '<span class="fb-stop">· ' + esc(r.stop) + '</span>' : '') + '</div>' +
+          '<div class="fb-ai">' + (r.category ? '<b>' + esc(FB_KAT[r.category] || r.category) + '</b>' : '<b>bez kategorii</b>') +
+          '<span>' + (pri ? 'P' + pri : '') + (conf != null ? ' · Jev ' + conf + '%' + (r.jp_category ? ' · poprawione przez JP' : conf < 70 ? ' · niepewne' : '') : '') + '</span></div></header>' +
+          '<p class="fb-meta">' + esc(when(r.at)) + (r.kind ? ' · wybrane: ' + esc(FB_KIND[r.kind] || r.kind) : '') + (r.stars ? ' · ' + '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars) : '') +
+          (r.lang ? ' · język ' + esc(r.lang) : '') + (r.has_email ? ' · e-mail do odpowiedzi: tak' : '') + ' · status: <b>' + esc(FB_ST[r.status] || r.status) + '</b></p>' +
+          '<blockquote class="fb-body">' + esc(r.body || '(bez treści)') + '</blockquote>' +
+          '<div class="fb-acts">' + acts.map(function (a) { return '<button type="button" class="qc-btn qc-btn--sm" data-st="' + a[0] + '"' + (r.status === a[0] ? ' aria-pressed="true"' : '') + '>' + a[1] + '</button>'; }).join('') +
+          '<label class="fb-fix">Kategoria: <select data-cat>' + Object.keys(FB_KAT).map(function (k) { return '<option value="' + k + '"' + (r.category === k ? ' selected' : '') + '>' + FB_KAT[k] + '</option>'; }).join('') + '</select></label></div></article>';
+      }).join('') : '<p class="adm-empty">Nic tu nie ma przy tych filtrach.</p>';
+      $d.innerHTML = h + '</section>';
+    }
+    function set(card, body) {
+      var b = { p_source: card.getAttribute('data-src'), p_id: card.getAttribute('data-id'), p_status: body.status || null, p_category: body.category || null };
+      if (DEMO) { rows.forEach(function (r) { if (r.source === b.p_source && r.id === b.p_id) { if (b.p_status) r.status = b.p_status; if (b.p_category) { r.category = r.jp_category = b.p_category; } } }); draw(); return; }
+      api('/rpc/admin_feedback_set', { method: 'POST', body: b }).then(load).catch(function (e) { alertBox(e.message); });
+    }
+    function alertBox(m) { var p = document.createElement('p'); p.className = 'adm-empty'; p.textContent = 'Nie zapisano: ' + m; $d.prepend(p); }
+    $d.onclick = function (e) {
+      var b = e.target.closest && e.target.closest('[data-st]'); if (!b) return;
+      set(b.closest('.fb-item'), { status: b.getAttribute('data-st') });
+    };
+    $d.onchange = function (e) {
+      var t = e.target;
+      if (t.hasAttribute('data-cat')) { set(t.closest('.fb-item'), { category: t.value }); return; }
+      var k = t.getAttribute('data-f'); if (!k) return;
+      f[k] = k === 'open' ? t.checked : t.value; save(); draw();
+    };
+    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję zgłoszenia…</p></div>';
+    load(); state.poll = setInterval(function () { if (location.hash === '#/zgloszenia') load(); }, 60000);
+    document.title = 'Zgłoszenia · Quolino admin';
   }
 
   // ── baza wiedzy redakcji: reguły z uwag (JP 2026-10-17, docs/BAZA-WIEDZY.md) ──
