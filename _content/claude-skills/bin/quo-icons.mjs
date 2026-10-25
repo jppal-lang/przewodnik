@@ -77,6 +77,69 @@ async function generate(prompt, images, name) {
   }
 }
 
+
+// Przezroczyste tło + metadane praw (JP 2026-10-25): wycięcie białego tła połączonego z brzegiem obrazu (wnętrze postaci zostaje),
+// miękka krawędź, kadr kwadratowy z marginesem; metadane jak w media.mjs: © Quolino (quolino.com), twórca, znacznik AI (IPTC).
+const PY = `
+import sys, json
+from PIL import Image, ImageDraw, ImageFilter, PngImagePlugin
+job = json.loads(sys.argv[1])
+TITLE = job.get('title') or 'Quo'
+RIGHTS = '© Quolino (quolino.com). All rights reserved.'
+def exif():
+    ex = Image.Exif()
+    ex[0x013B] = 'Quolino (quolino.com)'
+    ex[0x8298] = '(C) Quolino, quolino.com. All rights reserved.'
+    ex[0x010E] = ('Quo, maskotka Quolino: ' + TITLE)[:300]
+    ex[0x0131] = 'Quolino media pipeline'
+    return ex.tobytes()
+def xmp():
+    e = lambda s: str(s).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
+    return ('<?xpacket begin="\\ufeff" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+      '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/" '
+      'xmlns:xmpRights="http://ns.adobe.com/xap/1.0/rights/" xmlns:Iptc4xmpExt="http://iptc.org/std/Iptc4xmpExt/2008-02-29/">'
+      '<dc:title><rdf:Alt><rdf:li xml:lang="x-default">' + e('Quo: ' + TITLE) + '</rdf:li></rdf:Alt></dc:title>'
+      '<dc:creator><rdf:Seq><rdf:li>Quolino</rdf:li></rdf:Seq></dc:creator>'
+      '<dc:rights><rdf:Alt><rdf:li xml:lang="x-default">' + RIGHTS + '</rdf:li></rdf:Alt></dc:rights>'
+      '<photoshop:Credit>Quolino (quolino.com)</photoshop:Credit><xmpRights:Marked>True</xmpRights:Marked>'
+      '<xmpRights:WebStatement>https://quolino.com</xmpRights:WebStatement>'
+      '<Iptc4xmpExt:DigitalSourceType>http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia</Iptc4xmpExt:DigitalSourceType>'
+      '</rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="w"?>').encode('utf-8')
+def cut(src, dst):
+    im = Image.open(src).convert('RGBA')
+    w, h = im.size
+    if im.getchannel('A').getextrema()[0] < 250:   # już ma przezroczystość
+        out = im
+    else:
+        rgb = im.convert('RGB')
+        white = Image.eval(rgb.convert('L'), lambda v: 0)
+        px, wp = rgb.load(), white.load()
+        for y in range(h):
+            for x in range(w):
+                r, g, b = px[x, y]
+                if min(r, g, b) >= 212 and max(r, g, b) - min(r, g, b) <= 18: wp[x, y] = 255
+        for x, y in [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)] + [(x, 0) for x in range(0, w, 16)] + [(x, h - 1) for x in range(0, w, 16)] + [(0, y) for y in range(0, h, 16)] + [(w - 1, y) for y in range(0, h, 16)]:
+            if wp[x, y] == 255: ImageDraw.floodfill(white, (x, y), 128)
+        bg = Image.eval(white, lambda v: 255 if v == 128 else 0)
+        alpha = Image.eval(bg, lambda v: 255 - v).filter(ImageFilter.MinFilter(5)).filter(ImageFilter.GaussianBlur(1.0))
+        out = im.copy(); out.putalpha(alpha)
+    box = out.getchannel('A').point(lambda v: 255 if v > 12 else 0).getbbox() or (0, 0, w, h)
+    c = out.crop(box); side = int(max(c.size) * 1.08)
+    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0)); sq.paste(c, ((side - c.size[0]) // 2, (side - c.size[1]) // 2))
+    sq = sq.resize((1024, 1024), Image.LANCZOS)
+    info = PngImagePlugin.PngInfo()
+    for k, v in (('Title', 'Quo: ' + TITLE), ('Author', 'Quolino (quolino.com)'), ('Copyright', RIGHTS), ('Source', 'https://quolino.com'), ('Description', 'Quo, maskotka Quolino. AI + redakcja Quolino.')):
+        info.add_text(k, v)
+    sq.save(dst, 'PNG', pnginfo=info, exif=exif())
+def webp(src, base):
+    im = Image.open(src).convert('RGBA')
+    for s in (128, 256, 512):
+        im.resize((s, s), Image.LANCZOS).save(f'{base}-{s}.webp', 'WEBP', quality=90, method=6, exif=exif(), xmp=xmp())
+if job['mode'] == 'cut': cut(job['src'], job['dst'])
+else: webp(job['src'], job['base'])
+`;
+const py = (job) => run('python3', ['-c', PY, JSON.stringify(job)], { timeout: 180_000 });
+
 async function upload(text, file) {
   const ch = await ensureChannel('quo-ikony', 'Grafiki');
   if (!ch || !TOKEN) { log('Discord niedostępny'); return false; }
@@ -107,6 +170,8 @@ async function one(ic, notes = null) {
     const c = await run('python3', ['-c', `from PIL import Image\nImage.open(${JSON.stringify(f + '.src')}).convert('RGBA').save(${JSON.stringify(f)},'PNG')`], { timeout: 60_000 });
     if (c.code !== 0) throw new Error(`PNG: ${c.err.slice(-200)}`);
   }
+  const c2 = await py({ mode: 'cut', src: f, dst: f, title: ic.place });
+  if (c2.code !== 0) throw new Error(`przezroczyste tło: ${c2.err.slice(-300)}`);
   save();
   await upload(`🎨 **Quo #${ic.n} — ${ic.place}** · wersja ${s.v}${notes ? ` (poprawki: ${notes.slice(0, 200)})` : ''}\nOdpisz: **ok ${ic.n}** albo **${ic.n}: co poprawić**.`, f);
   return f;
@@ -123,14 +188,19 @@ try {
   } else if (cmd === 'fix') {
     if (!a2) throw new Error('fix <N> "<uwagi>"');
     await one(icon(a1), a2);
+  } else if (cmd === 'cut') {   // przerobienie istniejącej wersji na przezroczyste tło (bez generowania)
+    const ic = icon(a1), s = state[ic.n];
+    const f = join(WORK, `${String(ic.n).padStart(2, '0')}-${ic.slug}-v${s.v}.png`);
+    const c = await py({ mode: 'cut', src: f, dst: f, title: ic.place });
+    if (c.code !== 0) throw new Error(c.err.slice(-300));
+    await upload(`🎨 **Quo #${ic.n} — ${ic.place}** · wersja ${s.v} na przezroczystym tle\nOdpisz: **ok ${ic.n}** albo **${ic.n}: co poprawić**.`, f);
   } else if (cmd === 'ok') {
     const ic = icon(a1), s = state[ic.n];
     if (!s?.v) throw new Error(`ikona ${ic.n} jeszcze nie wygenerowana`);
     const src = join(WORK, `${String(ic.n).padStart(2, '0')}-${ic.slug}-v${s.v}.png`);
     const pull = await run('sh', [REPO_SH, 'pull'], { timeout: 120_000 });
     if (pull.code !== 0) throw new Error(`repo: ${(pull.err || pull.out).slice(-300)}`);
-    const py = `from PIL import Image\nim=Image.open(${JSON.stringify(src)}).convert('RGBA')\nfor s in (128,256,512):\n  im.resize((s,s),Image.LANCZOS).save(${JSON.stringify(join(REPO, 'media/icons/quo-' + ic.slug))}+f'-{s}.webp','WEBP',quality=88,method=6)\n`;
-    const r = await run('python3', ['-c', py], { timeout: 60_000 });
+    const r = await py({ mode: 'webp', src, base: join(REPO, 'media/icons/quo-' + ic.slug), title: ic.place });
     if (r.code !== 0) throw new Error(`WebP: ${r.err.slice(-300)}`);
     const pub = await run('sh', [REPO_SH, 'publish', `ikona Quo #${ic.n}: ${ic.place} (quo-${ic.slug}, 3 rozmiary WebP)`], { timeout: 5 * 60_000 });
     if (pub.code !== 0 || /BŁĄD/.test(pub.out)) throw new Error(`publikacja: ${(pub.err || pub.out).slice(-300)}`);
