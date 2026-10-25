@@ -225,6 +225,8 @@ try {
       const list = (Array.isArray(msgs) ? msgs : []).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
       const lastPosted = () => Object.entries(JSON.parse(readFileSync(STATE_F, 'utf8'))).filter(([k, v]) => /^\d+$/.test(k) && v.status === 'review').sort((a, b) => (a[1].history.at(-1)?.at > b[1].history.at(-1)?.at ? -1 : 1))[0]?.[0];
       const done = new Set();
+      const { notify } = await import('./draft-lib.mjs');
+      const ack = (text) => notify(ch, text);
       for (const m of list) {
         writeFileSync(LAST_F, m.id);
         if (m.author?.id !== JP) continue;
@@ -232,10 +234,10 @@ try {
         let x;
         if ((x = t.match(/^(?:ok|akceptuj[eę]|zatwierdzam)\s*#?(\d+)$/i) || t.match(/^#?(\d+)\s*(?:ok|akceptuj[eę])$/i))) { if (!done.has('ok' + x[1])) { done.add('ok' + x[1]); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', x[1]], { timeout: 10 * 60_000 }); await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 }); } }
         else if (/^(ok|akceptuj[eę])$/i.test(t)) { const n = lastPosted(); if (n && !done.has('ok' + n)) { done.add('ok' + n); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', n], { timeout: 10 * 60_000 }); await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 }); } }
-        else if ((x = t.match(/^#?(\d+)\s*[:.\-]\s*([\s\S]{3,})$/))) await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', x[1], x[2].slice(0, 800)], { timeout: 10 * 60_000 });
+        else if ((x = t.match(/^(?:nr\.?\s*|#)?(\d+)\s*[:.,\-–)]?\s+([\s\S]{3,})$/i) || t.match(/^(?:nr\.?\s*|#)?(\d+)[:.,\-–)]([\s\S]{3,})$/i))) { await ack(`🔧 Poprawka Quo #${x[1]} przyjęta: „${x[2].slice(0, 200)}”. Generuję nową wersję (ok. 1 min).`); await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', x[1], x[2].slice(0, 800)], { timeout: 10 * 60_000 }); }
         else if (/^(nast[eę]pne|dalej|generuj( dalej)?)$/i.test(t)) await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 });
         // uwagi bez numeru („inna tarcza”) → poprawka ostatniej wrzuconej ikony (JP 2026-10-25)
-        else if (t.length >= 3) { const n = lastPosted(); if (n) await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', n, t.slice(0, 800)], { timeout: 10 * 60_000 }); }
+        else if (t.length >= 3) { const n = lastPosted(); if (n) { await ack(`🔧 Poprawka Quo #${n} (ostatnia ikona) przyjęta: „${t.slice(0, 200)}”. Generuję nową wersję (ok. 1 min).`); await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', n, t.slice(0, 800)], { timeout: 10 * 60_000 }); } }
       }
     } finally { try { (await import('node:fs')).unlinkSync(LOCK); } catch {} }
   } else {
