@@ -270,9 +270,14 @@ Każdy z tych błędów JP już raz poprawiał. Pełna analiza: `docs/WNIOSKI-Z-
    ```json
    {"verdict": "ok" | "fix",
     "summary": "2–3 zdania po polsku",
-    "errors":   [{"stop_key": "…|null", "field": "a|b|c|d|e|f|g|meta|plan", "problem": "…", "fix": "co dokładnie poprawić"}],
+    "errors":   [{"stop_key": "…|null", "field": "a|b|c|d|e|f|g|meta|plan", "problem": "…", "fix": "co dokładnie poprawić",
+                  "old": "dosłowny cytat błędnego fragmentu z tekstu", "new": "poprawione brzmienie tego fragmentu albo \"\" = usuń"}],
     "warnings": [{"stop_key": "…|null", "field": "…", "problem": "…"}],
     "validator_exit": 0}
    ```
    `ok` tylko przy zerowej liczbie błędów walidatora i błędów merytorycznych. Uwagi (`warnings`)
    nie blokują. Każdy błąd ma konkretną instrukcję poprawki — autor ma ją wykonać bez zgadywania.
+   **`old` / `new` (poprawka bez autora):** gdy błąd da się naprawić podmianą fragmentu, podaj w `old` fragment
+   skopiowany z tekstu znak w znak (wystarczy część zdania, ale jednoznaczna), a w `new` jego poprawioną wersję:
+   brzmienie zgodne ze źródłem, bez nowych faktów, w tym samym stylu (bez długich myślników). Fakt bez potwierdzenia
+   = `new` z tym zdaniem bez faktu albo `""` (usuń). Gdy poprawka wymaga napisania czegoś od nowa, pomiń `old`/`new`.

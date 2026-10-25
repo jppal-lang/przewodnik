@@ -560,6 +560,30 @@ async function guidelinesVersion() {
 const stampGuidelines = async (version, label, ok) => label && q(`UPDATE public.city_versions SET content = content || jsonb_build_object('guidelines', $3::text, 'guidelines_ok', $4::boolean)
   WHERE city_slug = $1 AND version = $2`, [slug, version, label, !!ok]);
 
+// ── podmiany wskazane przez kontrolę Claude: {old, new} w tekście przystanku (albo opisu miasta) i w jego blokach ──
+// Dopasowanie dosłowne, potem bez różnic w spacjach i cudzysłowach; w blokach z przypisami [n] także z pominięciem przypisów.
+function applyReplacements(trip, blocks, errors) {
+  const done = new Set(), changes = [];
+  const norm = (t) => t.replace(/[„”"«»]/g, '"').replace(/[’‘]/g, "'").replace(/\s+/g, ' ');
+  const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ch = (c) => c === '"' ? '[„”"«»]' : c === "'" ? "['’‘]" : /[.,;:!?]/.test(c) ? '(?:\\s*\\[\\d+\\])*' + esc(c) : esc(c);
+  const loose = (old) => new RegExp(norm(old).trim().split(' ').map(w => [...w].map(ch).join('')).join('(?:\\s+|\\s*\\[\\d+\\]\\s*)'));
+  const tidy = (t) => t.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').replace(/\.\s*\./g, '.').trim();
+  const walk = (o, fn) => { if (typeof o === 'string') return fn(o); if (Array.isArray(o)) return o.map(x => walk(x, fn)).filter(x => x !== ''); if (o && typeof o === 'object') { for (const k of Object.keys(o)) o[k] = walk(o[k], fn); return o; } return o; };
+  errors.forEach((e, i) => {
+    if (typeof e.old !== 'string' || e.old.trim().length < 6 || typeof e.new !== 'string') return;
+    const sk = e.stop_key ?? null, re = loose(e.old);
+    const targets = sk ? [[trip.content.stops, sk], [blocks?.[sk] ?? {}, 'marked']] : [[trip.content, 'city']];
+    let hit = false;
+    for (const [obj, key] of targets) if (obj?.[key] != null) obj[key] = walk(obj[key], (t) => {
+      if (!re.test(t)) return t;
+      hit = true; return tidy(t.replace(re, e.new));
+    });
+    if (hit) { done.add(i); changes.push({ path: sk ? `stops.${sk}` : 'city', before: e.old, after: e.new, why: String(e.problem).slice(0, 200), auto: true }); }
+  });
+  return { done, changes };
+}
+
 // ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
 const MAX_ROUNDS = +(opt('--rounds') ?? 3);
 async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
@@ -568,9 +592,14 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     if (labelOf) WORK_LABEL = labelOf(round);
     log(`${slug}: ④c poprawki po kontroli całej trasy — runda ${round}/${MAX_ROUNDS} (${rv.errors.length} błędów)`);
     if (round === 1) await notify(channel, `🔧 ${name}: kontrola całej trasy — ${rv.errors.length} błędów. Poprawiam i sprawdzam w rundach (najwyżej ${MAX_ROUNDS}), zanim trafi do Ciebie.`);
-    const cms = rv.errors.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
+    // 1) podmiany wskazane przez kontrolę (old → new): skrypt, zero tokenów; 2) reszta przez Gemini (tylko to, czego nie da się podmienić)
+    const mech = applyReplacements(trip, blocks, rv.errors);
+    const rest = rv.errors.filter((_, i) => !mech.done.has(i));
+    log(`${slug}: poprawki bez modelu: ${mech.done.size} z ${rv.errors.length} · do Gemini: ${rest.length}`);
+    const cms = rest.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
       body: String(e.problem) + (e.fix ? ' → ' + e.fix : '') }));
-    const ap = await applyComments(trip, blocks, cms, cityTitle, 'Claude');
+    const ap = cms.length ? await applyComments(trip, blocks, cms, cityTitle, 'Claude') : { changes: [], summaries: [] };
+    ap.changes = [...mech.changes, ...ap.changes];
     persist?.();
     log(`${slug}: ④ kontrola Claude — cała trasa po rundzie ${round} (${ap.changes.length} zmian)`);
     let next;

@@ -265,8 +265,9 @@ szczegółu to nie sprzeczność.
 ${rulesText() || '(brak zasad redakcyjnych)'}
 Odpowiedz wyłącznie JSON-em:
 {"units": [{"key": "…", "claims": [{"field": "…", "claim": "…", "status": "confirmed|contradicted|not_in_source",
-            "source": 0, "evidence": "co mówi źródło (krótko, własnymi słowami)", "fix": "poprawne brzmienie — tylko przy contradicted"}],
-            "rules": [{"rule_id": 0, "field": "…", "problem": "…", "fix": "…"}]}]}
+            "source": 0, "evidence": "co mówi źródło (krótko, własnymi słowami)",
+            "quote": "przy contradicted: błędny fragment skopiowany z tekstu znak w znak", "fix": "przy contradicted: ten fragment poprawiony zgodnie ze źródłem (bez nowych faktów) albo \"\" = usuń"}],
+            "rules": [{"rule_id": 0, "field": "…", "problem": "…", "quote": "fragment z tekstu znak w znak", "fix": "poprawiony fragment albo \"\""}]}]}
 
 FRAGMENTY:
 ${JSON.stringify(todo.map(u => ({ key: u.key, name: u.name, category: u.category, text: u.text,
@@ -299,7 +300,8 @@ ${JSON.stringify(todo.map(u => ({ key: u.key, name: u.name, category: u.category
       else if (c.status === 'contradicted') {
         facts.contradicted++;
         facts.issues.push({ stop_key: sk, claim: c.claim, evidence: c.evidence, url: c.url });
-        errors.push({ stop_key: sk, field: c.field, problem: `Niezgodne ze źródłem (${c.source_title ?? '?'}): „${c.claim}” — źródło: ${c.evidence}`, fix: c.fix ?? null });
+        errors.push({ stop_key: sk, field: c.field, problem: `Niezgodne ze źródłem (${c.source_title ?? '?'}): „${c.claim}” — źródło: ${c.evidence}`, fix: c.fix ?? null,
+          ...(c.quote ? { old: c.quote, new: c.fix ?? '' } : {}) });
       } else facts.unverified++;
     }
     for (const s of r.sources ?? []) if (used.has(s.url)) facts.sources.push({ stop_key: sk, kind: s.kind, title: s.title, url: s.url });
@@ -312,7 +314,8 @@ ${JSON.stringify(todo.map(u => ({ key: u.key, name: u.name, category: u.category
     if (unv.length && !NO_WIKI.includes(u.category))
       warnings.push({ stop_key: sk, problem: `Fakty bez źródła (${unv.length}) — potrzebny link do Wikipedii albo strony lokalnej: ${unv.slice(0, 3).map(c => c.claim).join('; ')}` });
     for (const v of r.rules ?? [])
-      errors.push({ stop_key: sk, field: v.field, problem: `Zasada #${v.rule_id}: ${v.problem}`, fix: v.fix ?? null, rule_id: v.rule_id });
+      errors.push({ stop_key: sk, field: v.field, problem: `Zasada #${v.rule_id}: ${v.problem}`, fix: v.fix ?? null, rule_id: v.rule_id,
+        ...(v.quote ? { old: v.quote, new: v.fix ?? '' } : {}) });
     if (u.stop && FOOD.includes(u.category)) { const f = foodCheck(u.stop, u.name); errors.push(...f.errors); warnings.push(...f.warnings); }
   }
   return { errors, warnings, facts };
