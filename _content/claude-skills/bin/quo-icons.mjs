@@ -115,7 +115,8 @@ async function one(ic, notes = null) {
 try {
   if (cmd === 'gen') {
     const only = opt('--only')?.split(',').map(Number);
-    const list = CFG.icons.filter(ic => only ? only.includes(ic.n) : (process.argv.includes('--force') || !state[ic.n]?.v));
+    let list = CFG.icons.filter(ic => only ? only.includes(ic.n) : (process.argv.includes('--force') || !state[ic.n]?.v));
+    if (process.argv.includes('--next')) list = list.slice(0, 1);   // po jednej: JP ocenia, „ok” uruchamia następną
     for (const ic of list) {
       try { await one(ic); } catch (e) { log(`ikona ${ic.n}: ${e.message}`); if (/429|quota|RESOURCE_EXHAUSTED|403/.test(e.message)) { console.log(`STOP: ${e.message}`); break; } }
     }
@@ -155,10 +156,10 @@ try {
         if (m.author?.id !== JP) continue;
         const t = String(m.content || '').trim();
         let x;
-        if ((x = t.match(/^(?:ok|akceptuj[eę]|zatwierdzam)\s*#?(\d+)$/i) || t.match(/^#?(\d+)\s*(?:ok|akceptuj[eę])$/i))) { if (!done.has('ok' + x[1])) { done.add('ok' + x[1]); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', x[1]], { timeout: 10 * 60_000 }); } }
-        else if (/^(ok|akceptuj[eę])$/i.test(t)) { const n = lastPosted(); if (n && !done.has('ok' + n)) { done.add('ok' + n); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', n], { timeout: 10 * 60_000 }); } }
+        if ((x = t.match(/^(?:ok|akceptuj[eę]|zatwierdzam)\s*#?(\d+)$/i) || t.match(/^#?(\d+)\s*(?:ok|akceptuj[eę])$/i))) { if (!done.has('ok' + x[1])) { done.add('ok' + x[1]); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', x[1]], { timeout: 10 * 60_000 }); await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 }); } }
+        else if (/^(ok|akceptuj[eę])$/i.test(t)) { const n = lastPosted(); if (n && !done.has('ok' + n)) { done.add('ok' + n); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', n], { timeout: 10 * 60_000 }); await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 }); } }
         else if ((x = t.match(/^#?(\d+)\s*[:.\-]\s*([\s\S]{3,})$/))) await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', x[1], x[2].slice(0, 800)], { timeout: 10 * 60_000 });
-        else if (/^(nast[eę]pne|dalej|generuj( dalej)?)$/i.test(t)) await run('node', [join(DIR, 'quo-icons.mjs'), 'gen'], { timeout: 60 * 60_000 });
+        else if (/^(nast[eę]pne|dalej|generuj( dalej)?)$/i.test(t)) await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 });
       }
     } finally { try { (await import('node:fs')).unlinkSync(LOCK); } catch {} }
   } else {
