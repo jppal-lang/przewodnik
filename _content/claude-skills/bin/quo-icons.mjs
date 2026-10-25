@@ -137,6 +137,30 @@ try {
     const ch = await ensureChannel('quo-ikony', 'Grafiki');
     const { notify } = await import('./draft-lib.mjs');
     await notify(ch, `✅ Quo #${ic.n} (${ic.place}) zaakceptowana: media/icons/quo-${ic.slug}-128/256/512.webp. Wstawienie na stronę: Claude.`);
+  } else if (cmd === 'watch') {
+    // Hermes nie słucha #quo-ikony — cron co 2 min czyta odpowiedzi JP w kanale (JP 2026-10-25):
+    // „ok 7” / „7 ok” / „ok7” → akceptacja; „7: uwagi” → poprawka; „następne” / „dalej” → kolejna niezaakceptowana; samo „ok” → ostatnia wrzucona.
+    const LOCK = join(WORK, 'watch.lock');
+    if (existsSync(LOCK) && Date.now() - statSync(LOCK).mtimeMs < 30 * 60_000) process.exit(0);
+    writeFileSync(LOCK, String(process.pid));
+    try {
+      const ch = await ensureChannel('quo-ikony', 'Grafiki');
+      const JP = env('QUOLINO_JP_DISCORD_ID') || '946118130709692476';
+      const msgs = await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${state._last ? `&after=${state._last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json();
+      const list = (Array.isArray(msgs) ? msgs : []).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
+      const lastPosted = () => Object.entries(state).filter(([k, v]) => /^\d+$/.test(k) && v.status === 'review').sort((a, b) => (a[1].history.at(-1)?.at > b[1].history.at(-1)?.at ? -1 : 1))[0]?.[0];
+      const done = new Set();
+      for (const m of list) {
+        state._last = m.id; save();
+        if (m.author?.id !== JP) continue;
+        const t = String(m.content || '').trim();
+        let x;
+        if ((x = t.match(/^(?:ok|akceptuj[eę]|zatwierdzam)\s*#?(\d+)$/i) || t.match(/^#?(\d+)\s*(?:ok|akceptuj[eę])$/i))) { if (!done.has('ok' + x[1])) { done.add('ok' + x[1]); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', x[1]], { timeout: 10 * 60_000 }); } }
+        else if (/^(ok|akceptuj[eę])$/i.test(t)) { const n = lastPosted(); if (n && !done.has('ok' + n)) { done.add('ok' + n); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', n], { timeout: 10 * 60_000 }); } }
+        else if ((x = t.match(/^#?(\d+)\s*[:.\-]\s*([\s\S]{3,})$/))) await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', x[1], x[2].slice(0, 800)], { timeout: 10 * 60_000 });
+        else if (/^(nast[eę]pne|dalej|generuj( dalej)?)$/i.test(t)) await run('node', [join(DIR, 'quo-icons.mjs'), 'gen'], { timeout: 60 * 60_000 });
+      }
+    } finally { try { (await import('node:fs')).unlinkSync(LOCK); } catch {} }
   } else {
     for (const ic of CFG.icons) console.log(`${String(ic.n).padStart(2)} ${ic.slug.padEnd(20)} ${state[ic.n]?.status ?? 'nie było'}${state[ic.n]?.v ? ' v' + state[ic.n].v : ''}`);
   }
