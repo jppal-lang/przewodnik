@@ -642,6 +642,14 @@ async function recheckMain() {
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle; STOPS_N = trip.meta.stops.length;
   await loadRules(q);
+  // --patch '[{"find":"…","replace":"…"}]': ręczne poprawki dosłowne (JP/Claude) przed kontrolą — w treści, meta i blokach (JP 2026-10-25)
+  const PATCH = opt('--patch') ? JSON.parse(opt('--patch')) : null, patchChanges = [];
+  if (PATCH) {
+    const walk = (o) => { if (typeof o === 'string') { let t = o; for (const p of PATCH) if (t.includes(p.find)) { t = t.split(p.find).join(p.replace); patchChanges.push({ before: p.find, after: p.replace, why: 'poprawka ręczna', auto: true }); } return t.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1'); }
+      if (Array.isArray(o)) return o.map(walk); if (o && typeof o === 'object') { for (const k of Object.keys(o)) o[k] = walk(o[k]); } return o; };
+    trip.content = walk(trip.content); trip.meta = walk(trip.meta); for (const k of Object.keys(blocks)) blocks[k] = walk(blocks[k]);
+    log(`${slug}: poprawki ręczne: ${patchChanges.length} podmian z ${PATCH.length}`);
+  }
   log(`${slug}: ④ kontrola Claude — cała trasa (szkic v${cur.version})`);
   let rv;
   try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
@@ -655,13 +663,14 @@ async function recheckMain() {
     log(`${slug}: ⑤ zapis ${label} (runda ${round})`);
     const t = { meta: trip.meta, content: noDash(trip.content) };
     for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
-    saved = await saveDraft(q, t, { note: `${label}: poprawki po kontroli całej trasy, runda ${round} (błędy ${rvr.rounds.map(x => x.errors).join(' → ')})`, source: 'revise', changes: ap.changes ?? [], review: rvr });
+    saved = await saveDraft(q, t, { note: round === 0 ? `${label}: poprawki ręczne i kontrola całej trasy (błędy ${rvr.errors?.length ?? 0})` : `${label}: poprawki po kontroli całej trasy, runda ${round} (błędy ${rvr.rounds.map(x => x.errors).join(' → ')})`, source: 'revise', changes: ap.changes ?? [], review: rvr });
     await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
                trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks), label]);
     await stampGuidelines(saved.version, gl, rvr.verdict === 'ok');
   };
   const [c0] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
   rv = await fixLoop(trip, blocks, cityTitle, rv, null, saveRound, (round) => `v${base}${String.fromCharCode(96 + c0.n + round)}`);
+  if (!saved && PATCH) await saveRound(0, rv, { changes: patchChanges });   // same poprawki ręczne, bez rund
   if (!saved) { await notify(channel, `✅ ${cityTitle}: kontrola całej trasy v${base} bez błędów — nic do poprawy.`); return; }
   const path = rv.rounds.map(x => x.errors).join(' → ');
   event(`gotowe: szkic ${label} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });
