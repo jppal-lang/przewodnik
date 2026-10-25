@@ -586,7 +586,7 @@ function applyReplacements(trip, blocks, errors) {
     });
     // opis zabytku nie może przez wycięcie spaść poniżej minimum walidatora (Frasassi v5d, JP 2026-10-25) — wtedy cofamy i oddajemy do przepisania
     const cat = sk ? trip.meta?.stops?.find(x => x.stop_key === sk)?.category : null;
-    if (hit && sk && !PRACTICAL_CATS.includes(cat) && words() < w0 && words() < MIN_DESC_WORDS) {
+    if (hit && sk && !PRACTICAL_CATS.has(cat) && words() < w0 && words() < MIN_DESC_WORDS) {
       targets.forEach(([obj, key], j) => { if (snap[j] != null) obj[key] = JSON.parse(snap[j]); });
       hit = false;
     }
