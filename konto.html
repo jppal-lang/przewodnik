@@ -19,6 +19,11 @@
   .acc-auth__txt{margin:0;flex:1 1 280px}
   .acc-auth__txt b{word-break:break-all}
   .acc-auth__act{display:flex;gap:10px;flex-wrap:wrap}
+  /* Quo w panelu (ikony z #quo-ikony, JP 2026-10-25) */
+  .acc-head .wrap-wide{position:relative}
+  .acc-quo--head{position:absolute;right:var(--gut,20px);bottom:-18px;width:clamp(96px,16vw,170px);height:auto;pointer-events:none}
+  .acc-quo{float:right;width:clamp(80px,14vw,112px);height:auto;margin:-8px 0 8px 12px}
+  @media(max-width:560px){.acc-head__title,.acc-head__sub{padding-right:96px}}
 </style>
 </head>
 <body class="acc">
@@ -43,6 +48,7 @@
     <p class="label acc-head__eyebrow" data-t="page.account.title">Twoje konto</p>
     <h1 class="acc-head__title" data-t="page.account.h1">Album rodziny</h1>
     <p class="acc-head__sub" id="accSum"><span data-t="page.account.loading">Ładuję…</span></p>
+    <img class="acc-quo--head" src="/media/icons/quo-album-256.webp" srcset="/media/icons/quo-album-256.webp 1x, /media/icons/quo-album-512.webp 2x" width="160" height="160" alt="" decoding="async" loading="lazy">
   </div>
 </header>
 
@@ -98,6 +104,7 @@
   <!-- ═══ DZIECI ═══ -->
   <section class="acc-panel" id="dzieci" role="tabpanel" aria-labelledby="t-dzieci" hidden>
     <div class="acc-narrow">
+      <img class="acc-quo" src="/media/icons/quo-dzieci-256.webp" srcset="/media/icons/quo-dzieci-256.webp 1x, /media/icons/quo-dzieci-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
       <h2 data-t="page.account.tab.kids">Dzieci</h2>
       <p class="acc-sec__sub" data-t="page.account.kids_sub">Tylko wymyślone ksywki — nie wpisujcie prawdziwych imion. Ksywki zostają na tym urządzeniu, nie wysyłamy ich na serwer. Dziecko wybiera ksywkę i swojego Quo po zeskanowaniu QR.</p>
       <ul class="acc-kids" id="accKids"></ul>
@@ -125,6 +132,7 @@
         </div>
       </div>
       <div class="acc-box">
+        <img class="acc-quo" src="/media/icons/quo-kod-256.webp" srcset="/media/icons/quo-kod-256.webp 1x, /media/icons/quo-kod-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
         <h2 data-t="page.account.code_h">Masz kod?</h2>
         <p class="acc-sec__sub" data-t="page.account.code_sub">Kod na darmową wycieczkę albo zniżkę — od nas, z wyzwania lub od partnera.</p>
         <form class="acc-code" id="accCode" autocomplete="off" novalidate>
@@ -141,6 +149,7 @@
   <!-- ═══ PRYWATNOŚĆ ═══ -->
   <section class="acc-panel" id="prywatnosc" role="tabpanel" aria-labelledby="t-prywatnosc" hidden>
     <div class="acc-narrow">
+      <img class="acc-quo" src="/media/icons/quo-prywatnosc-256.webp" srcset="/media/icons/quo-prywatnosc-256.webp 1x, /media/icons/quo-prywatnosc-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
       <h2 data-t="page.account.tab.privacy">Prywatność</h2>
       <p class="acc-sec__sub" data-t="page.account.priv_sub">Przechowujemy tylko Twój adres e-mail. Serwer stoi w UE.</p>
       <ul class="acc-priv">

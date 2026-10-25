@@ -191,7 +191,7 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     $('tabUp').setAttribute('aria-selected', String(v === 'vUp'));
     if (opened[v] !== undefined) opened[v] = Date.now();
     // Quo dopasowany do ekranu (ikony z #quo-ikony, JP 2026-10-25); brak ikony → zostaje poprzednia
-    var QUO = { vIn: 'zaloguj', vUp: 'rejestracja', vForgot: 'reset-hasla', vSent: 'sprawdz-skrzynke', vNewPass: 'nowe-haslo', vMe: 'zaloguj' };
+    var QUO = { vIn: 'zaloguj', vUp: 'rejestracja', vForgot: 'reset-hasla', vSent: 'sprawdz-skrzynke', vNewPass: 'nowe-haslo', vMe: 'zalogowany' };
     if (QUO[v]) { var q = $('lgQuo'); q.src = '/media/icons/quo-' + QUO[v] + '-256.webp'; q.srcset = '/media/icons/quo-' + QUO[v] + '-256.webp 1x, /media/icons/quo-' + QUO[v] + '-512.webp 2x'; }
     var t = v === 'vNewPass' ? null : titleFor(v);   // vNewPass: tytuł ustawia ścieżka odzyskiwania hasła (jak dotąd)
     if (t) { $('lgTitle').textContent = t; titled = v; }
