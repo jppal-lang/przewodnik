@@ -23,9 +23,11 @@ const TOKEN = env('DISCORD_BOT_TOKEN');
 const [cmd = 'status', a1, a2] = process.argv.slice(2);
 const opt = (n) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : null; };
 mkdirSync(WORK, { recursive: true });
-const STATE_F = join(WORK, 'state.json');
+const STATE_F = join(WORK, 'state.json'), LAST_F = join(WORK, 'watch-last.txt');
 const state = existsSync(STATE_F) ? JSON.parse(readFileSync(STATE_F, 'utf8')) : {};
 const save = () => writeFileSync(STATE_F, JSON.stringify(state, null, 2));
+// stan odtwarzany z plików, gdyby state.json zgubił wpis (np. nadpisany): najwyższa wersja NN-slug-vK.png
+for (const f of readdirSync(WORK)) { const m = f.match(/^(\d+)-.+-v(\d+)\.png$/); if (m) { const n = +m[1]; state[n] ??= { v: 0, status: 'review', history: [] }; if (+m[2] > state[n].v) state[n].v = +m[2]; } }
 const icon = (n) => CFG.icons.find(x => x.n === +n) ?? (() => { throw new Error(`nie ma ikony nr ${n}`); })();
 const b64 = (p) => readFileSync(p).toString('base64');
 const mime = (p) => p.endsWith('.webp') ? 'image/webp' : p.endsWith('.jpg') ? 'image/jpeg' : 'image/png';
@@ -217,12 +219,14 @@ try {
     try {
       const ch = await ensureChannel('quo-ikony', 'Grafiki');
       const JP = env('QUOLINO_JP_DISCORD_ID') || '946118130709692476';
-      const msgs = await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${state._last ? `&after=${state._last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json();
+      // ostatnia przeczytana wiadomość w osobnym pliku: state.json zapisują procesy potomne (ok, fix, gen) — nie nadpisujemy ich zmian
+      const last = existsSync(LAST_F) ? readFileSync(LAST_F, 'utf8').trim() : (state._last ?? '');
+      const msgs = await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${last ? `&after=${last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json();
       const list = (Array.isArray(msgs) ? msgs : []).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
-      const lastPosted = () => Object.entries(state).filter(([k, v]) => /^\d+$/.test(k) && v.status === 'review').sort((a, b) => (a[1].history.at(-1)?.at > b[1].history.at(-1)?.at ? -1 : 1))[0]?.[0];
+      const lastPosted = () => Object.entries(JSON.parse(readFileSync(STATE_F, 'utf8'))).filter(([k, v]) => /^\d+$/.test(k) && v.status === 'review').sort((a, b) => (a[1].history.at(-1)?.at > b[1].history.at(-1)?.at ? -1 : 1))[0]?.[0];
       const done = new Set();
       for (const m of list) {
-        state._last = m.id; save();
+        writeFileSync(LAST_F, m.id);
         if (m.author?.id !== JP) continue;
         const t = String(m.content || '').trim();
         let x;
