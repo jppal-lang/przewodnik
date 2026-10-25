@@ -152,7 +152,7 @@ Bez emoji w wartościach. Fakty, godziny i ceny tylko pewne — inaczej null / "
 
 // Minimum głębokości opisu rodzica (JP, 2026-10-13) — wspólny tekst dla pisania i poprawek
 export const DEPTH_TEXT = `GŁĘBOKOŚĆ OPISU RODZICA (dolna granica, nie cel; poniżej = błąd walidatora): zabytek/kościół/muzeum/zamek/synagoga/dom —
-4 akapity i 300 słów (zwykle 5–8); ulica/punkt widokowy/zdjęcie — 2 akapity i 120 słów; parking i lokale — 1 akapit.
+4 akapity i 300 słów (zwykle 5–8), mały obiekt (monument: most, wieża, pomnik) 3 akapity i 180 słów; ulica/punkt widokowy/zdjęcie — 2 akapity i 120 słów; parking i lokale — 1 akapit.
 Szkielet zabytku: (1) hak — dlaczego warto tu stanąć; (2) historia i ludzie; (3) „Kim był/była…”; (4) co oglądać, z dokładnym miejscem.
 Legenda, ciekawostka i popkultura NIE wchodzą do opisu (standard docs/TRESC-PRZYSTANKU.md, JP 2026-10-18) — mają własne bloki,
 które pisze stop-content.mjs; w opisie najwyżej jedno zdanie-zapowiedź. Każdy akapit wnosi nową treść; bez wypełniaczy („zachwyca”,

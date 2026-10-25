@@ -56,7 +56,8 @@ NO_QUEST = {"parking", "restaurant", "icecream", "sweets"}
 SIGHTS = {"monument", "church", "museum", "castle", "house", "synagogue"}
 NOTE_FIELDS = set("abcdefg")
 # minimum głębokości opisu rodzica: kategoria → (akapity, słowa). Dolna granica, nie cel.
-SIGHT_MIN = (4, 300)          # monument, church, museum, castle, house, synagogue
+SIGHT_MIN = (4, 300)          # church, museum, castle, house, synagogue
+SMALL_MIN = (3, 180)          # monument: most, wieża, pomnik, fontanna (JP 2026-10-25: małe obiekty mają mało źródeł)
 PLACE_MIN = (2, 120)          # street, viewpoint, photo, park
 PLACE = {"street", "viewpoint", "photo", "park"}
 PARA_MIN_WORDS, PARA_MIN_SENTENCES = 40, 2   # akapit zabytku: min. ok. 40 słów i 2+ zdania (nie tnij tekstu na jednozdaniowe „akapity”)
@@ -322,7 +323,7 @@ def validate_city(folder: Path):
                 else:
                     paras = [x for x in (st.get("desc_paragraphs") or []) if isinstance(x, str)]
                     words = sum(len(WORD.findall(x)) for x in paras)
-                    need = SIGHT_MIN if cat in SIGHTS else PLACE_MIN if cat in PLACE else None
+                    need = SMALL_MIN if cat == "monument" else SIGHT_MIN if cat in SIGHTS else PLACE_MIN if cat in PLACE else None
                     if need and (n_par < need[0] or words < need[1]):
                         err(slug, f"{code}: {key} — opis rodzica poniżej minimum ({cat}: {n_par} akap., {words} słów; "
                                   f"minimum {need[0]} akapity i {need[1]} słów). Rozbuduj z researchu wg szkieletu: hak, "

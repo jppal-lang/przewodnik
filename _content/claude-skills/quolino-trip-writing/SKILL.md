@@ -41,7 +41,8 @@ detalu/faktu/symbolu/dzieła/legendy, 5. quest, 6. wskazówka.
 Quolino jest dla całej rodziny: **rodzic ma się dowiedzieć czegoś, czego nie wiedział.** Opis nie ma górnego limitu
 długości, ale ma **dolną granicę**. To minimum, nie cel — poniżej niego walidator zgłasza **błąd**, nie uwagę:
 
-- zabytek, kościół, muzeum, zamek, synagoga, dom: **4 akapity i 300 słów** (zwykle 5–8 akapitów);
+- kościół, muzeum, zamek, synagoga, dom: **4 akapity i 300 słów** (zwykle 5–8 akapitów);
+- mały obiekt (`monument`: most, wieża, pomnik, fontanna): **3 akapity i 180 słów** (JP 2026-10-25) — nie dopisuj faktów bez źródła, żeby nabić słowa;
 - ulica, punkt widokowy, miejsce na zdjęcie, park: **2 akapity i 120 słów**;
 - parking i lokale (restauracja, lody, słodycze): 1 akapit.
 
