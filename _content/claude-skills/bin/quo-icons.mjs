@@ -234,6 +234,8 @@ try {
         else if (/^(ok|akceptuj[eę])$/i.test(t)) { const n = lastPosted(); if (n && !done.has('ok' + n)) { done.add('ok' + n); await run('node', [join(DIR, 'quo-icons.mjs'), 'ok', n], { timeout: 10 * 60_000 }); await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 }); } }
         else if ((x = t.match(/^#?(\d+)\s*[:.\-]\s*([\s\S]{3,})$/))) await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', x[1], x[2].slice(0, 800)], { timeout: 10 * 60_000 });
         else if (/^(nast[eę]pne|dalej|generuj( dalej)?)$/i.test(t)) await run('node', [join(DIR, 'quo-icons.mjs'), 'gen', '--next'], { timeout: 10 * 60_000 });
+        // uwagi bez numeru („inna tarcza”) → poprawka ostatniej wrzuconej ikony (JP 2026-10-25)
+        else if (t.length >= 3) { const n = lastPosted(); if (n) await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', n, t.slice(0, 800)], { timeout: 10 * 60_000 }); }
       }
     } finally { try { (await import('node:fs')).unlinkSync(LOCK); } catch {} }
   } else {
