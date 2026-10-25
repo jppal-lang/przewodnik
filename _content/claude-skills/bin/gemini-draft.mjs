@@ -656,6 +656,16 @@ async function recheckMain() {
     trip.content = walk(trip.content); trip.meta = walk(trip.meta); for (const k of Object.keys(blocks)) blocks[k] = walk(blocks[k]);
     log(`${slug}: poprawki ręczne: ${patchChanges.length} podmian z ${PATCH.length}`);
   }
+  // --set '[{"path":"meta.duration_hours","value":6}]': ręczne ustawienie pola (liczby, godziny) — ścieżka od korzenia {meta, content}
+  for (const st of (opt('--set') ? JSON.parse(opt('--set')) : [])) {
+    const ks = st.path.split('.'), last = ks.pop(); let o = trip;
+    for (const k of ks) o = o?.[/^\d+$/.test(k) ? +k : k];
+    if (o && last in o) { patchChanges.push({ before: String(o[last]), after: String(st.value), why: `poprawka ręczna (${st.path})`, auto: true }); o[last] = st.value; log(`${slug}: ustawiono ${st.path} = ${st.value}`); }
+    else log(`${slug}: UWAGA brak pola ${st.path}`);
+  }
+  // klucze z wartością null spoza formatu (np. „notes”) — walidator ich nie przyjmuje
+  const dropNull = (o) => { if (o && typeof o === 'object') for (const k of Object.keys(o)) { if (k === 'notes' && o[k] == null) delete o[k]; else dropNull(o[k]); } };
+  dropNull(trip.content);
   log(`${slug}: ④ kontrola Claude — cała trasa (szkic v${cur.version})`);
   let rv;
   try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
@@ -676,7 +686,7 @@ async function recheckMain() {
   };
   const [c0] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
   rv = await fixLoop(trip, blocks, cityTitle, rv, null, saveRound, (round) => `v${base}${String.fromCharCode(96 + c0.n + round)}`);
-  if (!saved && PATCH) await saveRound(0, rv, { changes: patchChanges });   // same poprawki ręczne, bez rund
+  if (!saved && (PATCH || opt('--set'))) await saveRound(0, rv, { changes: patchChanges });   // same poprawki ręczne, bez rund
   if (!saved) { await notify(channel, `✅ ${cityTitle}: kontrola całej trasy v${base} bez błędów — nic do poprawy.`); return; }
   const path = rv.rounds.map(x => x.errors).join(' → ');
   event(`gotowe: szkic ${label} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });
