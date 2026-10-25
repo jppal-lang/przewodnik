@@ -43,7 +43,9 @@ let lastStep = Date.now(), lastMsg = 'start', stallSent = 0;
 const RUN = `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}-${process.pid}`;
 let STOPS_N = null, STAGE = 0;
 const STAGE_OF = (m) => /⑤ zapis/.test(m) ? 6 : /④c|cała trasa/.test(m) ? 5 : /④/.test(m) ? 4 : /③|bloki /.test(m) ? 3 : /②/.test(m) ? 2 : /①|research miasta/.test(m) ? 1 : /poprawki — /.test(m) && REVISE ? 8 : null;
+let WORK_LABEL = null;   // wersja, nad którą trwa praca (v5b) — dashboard pokazuje ją na karcie
 function event(msg, { stage = null, status = 'running' } = {}) {
+  if (WORK_LABEL && !/^\[v\d/.test(msg)) msg = `[${WORK_LABEL}] ${msg}`;
   const st = stage ?? STAGE_OF(msg); if (st) STAGE = Math.max(STAGE, st);
   const k = +(msg.match(/(?:przystanek|kontrola Claude(?: po poprawkach[^—]*)? —|poprawki(?: po kontroli)? —) (\d+)/)?.[1] ?? 0) || null;
   const q2 = globalThis.__q; if (!q2) return;
@@ -550,9 +552,10 @@ const stampGuidelines = async (version, label, ok) => label && q(`UPDATE public.
 
 // ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
 const MAX_ROUNDS = +(opt('--rounds') ?? 3);
-async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound) {
+async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
   const first = rv, history = [{ round: 0, errors: rv?.errors?.length ?? 0, facts: rv?.facts ?? null }];
   for (let round = 1; round <= MAX_ROUNDS && rv?.errors?.length; round++) {
+    if (labelOf) WORK_LABEL = labelOf(round);
     log(`${slug}: ④c poprawki po kontroli całej trasy — runda ${round}/${MAX_ROUNDS} (${rv.errors.length} błędów)`);
     if (round === 1) await notify(channel, `🔧 ${name}: kontrola całej trasy — ${rv.errors.length} błędów. Poprawiam i sprawdzam w rundach (najwyżej ${MAX_ROUNDS}), zanim trafi do Ciebie.`);
     const cms = rv.errors.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
@@ -599,7 +602,8 @@ async function recheckMain() {
                trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks), label]);
     await stampGuidelines(saved.version, gl, rvr.verdict === 'ok');
   };
-  rv = await fixLoop(trip, blocks, cityTitle, rv, null, saveRound);
+  const [c0] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
+  rv = await fixLoop(trip, blocks, cityTitle, rv, null, saveRound, (round) => `v${base}${String.fromCharCode(96 + c0.n + round)}`);
   if (!saved) { await notify(channel, `✅ ${cityTitle}: kontrola całej trasy v${base} bez błędów — nic do poprawy.`); return; }
   const path = rv.rounds.map(x => x.errors).join(' → ');
   event(`gotowe: szkic ${label} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });

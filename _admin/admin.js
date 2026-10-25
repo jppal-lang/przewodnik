@@ -455,6 +455,7 @@
   }
   function route() {
     var h = location.hash;
+    document.body.classList.toggle('is-prog', h === '#/postep');
     if (h === '#/baza-wiedzy') { showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
@@ -1205,73 +1206,117 @@
   function demoPipeline(path) {
     var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
     if (/pipeline_runs/.test(path)) return [
-      { run_id: 'demo-2', city_slug: 'frasassi', kind: 'draft', stage: 5, stop_k: null, stops_n: 7, last_message: 'frasassi: ④c poprawki po kontroli całej trasy (53 błędów)', status: 'running', started_at: iso(42), last_at: iso(2), steps: 61, gemini_tokens: 412000, gemini_calls: 23, claude_tokens: 1880000, claude_calls: 16, seconds: 2400 },
-      { run_id: 'demo-1', city_slug: 'gubbio', kind: 'draft', stage: 7, stop_k: null, stops_n: 9, last_message: 'gotowe: szkic v1 · wytyczne v03 · kontrola bez uwag', status: 'done', started_at: iso(300), last_at: iso(230), steps: 88, gemini_tokens: 655000, gemini_calls: 31, claude_tokens: 2400000, claude_calls: 22, seconds: 4200 }];
+      { run_id: 'demo-3', city_slug: 'frasassi', kind: 'revise', stage: 5, last_message: '[v5b] frasassi: ④ kontrola Claude po poprawkach (Claude) — 2 Grotte di Frasassi', status: 'running', started_at: iso(50), last_at: iso(1), steps: 30, gemini_tokens: 197000, gemini_calls: 8, claude_tokens: 1290000, claude_calls: 9, seconds: 3000 },
+      { run_id: 'demo-2', city_slug: 'frasassi', kind: 'revise', stage: 5, last_message: 'frasassi: poprawki — 3 Museo Speleo (7)', status: 'stopped', started_at: iso(60), last_at: iso(51), steps: 9, gemini_tokens: 97000, gemini_calls: 4, claude_tokens: 697000, claude_calls: 3, seconds: 600 },
+      { run_id: 'demo-1', city_slug: 'gubbio', kind: 'draft', stage: 3, stop_k: 4, stops_n: 9, last_message: 'gubbio: ③ bloki 4 Palazzo dei Consoli', status: 'running', started_at: iso(30), last_at: iso(2), steps: 22, gemini_tokens: 255000, gemini_calls: 11, claude_tokens: 0, claude_calls: 0, seconds: 1800 }];
     if (/pipeline_queue/.test(path)) return [{ id: 7, city_slug: 'todi', status: 'queued', request: '{"name":"Todi","region":"umbria"}', result: null, created_at: iso(20), finished_at: null }];
-    return [{ id: 1, run_id: 'demo-2', stage: 1, message: 'frasassi: ① research', created_at: iso(42), gemini_tokens: 16000, claude_tokens: 0 },
-            { id: 2, run_id: 'demo-2', stage: 5, message: 'frasassi: ④c poprawki po kontroli całej trasy (53 błędów)', created_at: iso(2), gemini_tokens: 412000, claude_tokens: 1880000 }];
+    if (/demo-3/.test(path)) return [
+      { id: 1, message: 'frasassi: ④ kontrola Claude — cała trasa (szkic v5)', created_at: iso(50), gemini_tokens: 0, claude_tokens: 300000 },
+      { id: 2, message: '[v5a] frasassi: ④c poprawki po kontroli całej trasy — runda 1/3 (40 błędów)', created_at: iso(44), gemini_tokens: 0, claude_tokens: 300000 },
+      { id: 3, message: '[v5a] frasassi: ⑤ zapis v5a (runda 1)', created_at: iso(20), gemini_tokens: 97000, claude_tokens: 900000 },
+      { id: 4, message: '[v5b] frasassi: ④c poprawki po kontroli całej trasy — runda 2/3 (39 błędów)', created_at: iso(20), gemini_tokens: 97000, claude_tokens: 900000 },
+      { id: 5, message: '[v5b] frasassi: ④ kontrola Claude po poprawkach (Claude) — 2 Grotte di Frasassi', created_at: iso(1), gemini_tokens: 197000, claude_tokens: 1290000 }];
+    return [{ id: 1, message: 'gubbio: ① research', created_at: iso(30), gemini_tokens: 16000, claude_tokens: 0 },
+            { id: 2, message: 'gubbio: ③ bloki 4 Palazzo dei Consoli', created_at: iso(2), gemini_tokens: 255000, claude_tokens: 0 }];
   }
   function tok(n) { n = +n || 0; return n >= 1e6 ? (n / 1e6).toFixed(2).replace('.', ',') + ' mln' : n >= 1e3 ? Math.round(n / 1e3) + ' tys.' : String(n); }
   function dur(sec) { sec = +sec || 0; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return h ? h + ' h ' + m + ' min' : m + ' min'; }
   function ago(iso) { var m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'przed chwilą' : m < 60 ? m + ' min temu' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min temu'; }
-  function stageBar(r) {
-    var st = r.kind === 'revise' ? null : Math.min(+r.stage || 0, 7);
-    if (st == null) return '<span class="adm-chip adm-chip--chg">poprawki</span>';
-    return '<ol class="adm-stages" aria-label="Etap ' + st + ' z 7">' + STAGES.map(function (l, i) {
+  // wersja, nad którą trwa praca: [v5b] na początku wpisu (nowe przebiegi) albo wyliczona z wpisów („zapis v5a” → v5b, „szkic v5” → v5a)
+  function workLabel(r, ev) {
+    var msgs = (ev || []).map(function (e) { return String(e.message || ''); }).concat([String(r.last_message || '')]);
+    for (var i = msgs.length - 1; i >= 0; i--) { var m = msgs[i].match(/^\[(v\d+[a-z]?)\]/); if (m) return m[1]; }
+    if (r.kind !== 'revise') { var g = msgs.join(' ').match(/szkic v(\d+)/g); return r.status === 'done' && g ? g.pop().replace('szkic ', '') : 'nowy szkic'; }
+    var saved = null, base = null;
+    msgs.forEach(function (s) { var a = s.match(/zapis (v\d+)([a-z])/); if (a) saved = [a[1], a[2]]; var b = s.match(/szkic (v\d+)\)/); if (b && !base) base = b[1]; });
+    if (r.status === 'done' || r.status === 'stopped') return saved ? saved[0] + saved[1] : base || '';
+    if (saved) return saved[0] + String.fromCharCode(saved[1].charCodeAt(0) + 1);
+    return base ? base + 'a' : '';
+  }
+  function rounds(ev) {
+    var out = [], max = 3, first = null;
+    (ev || []).forEach(function (e) {
+      var s = String(e.message || ''), m = s.match(/runda (\d+)\/(\d+) \((\d+) błęd/);
+      if (m) { out[+m[1] - 1] = +m[3]; max = +m[2]; }
+      var f = s.match(/kontroli całej trasy \((\d+) błęd/); if (f) first = +f[1];
+    });
+    return { errs: out, max: max, first: first };
+  }
+  function clean(s) { return String(s || '').replace(/^\[v\d+[a-z]?\]\s*/, '').replace(/^[a-z0-9-]+: /, '').replace(/[①②③④⑤]c?\s*/g, '').replace(/\s—\s/g, ' · '); }
+  function progressBlock(r, ev, label) {
+    if (r.kind === 'revise') {
+      var R = rounds(ev), cur = R.errs.length, base = label.replace(/[a-z]$/, '');
+      var cells = [];
+      for (var i = 1; i <= R.max; i++) {
+        var lab = base + String.fromCharCode(96 + i), st = i < cur || (i === cur && r.status === 'done') ? 'is-done' : i === cur && r.status !== 'stopped' ? 'is-now' : '';
+        cells.push('<li class="' + st + '"><b>' + esc(lab) + '</b><span>' + (R.errs[i - 1] != null ? 'do poprawy: ' + R.errs[i - 1] : i === cur ? 'w toku' : 'czeka') + '</span></li>');
+      }
+      return '<ol class="pg-rounds" aria-label="Rundy poprawek">' + cells.join('') + '</ol>' +
+        '<p class="pg-trend">Błędy w kontroli: <b>' + esc(R.errs.filter(function (x) { return x != null; }).join(' → ') || '—') + '</b></p>';
+    }
+    var st = Math.min(+r.stage || 0, 7);
+    return '<ol class="pg-stages" aria-label="Etap ' + st + ' z 7">' + STAGES.map(function (l, i) {
       var n = i + 1, cls = n < st || (n === st && r.status === 'done') ? 'is-done' : n === st ? 'is-now' : '';
       var extra = n === 3 && n === st && r.stop_k && r.stops_n ? ' ' + r.stop_k + '/' + r.stops_n : '';
-      return '<li class="' + cls + '" title="' + esc(l) + '">' + esc(l + extra) + '</li>';
+      return '<li class="' + cls + '"><span>' + esc(l + extra) + '</span></li>';
     }).join('') + '</ol>';
   }
   function openProgress() {
     state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
+    var openSteps = {};
     var draw = function () {
       return Promise.all([
-        api('/pipeline_runs?order=last_at.desc&limit=40'),
+        api('/pipeline_runs?order=last_at.desc&limit=60'),
         api('/pipeline_queue?status=in.(queued,running)&order=id.asc').catch(function () { return []; })
       ]).then(function (res) {
         var runs = res[0] || [], queue = res[1] || [];
-        var sumG = runs.reduce(function (s, r) { return s + (+r.gemini_tokens || 0); }, 0), sumC = runs.reduce(function (s, r) { return s + (+r.claude_tokens || 0); }, 0);
-        var html = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
-          '<span class="adm-cm__meta">odświeża się co 30 s · stan z ' + esc(when(new Date().toISOString())) + '</span></div>' +
-          '<article class="adm-sheet adm-prog"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Postęp prac</p>' +
-          '<h2 class="adm-sheet__title">Wycieczki w procesie</h2><p class="adm-sheet__sub">Research → szkic → bloki przystanków → kontrola przystanków → kontrola całej trasy → zapis. ' +
-          'Każdy krok ma sygnaturę czasu; tokeny liczone narastająco w przebiegu.</p></div></header>' +
-          '<section class="adm-sheet__sec"><div class="adm-sum">' + '<div class="adm-stat"><b>' + runs.filter(function (r) { return r.status === 'running'; }).length + '</b><span>pracuje</span></div>' +
-          '<div class="adm-stat"><b>' + runs.filter(function (r) { return r.status === 'stalled' || r.status === 'error'; }).length + '</b><span>stoi / błąd</span></div>' +
-          '<div class="adm-stat"><b>' + queue.filter(function (j) { return j.status === 'queued'; }).length + '</b><span>w kolejce</span></div>' +
-          '<div class="adm-stat"><b>' + tok(sumG) + '</b><span>tokeny Gemini (lista)</span></div><div class="adm-stat"><b>' + tok(sumC) + '</b><span>tokeny Claude (lista)</span></div></div></section>';
-        if (queue.length) html += '<section class="adm-sheet__sec"><h3>Kolejka</h3><ul class="adm-prog__q">' + queue.map(function (j) {
-          var req = {}; try { req = JSON.parse(j.request); } catch (e) { /* tekst */ }
-          return '<li><b>' + esc(req.name || j.city_slug) + '</b> <span class="adm-chip">' + (j.status === 'queued' ? 'czeka' : 'pracuje') + '</span> <span class="adm-cm__meta">#' + esc(j.id) + ' · dodane ' + esc(when(j.created_at)) + '</span></li>';
-        }).join('') + '</ul></section>';
-        html += '<section class="adm-sheet__sec"><h3>Przebiegi</h3>' + (runs.length ? '<div class="adm-prog__list">' + runs.map(function (r) {
-          return '<details class="adm-prog__run adm-prog__run--' + esc(r.status) + '" data-run="' + esc(r.run_id) + '"><summary>' +
-            '<span class="adm-prog__name"><a href="#/' + esc(r.city_slug) + '">' + esc(titleCase(r.city_slug)) + '</a> <span class="adm-chip' + (r.status === 'done' ? ' adm-chip--new' : r.status === 'running' ? ' adm-chip--chg' : r.status === 'stopped' ? '' : ' adm-chip--del') + '">' + esc(RUNST[r.status] || r.status) + '</span>' +
-            (r.kind === 'revise' ? ' <span class="adm-chip">poprawki</span>' : '') + '</span>' + stageBar(r) +
-            '<span class="adm-prog__meta"><span>start ' + esc(when(r.started_at)) + '</span><span>ostatni krok ' + esc(when(r.last_at)) + ' (' + esc(ago(r.last_at)) + ')</span><span>czas ' + esc(dur(r.seconds)) + '</span>' +
-            '<span>Gemini ' + esc(tok(r.gemini_tokens)) + ' tok. · ' + esc(r.gemini_calls) + ' zapytań</span><span>Claude ' + esc(tok(r.claude_tokens)) + ' tok. · ' + esc(r.claude_calls) + ' wywołań</span></span>' +
-            '<span class="adm-prog__last">' + esc(String(r.last_message || '').replace(/^[a-z0-9-]+: /, '').replace(/[①②③④⑤][bc]?\s*/g, '')) + '</span></summary><div class="adm-prog__ev">Ładuję kroki…</div></details>';
-        }).join('') + '</div>' : '<p class="adm-empty">Brak przebiegów — pojawią się przy pierwszej wycieczce w nowym procesie.</p>') + '</section></article>';
-        var open = {}; [].forEach.call($d.querySelectorAll('details[open][data-run]'), function (x) { open[x.getAttribute('data-run')] = 1; });
-        $d.innerHTML = html;
-        [].forEach.call($d.querySelectorAll('details[data-run]'), function (x) { if (open[x.getAttribute('data-run')]) { x.open = true; loadEvents(x); } });
+        // jedna karta na wycieczkę: najnowszy przebieg; starsze w historii karty
+        var by = {}, order = [];
+        runs.forEach(function (r) { if (!by[r.city_slug]) { by[r.city_slug] = []; order.push(r.city_slug); } by[r.city_slug].push(r); });
+        var mains = order.map(function (k) { return by[k][0]; });
+        return Promise.all(mains.map(function (r) { return api('/pipeline_events?run_id=eq.' + encodeURIComponent(r.run_id) + '&order=id.asc').catch(function () { return []; }); }))
+          .then(function (evs) { render(order, by, evs, queue, runs); });
       }).catch(function (e) {
-        $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><p class="adm-empty">Postęp prac niedostępny: ' + esc(e.message) +
-          '<br>Potrzebny SQL 2026-10-25-postep-prac.sql (zatwierdzenie wdrożenia).</p>';
+        $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><p class="adm-empty">Postęp prac niedostępny: ' + esc(e.message) + '</p>';
       });
     };
-    function loadEvents(x) {
-      api('/pipeline_events?run_id=eq.' + encodeURIComponent(x.getAttribute('data-run')) + '&order=id.asc').then(function (ev) {
-        var box = x.querySelector('.adm-prog__ev'); if (!box) return;
-        box.innerHTML = '<ol class="adm-prog__steps">' + (ev || []).map(function (e) {
-          return '<li><time>' + esc(new Date(e.created_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) + '</time> ' +
-            esc(String(e.message || '').replace(/^[a-z0-9-]+: /, '').replace(/[①②③④⑤][bc]?\s*/g, '')) + ' <span class="adm-cm__meta">G ' + esc(tok(e.gemini_tokens)) + ' · C ' + esc(tok(e.claude_tokens)) + '</span></li>';
-        }).join('') + '</ol>';
-      }).catch(function (e) { var box = x.querySelector('.adm-prog__ev'); if (box) box.textContent = e.message; });
+    function render(order, by, evs, queue, runs) {
+      var active = order.filter(function (k) { return by[k][0].status === 'running' || by[k][0].status === 'stalled'; }).length;
+      var sumG = runs.reduce(function (s, r) { return s + (+r.gemini_tokens || 0); }, 0), sumC = runs.reduce(function (s, r) { return s + (+r.claude_tokens || 0); }, 0);
+      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
+        '<span class="adm-cm__meta">odświeża się co 30 s · ' + esc(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</span></div>' +
+        '<section class="pg"><header class="pg-head"><div><p class="label">Postęp prac</p><h2>Wycieczki w procesie</h2></div>' +
+        '<dl class="pg-kpi"><div><dt>pracuje</dt><dd>' + active + '</dd></div><div><dt>w kolejce</dt><dd>' + queue.filter(function (j) { return j.status === 'queued'; }).length + '</dd></div>' +
+        '<div><dt>Gemini</dt><dd>' + tok(sumG) + '</dd></div><div><dt>Claude</dt><dd>' + tok(sumC) + '</dd></div></dl></header>';
+      if (queue.length) h += '<div class="pg-queue"><b>Kolejka:</b> ' + queue.map(function (j) {
+        var req = {}; try { req = JSON.parse(j.request); } catch (e) { /* tekst */ }
+        return '<span class="pg-qitem">' + esc(req.name || j.city_slug) + ' <small>' + (j.status === 'queued' ? 'czeka' : 'pracuje') + '</small></span>';
+      }).join('') + '</div>';
+      h += order.length ? order.map(function (k, i) {
+        var r = by[k][0], ev = evs[i] || [], label = workLabel(r, ev), old = by[k].slice(1);
+        var stCls = r.status === 'stalled' || r.status === 'error' ? 'bad' : r.status;
+        var verb = r.status === 'running' ? 'Pracujemy nad' : r.status === 'stalled' ? 'Stoi przy' : r.status === 'done' ? 'Gotowe' : r.status === 'stopped' ? 'Przerwane przy' : 'Błąd przy';
+        return '<article class="pg-card pg-card--' + esc(stCls) + '">' +
+          '<header class="pg-card__head"><div class="pg-card__title"><a href="#/' + esc(k) + '">' + esc(titleCase(k)) + '</a>' +
+          '<span class="pg-pill pg-pill--' + esc(stCls) + '">' + (r.status === 'running' ? '<i class="pg-dot" aria-hidden="true"></i>' : '') + esc(RUNST[r.status] || r.status) + '</span></div>' +
+          '<div class="pg-ver"><small>' + esc(verb) + '</small><b>' + esc(label || '—') + '</b></div></header>' +
+          progressBlock(r, ev, label) +
+          '<p class="pg-now"><b>' + (r.status === 'done' ? 'Ostatni krok' : 'Teraz') + ':</b> ' + esc(clean(r.last_message)) + ' <span>' + esc(ago(r.last_at)) + '</span></p>' +
+          '<dl class="pg-meta"><div><dt>start</dt><dd>' + esc(when(r.started_at)) + '</dd></div><div><dt>czas</dt><dd>' + esc(dur(r.seconds)) + '</dd></div>' +
+          '<div><dt>Gemini</dt><dd>' + esc(tok(r.gemini_tokens)) + ' <small>· ' + esc(r.gemini_calls) + ' zap.</small></dd></div>' +
+          '<div><dt>Claude</dt><dd>' + esc(tok(r.claude_tokens)) + ' <small>· ' + esc(r.claude_calls) + ' wyw.</small></dd></div></dl>' +
+          '<details class="pg-steps" data-k="' + esc(k) + '"' + (openSteps[k] ? ' open' : '') + '><summary>Kroki z godzinami (' + ev.length + ')</summary><ol>' + ev.slice().reverse().map(function (e) {
+            return '<li><time>' + esc(new Date(e.created_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</time><span>' + esc(clean(e.message)) + '</span></li>';
+          }).join('') + '</ol></details>' +
+          (old.length ? '<details class="pg-steps pg-old"><summary>Wcześniejsze przebiegi (' + old.length + ')</summary><ul>' + old.map(function (o) {
+            return '<li><span class="pg-pill pg-pill--' + esc(o.status === 'stalled' ? 'bad' : o.status) + '">' + esc(RUNST[o.status] || o.status) + '</span> ' + esc(when(o.started_at)) + ' · ' + esc(dur(o.seconds)) + ' · ' + esc(clean(o.last_message)) + '</li>';
+          }).join('') + '</ul></details>' : '') +
+          '</article>';
+      }).join('') : '<p class="adm-empty">Brak przebiegów — pojawią się przy pierwszej wycieczce w nowym procesie.</p>';
+      $d.innerHTML = h + '</section>';
     }
     $d.onclick = null;
-    $d.addEventListener('toggle', function (e) { var x = e.target; if (x.matches && x.matches('details[data-run]') && x.open) loadEvents(x); }, true);
+    $d.addEventListener('toggle', function (e) { var x = e.target; if (x.matches && x.matches('details[data-k]')) openSteps[x.getAttribute('data-k')] = x.open; }, true);
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję postęp prac…</p></div>';
     draw(); state.poll = setInterval(function () { if (location.hash === '#/postep') draw(); }, 30000);
     document.title = 'Postęp prac · Quolino admin';
