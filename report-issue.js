@@ -48,27 +48,7 @@
   function city() { return new URLSearchParams(location.search).get('c') || window.citySlug || document.body.getAttribute('data-city'); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-  function css() {
-    if (document.getElementById('qr-css')) return;
-    var s = document.createElement('style'); s.id = 'qr-css';
-    s.textContent = '.qr-open{appearance:none;border:0;background:none;padding:6px 0;margin-top:10px;cursor:pointer;' +
-      'font:600 13px Archivo,system-ui,sans-serif;color:var(--muted,#5D6B82);text-decoration:underline;text-underline-offset:3px}' +
-      '.qr-form{display:flow-root;margin-top:10px;padding:12px;border:1px solid var(--rule,#D3DDEA);border-radius:12px;background:var(--card,#fff)}' +
-      '.qr-form b{display:block;margin-bottom:8px;font:800 14px Archivo,system-ui,sans-serif}' +
-      '.qr-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}' +
-      '.qr-types label{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--rule,#D3DDEA);' +
-      'border-radius:999px;font-size:13px;cursor:pointer}' +
-      '.qr-types input{accent-color:var(--blu,#0B4EA2)}' +
-      '.qr-form textarea{width:100%;box-sizing:border-box;min-height:70px;padding:8px;border:1px solid var(--rule,#D3DDEA);' +
-      'border-radius:8px;font:14px/1.4 system-ui,sans-serif;resize:vertical}' +
-      '.qr-row{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}' +
-      '.qr-row button{appearance:none;border:2px solid var(--ink,#0E1A2B);border-radius:10px;padding:6px 14px;' +
-      'font:700 14px Archivo,system-ui,sans-serif;cursor:pointer;background:var(--ink,#0E1A2B);color:#fff}' +
-      '.qr-row button.qr-x{background:#fff;color:var(--ink,#0E1A2B)}' +
-      '.qr-msg{font-size:13px;color:var(--muted,#5D6B82)}' +
-      '.qr-quo{float:right;width:clamp(80px,20vw,104px);height:auto;margin:-4px -4px 6px 10px}';
-    document.head.appendChild(s);
-  }
+  // style formularza: styles.css, sekcja „Co się nie zgadza?” (bez wstrzykiwanego <style>)
 
   // Quo w zgłoszeniu (ikony z #quo-ikony, JP 2026-10-25): lupa → notes po wysłaniu, zmięta koperta przy błędzie
   function quo(slug) {
@@ -111,7 +91,6 @@
   }
 
   function decorate() {
-    css();
     document.querySelectorAll('.qc-stop').forEach(function (stop) {
       var body = stop.querySelector('.qc-stop__body');
       if (!body || body.querySelector('.qr-open, .qr-form')) return;
