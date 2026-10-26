@@ -85,7 +85,7 @@ const cost = { usd: 0, calls: 0 };
 // ── Antigravity CLI (agy) na koncie Google AI Pro JP (JP 2026-10-24): Gemini z wyszukiwarką Google, limity planu Pro zamiast 20 zapytań/dobę.
 // Uruchamiany w pustym katalogu /tmp/gq (agent nie widzi plików Quolino ani .env), bez kluczy API w środowisku, --sandbox.
 const AGY = '/opt/data/home/.local/bin/agy';
-let USE_AGY = !argv.includes('--no-agy') && existsSync(AGY);
+let USE_AGY = !argv.includes('--no-agy') && existsSync(AGY), AGY_QUOTA = argv.includes('--claude-writes');
 function agy(prompt, label, { tools = true } = {}) {
   if (prompt.length > 120_000) prompt = prompt.slice(0, 120_000) + '\n\n[materiał skrócony do limitu]';
   return new Promise((resolve, reject) => {
@@ -120,8 +120,16 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
     const ask = `${prompt}${json ? '\n\nODPOWIEDZ WYŁĄCZNIE POPRAWNYM JSON-em, bez komentarzy i bez bloków ```.' : ''}${search ? '' : '\n\nNie używaj wyszukiwarki ani narzędzi — pracuj tylko na materiale powyżej.'}`;
     for (let i = 1; i <= 2; i++) {   // druga próba po zawieszeniu — zwykle odpowiada w 1–3 min
       try { return await agy(ask, label + (i > 1 ? ' (ponownie)' : ''), { tools: !!search }); }
-      catch (e) { log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)})${i < 2 ? ' — ponawiam' : ' — zapas: klucz API'}`); }
+      catch (e) {
+        // limit AI Pro wyczerpany (JP 2026-10-26): bez ponawiania, do końca przebiegu pisze Claude (abonament), a nie darmowy klucz (20 zapytań/dobę)
+        if (/quota reached|upgrade your subscription|RESOURCE_EXHAUSTED/i.test(e.message)) { USE_AGY = false; AGY_QUOTA = true; log(`${label}: limit Antigravity (AI Pro) wyczerpany — dalej pisze Claude`); break; }
+        log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)})${i < 2 ? ' — ponawiam' : ' — zapas: klucz API'}`);
+      }
     }
+  }
+  if (AGY_QUOTA && !search && env('QUOLINO_CLAUDE_FALLBACK') !== '0') {
+    const text = await claude('quolino-trip-writing', `${prompt}${json ? '\n\nODPOWIEDZ WYŁĄCZNIE POPRAWNYM JSON-em, bez komentarzy i bez bloków ```.' : ''}\n\nNie używaj wyszukiwarki — pracuj tylko na materiale powyżej.`);
+    return { text: String(text ?? '').trim(), web: [] };
   }
   if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
   if (cost.usd >= DAILY_USD) throw new Error(`budżet ${DAILY_USD} $ wyczerpany (${cost.usd.toFixed(3)} $) — przerwane przed: ${label}`);

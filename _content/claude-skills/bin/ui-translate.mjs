@@ -5,7 +5,7 @@
 //   node ui-translate.mjs [--dry] [--lang de,en] [--force]      (cron co godzinę; cichy, gdy nic nowego)
 import { readFileSync, readdirSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { db, log, aiUsage, extractJson, run } from './lib.mjs';
+import { db, log, aiUsage, extractJson, run, translator } from './lib.mjs';
 
 const REPO = '/opt/data/repo/przewodnik';
 const AGY = '/opt/data/home/.local/bin/agy';
@@ -69,7 +69,9 @@ naturalny, krótki język interfejsu jak w dobrych aplikacjach w tym języku; za
 Odpowiedz wyłącznie JSON-em: {"klucz": "tłumaczenie", …} z tymi samymi kluczami.
 ${JSON.stringify(part, null, 1)}`;
       let out;
-      try { out = extractJson(await agy(prompt)); } catch (e) { log(`ui-translate ${lang}: ${e.message}`); break; }
+      // JP 2026-10-26: tłumaczenia NIE idą przez Antigravity (agent dokłada ~10 tys. tokenów na każde wywołanie i zjadł tygodniowy limit AI Pro).
+      // Darmowe modele OpenRouter (jak tłumaczenia tras); Antigravity tylko awaryjnie z --agy.
+      try { out = extractJson(argv.includes('--agy') ? await agy(prompt) : (await translator('quolino-trip-translate', prompt, 'translate_xx')).text); } catch (e) { log(`ui-translate ${lang}: ${e.message}`); break; }
       for (const [k, v] of Object.entries(out ?? {})) if (part[k] && typeof v === 'string' && v.trim())
         await q(`INSERT INTO public.ui_translations (key, lang, value, updated_at) VALUES ($1, $2, $3, now()) ON CONFLICT (key, lang) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`, [k, lang, v.trim()]);
     }
