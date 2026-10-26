@@ -102,7 +102,7 @@ h2{font-size:30px}
 /* Album na końcu */
 .album{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .sticker{background:#fff;border-radius:12px;padding:8px 8px 10px;box-shadow:0 0 0 2px var(--rule),0 4px 0 rgba(6,42,88,.15);transform:rotate(var(--tilt,0deg))}
-.sticker img{width:100%;max-width:120px;aspect-ratio:1;object-fit:contain;display:block;margin:0 auto}
+.sticker img,.sticker svg{width:100%;max-width:120px;aspect-ratio:1;object-fit:contain;display:block;margin:0 auto}
 .sticker p{margin:4px 0 0;font-size:18px;font-weight:800;line-height:1.15}
 .sticker:nth-child(1){--tilt:-2deg}.sticker:nth-child(2){--tilt:1.5deg}.sticker:nth-child(3){--tilt:1deg}.sticker:nth-child(4){--tilt:-1.5deg}
 .totals{display:grid;gap:6px;background:var(--page);border-radius:14px;padding:12px 14px;text-align:left}
@@ -140,7 +140,7 @@ h2{font-size:30px}
 }
 @media (max-width:560px){
   .album{gap:8px}
-  .sticker img{max-width:72px}
+  .sticker img,.sticker svg{max-width:72px}
   .sticker p{font-size:18px}
   .totals div{font-size:18px}
   .card-end .card-quo{width:72px;height:72px}
@@ -156,7 +156,7 @@ h2{font-size:30px}
   .answer{min-height:60px;font-size:19px;padding:8px 12px}
   .card-end{width:min(100%,760px)}
   .card-end .album{grid-template-columns:repeat(4,1fr)}
-  .sticker img{max-width:72px}
+  .sticker img,.sticker svg{max-width:72px}
 }
 @media (max-height:520px) and (orientation:landscape){
   .celebrate-text{padding:6px 16px 8px}
@@ -246,3 +246,5 @@ h2{font-size:30px}
   .card-mash #mashRetry{grid-column:2;grid-row:5}
   .card-mash #mashSkip{grid-column:2;grid-row:6}
 }
+.sticker-gold{background:#FFF4CF;box-shadow:0 0 0 2px #E8A912,0 4px 0 rgba(6,42,88,.15)}
+.sticker svg{height:auto}

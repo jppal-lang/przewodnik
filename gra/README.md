@@ -12,6 +12,7 @@ Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Z
 | `index.html` | ekrany (start, pauza, quiz, koniec), HUD, przyciski dotykowe |
 | `game.css` | wygląd (kolory z design systemu Quolino) |
 | `game.js` | silnik: budowa poziomu, fizyka, rysowanie, szkielet Quo, świętowanie |
+| `treasure.js` | Skarb Quo: zapis lokalny i odbiór na koncie rodzica |
 | `frasassi.json` | dane etapu: przystanki, misje, pytania quizu (ze źródłem) |
 
 ## Jak grać
@@ -32,7 +33,9 @@ Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Z
 | Mini-wyzwanie przed naklejką | — | głaz / brama na płytę / walący się most / winda pod świątynię | to samo, mniej czasu |
 | Pytania | 3 odpowiedzi, przycisk „Podpowiedź” | 4 odpowiedzi, podpowiedź dopiero po błędzie (bez premii) | 4 odpowiedzi, 2 pytania na bramę |
 | Punkty kontrolne | start przystanku, każda brama, naklejka | start przystanku, każda brama, naklejka | tylko start przystanku |
-| Melodia / stukanie | 3 dźwięki / ok. 2 stuknięcia na s | 4 / ok. 4 na s | 5 / ok. 6 na s |
+| Melodia | 3 dźwięki | 4 | 5 |
+| Lina (stukanie TAP) | ok. 1,5 stuknięcia na s | ok. 2,5 na s | ok. 3,5 na s |
+| Głaz (na zmianę ◀ ▶) | ok. 2 na s | ok. 4 na s | ok. 6–7 na s |
 
 Upadek do dziury lub wody zabiera serduszko i wraca Quo w ostatnie bezpieczne miejsce. Gdy skończą się serduszka,
 Quo „odpoczywa” i wraca na punkt kontrolny — bez ekranu przegranej.
@@ -61,6 +64,14 @@ przy kolejnych grach.
   Po 2 zamknięciach bez ułożenia — „Pomiń”.
 - **Wspinaczka po linie** (jaskinia) i **głaz w poprzek ścieżki** (wąwóz, przystanek 4): szybkie stukanie,
   przy głazie na zmianę ◀ ▶. Przegrana = spokojna powtórka, po 2 próbach „Pomiń”. Wygrana z liny = skrót.
+- **Skarb Quo** (tylko Trudny, od 1.06.2027 — start płatności; wcześniej tylko z `?skarb=1` w adresie): na pierwszym
+  przystanku w wąwozie za wyspą w chmurach wisi komnata ze złotą skrzynią. Wisi 8 kafli nad ziemią i jest otoczona
+  płaskim terenem — wejście tylko balonikiem (ze skrzyni pod wyspą). Otwarcie = świętowanie, napis „Znalazłeś Skarb Quo!
+  Pokaż go rodzicom — czeka w ich panelu.” i złota naklejka w albumie. Dziecko nie widzi żadnych cen ani kodów.
+  `treasure.js`: zalogowany rodzic na tym urządzeniu (`qc.session`) → `POST api.quolino.com/rest/v1/rpc/claim_game_treasure`
+  z `{p_trip, p_level:'trudny', p_token}` (w nagłówkach klucz anon — Traefik zdejmuje Authorization); bez sesji, przy statusie ≠ 200
+  albo `{error}` innym niż `level`/`not_found` → `{trip, at}` do `quolino_game_treasure_pending` (odbiera `konto.html`).
+  Jeden skarb na wycieczkę na urządzeniu (`quolino_game_treasure`). Bez flagi: brak komnaty i żadnej podpowiedzi.
 - **Przebrania** (tylko wygląd): kask z lampką (świeci mocniej w jaskini), kaptur mnicha, kapelusz odkrywcy.
   Wybór na ekranie startowym.
 - **Tryb foto** 📸: przy naklejce przystanku robi „zdjęcie” Quo z naklejką. Zdjęcia są w albumie na końcu.
@@ -94,7 +105,7 @@ Gra tylko CZYTA postęp wycieczki z tego urządzenia:
 Przełącznik „Tryb demo: symuluj punkty z trasy” na ekranie startowym.
 
 Klucze gry (tylko `localStorage`, prefiks `quolino_game_`): `demo`, `diff`, `frasassi` (rekordy per poziom),
-`hats`, `hat`, `photos` (zdjęcia JPEG ok. 30 KB każde, max 4 na wycieczkę).
+`hats`, `hat`, `photos` (zdjęcia JPEG ok. 30 KB każde, max 4 na wycieczkę), `treasure`, `treasure_pending`.
 Przed publikacją: dopisać je w `docs/BACKEND.md` §6 i w `cookie-policy.html`.
 
 ## Quo — szkielet cut-out

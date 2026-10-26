@@ -447,13 +447,26 @@
      8 skrzynia zamknięta (otwiera się uderzeniem od dołu albo skokiem z góry), 9 skrzynia otwarta. */
   var SOLID = [0, 1, 0, 0, 0, 1, 0, 0, 1, 1], ONEWAY = [0, 0, 1, 0, 1, 0, 0, 0, 0, 0];
   var PU_KINDS = ['magnet', 'doublejump', 'glide', 'balloon'];
+  /* Skarb Quo (decyzja JP 2026-10-26): ukryta komnata tylko na Trudnym, dostępna wyłącznie balonikiem.
+     Budowana dopiero od startu płatności (1.06.2027) albo z ?skarb=1 w adresie (test JP). Wcześniej: ani komnaty, ani podpowiedzi. */
+  var TREASURE_FROM = '2027-06-01';
+  function treasureOn() {
+    var d = new Date(), today = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    return today >= TREASURE_FROM || /[?&]skarb=1(&|$)/.test(location.search);
+  }
 
   function buildLevel(trip, prog, playNo, D) {
     var n = trip.stops.length, SL = D.sec, W = SL * n + 18;
     var L = { W: W, SL: SL, grid: new Uint8Array(W * ROWS), sec: new Uint8Array(W), crumbleAt: new Int16Array(W * ROWS).fill(-1),
       sections: [], coins: [], enemies: [], drippers: [], gates: [], springs: [], chests: [], landmarks: [], movers: [], crumbles: [],
       winds: [], rocks: [], hidden: [], minis: [], zips: [], carts: [], items: [], chestList: [], chestAt: new Int16Array(W * ROWS).fill(-1),
-      plaques: [], raftRocks: [] };
+      plaques: [], raftRocks: [], treasure: null };
+    // Skarb Quo: pierwszy przystanek w wąwozie (inaczej pierwszy poza jaskinią)
+    var tSec = -1;
+    if (D.key === 'hard' && treasureOn()) {
+      trip.stops.forEach(function (s, i) { if (tSec < 0 && TERRAIN_BY_CATEGORY[s.category] === 'valley') tSec = i; });
+      if (tSec < 0) trip.stops.forEach(function (s, i) { if (tSec < 0 && TERRAIN_BY_CATEGORY[s.category] !== 'cave') tSec = i; });
+    }
     function set(x, y, v) { if (x >= 0 && x < W && y >= 0 && y < ROWS) L.grid[y * W + x] = v; }
     function get(x, y) { return (x >= 0 && x < W && y >= 0 && y < ROWS) ? L.grid[y * W + x] : 0; }
     function ground(x, g, top) { for (var y = 0; y < ROWS; y++) if (y >= g) set(x, y, y === g && top ? top : 1); }
@@ -488,7 +501,7 @@
       var span = miniX - x0, forced = [];
       hpos.forEach(function (p, i) { forced.push({ at: p, name: htypes[i], hid: true }); });
       forced.push({ at: x0 + Math.round(.06 * span), name: 'chestPU' });
-      forced.push({ at: x0 + Math.round(.18 * span), name: 'skyIsland' });
+      forced.push(si === tSec ? { at: x0 + Math.round(.18 * span), name: 'treasureIsland', pri: 1 } : { at: x0 + Math.round(.18 * span), name: 'skyIsland' });
       if (terr === 'valley' || terr === 'cliff') forced.push({ at: x0 + Math.round(.5 * span), name: 'zipline' });
       if (terr === 'stone') forced.push({ at: x0 + Math.round(.2 * span), name: 'mosaic' });
       if (cave && D.adv) { forced.push({ at: x0 + Math.round(SL * .19), name: 'raft', pri: 1 }); forced.push({ at: x0 + Math.round(SL * .46), name: 'mine', pri: 1 }); }
@@ -624,6 +637,21 @@
           for (var i = 5; i <= 14; i++) { set(x + i, IR, 2); if (i % 2 && IR - 1 >= (cave ? 2 : 0)) coin(x + i, IR - 1); }
           if (hatHere) L.items.push({ type: 'hat', kind: hatHere, x: (x + 13) * TILE + 16, y: IR * TILE - 22, alive: true });
           else { coin(x + 12, IR - 1); coin(x + 13, IR - 1); coin(x + 14, IR - 1); }
+          return w;
+        }],
+        treasureIsland: [40, function () { // Trudny + flaga: wyspa w chmurach, a za nią komnata ze Skarbem Quo
+          // Komnata wisi 8 kafli nad ziemią (podwójny skok sięga ok. 6,5), teren dookoła płaski i niski — wejść da się tylko balonikiem.
+          g = GROUND; flat(4); x += 4;
+          var w = 35, IR = 2, rf = 3, c0 = x + 17, c1 = x + 23, i, y;
+          flat(w); chest(x + 2, g - 3, 'pu:balloon');
+          for (i = 5; i <= 14; i++) { set(x + i, IR, 2); if (i % 2) coin(x + i, IR - 1); }
+          if (hatHere) L.items.push({ type: 'hat', kind: hatHere, x: (x + 12) * TILE + 16, y: IR * TILE - 22, alive: true });
+          for (i = x + 15; i <= c1; i++) set(i, rf, 1);      // ganek i podłoga komnaty
+          for (i = c0; i <= c1; i++) set(i, 0, 1);           // strop
+          for (y = 0; y <= rf; y++) set(c1, y, 1);           // tylna ściana; wejście od lewej (rzędy 1–2)
+          coin(x + 15, rf - 1); coin(x + 16, rf - 1);
+          L.treasure = { x: (c1 - 2) * TILE + 16, y: rf * TILE, x0: c0 * TILE, x1: c1 * TILE, y0: TILE, y1: rf * TILE, sec: si,
+            open: !!(window.QuoTreasure && QuoTreasure.found(trip.trip)), seen: false };
           return w;
         }],
         zipline: [20, function () { // tyrolka nad wąwozem
@@ -1155,6 +1183,11 @@
         else if (it.type === 'hat') { collectHat(it.kind); }
       }
     });
+    var TR = L.treasure;
+    if (TR && P.nap <= 0 && Math.abs(P.x - TR.x) < 30 && Math.abs(P.y - TR.y) < 24) {
+      if (!TR.open) { TR.open = true; ev('treasure'); if (!SIM) startTreasure(TR); }
+      else if (!TR.seen && !SIM) { TR.seen = true; toast('Skarb Quo już jest w albumie!'); }
+    }
     if (P.glow > 0) P.glow = Math.max(0, P.glow - 5 * dt);
     L.carts.forEach(function (c) { if (c.done && !c.active && P.onGround && Math.abs(P.x - c.sx) < 60 && P.cart < 0) { c.done = false; c.s = 0; c.branch = 0; c.x = c.sx; c.y = c.main[0][1]; } });
     L.chests.forEach(function (ch) {
@@ -1335,6 +1368,7 @@
     drawCaveMouths();
     drawWind(true);
     drawTiles();
+    drawTreasure();
     drawTracks();
     drawZips();
     drawMovers();
@@ -1549,6 +1583,37 @@
     ctx.fillStyle = '#3B2A00'; ctx.fillRect(x + 13, y + 12, 6, 7);
     if (c && c.locked) { ctx.strokeStyle = '#0E1A2B'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x + 16, y + 12, 4, Math.PI, 0); ctx.stroke(); }
     if (!open && !reduceMotion && Math.sin(gameT * 3 + x) > .7) { ctx.fillStyle = 'rgba(255,244,207,.9)'; ctx.fillRect(x + 24, y + 4, 3, 3); }
+  }
+  function drawGoldChest(c, x, y, s, open, t) { // złota skrzynia: (x, y) = środek dna
+    c.save(); c.translate(x, y); c.scale(s, s);
+    if (!reduceMotion || open) {
+      var gl = c.createRadialGradient(0, -14, 2, 0, -14, open ? 44 : 30);
+      gl.addColorStop(0, 'rgba(255,230,140,' + (open ? .85 : .55 + .2 * Math.sin(t * 3)) + ')'); gl.addColorStop(1, 'rgba(255,230,140,0)');
+      c.fillStyle = gl; c.fillRect(-46, -60, 92, 80);
+    }
+    c.fillStyle = '#3B2A00'; c.fillRect(-17, -22, 34, 22);
+    c.fillStyle = '#E8A912'; c.fillRect(-15, -20, 30, 18);
+    c.fillStyle = '#FFD95A'; c.fillRect(-15, -20, 30, 4);
+    c.fillStyle = '#3B2A00'; c.fillRect(-11, -20, 3, 18); c.fillRect(8, -20, 3, 18);
+    if (open) {
+      c.fillStyle = '#3B2A00'; c.fillRect(-17, -34, 34, 10);
+      c.fillStyle = '#FFC629'; c.fillRect(-15, -32, 30, 6);
+      c.fillStyle = '#FFF4CF'; for (var i = 0; i < 4; i++) { c.beginPath(); ell(c, -9 + i * 6, -23, 3, 3, 0); c.fill(); }
+    } else {
+      c.fillStyle = '#3B2A00'; c.beginPath(); c.moveTo(-17, -22); c.quadraticCurveTo(0, -38, 17, -22); c.fill();
+      c.fillStyle = '#FFC629'; c.beginPath(); c.moveTo(-15, -23); c.quadraticCurveTo(0, -35, 15, -23); c.fill();
+      c.fillStyle = '#C81E36'; c.fillRect(-3, -25, 6, 8);
+      if (!reduceMotion && Math.sin(t * 4) > .6) { c.fillStyle = '#FFF4CF'; c.fillRect(10, -32, 3, 3); c.fillRect(-14, -28, 2, 2); }
+    }
+    c.restore();
+  }
+  function drawTreasure() {
+    var T = L.treasure; if (!T || T.x1 < cam.x - 80 || T.x0 > cam.x + view.w + 80) return;
+    var g = ctx.createLinearGradient(0, T.y0, 0, T.y1);
+    g.addColorStop(0, 'rgba(59,42,0,.55)'); g.addColorStop(1, 'rgba(120,80,10,.45)');
+    ctx.fillStyle = g; ctx.fillRect(T.x0, T.y0, T.x1 - T.x0, T.y1 - T.y0);
+    ctx.fillStyle = 'rgba(255,198,41,.35)'; for (var i = 0; i < 4; i++) ctx.fillRect(T.x0 + 44 + i * 36, T.y0 + 10, 4, 4);
+    drawGoldChest(ctx, T.x, T.y, 1, T.open, gameT);
   }
   function drawPuIcon(kind, x, y, s) {
     ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
@@ -1877,6 +1942,13 @@
     });
   }
   function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function drawTreasureSticker(c, S, t) { // naklejka „Skarb Quo”: złote koło ze skrzynią
+    c.fillStyle = '#0E1A2B'; c.beginPath(); ell(c, 0, 0, S / 2 + 3, S / 2 + 3, 0); c.fill();
+    var g = c.createRadialGradient(0, -S * .15, 2, 0, 0, S / 2);
+    g.addColorStop(0, '#FFF4CF'); g.addColorStop(.6, '#FFD95A'); g.addColorStop(1, '#E8A912');
+    c.fillStyle = g; c.beginPath(); ell(c, 0, 0, S / 2, S / 2, 0); c.fill();
+    drawGoldChest(c, 0, S * .2, S / 70, true, t);
+  }
   function drawSticker(c, img, S) {
     c.fillStyle = 'rgba(6,42,88,.3)'; roundRect(c, -S / 2 + 2, -S / 2 + 5, S, S, S * .12); c.fill();
     c.fillStyle = '#fff'; roundRect(c, -S / 2, -S / 2, S, S, S * .12); c.fill();
@@ -1936,23 +2008,40 @@
     ct.hidden = false; $('hudStop').style.visibility = 'hidden'; $('pad').style.visibility = 'hidden';
     sfx('fanfare');
   }
+  var TREASURE_T = CELEB_T + 2.4; // dłużej: dziecko ma przeczytać, że skarb czeka u rodziców
+  function startTreasure(T) {
+    if (window.QuoTreasure) QuoTreasure.claim(trip.trip, D.key); // odpowiedzi serwera nie pokazujemy
+    stats.treasure = true;
+    state = 'celebrate'; input.left = input.right = input.jump = false; P.vx = 0;
+    var conf = [];
+    if (!reduceMotion) for (var i = 0; i < 120; i++) conf.push({ x: Math.random(), y: -Math.random() * .6, vx: (Math.random() - .5) * .15, vy: .18 + Math.random() * .25, rot: Math.random() * 6, vr: (Math.random() - .5) * 8, col: ['#FFC629', '#FFD95A', '#E8A912', '#FFFFFF', '#0B4EA2'][i % 5], w: 6 + Math.random() * 6 });
+    celebration = { lm: null, treasure: T, t: 0, conf: conf, dance: 'dance1', counted: false };
+    var ct = $('celebrateText');
+    ct.innerHTML = '<b>Znalazłeś Skarb Quo!</b><span>Pokaż go rodzicom — czeka w ich panelu.</span><small>Dotknij, aby iść dalej</small>';
+    ct.hidden = false; $('hudStop').style.visibility = 'hidden'; $('pad').style.visibility = 'hidden';
+    sfx('fanfare');
+  }
   function updateCelebration(dt) {
     var C = celebration; C.t += dt;
     C.conf.forEach(function (p) { p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > 1.1) { p.y = -.1; p.x = Math.random(); } });
-    if (!C.counted && C.t >= CELEB_T - .5) countSticker();
-    if (C.t >= CELEB_T) endCelebration();
+    var T = C.treasure ? TREASURE_T : CELEB_T;
+    if (!C.counted && C.t >= T - .5) countSticker();
+    if (C.t >= T) endCelebration();
   }
   function countSticker() {
     var C = celebration; if (C.counted) return; C.counted = true;
-    stats.stickers.push(C.lm.sec); updateHUD();
+    if (!C.treasure) stats.stickers.push(C.lm.sec);
+    updateHUD();
     var a = $('hudAlbum'); a.classList.remove('pulse'); void a.offsetWidth; a.classList.add('pulse');
     sfx('coin');
   }
-  function endCelebration() {
+  function endCelebration(tap) {
     if (!celebration) return;
+    if (tap && celebration.treasure && celebration.t < 1.5) return; // skarbu nie przeklikujemy od razu
     countSticker();
-    var lm = celebration.lm; celebration = null;
+    var lm = celebration.lm, tr = celebration.treasure; celebration = null;
     $('celebrateText').hidden = true; $('hudStop').style.visibility = ''; $('pad').style.visibility = '';
+    if (tr) { state = 'play'; return; }
     addCoins(5);
     if (lm.sec >= L.sections.length - 1) { endGame(); return; }
     state = 'play';
@@ -1961,7 +2050,7 @@
     var C = celebration; if (!C) return;
     var k = view.s * view.dpr, W = view.w, H = view.h, t = C.t;
     ctx.setTransform(k, 0, 0, k, 0, 0);
-    var sec = L.sections[C.lm.sec];
+    var sec = L.sections[C.treasure ? C.treasure.sec : C.lm.sec], TT = C.treasure ? TREASURE_T : CELEB_T;
     var fadeIn = reduceMotion ? 1 : ease(t / .35);
     ctx.globalAlpha = fadeIn;
     drawBackground(ctx, sec.terrain, cam.x, cam.y, W, H, gameT);
@@ -1976,11 +2065,15 @@
     }
     var wide = view.cssH < 520 && W > H * 1.3;
     var S = wide ? Math.min(W * .36, H * .56) : Math.min(W * .78, H * .48), cx = wide ? W * .32 : W / 2, cy = wide ? H * .6 : H * .46;
-    var flyStart = CELEB_T - 1.3, f = reduceMotion ? 0 : clamp((t - flyStart) / .8, 0, 1);
+    var flyStart = TT - 1.3, f = reduceMotion ? 0 : clamp((t - flyStart) / .8, 0, 1);
     var tgt = albumTarget();
     var pop = reduceMotion ? 1 : ease(t / .5) * (1 + .06 * Math.sin(Math.min(t, 1.2) * 10) * (1 - Math.min(t, 1.2) / 1.2));
     var sx = lerp(cx, tgt.x, ease(f)), sy = lerp(cy, tgt.y, ease(f)) - Math.sin(f * Math.PI) * H * .12, ss = lerp(S * pop, 28, ease(f));
-    if (f < 1) { ctx.save(); ctx.translate(sx, sy); ctx.rotate(-.05 + f * .4); drawSticker(ctx, stopIcons[C.lm.sec], ss); ctx.restore(); }
+    if (f < 1) {
+      ctx.save(); ctx.translate(sx, sy); ctx.rotate(-.05 + f * .4);
+      if (C.treasure) drawTreasureSticker(ctx, ss, t); else drawSticker(ctx, stopIcons[C.lm.sec], ss);
+      ctx.restore();
+    }
     var qScale = wide ? H * .6 / 66 : Math.min(H * .4, W * .55) / 66;
     var pose = reduceMotion ? quoPose('cheer', 0) : quoPose(C.dance, t);
     var qx = wide ? W * .66 : W / 2, qy = wide ? H * .95 : Math.min(H * .94, cy + S * .5 + qScale * 46);
@@ -2088,20 +2181,22 @@
   }
 
   /* --- Szybkie stukanie: wspinaczka po linie (TAP) i przepychanie głazu (na zmianę ◀ ▶) ---
-     n = ile stuknięć trzeba, T = czas (s). Wymagane tempo ≈ n/T: Łatwy ~2/s, Średni ~4/s, Trudny ~6/s. */
-  var MASH = { rope: { easy: { n: 16, T: 8.5 }, medium: { n: 30, T: 7.5 }, hard: { n: 44, T: 7 } },
-               push: { easy: { n: 12, T: 8 }, medium: { n: 22, T: 6.5 }, hard: { n: 32, T: 5.5 } } };
+     n = ile stuknięć trzeba, T = czas (s), dec = ile postępu ucieka na sekundę.
+     Wymagane tempo ≈ n × (1/T + dec). Lina (woda dochodzi do szczytu po T s): Łatwy ~1,5/s, Średni ~2,5/s, Trudny ~3,5/s
+     (JP 2026-10-26: wcześniej było za trudno). Głaz bez zmian: ~1,9 / ~4 / ~6,8 na s. */
+  var MASH = { rope: { easy: { n: 11, T: 10, dec: .04 }, medium: { n: 17, T: 9.5, dec: .04 }, hard: { n: 23, T: 9, dec: .04 } },
+               push: { easy: { n: 12, T: 8, dec: .03 }, medium: { n: 22, T: 6.5, dec: .03 }, hard: { n: 32, T: 5.5, dec: .03 } } };
   var mash = null;
   function openMash(gate) {
     state = 'mash'; input.left = input.right = input.jump = false; P.vx = 0;
     var c = MASH[gate.kind][D.key], rope = gate.kind === 'rope';
-    mash = { gate: gate, kind: gate.kind, n: c.n, T: c.T, p: 0, t: 0, last: '', running: false, done: false };
+    mash = { gate: gate, kind: gate.kind, n: c.n, T: c.T, dec: c.dec, p: 0, t: 0, last: '', running: false, done: false };
     $('mashTitle').textContent = rope ? 'Wspinaczka po linie' : 'Głaz w poprzek ścieżki';
     $('mashStage').className = 'mash-stage ' + gate.kind;
     $('mashTap').hidden = !rope; $('mashL').hidden = rope; $('mashR').hidden = rope;
     $('mashThreatIcon').textContent = rope ? '' : '🦇';
     $('mashSkip').hidden = gate.fails < 2; $('mashRetry').hidden = true;
-    $('mashStatus').textContent = rope ? 'Stukaj szybko w TAP! (albo spację), zanim woda w szybie podejdzie wyżej. Pierwsze stuknięcie startuje.'
+    $('mashStatus').textContent = rope ? 'Stukaj w TAP! (albo spację), zanim woda w szybie podejdzie wyżej. Pierwsze stuknięcie startuje.'
       : 'Na zmianę ◀ i ▶ (albo strzałki ← →) — zepchnij głaz, zanim przyleci nietoperz. Pierwsze stuknięcie startuje.';
     drawMash();
     $('mashScreen').hidden = false; setPad(false);
@@ -2120,7 +2215,7 @@
   function updateMash(dt) {
     if (!mash || !mash.running || mash.done) return;
     mash.t += dt;
-    mash.p = Math.max(0, mash.p - (mash.kind === 'rope' ? .05 : .03) * dt);
+    mash.p = Math.max(0, mash.p - mash.dec * dt);
     var lost = mash.kind === 'rope' ? (mash.t > .8 && waterLevel() >= mash.p) : mash.t >= mash.T;
     if (lost) {
       mash.done = true; mash.gate.fails++; sfx('no');
@@ -2219,7 +2314,7 @@
   /* --- Tryb foto: ramka z Quo i naklejką przystanku, zapis lokalny --- */
   function photoSec() {
     if (!L || !P) return -1;
-    if (state === 'celebrate' && celebration) return celebration.lm.sec;
+    if (state === 'celebrate' && celebration) return celebration.lm ? celebration.lm.sec : -1;
     for (var i = 0; i < L.landmarks.length; i++) { var lm = L.landmarks[i]; if (lm.done && Math.abs(P.x - lm.x) < 260) return lm.sec; }
     return -1;
   }
@@ -2322,7 +2417,11 @@
       return '<div class="sticker"><img src="' + ICONS + 'icon-' + esc(s.icon) + '-128.webp" alt="" width="120" height="120"><p>' + esc(s.name) + '</p>' +
         '<p class="stars" aria-label="' + S.stars + ' z 3 gwiazdek">' + '★★★'.slice(0, S.stars) + '<span class="dim">' + '★★★'.slice(S.stars) + '</span></p>' +
         '<p class="meta">Ukryte: ' + S.hidden + '/3 · czas ' + fmtT(S.time) + ' (cel ' + fmtT(S.par) + ')</p></div>';
-    }).join('');
+    }).join('') + ((stats.treasure || (window.QuoTreasure && QuoTreasure.found(trip.trip))) ?
+      '<div class="sticker sticker-gold"><svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#FFD95A" stroke="#0E1A2B" stroke-width="5"/>' +
+      '<rect x="32" y="58" width="56" height="34" fill="#E8A912" stroke="#3B2A00" stroke-width="4"/><path d="M32 58 Q60 30 88 58 Z" fill="#FFC629" stroke="#3B2A00" stroke-width="4"/>' +
+      '<rect x="55" y="54" width="10" height="14" fill="#C81E36" stroke="#3B2A00" stroke-width="3"/></svg>' +
+      '<p>Skarb Quo</p><p class="meta">Pokaż go rodzicom — czeka w ich panelu.</p></div>' : '');
     $('totals').innerHTML =
       '<div><span>Gwiazdki</span><b>' + total + ' / ' + L.sections.length * 3 + '</b></div>' +
       '<div><span>Kamyczki</span><b>' + stats.coins + '</b></div>' +
@@ -2361,7 +2460,7 @@
     playNo = rec.plays || 0;
     L = buildLevel(trip, prog, playNo, D);
     P = newPlayer();
-    stats = { coins: 0, stickers: [], gates: 0, firstTry: 0, questions: 0, hiddenTotal: 0 };
+    stats = { coins: 0, stickers: [], gates: 0, firstTry: 0, questions: 0, hiddenTotal: 0, treasure: false };
     particles = []; celebration = null; curSec = -1; gameT = 0;
     cam.x = 0; cam.y = 0; updateCamera(1);
     ['startScreen', 'endScreen', 'pauseScreen', 'quizScreen', 'organScreen', 'mosaicScreen', 'mashScreen'].forEach(function (id) { $(id).hidden = true; });
@@ -2389,7 +2488,7 @@
       if (mash.kind === 'push' && (e.code === 'ArrowLeft' || e.code === 'KeyA') && !e.repeat) { e.preventDefault(); mashPress('l'); return; }
       if (mash.kind === 'push' && (e.code === 'ArrowRight' || e.code === 'KeyD') && !e.repeat) { e.preventDefault(); mashPress('r'); return; }
     }
-    if (state === 'celebrate' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape')) { e.preventDefault(); endCelebration(); return; }
+    if (state === 'celebrate' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape')) { e.preventDefault(); endCelebration(true); return; }
     if (e.code === 'KeyP' || e.code === 'Escape') { if (state === 'pause') resume(); else pause(); return; }
     var k = KEYS[e.code]; if (!k) return;
     if (state === 'play') e.preventDefault();
@@ -2409,8 +2508,8 @@
     b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   }
   bindPad('padLeft', 'left'); bindPad('padRight', 'right'); bindPad('padJump', 'jump');
-  cv.addEventListener('pointerdown', function () { if (state === 'celebrate') endCelebration(); });
-  $('celebrateText').addEventListener('pointerdown', function () { if (state === 'celebrate') endCelebration(); });
+  cv.addEventListener('pointerdown', function () { if (state === 'celebrate') endCelebration(true); });
+  $('celebrateText').addEventListener('pointerdown', function () { if (state === 'celebrate') endCelebration(true); });
 
   /* ---------- 11. Dźwięk ---------- */
   var AC = null, soundOn = false; // dźwięk zawsze startuje wyłączony
