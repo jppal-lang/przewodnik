@@ -24,6 +24,7 @@
       "photoTask": "Ściana wąwozu z parkingu — „przed”: po wyjściu podpiszecie, co kryło się w środku.",
       "quests": [
         {
+          "id": "s01q1",
           "q": "Co kryje się w ścianach wąwozu przy parkingu?",
           "answers": [
             "Kilometry korytarzy jaskiń",
@@ -36,6 +37,7 @@
           "source": "Z parkingu widać ściany wąwozu — a w nich, niewidoczne, kryją się kilometry korytarzy."
         },
         {
+          "id": "s01q2",
           "q": "Co trzeba sprawdzić na biletach do jaskiń?",
           "answers": [
             "Godzinę wejścia",
@@ -48,6 +50,7 @@
           "source": "Sprawdźcie godzinę na biletach. Spóźnialscy zostają na parkingu — grupa wchodzi bez nich."
         },
         {
+          "id": "s01q3",
           "q": "Skąd odjeżdża dowóz pod samo wejście do jaskiń?",
           "answers": [
             "Z parkingu przy kasach",
@@ -60,6 +63,7 @@
           "source": "Duży parking przy kasach i centrum obsługi w rejonie San Vittore — stąd odjeżdża dowóz pod samo wejście do jaskiń."
         },
         {
+          "id": "s01q4",
           "q": "Ile czasu przed swoją godziną trzeba być przy kasach?",
           "answers": [
             "Minimum 45 minut",
@@ -72,6 +76,7 @@
           "source": "Bądźcie przy kasach minimum 45 minut przed swoją godziną."
         },
         {
+          "id": "s01q5",
           "q": "Jak zwiedza się jaskinie Frasassi?",
           "answers": [
             "Z przewodnikiem, w grupie",
@@ -102,6 +107,7 @@
       "photoTask": "Sprawdźcie przy wejściu zasady fotografowania; jeśli wolno — „Giganci” z człowiekiem w kadrze dla skali. Bez flesza, łokcie oparte o barierkę.",
       "quests": [
         {
+          "id": "s02q1",
           "q": "Jak odkrywcy zmierzyli, jak głęboka jest przepaść?",
           "answers": [
             "Liczyli sekundy spadania kamienia",
@@ -114,6 +120,7 @@
           "source": "Odkrywcy zmierzyli głębokość przepaści, licząc sekundy spadania kamienia."
         },
         {
+          "id": "s02q2",
           "q": "Co rośnie z podłogi jaskini?",
           "answers": [
             "Stalagmit",
@@ -126,6 +133,7 @@
           "source": "Stalaktyt wisi z sufitu, stalagmit rośnie z podłogi."
         },
         {
+          "id": "s02q3",
           "q": "Co powstaje, gdy stalaktyt i stalagmit spotkają się w pół drogi?",
           "answers": [
             "Kolumna",
@@ -138,6 +146,7 @@
           "source": "Jak spotkają się w pół drogi — powstaje kolumna."
         },
         {
+          "id": "s02q4",
           "q": "Jak szybko rośnie stalaktyt?",
           "answers": [
             "Około milimetra na 10 lat",
@@ -150,6 +159,7 @@
           "source": "Stalaktyt rośnie około milimetra na... 10 lat."
         },
         {
+          "id": "s02q5",
           "q": "W którym roku odkryto jaskinie Frasassi?",
           "answers": [
             "W 1971",
@@ -162,6 +172,7 @@
           "source": "Odkryte dopiero w 1971 roku przez grupę speleologów z Ankony…"
         },
         {
+          "id": "s02q6",
           "q": "Jaka temperatura jest w jaskini przez cały rok?",
           "answers": [
             "14°C — bluzy!",
@@ -174,6 +185,7 @@
           "source": "w jaskini stałe 14°C — bluzy!"
         },
         {
+          "id": "s02q7",
           "q": "Jak nazwano pierwszą ogromną salę jaskini?",
           "answers": [
             "Abisso Ancona",
@@ -186,6 +198,7 @@
           "source": "odkryto salę nazwaną na cześć ich miasta Abisso Ancona"
         },
         {
+          "id": "s02q8",
           "q": "Co zmieściłoby się w pierwszej sali jaskini?",
           "answers": [
             "Katedra z Mediolanu",
@@ -198,6 +211,7 @@
           "source": "Pierwsza sala zmieściłaby katedrę z Mediolanu."
         },
         {
+          "id": "s02q9",
           "q": "Jak nazywają się stalagmity wysokości kilkunastu metrów?",
           "answers": [
             "Giganci",
@@ -210,6 +224,7 @@
           "source": "„Giganci” — stalagmity wysokości kilkunastu metrów"
         },
         {
+          "id": "s02q10",
           "q": "Co buchało ze szczeliny, którą znalazł odkrywca?",
           "answers": [
             "Zimne powietrze",
@@ -239,6 +254,7 @@
       "photoTask": "Opactwo odbite w Sentino od strony mostku — symetria kamienia i wody.",
       "quests": [
         {
+          "id": "s03q1",
           "q": "Ile lat ma kościół San Vittore?",
           "answers": [
             "Prawie 1000 lat",
@@ -251,6 +267,7 @@
           "source": "Ten kościół ma prawie 1000 lat i zero ozdób — sama geometria kamienia."
         },
         {
+          "id": "s03q2",
           "q": "Kto wyrzeźbił jaskinie Frasassi?",
           "answers": [
             "Rzeczka Sentino — kropla po kropli",
@@ -263,6 +280,7 @@
           "source": "Ta mała rzeczka wyrzeźbiła całe jaskinie, które widzieliście. Kropla po kropli, przez miliony lat."
         },
         {
+          "id": "s03q3",
           "q": "Co wyryto w kamieniu przy ołtarzu w San Vittore?",
           "answers": [
             "Symbol ósemki albo nieskończoności",
@@ -275,6 +293,7 @@
           "source": "Przy ołtarzu, po lewej stronie, wyryto w kamieniu symbol ósemki albo znaku nieskończoności"
         },
         {
+          "id": "s03q4",
           "q": "Jakiego koloru jest rzeczka Sentino?",
           "answers": [
             "Zielonkawa",
@@ -287,6 +306,7 @@
           "source": "kamienny mostek nad rzeczką Sentino, zielonkawą od minerałów"
         },
         {
+          "id": "s03q5",
           "q": "Ile ozdób ma kościół San Vittore?",
           "answers": [
             "Zero — sama geometria kamienia",
@@ -299,6 +319,7 @@
           "source": "Ten kościół ma prawie 1000 lat i zero ozdób — sama geometria kamienia."
         },
         {
+          "id": "s03q6",
           "q": "Co jest w budynku obok opactwa?",
           "answers": [
             "Małe muzeum speleologiczne",
@@ -328,6 +349,7 @@
       "photoTask": "Świątynia w skalnej paszczy z dołu ścieżki — cała bryła w otworze groty, człowiek dla skali.",
       "quests": [
         {
+          "id": "s04q1",
           "q": "Kto wpadł na pomysł kościoła w jaskini?",
           "answers": [
             "Papież, który tu się urodził",
@@ -340,6 +362,7 @@
           "source": "Kto pierwszy wpadł na taki pomysł? Papież, który tu się urodził."
         },
         {
+          "id": "s04q2",
           "q": "Co jest obok świątyni, wykute w skale?",
           "answers": [
             "Klasztorek, w którym mieszkali ludzie",
@@ -352,6 +375,7 @@
           "source": "Obok jest klasztorek wykuty w skale — mieszkali w nim ludzie."
         },
         {
+          "id": "s04q3",
           "q": "Jaki kształt ma świątynia Valadiera?",
           "answers": [
             "Ośmioboczny",
@@ -364,6 +388,7 @@
           "source": "…neoklasyczna, ośmioboczna świątynia z białego trawertynu stoi wewnątrz otworu ogromnej groty…"
         },
         {
+          "id": "s04q4",
           "q": "Z jakiego kamienia zbudowano świątynię Valadiera?",
           "answers": [
             "Z białego trawertynu",
@@ -376,6 +401,7 @@
           "source": "ośmioboczna świątynia z białego trawertynu stoi wewnątrz otworu ogromnej groty"
         },
         {
+          "id": "s04q5",
           "q": "Kto mieszkał w pustelni wykutej w skale?",
           "answers": [
             "Benedyktyni",
@@ -388,6 +414,7 @@
           "source": "mieszkali w nim benedyktyni"
         },
         {
+          "id": "s04q6",
           "q": "Kiedy przy świątyni jest najlepsze światło?",
           "answers": [
             "Do południa",
@@ -401,5 +428,174 @@
         }
       ]
     }
-  ]
+  ],
+  "i18nNote": "Klucze tłumaczeń (page-i18n.js / ui_translations): wygenerowane z treści powyżej. Po zmianie pytań uruchom skrypt z gra/README.md („Tłumaczenia”), żeby \"i18n\" zgadzało się z tekstem.",
+  "i18n": {
+    "page.game.frasassi.s01.name": "Parking przy kasach (San Vittore)",
+    "page.game.frasassi.s02.name": "Trasa turystyczna jaskiń",
+    "page.game.frasassi.s03.name": "San Vittore alle Chiuse i mostek na Sentino",
+    "page.game.frasassi.s04.name": "Świątynia Valadiera w skalnej paszczy",
+    "page.game.frasassi.s01q1.q": "Co kryje się w ścianach wąwozu przy parkingu?",
+    "page.game.frasassi.s01q1.hint": "Popatrz na ściany wąwozu: w środku są długie podziemne… korytarze!",
+    "page.game.frasassi.s01q1.a0": "Kilometry korytarzy jaskiń",
+    "page.game.frasassi.s01q1.a1": "Stary zamek rycerski",
+    "page.game.frasassi.s01q1.a2": "Kopalnia złota",
+    "page.game.frasassi.s01q1.a3": "Gniazda orłów",
+    "page.game.frasassi.s01q2.q": "Co trzeba sprawdzić na biletach do jaskiń?",
+    "page.game.frasassi.s01q2.hint": "Spóźnialscy zostają na parkingu. Liczy się czas!",
+    "page.game.frasassi.s01q2.a0": "Godzinę wejścia",
+    "page.game.frasassi.s01q2.a1": "Kolor biletu",
+    "page.game.frasassi.s01q2.a2": "Imię przewodnika",
+    "page.game.frasassi.s01q2.a3": "Pogodę na jutro",
+    "page.game.frasassi.s01q3.q": "Skąd odjeżdża dowóz pod samo wejście do jaskiń?",
+    "page.game.frasassi.s01q3.hint": "Zaczynacie tam, gdzie zostawiacie auto i odbieracie bilety.",
+    "page.game.frasassi.s01q3.a0": "Z parkingu przy kasach",
+    "page.game.frasassi.s01q3.a1": "Z portu w Ankonie",
+    "page.game.frasassi.s01q3.a2": "Z dworca w Rzymie",
+    "page.game.frasassi.s01q3.a3": "Z lotniska",
+    "page.game.frasassi.s01q4.q": "Ile czasu przed swoją godziną trzeba być przy kasach?",
+    "page.game.frasassi.s01q4.hint": "Trzy kwadranse zapasu.",
+    "page.game.frasassi.s01q4.a0": "Minimum 45 minut",
+    "page.game.frasassi.s01q4.a1": "Minutę",
+    "page.game.frasassi.s01q4.a2": "Tydzień",
+    "page.game.frasassi.s01q4.a3": "Wcale nie trzeba",
+    "page.game.frasassi.s01q5.q": "Jak zwiedza się jaskinie Frasassi?",
+    "page.game.frasassi.s01q5.hint": "Wchodzicie o godzinie z biletu razem z innymi.",
+    "page.game.frasassi.s01q5.a0": "Z przewodnikiem, w grupie",
+    "page.game.frasassi.s01q5.a1": "Samemu, po ciemku",
+    "page.game.frasassi.s01q5.a2": "Na rowerze",
+    "page.game.frasassi.s01q5.a3": "Pływając łódką",
+    "page.game.frasassi.s02q1.q": "Jak odkrywcy zmierzyli, jak głęboka jest przepaść?",
+    "page.game.frasassi.s02q1.hint": "Wrzucili coś w szczelinę i słuchali, jak długo spada.",
+    "page.game.frasassi.s02q1.a0": "Liczyli sekundy spadania kamienia",
+    "page.game.frasassi.s02q1.a1": "Spuścili długą miarkę",
+    "page.game.frasassi.s02q1.a2": "Zapytali nietoperza",
+    "page.game.frasassi.s02q1.a3": "Zgadywali na oko",
+    "page.game.frasassi.s02q2.q": "Co rośnie z podłogi jaskini?",
+    "page.game.frasassi.s02q2.hint": "Stalaktyt wisi z sufitu. A ten drugi rośnie z dołu…",
+    "page.game.frasassi.s02q2.a0": "Stalagmit",
+    "page.game.frasassi.s02q2.a1": "Stalaktyt",
+    "page.game.frasassi.s02q2.a2": "Grzyb",
+    "page.game.frasassi.s02q2.a3": "Kryształowa lampa",
+    "page.game.frasassi.s02q3.q": "Co powstaje, gdy stalaktyt i stalagmit spotkają się w pół drogi?",
+    "page.game.frasassi.s02q3.hint": "Sopel z góry i sopel z dołu łączą się w jeden słup.",
+    "page.game.frasassi.s02q3.a0": "Kolumna",
+    "page.game.frasassi.s02q3.a1": "Most",
+    "page.game.frasassi.s02q3.a2": "Jeziorko",
+    "page.game.frasassi.s02q3.a3": "Tunel",
+    "page.game.frasassi.s02q4.q": "Jak szybko rośnie stalaktyt?",
+    "page.game.frasassi.s02q4.hint": "Bardzo, bardzo wolno — szybciej rosną paznokcie.",
+    "page.game.frasassi.s02q4.a0": "Około milimetra na 10 lat",
+    "page.game.frasassi.s02q4.a1": "Metr na rok",
+    "page.game.frasassi.s02q4.a2": "Centymetr na dzień",
+    "page.game.frasassi.s02q4.a3": "Kilometr na tydzień",
+    "page.game.frasassi.s02q5.q": "W którym roku odkryto jaskinie Frasassi?",
+    "page.game.frasassi.s02q5.hint": "Odkryto je za życia waszych dziadków.",
+    "page.game.frasassi.s02q5.a0": "W 1971",
+    "page.game.frasassi.s02q5.a1": "W 1828",
+    "page.game.frasassi.s02q5.a2": "W 1060",
+    "page.game.frasassi.s02q5.a3": "W 2020",
+    "page.game.frasassi.s02q6.q": "Jaka temperatura jest w jaskini przez cały rok?",
+    "page.game.frasassi.s02q6.hint": "Chłodno, ale nie mroźno. Przyda się bluza.",
+    "page.game.frasassi.s02q6.a0": "14°C — bluzy!",
+    "page.game.frasassi.s02q6.a1": "30°C — upał!",
+    "page.game.frasassi.s02q6.a2": "Mróz poniżej zera",
+    "page.game.frasassi.s02q6.a3": "50°C — jak w saunie",
+    "page.game.frasassi.s02q7.q": "Jak nazwano pierwszą ogromną salę jaskini?",
+    "page.game.frasassi.s02q7.hint": "Na cześć miasta, z którego byli odkrywcy.",
+    "page.game.frasassi.s02q7.a0": "Abisso Ancona",
+    "page.game.frasassi.s02q7.a1": "Sala Rzymska",
+    "page.game.frasassi.s02q7.a2": "Grota Smoka",
+    "page.game.frasassi.s02q7.a3": "Pokój Króla",
+    "page.game.frasassi.s02q8.q": "Co zmieściłoby się w pierwszej sali jaskini?",
+    "page.game.frasassi.s02q8.hint": "Coś bardzo wysokiego, z iglicami.",
+    "page.game.frasassi.s02q8.a0": "Katedra z Mediolanu",
+    "page.game.frasassi.s02q8.a1": "Tylko jeden samochód",
+    "page.game.frasassi.s02q8.a2": "Mały namiot",
+    "page.game.frasassi.s02q8.a3": "Nic, jest malutka",
+    "page.game.frasassi.s02q9.q": "Jak nazywają się stalagmity wysokości kilkunastu metrów?",
+    "page.game.frasassi.s02q9.hint": "Są ogromne — jak olbrzymy z bajki.",
+    "page.game.frasassi.s02q9.a0": "Giganci",
+    "page.game.frasassi.s02q9.a1": "Krasnale",
+    "page.game.frasassi.s02q9.a2": "Sople",
+    "page.game.frasassi.s02q9.a3": "Grzybki",
+    "page.game.frasassi.s02q10.q": "Co buchało ze szczeliny, którą znalazł odkrywca?",
+    "page.game.frasassi.s02q10.hint": "Znak wielkiej, chłodnej pustki w środku.",
+    "page.game.frasassi.s02q10.a0": "Zimne powietrze",
+    "page.game.frasassi.s02q10.a1": "Gorąca para",
+    "page.game.frasassi.s02q10.a2": "Dym z ogniska",
+    "page.game.frasassi.s02q10.a3": "Bańki mydlane",
+    "page.game.frasassi.s03q1.q": "Ile lat ma kościół San Vittore?",
+    "page.game.frasassi.s03q1.hint": "To bardzo, bardzo stary kościół — prawie tysiąc świeczek na torcie!",
+    "page.game.frasassi.s03q1.a0": "Prawie 1000 lat",
+    "page.game.frasassi.s03q1.a1": "Około 10 lat",
+    "page.game.frasassi.s03q1.a2": "Około 100 lat",
+    "page.game.frasassi.s03q1.a3": "Został zbudowany w zeszłym roku",
+    "page.game.frasassi.s03q2.q": "Kto wyrzeźbił jaskinie Frasassi?",
+    "page.game.frasassi.s03q2.hint": "Przechodzisz przez nią po mostku. Woda pracowała miliony lat.",
+    "page.game.frasassi.s03q2.a0": "Rzeczka Sentino — kropla po kropli",
+    "page.game.frasassi.s03q2.a1": "Górnicy z kilofami",
+    "page.game.frasassi.s03q2.a2": "Wiatr w jedną noc",
+    "page.game.frasassi.s03q2.a3": "Krety",
+    "page.game.frasassi.s03q3.q": "Co wyryto w kamieniu przy ołtarzu w San Vittore?",
+    "page.game.frasassi.s03q3.hint": "Wygląda jak cyfra, którą można rysować bez końca.",
+    "page.game.frasassi.s03q3.a0": "Symbol ósemki albo nieskończoności",
+    "page.game.frasassi.s03q3.a1": "Mapę skarbu",
+    "page.game.frasassi.s03q3.a2": "Podpis króla",
+    "page.game.frasassi.s03q3.a3": "Zegar słoneczny",
+    "page.game.frasassi.s03q4.q": "Jakiego koloru jest rzeczka Sentino?",
+    "page.game.frasassi.s03q4.hint": "Barwią ją minerały — kolor trawy.",
+    "page.game.frasassi.s03q4.a0": "Zielonkawa",
+    "page.game.frasassi.s03q4.a1": "Czerwona",
+    "page.game.frasassi.s03q4.a2": "Czarna",
+    "page.game.frasassi.s03q4.a3": "Fioletowa",
+    "page.game.frasassi.s03q5.q": "Ile ozdób ma kościół San Vittore?",
+    "page.game.frasassi.s03q5.hint": "To bardzo skromny, surowy kościół.",
+    "page.game.frasassi.s03q5.a0": "Zero — sama geometria kamienia",
+    "page.game.frasassi.s03q5.a1": "Tysiąc złotych figur",
+    "page.game.frasassi.s03q5.a2": "Pełno kolorowych obrazów",
+    "page.game.frasassi.s03q5.a3": "Lampki na każdym oknie",
+    "page.game.frasassi.s03q6.q": "Co jest w budynku obok opactwa?",
+    "page.game.frasassi.s03q6.hint": "Muzeum o jaskiniach i ich badaczach.",
+    "page.game.frasassi.s03q6.a0": "Małe muzeum speleologiczne",
+    "page.game.frasassi.s03q6.a1": "Kino",
+    "page.game.frasassi.s03q6.a2": "Basen",
+    "page.game.frasassi.s03q6.a3": "Sklep z zabawkami",
+    "page.game.frasassi.s04q1.q": "Kto wpadł na pomysł kościoła w jaskini?",
+    "page.game.frasassi.s04q1.hint": "To ktoś bardzo ważny w Kościele, kto pochodził właśnie z tych stron.",
+    "page.game.frasassi.s04q1.a0": "Papież, który tu się urodził",
+    "page.game.frasassi.s04q1.a1": "Król na białym koniu",
+    "page.game.frasassi.s04q1.a2": "Rybak z rzeki",
+    "page.game.frasassi.s04q1.a3": "Kapitan statku",
+    "page.game.frasassi.s04q2.q": "Co jest obok świątyni, wykute w skale?",
+    "page.game.frasassi.s04q2.hint": "Ludzie mieszkali tam w środku góry — mur łączy się ze skałą.",
+    "page.game.frasassi.s04q2.a0": "Klasztorek, w którym mieszkali ludzie",
+    "page.game.frasassi.s04q2.a1": "Basen",
+    "page.game.frasassi.s04q2.a2": "Wieża z zegarem",
+    "page.game.frasassi.s04q2.a3": "Zjeżdżalnia",
+    "page.game.frasassi.s04q3.q": "Jaki kształt ma świątynia Valadiera?",
+    "page.game.frasassi.s04q3.hint": "Policz boki: tyle, ile nóg ma pająk.",
+    "page.game.frasassi.s04q3.a0": "Ośmioboczny",
+    "page.game.frasassi.s04q3.a1": "Okrągły jak beczka",
+    "page.game.frasassi.s04q3.a2": "Trójkątny",
+    "page.game.frasassi.s04q3.a3": "Kwadratowy jak pudełko",
+    "page.game.frasassi.s04q4.q": "Z jakiego kamienia zbudowano świątynię Valadiera?",
+    "page.game.frasassi.s04q4.hint": "Jasny, biały kamień.",
+    "page.game.frasassi.s04q4.a0": "Z białego trawertynu",
+    "page.game.frasassi.s04q4.a1": "Z czerwonej cegły",
+    "page.game.frasassi.s04q4.a2": "Z drewna",
+    "page.game.frasassi.s04q4.a3": "Z lodu",
+    "page.game.frasassi.s04q5.q": "Kto mieszkał w pustelni wykutej w skale?",
+    "page.game.frasassi.s04q5.hint": "Zakonnicy, mnisi.",
+    "page.game.frasassi.s04q5.a0": "Benedyktyni",
+    "page.game.frasassi.s04q5.a1": "Piraci",
+    "page.game.frasassi.s04q5.a2": "Rycerze",
+    "page.game.frasassi.s04q5.a3": "Nietoperze-detektywi",
+    "page.game.frasassi.s04q6.q": "Kiedy przy świątyni jest najlepsze światło?",
+    "page.game.frasassi.s04q6.hint": "Po 15:00 grota tonie w cieniu.",
+    "page.game.frasassi.s04q6.a0": "Do południa",
+    "page.game.frasassi.s04q6.a1": "Tylko w nocy",
+    "page.game.frasassi.s04q6.a2": "O północy",
+    "page.game.frasassi.s04q6.a3": "Po 15:00"
+  }
 }

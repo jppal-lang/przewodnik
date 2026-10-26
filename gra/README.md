@@ -65,16 +65,47 @@ przy kolejnych grach.
 - **Wspinaczka po linie** (jaskinia) i **głaz w poprzek ścieżki** (wąwóz, przystanek 4): szybkie stukanie,
   przy głazie na zmianę ◀ ▶. Przegrana = spokojna powtórka, po 2 próbach „Pomiń”. Wygrana z liny = skrót.
 - **Skarb Quo** (tylko Trudny, od 1.06.2027 — start płatności; wcześniej tylko z `?skarb=1` w adresie): na pierwszym
-  przystanku w wąwozie za wyspą w chmurach wisi komnata ze złotą skrzynią. Wisi 8 kafli nad ziemią i jest otoczona
-  płaskim terenem — wejście tylko balonikiem (ze skrzyni pod wyspą). Otwarcie = świętowanie, napis „Znalazłeś Skarb Quo!
+  przystanku w wąwozie, nad zwykłą wyspą w chmurach, w ukrytej „strefie nieba” POWYŻEJ górnej krawędzi poziomu (podłoga komnaty
+  16 kafli nad sufitem poziomu). Zwykła kamera tam nie sięga, więc komnaty nie widać. Tylko tu balonik (ze skrzyni przy wyspie)
+  nie zatrzymuje się na suficie: trzymaj skok, leć w prawo i w górę — kamera jedzie za Quo w chmury, aż pokaże się komnata.
+  Bez balonika najwyżej sięga się ok. 4,5 kafla nad poziom (podwójny skok z wyspy), a kamera rusza w górę dopiero z balonikiem.
+  Otwarcie = świętowanie, napis „Znalazłeś Skarb Quo!
   Pokaż go rodzicom — czeka w ich panelu.” i złota naklejka w albumie. Dziecko nie widzi żadnych cen ani kodów.
   `treasure.js`: zalogowany rodzic na tym urządzeniu (`qc.session`) → `POST api.quolino.com/rest/v1/rpc/claim_game_treasure`
   z `{p_trip, p_level:'trudny', p_token}` (w nagłówkach klucz anon — Traefik zdejmuje Authorization); bez sesji, przy statusie ≠ 200
   albo `{error}` innym niż `level`/`not_found` → `{trip, at}` do `quolino_game_treasure_pending` (odbiera `konto.html`).
   Jeden skarb na wycieczkę na urządzeniu (`quolino_game_treasure`). Bez flagi: brak komnaty i żadnej podpowiedzi.
+- **Komnaty** (pokoje z przeskokiem ekranu; własny projekt w duchu klasycznych gier z komnatami): na przystanku przy opactwie
+  (teren `stone`) drogę zamyka mur. Drzwi w murze prowadzą do kompleksu komnat 16×11 kafli, wyjście z ostatniej komnaty wraca
+  na ścieżkę za murem. Łatwy: „Piwnice opactwa” (3 komnaty, 1 klucz), Średni: „Labirynt pod opactwem” (7 komnat, 2 klucze,
+  ciemna komnata), Trudny: „Komnaty jaskini” (9 komnat, 3 klucze, kilof i pęknięta ściana, 2 ciemne komnaty).
+  W środku: drabiny i liny/łańcuchy (trzymaj skok = w górę, puść = powoli w dół, ◀/▶ = zejdź, ◀/▶ + skok = skok z liny;
+  stojąc chwilę na szczycie drabiny Quo sam schodzi), ruchoma posadzka, znikające mostki (dwie grupy na zmianę, migają przed
+  zniknięciem), kamienne kraty na zegar (nie ranią, tylko odsuwają), toczące się kamienie, nietoperze i pająki (odpychają),
+  przepaście z wodą, kolorowe klucze i drzwi, skrzynie, pochodnia do ciemnych komnat, kilof na pękniętą ścianę.
+  Plecak: 4 miejsca (pasek w lewym górnym rogu), mapka odwiedzonych komnat w prawym górnym rogu.
+  Uczciwość: klucze i przedmioty nigdy nie przepadają; upadek = powrót do wejścia ostatniej komnaty z całym plecakiem; na Łatwym
+  i Średnim każda komnata to punkt kontrolny; na Trudnym drzemka wraca na start przystanku, a ukończone komnaty potem przepuszczają
+  od razu do wyjścia. Układ nigdy nie wymaga więcej niż 4 rzeczy naraz. 1–2 zagubione naklejki przystanku leżą w komnatach.
+  Mapy komnat są tekstowe (`CX` w `game.js`, legenda w komentarzu sekcji 5b); `route` to punkty dla bota testowego.
 - **Przebrania** (tylko wygląd): kask z lampką (świeci mocniej w jaskini), kaptur mnicha, kapelusz odkrywcy.
   Wybór na ekranie startowym.
 - **Tryb foto** 📸: przy naklejce przystanku robi „zdjęcie” Quo z naklejką. Zdjęcia są w albumie na końcu.
+
+## Tłumaczenia (17 języków)
+
+Gra używa `page-i18n.js` z katalogu głównego (jak strony pomocnicze): język z `?lang=` albo `localStorage quolino_lang`,
+tłumaczenia z tabeli `ui_translations` (klucze `page.game.*`), brak tłumaczenia → angielski → polski.
+
+- HTML: `data-t`, `data-t-aria`, `data-t-html` (jak na innych stronach).
+- `game.js`: każdy napis to `PT('page.game.…', 'tekst polski')` — dosłownie, w pojedynczych cudzysłowach (z tego czyta serwer).
+  Zmienne części jako `{n}`, `{name}` itd., podmieniane po tłumaczeniu (`fill()`). Napisy na płótnie: krój strony z zapasowymi,
+  min. 18 px na ekranie, za długie zmniejszają się, potem łamią w 2 linie. Gra czeka na tłumaczenia (najdłużej 2,5 s).
+- `frasassi.json`: pytania mają stałe `id` (np. `s02q4`), a obiekt `"i18n"` trzyma klucze `page.game.frasassi.<id>.q|a0–a3|hint`
+  i `page.game.frasassi.s<nr>.name` z polskim tekstem. Po zmianie treści przystanków odśwież go:
+  `python3 -c "import json;f='gra/frasassi.json';d=json.load(open(f));d['i18n']={**{f\"page.game.{d['trip']}.s{s['key']}.name\":s['name'] for s in d['stops']},**{f\"page.game.{d['trip']}.{q['id']}.{k}\":v for s in d['stops'] for q in s['quests'] for k,v in [('q',q['q']),('hint',q['hint'])]+[(f'a{i}',a) for i,a in enumerate(q['answers'])]}};open(f,'w').write(json.dumps(d,indent=2,ensure_ascii=False)+'\n')"`
+- Serwer (`_content/claude-skills/bin/ui-translate.mjs`, co godzinę) zbiera polskie teksty z `*.html` w katalogu głównym i w `gra/`,
+  z wywołań `PT('page.…', '…')` w `*.js` (katalog główny i `gra/`) oraz z obiektów `"i18n"` w `gra/*.json`, i tłumaczy brakujące.
 
 ## Poziom z danych wycieczki
 

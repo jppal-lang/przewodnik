@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tłumaczenia stron pomocniczych (kontakt, współpraca, logowanie, konto, prywatność) — JP 2026-10-25.
+// Tłumaczenia stron pomocniczych (kontakt, współpraca, logowanie, konto, prywatność) — JP 2026-10-25; gra „Quo: Wyprawa” (gra/) — 2026-10-26.
 // Źródło: polski tekst w HTML repo (data-t="page.…">tekst<, data-t-ph/aria oraz PT('page.…', 'tekst') w skryptach).
 // Skrypt zapisuje polski do public.ui_translations, a brakujące albo nieaktualne języki tłumaczy Gemini (Antigravity, AI Pro).
 //   node ui-translate.mjs [--dry] [--lang de,en] [--force]      (cron co godzinę; cichy, gdy nic nowego)
@@ -17,12 +17,21 @@ await run('sh', ['/opt/data/quolino/repo.sh', 'pull'], { timeout: 120_000 });   
 // 1) polskie teksty ze stron
 const unesc = (t) => t.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 const PL = {};
-for (const f of readdirSync(REPO).filter(x => x.endsWith('.html'))) {
-  const h = readFileSync(`${REPO}/${f}`, 'utf8');
+// JP 2026-10-26: także gra (gra/): HTML jak wyżej, PT('page.…', '…') w skryptach *.js (katalog główny i gra/),
+// oraz pliki gra/*.json z obiektem "i18n" {klucz: tekst polski} (pytania quizu, nazwy przystanków).
+const ls = (dir, ext) => { try { return readdirSync(`${REPO}/${dir}`).filter(x => x.endsWith(ext)).map(x => `${REPO}/${dir}${dir ? '/' : ''}${x}`); } catch { return []; } };
+const ptCalls = (h) => { for (const m of h.matchAll(/PT\('(page\.[a-z0-9_.-]+)',\s*'((?:[^'\\]|\\.)*)'\)/g)) PL[m[1]] ??= unesc(m[2].replace(/\\'/g, "'")); };
+for (const f of [...ls('', '.html'), ...ls('gra', '.html')]) {
+  const h = readFileSync(f, 'utf8');
   for (const m of h.matchAll(/data-t="(page\.[a-z0-9_.-]+)"[^>]*>([^<]+)</g)) PL[m[1]] ??= unesc(m[2]);
   for (const m of h.matchAll(/data-t-(?:ph|aria)="(page\.[a-z0-9_.-]+)"[^>]*?(?:placeholder|aria-label)="([^"]+)"/g)) PL[m[1]] ??= unesc(m[2]);
   for (const m of h.matchAll(/<(p|li|h1|h2|h3|span|div)\b[^>]*data-t-html="(page\.[a-z0-9_.-]+)"[^>]*>([\s\S]*?)<\/\1>/g)) PL[m[2]] ??= m[3].replace(/\s+/g, ' ').trim();
-  for (const m of h.matchAll(/PT\('(page\.[a-z0-9_.-]+)',\s*'((?:[^'\\]|\\.)*)'\)/g)) PL[m[1]] ??= unesc(m[2].replace(/\\'/g, "'"));
+  ptCalls(h);
+}
+for (const f of [...ls('', '.js'), ...ls('gra', '.js')]) ptCalls(readFileSync(f, 'utf8'));
+for (const f of ls('gra', '.json')) {
+  let j = null; try { j = JSON.parse(readFileSync(f, 'utf8')); } catch { continue; }
+  if (j && j.i18n && typeof j.i18n === 'object') for (const [k, v] of Object.entries(j.i18n)) if (/^page\.[a-z0-9_.-]+$/.test(k) && typeof v === 'string' && v.trim()) PL[k] ??= v.replace(/\s+/g, ' ').trim();
 }
 const keys = Object.keys(PL);
 if (!keys.length) process.exit(0);
@@ -65,7 +74,8 @@ try {
       const part = Object.fromEntries(todo.slice(i, i + 60).map(k => [k, PL[k]]));
       const prompt = `Przetłumacz napisy interfejsu strony Quolino (rodzinne przewodniki po miastach Europy, gra terenowa dla dzieci; zwracamy się do rodzica na „ty”, ciepło i prosto) z polskiego na język o kodzie „${lang}”.
 Zasady: naturalny język strony; znaczniki HTML (<code>, <strong>, <b>, <em>, <br>) zostaw dokładnie jak są, a tekstu w <code> nie tłumacz; nazwy firm, przepisów i serwisów zostaw;
-naturalny, krótki język interfejsu jak w dobrych aplikacjach w tym języku; zachowaj sens, ton i interpunkcję; nazwy własne Quolino i Quo bez zmian; nie dodawaj nic od siebie; nie używaj długich myślników.
+naturalny, krótki język interfejsu jak w dobrych aplikacjach w tym języku; zachowaj sens, ton i interpunkcję; klucze page.game.* to gra dla dzieci 5–12 lat — mów do dziecka, prosto i wesoło;
+wstawki w klamrach ({n}, {name}, {t} itd.) oraz symbole ★ ← → ◀ ▶ zostaw dokładnie jak są; nazwy własne Quolino i Quo bez zmian; nie dodawaj nic od siebie; nie używaj długich myślników.
 Odpowiedz wyłącznie JSON-em: {"klucz": "tłumaczenie", …} z tymi samymi kluczami.
 ${JSON.stringify(part, null, 1)}`;
       let out;

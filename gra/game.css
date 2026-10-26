@@ -248,3 +248,10 @@ h2{font-size:30px}
 }
 .sticker-gold{background:#FFF4CF;box-shadow:0 0 0 2px #E8A912,0 4px 0 rgba(6,42,88,.15)}
 .sticker svg{height:auto}
+
+/* Tłumaczenia (17 języków): dłuższe napisy zawijają się zamiast wychodzić poza przyciski; nigdy mniej niż 18 px */
+button,.btn,.answer,.diff-btn,.hat-btn,.kicker,.toast,.celebrate-text,.organ-status,.sub-label,.demo-toggle span{overflow-wrap:anywhere;hyphens:auto}
+.btn{padding:8px 20px;line-height:1.2}
+.diff-btn b,.diff-btn span{line-height:1.15}
+.pad-jump span{max-width:96px;font-size:18px;text-align:center;overflow-wrap:anywhere}
+.kicker{letter-spacing:.03em}

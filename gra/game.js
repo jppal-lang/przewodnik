@@ -62,6 +62,12 @@
   function rng(seed) { var s = (seed >>> 0) || 1; return function () { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return (s % 100000) / 100000; }; }
   function pick(R, arr) { return arr[Math.floor(R() * arr.length)]; }
   function ease(t) { return 1 - Math.pow(1 - clamp(t, 0, 1), 3); }
+  /* Tłumaczenia (page-i18n.js w katalogu głównym): PT('page.game.…', 'tekst polski') — polski tekst stoi w kodzie
+     (z niego ui-translate.mjs robi źródło), tłumaczenia przychodzą z bazy. Zmienne części: {n} podmieniane po PT. */
+  function PT(k, pl) { return window.PT ? window.PT(k, pl) : pl; }
+  function fill(s, o) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return o[k] != null ? o[k] : m; }); }
+  var FONT = "'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Helvetica Neue',Arial,sans-serif";
+  function font(px, w) { return (w || 900) + ' ' + px + 'px ' + FONT; }
 
   /* ---------- 2. Pamięć i postęp ---------- */
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -264,6 +270,9 @@
         P.body.a = -.28; P.head.a = -.2; P.armFront.a = -1.3; P.armBack.a = -1.7; P.legFront.a = .45; P.legBack.a = -.2; P.blink = true; break;
       case 'nap':
         P.root.a = -1.45; P.root.dy = -6; P.blink = true; P.tail.a = .4; P.armFront.a = .2; break;
+      case 'climb': // wspinaczka: łapki na zmianę w górę
+        b = o.phase || 0;
+        P.armFront.a = -2.6 + s(b) * .5; P.armBack.a = -2.6 - s(b) * .5; P.legFront.a = s(b) * .5; P.legBack.a = -s(b) * .5; P.tail.a = -.3; P.head.a = -.1; P.blink = false; break;
       case 'cheer':
         P.armFront.a = -1.75; P.armBack.a = 2.45; P.legFront.a = -.25; P.legBack.a = .2; P.tail.a = .3; P.head.a = -.06; P.blink = false; break;
       case 'dance0': // machanie łapkami, krok w bok
@@ -445,11 +454,14 @@
      4 krucha półka (spada chwilę po wejściu), 5 mokra skała (ślisko),
      6 fałszywa ściana (wygląda jak skała, da się przejść — sekret), 7 kolce (na ziemi albo zwisające),
      8 skrzynia zamknięta (otwiera się uderzeniem od dołu albo skokiem z góry), 9 skrzynia otwarta. */
-  var SOLID = [0, 1, 0, 0, 0, 1, 0, 0, 1, 1], ONEWAY = [0, 0, 1, 0, 1, 0, 0, 0, 0, 0];
+  /* 10 drabina, 11 lina/łańcuch, 12/13 ruchoma posadzka (w lewo/w prawo), 14/15 znikające mostki, 16 pęknięta ściana, 17 krata,
+     20/21/22 drzwi czerwone/niebieskie/zielone — tylko w komnatach (sekcja 5b). */
+  var SOLID =  [0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0],
+      ONEWAY = [0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
   var PU_KINDS = ['magnet', 'doublejump', 'glide', 'balloon'];
   /* Skarb Quo (decyzja JP 2026-10-26): ukryta komnata tylko na Trudnym, dostępna wyłącznie balonikiem.
      Budowana dopiero od startu płatności (1.06.2027) albo z ?skarb=1 w adresie (test JP). Wcześniej: ani komnaty, ani podpowiedzi. */
-  var TREASURE_FROM = '2027-06-01';
+  var TREASURE_FROM = '2027-06-01', SKY_H = 22; // strefa nieba nad poziomem (tylko przy Skarbie Quo)
   function treasureOn() {
     var d = new Date(), today = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
     return today >= TREASURE_FROM || /[?&]skarb=1(&|$)/.test(location.search);
@@ -460,7 +472,7 @@
     var L = { W: W, SL: SL, grid: new Uint8Array(W * ROWS), sec: new Uint8Array(W), crumbleAt: new Int16Array(W * ROWS).fill(-1),
       sections: [], coins: [], enemies: [], drippers: [], gates: [], springs: [], chests: [], landmarks: [], movers: [], crumbles: [],
       winds: [], rocks: [], hidden: [], minis: [], zips: [], carts: [], items: [], chestList: [], chestAt: new Int16Array(W * ROWS).fill(-1),
-      plaques: [], raftRocks: [], treasure: null };
+      plaques: [], raftRocks: [], treasure: null, cx: [], cxDoors: [] };
     // Skarb Quo: pierwszy przystanek w wąwozie (inaczej pierwszy poza jaskinią)
     var tSec = -1;
     if (D.key === 'hard' && treasureOn()) {
@@ -495,7 +507,9 @@
       var landX = x0 + SL - 9;
       var MINI_W = { valley: 38, cave: 32, stone: 32, cliff: 14 };
       var miniX = D.adv ? landX - MINI_W[terr] : landX - 3;
-      var hpos = [.14, .44, .76].map(function (f) { return x0 + Math.round(f * (miniX - x0)); });
+      var cxHere = terr === 'stone' && !L.cx.length && !L.cxPlanned, nIn = cxHere ? CX[D.key].stickers : 0; // komnaty: pierwszy przystanek przy opactwie
+      if (cxHere) L.cxPlanned = true;
+      var hpos = [.14, .44, .76].slice(0, 3 - nIn).map(function (f) { return x0 + Math.round(f * (miniX - x0)); });
       var htypes = ['secret', 'tower', 'skygap']; for (var hi = 2; hi > 0; hi--) { var hj = Math.floor(R() * (hi + 1)); var tt = htypes[hi]; htypes[hi] = htypes[hj]; htypes[hj] = tt; }
       var g = GROUND, x = x0, gi = 0, hk = 0, fk = 0;
       var span = miniX - x0, forced = [];
@@ -504,6 +518,7 @@
       forced.push(si === tSec ? { at: x0 + Math.round(.18 * span), name: 'treasureIsland', pri: 1 } : { at: x0 + Math.round(.18 * span), name: 'skyIsland' });
       if (terr === 'valley' || terr === 'cliff') forced.push({ at: x0 + Math.round(.5 * span), name: 'zipline' });
       if (terr === 'stone') forced.push({ at: x0 + Math.round(.2 * span), name: 'mosaic' });
+      if (cxHere) forced.push({ at: x0 + Math.round(.4 * span), name: 'complex', pri: 1 });
       if (cave && D.adv) { forced.push({ at: x0 + Math.round(SL * .19), name: 'raft', pri: 1 }); forced.push({ at: x0 + Math.round(SL * .46), name: 'mine', pri: 1 }); }
       if (!cave) forced.push({ at: x0 + Math.round(.62 * span), name: 'chestPU' });
       forced.forEach(function (f) { if (f.name === 'zipline' || f.name === 'mosaic') f.pri = 1; });
@@ -639,18 +654,24 @@
           else { coin(x + 12, IR - 1); coin(x + 13, IR - 1); coin(x + 14, IR - 1); }
           return w;
         }],
-        treasureIsland: [40, function () { // Trudny + flaga: wyspa w chmurach, a za nią komnata ze Skarbem Quo
-          // Komnata wisi 8 kafli nad ziemią (podwójny skok sięga ok. 6,5), teren dookoła płaski i niski — wejść da się tylko balonikiem.
+        treasureIsland: [30, function () { // Trudny + flaga: zwykła wyspa w chmurach, a wysoko NAD poziomem — niewidoczna komnata ze Skarbem Quo
+          /* JP 2026-10-26: komnata leży w „strefie nieba” nad górną krawędzią poziomu (rzędy ujemne), poza zwykłym kadrem kamery.
+             Tylko tu balonik nie zatrzymuje się na suficie poziomu: leci dalej w chmury, a kamera jedzie za nim w górę.
+             Bez balonika najwyżej sięga się ok. 4,5 kafla ponad poziom (podwójny skok z wyspy), komnata ma podłogę 16 kafli nad nim. */
           g = GROUND; flat(4); x += 4;
-          var w = 35, IR = 2, rf = 3, c0 = x + 17, c1 = x + 23, i, y;
+          var w = 26, IR = 2, i, y, sx0 = x + 3, sx1 = x + 25, c0 = x + 16, c1 = x + 22, rf = -16, rc = -20;
           flat(w); chest(x + 2, g - 3, 'pu:balloon');
           for (i = 5; i <= 14; i++) { set(x + i, IR, 2); if (i % 2) coin(x + i, IR - 1); }
           if (hatHere) L.items.push({ type: 'hat', kind: hatHere, x: (x + 12) * TILE + 16, y: IR * TILE - 22, alive: true });
-          for (i = x + 15; i <= c1; i++) set(i, rf, 1);      // ganek i podłoga komnaty
-          for (i = c0; i <= c1; i++) set(i, 0, 1);           // strop
-          for (y = 0; y <= rf; y++) set(c1, y, 1);           // tylna ściana; wejście od lewej (rzędy 1–2)
-          coin(x + 15, rf - 1); coin(x + 16, rf - 1);
-          L.treasure = { x: (c1 - 2) * TILE + 16, y: rf * TILE, x0: c0 * TILE, x1: c1 * TILE, y0: TILE, y1: rf * TILE, sec: si,
+          L.skyH = SKY_H; L.skyX0 = sx0; L.skyX1 = sx1; L.sky = new Uint8Array(W * SKY_H);
+          function sky(cx, cy, v) { if (cy < 0 && cy >= -SKY_H) L.sky[(cy + SKY_H) * W + cx] = v; }
+          for (i = c0 - 3; i <= c1; i++) sky(i, rf, 1);        // ganek i podłoga komnaty
+          for (i = c0; i <= c1; i++) sky(i, rc, 1);            // strop
+          for (y = rc; y <= rf; y++) sky(c1, y, 1);           // tylna ściana; wejście od lewej
+          for (i = x + 8; i <= x + 10; i++) sky(i, -8, 2);    // chmurki do odpoczynku (też tylko dla balonika)
+          for (i = x + 12; i <= x + 13; i++) sky(i, -12, 2);
+          [[x + 7, -4], [x + 9, -9], [x + 12, -13], [c0 - 2, rf - 1], [c0 - 1, rf - 1]].forEach(function (p) { coin(p[0], p[1]); });
+          L.treasure = { x: (c1 - 2) * TILE + 16, y: rf * TILE, x0: c0 * TILE, x1: c1 * TILE, y0: (rc + 1) * TILE, y1: rf * TILE, sec: si,
             open: !!(window.QuoTreasure && QuoTreasure.found(trip.trip)), seen: false };
           return w;
         }],
@@ -661,6 +682,17 @@
           L.zips.push({ x0: zx * TILE + 40, y0: g * TILE - 50, x1: (zx + 16) * TILE, y1: g * TILE - 34 });
           for (i = 0; i < 6; i++) coin(zx + 5 + i * 1.6, g - 3.4 - Math.sin(i / 5 * Math.PI) * 1.4);
           return 4;
+        }],
+        complex: [17, function () { // mur opactwa: drzwi do komnat, wyjście za murem (sekcja 5b)
+          g = GROUND; flat(17);
+          var zi = L.cx.length, Z = buildComplex(D, si, zi, L), i, y;
+          L.cx.push(Z);
+          for (i = 5; i <= 10; i++) for (y = 0; y < g; y++) set(x + i, y, 1);
+          L.cxDoors.push({ x: (x + 3) * TILE + 16, y: g * TILE, zi: zi });
+          Z.back = { x: (x + 13) * TILE + 16, y: g * TILE };
+          coin(x + 1, g - 2); coin(x + 15, g - 2);
+          S.par += CX[D.key].par;
+          return 17;
         }],
         mosaic: [11, function () { // mozaika przy opactwie odblokowuje skrzynię
           var w = 10; flat(w);
@@ -775,7 +807,7 @@
         L.chests.push({ x: (endC - 1) * TILE + 16, y: WR * TILE, open: false });
       }
       S.checkpoint = { x: (x0 + 2) * TILE + 16, y: GROUND * TILE };
-      S.par = Math.round(SL * TILE / RUN * D.parMul + 4);
+      S.par += Math.round(SL * TILE / RUN * D.parMul + 4); // + czas na komnaty (complex)
     });
     for (var x = SL * n; x < W; x++) { ground(x, GROUND); L.sec[x] = n - 1; }
     for (var y = 0; y < ROWS; y++) set(W - 1, y, 1);
@@ -841,6 +873,505 @@
     return x;
   }
 
+  /* ---------- 5b. Komnaty pod opactwem (pokoje „flip-screen”, JP 2026-10-26) ----------
+     Własny projekt w duchu klasycznych gier z pokojami: kompleks 3 (Łatwy), 7 (Średni) albo 9 (Trudny) komnat 16×11 kafli,
+     połączonych w lewo/prawo i drabinami w górę/w dół. Wejście drzwiami w murze opactwa na trasie przystanku „stone”,
+     wyjście drzwiami z ostatniej komnaty z powrotem na ścieżkę (mur dalej niż wejście — przejść trzeba przez komnaty).
+     Mapa:  # skała  . pusto  - kładka  H drabina  | lina / łańcuch  < > ruchoma posadzka  = % znikające mostki (dwie grupy na zmianę)
+            I krata (zamyka się i otwiera co kilka sekund)  X pęknięta ściana (kilof)  R U N drzwi czerwone / niebieskie / zielone
+            ~ woda w dole przepaści  r u n klucze  T pochodnia  P kilof  C skrzynia (zawartość: chest)  S ukryta naklejka
+            E wyjście  @ start  * kamyczek  o toczący się kamień  v nietoperz (odbija się)  s pająk na nitce
+     Zasady uczciwości: klucze i przedmioty nie giną (upadek = powrót na wejście do komnaty z całym plecakiem), plecak mieści 4 rzeczy
+     i układ nigdy nie wymaga więcej, krata nikogo nie rani (tylko odpycha), drzwi zostają otwarte, zrobiony kompleks na Trudnym
+     po „drzemce” przepuszcza od razu do wyjścia. route = punkty dla bota testowego (dzieci go nie widzą). */
+  var RW = 16, RH = 11, ITEM_NAME = {}, CX_NAME = {};
+  var CX_TILE = { '#': 1, '.': 0, '-': 2, '~': 3, '^': 7, 'H': 10, '|': 11, '<': 12, '>': 13, '=': 14, '%': 15, 'X': 16, 'I': 17, 'R': 20, 'U': 21, 'N': 22 };
+  var KEY_COL = { r: 'red', u: 'blue', n: 'green' }, DOOR_COL = { 20: 'red', 21: 'blue', 22: 'green' };
+  var COL_RGB = { red: '#C81E36', blue: '#0B4EA2', green: '#1F7A48' };
+  var CX = {
+    easy: { gw: 3, gh: 1, stickers: 1, par: 40, bper: 3.4, bon: 2.3, conv: 60, barPer: 3.6, barOn: 1.6, spd: 1,
+      route: [[0, 0, 6, 9], [0, 0, 7, 9], [0, 0, 7, 4], [0, 0, 10, 4], [0, 0, 13, 9], [1, 0, 2, 9], [1, 0, 14, 9], [2, 0, 2, 9], [2, 0, 6, 9], [2, 0, 7, 6], [2, 0, 4, 4], [2, 0, 10, 9], [2, 0, 12, 9]],
+      rooms: [
+      { at: [0, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#.........r....#',
+        '#......H----...#',
+        '#......H.......#',
+        '#...*..H.......#',
+        '#.@....H........',
+        '#......H........',
+        '################',
+        '################'] },
+      { at: [1, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#.....*........#',
+        '#..........s...#',
+        '...............R',
+        '...............R',
+        '#####>>>>>######',
+        '################'] },
+      { at: [2, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#...S..........#',
+        '#..----........#',
+        '#..............#',
+        '#......--......#',
+        '............E..#',
+        '...............#',
+        '#######..#######',
+        '#######~~#######'] }] },
+    medium: { gw: 3, gh: 3, stickers: 2, par: 80, bper: 3.2, bon: 2.0, conv: 75, barPer: 3.4, barOn: 1.7, spd: 1.2,
+      route: [[0, 0, 5, 9], [0, 0, 11, 9], [0, 1, 11, 9], [0, 1, 10, 9], [0, 1, 1, 9], [0, 1, 12, 9], [1, 1, 2, 9], [1, 1, 11, 9], [1, 2, 11, 9], [1, 2, 10, 9], [1, 2, 2, 9], [1, 2, 10, 9], [1, 2, 11, 9], [1, 1, 11, 9], [1, 1, 4, 9], [1, 0, 4, 9], [1, 0, 14, 9], [2, 0, 2, 9], [2, 0, 5, 9], [2, 0, 4, 6], [2, 0, 2, 4], [2, 0, 9, 9], [2, 0, 12, 9], [2, 1, 12, 9], [2, 1, 6, 9]],
+      rooms: [
+      { at: [0, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#....T..*.......',
+        '#.@.............',
+        '###########H####',
+        '###########H####'] },
+      { at: [1, 0], theme: 'crypt', map: [
+        '################',
+        '#......I.......#',
+        '#......I.......#',
+        '#......I.......#',
+        '#......I.......#',
+        '#......I.......#',
+        '#......I.......#',
+        '.......I.......R',
+        '.......I.......R',
+        '####H#<<<<<<####',
+        '####H###########'] },
+      { at: [2, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#.S............#',
+        '#----..........#',
+        '#..............#',
+        '#...--.........#',
+        '...........*...#',
+        '...............#',
+        '###==#%%####H###',
+        '###~~#~~####H###'] },
+      { at: [0, 1], theme: 'crypt', dark: true, map: [
+        '###########H####',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#r.........H....',
+        '#..........H....',
+        '###.......######',
+        '###~~~~~~~######'] },
+      { at: [1, 1], theme: 'crypt', map: [
+        '####H###########',
+        '#...H..........#',
+        '#...H....s.....#',
+        '#...H..........#',
+        '#...H..........#',
+        '#...H..........#',
+        '#...H..........#',
+        '....H..........U',
+        '....H..........U',
+        '###########H####',
+        '###########H####'] },
+      { at: [2, 1], theme: 'crypt', map: [
+        '############H###',
+        '#...........H..#',
+        '#...........H..#',
+        '#...........H..#',
+        '#...........H..#',
+        '#...........H..#',
+        '#...........H..#',
+        '......E.....H..#',
+        '.........o..H..#',
+        '################',
+        '################'] },
+      { at: [1, 2], theme: 'cave', map: [
+        '###########H####',
+        '#..........H...#',
+        '#..........H...#',
+        '#..........H...#',
+        '#....v.....H...#',
+        '#..........H...#',
+        '#..........H...#',
+        '#.u..S.....H...#',
+        '#..........H...#',
+        '####==#%%#######',
+        '####~~#~~#######'] }] },
+    hard: { gw: 3, gh: 3, stickers: 2, par: 120, bper: 3.0, bon: 1.8, conv: 95, barPer: 3.0, barOn: 1.6, spd: 1.45,
+      route: [[0, 0, 5, 9], [0, 0, 11, 9], [0, 1, 11, 9], [0, 1, 10, 9], [0, 1, 1, 9], [0, 1, 12, 9], [1, 1, 2, 9], [1, 1, 4, 9], [1, 0, 4, 9], [1, 0, 14, 9], [2, 0, 2, 9], [2, 0, 5, 9], [2, 0, 4, 6], [2, 0, 2, 3], [2, 0, 10, 9], [2, 0, 12, 9], [2, 1, 12, 9], [2, 1, 8, 9], [2, 1, 1, 9], [2, 1, 2, 6], [2, 1, 2, 3], [2, 1, 1, 9], [1, 1, 14, 9], [1, 1, 11, 9], [1, 2, 11, 9], [1, 2, 1, 9], [0, 2, 13, 9], [0, 2, 8, 6], [0, 2, 3, 4], [0, 2, 13, 9], [1, 2, 2, 9], [1, 2, 14, 9], [2, 2, 2, 9], [2, 2, 12, 9]],
+      rooms: [
+      { at: [0, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#..............#',
+        '#..........v...#',
+        '#..............#',
+        '#..............#',
+        '#....T..*.......',
+        '#.@.............',
+        '###########H####',
+        '###########H####'] },
+      { at: [1, 0], theme: 'crypt', map: [
+        '################',
+        '#.....I...I....#',
+        '#.....I...I....#',
+        '#.....I...I....#',
+        '#.....I...I....#',
+        '#.....I...I....#',
+        '#.....I...I....#',
+        '......I...I....R',
+        '......I...I....R',
+        '####H<<<<<<<<###',
+        '####H###########'] },
+      { at: [2, 0], theme: 'crypt', map: [
+        '################',
+        '#..............#',
+        '#.S............#',
+        '#---...........#',
+        '#..............#',
+        '#..........v...#',
+        '#...--.........#',
+        '.........n.....#',
+        '...............#',
+        '###==#%%#==#H###',
+        '###~~#~~#~~#H###'] },
+      { at: [0, 1], theme: 'cave', dark: true, map: [
+        '###########H####',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#.....|....H.s.#',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#.....|....H...#',
+        '#r.........H....',
+        '#..........H....',
+        '###.......######',
+        '###~~~~~~~######'] },
+      { at: [1, 1], theme: 'crypt', map: [
+        '####H###########',
+        '#...H..........#',
+        '#...H....s.....#',
+        '#...H..........#',
+        '#...H..........#',
+        '#...H..........#',
+        '#...H..........#',
+        '....H..........U',
+        '....H.....o....U',
+        '###########H####',
+        '###########H####'] },
+      { at: [2, 1], theme: 'cave', dark: true, chest: 'pickaxe', map: [
+        '############H###',
+        '#...........H..#',
+        '#.u.........H..#',
+        '#---........H..#',
+        '#...........H..#',
+        '#...|.......H..#',
+        '#--.|.......H..#',
+        '....|.......H..#',
+        '....|...C...H..#',
+        '###.....########',
+        '###~~~~~########'] },
+      { at: [0, 2], theme: 'cave', map: [
+        '################',
+        '#..............#',
+        '#..............#',
+        '#..S...........#',
+        '#.----.........#',
+        '#..............#',
+        '#......--......#',
+        '#.......v.......',
+        '#...............',
+        '################',
+        '################'] },
+      { at: [1, 2], theme: 'cave', map: [
+        '###########H####',
+        '#..........H...#',
+        '#..........H...#',
+        '#..........H...#',
+        '#..........H...#',
+        '#..........H...#',
+        '#....s.....H...#',
+        'X..........H...N',
+        'X..........H...N',
+        '####==##########',
+        '####~~##########'] },
+      { at: [2, 2], theme: 'cave', map: [
+        '################',
+        '#....I.........#',
+        '#....I.........#',
+        '#....I.........#',
+        '#....I.........#',
+        '#....I..s......#',
+        '#....I.........#',
+        '.....I....o.E..#',
+        '.....I.........#',
+        '################',
+        '################'] }] }
+  };
+  function buildComplex(D, si, zi, LV) {
+    var C = CX[D.key], W = C.gw * RW, H = C.gh * RH;
+    var Z = { key: D.key, si: si, zi: zi, W: W, H: H, GW: C.gw, GH: C.gh, grid: new Uint8Array(W * H).fill(1), barAt: new Int16Array(W * H).fill(-1),
+      bars: [], rooms: [], roomAt: [], items: [], coins: [], enemies: [], exit: null, start: null, back: null, done: false,
+      bper: C.bper, bon: C.bon, conv: C.conv, route: [] };
+    for (var i = 0; i < C.gw * C.gh; i++) Z.roomAt.push(-1);
+    function floorY(gx, gy) { for (var y = gy; y < H; y++) { var v = Z.grid[y * W + gx]; if (v === 1 || v === 2 || v === 12 || v === 13) return y * TILE; } return H * TILE; }
+    function ceilY(gx, gy) { for (var y = gy; y >= 0; y--) if (Z.grid[y * W + gx] === 1) return (y + 1) * TILE; return 0; }
+    var marks = [];
+    C.rooms.forEach(function (r, ri) {
+      var rx = r.at[0], ry = r.at[1];
+      Z.roomAt[ry * C.gw + rx] = ri;
+      Z.rooms.push({ rx: rx, ry: ry, x0: rx * RW * TILE, y0: ry * RH * TILE, x1: (rx + 1) * RW * TILE, y1: (ry + 1) * RH * TILE, dark: !!r.dark, theme: r.theme, seen: false });
+      r.map.forEach(function (line, row) {
+        for (var col = 0; col < RW; col++) {
+          var ch = line[col], gx = rx * RW + col, gy = ry * RH + row;
+          var t = CX_TILE[ch]; Z.grid[gy * W + gx] = t != null ? t : 0;
+          if (ch === 'I') { var bi = -1; for (var bk = 0; bk < Z.bars.length; bk++) if (Z.bars[bk].c === gx && Z.bars[bk].r1 === gy - 1) bi = bk;
+            if (bi < 0) { Z.bars.push({ c: gx, r0: gy, r1: gy, per: C.barPer, on: C.barOn, ph: (gx * .9) % C.barPer, room: ri }); bi = Z.bars.length - 1; } else Z.bars[bi].r1 = gy;
+            Z.barAt[gy * W + gx] = bi; }
+          if (t == null && ch !== '.') marks.push({ ch: ch, gx: gx, gy: gy, room: ri, chest: r.chest });
+        }
+      });
+    });
+    var sp = C.spd, nst = 0;
+    marks.forEach(function (m) {
+      var cx = m.gx * TILE + 16, cy = m.gy * TILE + 16;
+      if (KEY_COL[m.ch]) Z.items.push({ k: 'key:' + KEY_COL[m.ch], x: cx, y: cy, room: m.room, taken: false });
+      else if (m.ch === 'T') Z.items.push({ k: 'torch', x: cx, y: cy, room: m.room, taken: false });
+      else if (m.ch === 'P') Z.items.push({ k: 'pickaxe', x: cx, y: cy, room: m.room, taken: false });
+      else if (m.ch === 'C') Z.items.push({ k: 'chest', content: m.chest || 'coins', x: cx, y: floorY(m.gx, m.gy), room: m.room, open: false, taken: false });
+      else if (m.ch === 'S') { LV.hidden.push({ x: cx, y: cy, taken: false, sec: si, zone: zi }); nst++; }
+      else if (m.ch === '*') Z.coins.push({ x: cx, y: cy, taken: false, ph: m.gx * .7 });
+      else if (m.ch === 'E') Z.exit = { x: cx, y: floorY(m.gx, m.gy), room: m.room };
+      else if (m.ch === '@') Z.start = { x: cx, y: floorY(m.gx, m.gy) };
+      else if (m.ch === 'o') Z.enemies.push({ type: 'rstone', room: m.room, hx: cx, hy: cy, x: cx, y: cy, vx: -80 * sp, vy: 0, r: 14, rot: 0 });
+      else if (m.ch === 'v') Z.enemies.push({ type: 'rbat', room: m.room, hx: cx, hy: cy, x: cx, y: cy, vx: 85 * sp, vy: 55 * sp, t: m.gx });
+      else if (m.ch === 's') Z.enemies.push({ type: 'spider', room: m.room, x: cx, top: ceilY(m.gx, m.gy), y0: cy, y1: floorY(m.gx, m.gy) - 34, y: cy, t: m.gx * .4, per: 3.2 / sp });
+    });
+    Z.route = C.route.map(function (p) { return { x: (p[0] * RW + p[2]) * TILE + 16, y: (p[1] * RH + p[3]) * TILE }; });
+    Z.stickers = nst;
+    return Z;
+  }
+  function zoneTile(Z, x, y) {
+    if (x < 0 || y < 0 || x >= Z.W || y >= Z.H) return 1;
+    var i = y * Z.W + x, v = Z.grid[i];
+    if (v === 14 || v === 15) return bridgeOn(Z, v) ? v : 0;
+    if (v === 17) { var b = Z.bars[Z.barAt[i]]; return barClosed(b) ? 17 : 0; }
+    return v;
+  }
+  function bridgeOn(Z, v) { return ((gameT + (v === 15 ? Z.bper / 2 : 0)) % Z.bper) < Z.bon; }
+  function bridgeLeft(Z, v) { var t = (gameT + (v === 15 ? Z.bper / 2 : 0)) % Z.bper; return t < Z.bon ? Z.bon - t : -1; }
+  function barClosed(b) { return ((gameT + b.ph) % b.per) < b.on; }
+  function barLift(b) { // 0 = zamknięta, 1 = schowana w stropie (z płynnym przejściem)
+    var t = (gameT + b.ph) % b.per;
+    if (t < b.on) return t > b.on - .35 ? (t - (b.on - .35)) / .35 * .25 : 0;
+    var o = t - b.on, open = b.per - b.on;
+    return o < .3 ? .25 + o / .3 * .75 : o > open - .45 ? (open - o) / .45 : 1;
+  }
+  function curZone() { return P.zone >= 0 ? L.cx[P.zone] : null; }
+  function roomOf(Z, x, y) {
+    var rx = clamp(Math.floor(x / (RW * TILE)), 0, Z.GW - 1), ry = clamp(Math.floor(y / (RH * TILE)), 0, Z.GH - 1);
+    return Z.roomAt[ry * Z.GW + rx];
+  }
+  function hasBag(k) { return P.bag.indexOf(k) >= 0; }
+  var bagToastT = -9;
+  function zoneToast(msg) { if (gameT - bagToastT > 2.2) { bagToastT = gameT; toast(msg); } }
+  /* Kontakt z „ścianą” w komnacie: pęknięta ściana pęka od kilofa, drzwi otwiera klucz w tym samym kolorze. */
+  function wallTouch(cx, cy) {
+    var Z = curZone(); if (!Z) return;
+    var v = Z.grid[cy * Z.W + cx];
+    if (v === 16) {
+      if (hasBag('pickaxe')) { openConnected(Z, cx, cy, 16); ev('wall'); sfx('pop'); toast(PT('page.game.cx.wall_broken', 'Trach! Kilof rozbił pękniętą ścianę.')); }
+      else zoneToast(PT('page.game.cx.wall_need', 'Pęknięta ściana. Przydałby się kilof!'));
+    } else if (DOOR_COL[v]) {
+      var key = 'key:' + DOOR_COL[v];
+      if (hasBag(key)) { P.bag.splice(P.bag.indexOf(key), 1); openConnected(Z, cx, cy, v); ev('door'); sfx('gate'); toast(PT('page.game.cx.door_open', 'Klucz pasuje — drzwi otwarte!')); }
+      else zoneToast(fill(PT('page.game.cx.door_need', 'Zamknięte. Potrzebny: {key}.'), { key: ITEM_NAME[key] }));
+    }
+  }
+  function openConnected(Z, cx, cy, v) {
+    var st = [[cx, cy]];
+    while (st.length) {
+      var p = st.pop(), x = p[0], y = p[1];
+      if (x < 0 || y < 0 || x >= Z.W || y >= Z.H || Z.grid[y * Z.W + x] !== v) continue;
+      Z.grid[y * Z.W + x] = 0;
+      if (!SIM) debris(x * TILE + 16, y * TILE + 8);
+      st.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+  }
+  /* Drabiny i liny: trzymaj skok = w górę, puść = powoli w dół; ◀/▶ = zejdź w bok, ◀/▶ + skok = skok z liny.
+     Stojąc na szczycie drabiny (bez ruchu chwilę) Quo sam zaczyna schodzić. */
+  function climbTile(v) { return v === 10 || v === 11; }
+  function ladderAt(px, py) { var v = tileAt(Math.floor(px / TILE), Math.floor(py / TILE)); return climbTile(v) ? v : 0; }
+  function updateClimb(dt, ax) {
+    if (P.climbCool > 0) P.climbCool -= dt;
+    var col = Math.floor(P.x / TILE);
+    if (!P.climb) {
+      if (P.onGround && P.under === 10 && !ax && !input.jump && tileAt(col, Math.floor((P.y + 2) / TILE)) === 10) {
+        P.ladT += dt; if (P.ladT > .3) { P.climb = true; P.ladT = 0; P.y += 3; P.onGround = false; }
+      } else P.ladT = 0;
+      if (!P.climb) {
+        var lv = ladderAt(P.x, P.y - 8) || ladderAt(P.x, P.y - 30);
+        if (!lv || P.climbCool > 0 || P.hurtT > 0 || P.nap > 0) return false;
+        if (!(input.jump || (!P.onGround && P.vy > 40))) return false;
+        P.climb = true; P.onGround = false; input.jumpPressed = false; P.jumpBuf = 0; ev('climb');
+      }
+    }
+    var on = ladderAt(P.x, P.y - 30) || ladderAt(P.x, P.y - 8) || ladderAt(P.x, P.y + 2);
+    if (!on) { P.climb = false; return false; }
+    P.x += (col * TILE + 16 - P.x) * Math.min(1, dt * 14); P.vx = 0;
+    if (input.jumpPressed && ax) { input.jumpPressed = false; P.climb = false; P.vy = -560; P.vx = ax * RUN; P.facing = ax; P.climbCool = .3; sfx('jump'); return false; }
+    if (ax && !input.jump) { P.climb = false; P.vx = ax * 140; P.facing = ax; P.climbCool = .3; return false; }
+    input.jumpPressed = false;
+    var ft = Math.floor((P.y - 1) / TILE);
+    if (input.jump && tileAt(col, ft) === 10 && !climbTile(tileAt(col, ft - 1)) && P.y - ft * TILE <= 3) { // szczyt drabiny
+      P.y = ft * TILE; P.vy = 0; P.climb = false; P.onGround = true; P.under = 10; return true;
+    }
+    P.vy = input.jump ? -150 : (on === 11 ? 75 : 115);
+    return true;
+  }
+  function enterZone(zi) {
+    var Z = L.cx[zi];
+    if (Z.done) { P.x = Z.back.x; P.y = Z.back.y; P.vx = P.vy = 0; ev('zoneskip'); toast(PT('page.game.cx.done', 'Komnaty już przeszedłeś — idziemy dalej!')); return; }
+    P.zone = zi; P.x = Z.start.x; P.y = Z.start.y; P.vx = P.vy = 0; P.climb = false; P.ride = -1; P.onRaft = -1; P.room = -1;
+    P.roomEntry = { x: Z.start.x, y: Z.start.y }; P.safe = { x: Z.start.x, y: Z.start.y };
+    if (D.cpGates) P.checkpoint = { x: Z.start.x, y: Z.start.y, zone: zi };
+    ev('zone'); sfx('gate');
+    toast(CX_NAME[Z.key] + ' · ' + PT('page.game.cx.enter', 'znajdź klucze i wyjście!'), 3600);
+    cam.room = -1; updateCamera(1);
+  }
+  function leaveZone() {
+    var Z = curZone(); Z.done = true;
+    P.zone = -1; P.x = Z.back.x; P.y = Z.back.y; P.vx = P.vy = 0; P.climb = false; P.safe = { x: P.x, y: P.y };
+    if (D.cpGates) P.checkpoint = { x: P.x, y: P.y };
+    ev('exit'); sfx('fanfare'); addCoins(5, P.x, P.y - 40);
+    toast(PT('page.game.cx.out', 'Wyjście z komnat! +5 kamyczków'));
+    cam.room = -1; updateCamera(1);
+    if (!SIM) { updateHUD(); $('hudStop').textContent = fill(PT('page.game.hud.stop', 'Przystanek {n} z {m}'), { n: curSec + 1, m: L.sections.length }) + ' · ' + stopName(curSec); }
+  }
+  function zoneSafeSpot() {
+    var Z = curZone();
+    if (!P.onGround || P.climb || P.ride >= 0 || (P.under !== 1 && P.under !== 2)) return false;
+    if (!solidAt(P.x - P.w / 2 - 4, P.y + 4) || !solidAt(P.x + P.w / 2 + 4, P.y + 4)) return false;
+    for (var i = 0; i < Z.enemies.length; i++) { var e = Z.enemies[i]; if (e.room === P.room && Math.abs(e.x - P.x) < 90 && Math.abs(e.y - P.y) < 140) return false; }
+    for (var cc = -2; cc <= 2; cc++) { var v = tileAt(Math.floor(P.x / TILE) + cc, Math.floor(P.y / TILE) - 1); if (v === 7 || v === 17) return false; }
+    return true;
+  }
+  function updateZone(dt) {
+    var Z = curZone(), ri = roomOf(Z, P.x, P.y - 24);
+    if (ri !== P.room && ri >= 0) {
+      P.room = ri; P.roomPending = true; ev('room');
+      if (!Z.rooms[ri].seen) { Z.rooms[ri].seen = true; }
+      if (!SIM) zoneHUD();
+    }
+    if (P.roomPending && P.nap <= 0 && zoneSafeSpot()) {
+      P.roomPending = false; P.roomEntry = { x: P.x, y: P.y };
+      if (D.cpGates) P.checkpoint = { x: P.x, y: P.y, zone: P.zone };
+    }
+    var rm = Z.rooms[P.room];
+    // kraty: zamykająca się krata odsuwa Quo na bok (bez obrażeń)
+    Z.bars.forEach(function (b) {
+      if (b.room !== P.room || !barClosed(b)) return;
+      var bx = b.c * TILE, hw = P.w / 2;
+      if (P.x + hw > bx && P.x - hw < bx + TILE && P.y > b.r0 * TILE && P.y - P.h < (b.r1 + 1) * TILE) P.x = P.x < bx + 16 ? bx - hw - .5 : bx + TILE + hw + .5;
+    });
+    // kamyczki, przedmioty, naklejki
+    Z.coins.forEach(function (c) {
+      if (c.taken || P.nap > 0) return;
+      var dx = P.x - c.x, dy = (P.y - 24) - c.y;
+      if (dx * dx + dy * dy < 26 * 26) { c.taken = true; stats.coins++; updateHUD(); sfx('coin'); sparkle(c.x, c.y); }
+    });
+    L.hidden.forEach(function (h) {
+      if (h.zone !== P.zone || h.taken || P.nap > 0) return;
+      var dx = P.x - h.x, dy = (P.y - 24) - h.y;
+      if (dx * dx + dy * dy < 30 * 30) {
+        h.taken = true; L.sections[h.sec].hidden++; stats.hiddenTotal++; ev('hidden'); updateHUD(); sfx('fanfare'); sparkle(h.x, h.y);
+        toast(fill(PT('page.game.t.hidden', 'Zagubiona naklejka! {n} z 3'), { n: L.sections[h.sec].hidden }));
+      }
+    });
+    for (var i = 0; i < Z.items.length; i++) {
+      var it = Z.items[i];
+      if (it.taken || it.room !== P.room || P.nap > 0) continue;
+      if (it.life > 0) { it.life -= dt; if (it.life <= 0) { it.taken = true; continue; } }
+      if (it.delay > 0) { it.delay -= dt; continue; }
+      var dx = P.x - it.x, dy = (P.y - 24) - (it.k === 'chest' ? it.y - 16 : it.y);
+      if (dx * dx + dy * dy > 30 * 30) continue;
+      if (it.k === 'chest') {
+        if (it.open) continue;
+        it.open = true; ev('chest'); sfx('fanfare');
+        if (it.content === 'coins') addCoins(6, it.x, it.y - 20);
+        else if (P.bag.length < 4) { P.bag.push(it.content); ev('item'); sparkle(it.x, it.y - 30); toast(fill(PT('page.game.cx.chest', 'W skrzyni: {item}!'), { item: ITEM_NAME[it.content] })); }
+        else Z.items.push({ k: it.content, x: it.x, y: it.y - 30, room: it.room, taken: false, delay: .35 });
+        continue;
+      }
+      if (it.k === 'pu') { it.taken = true; setPower(it.kind, it.fly); sfx('fanfare'); continue; }
+      if (P.bag.length >= 4) { zoneToast(PT('page.game.cx.bag_full', 'Plecak jest pełny (4 rzeczy).')); continue; }
+      it.taken = true; P.bag.push(it.k); ev('item'); sfx('fanfare'); sparkle(it.x, it.y);
+      toast(fill(PT('page.game.cx.got', 'Masz: {item}!'), { item: ITEM_NAME[it.k] }) + (it.k === 'torch' ? ' ' + PT('page.game.cx.torch_help', 'W ciemnych komnatach będzie jaśniej.') : ''));
+    }
+    // przeciwnicy w tej komnacie (pozostałe komnaty stoją)
+    Z.enemies.forEach(function (e) {
+      if (e.room !== P.room) return;
+      var R0 = Z.rooms[e.room];
+      if (e.type === 'rstone') {
+        e.vy = Math.min(e.vy + G * dt, MAX_FALL); e.x += e.vx * dt; e.y += e.vy * dt; e.rot += e.vx * dt / e.r;
+        var row = Math.floor((e.y + e.r) / TILE), tv = tileAt(Math.floor(e.x / TILE), row);
+        if (SOLID[tv] || ONEWAY[tv] || tv === 10) { e.y = row * TILE - e.r; e.vy = 0; }
+        var ahead = tileAt(Math.floor((e.x + Math.sign(e.vx) * e.r) / TILE), Math.floor(e.y / TILE));
+        if (SOLID[ahead] || e.x < R0.x0 + TILE + e.r || e.x > R0.x1 - TILE - e.r) { e.vx = -e.vx; e.x = clamp(e.x, R0.x0 + TILE + e.r, R0.x1 - TILE - e.r); }
+        if (tileAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE)) === 3 || e.y > R0.y1) { e.x = e.hx; e.y = e.hy; e.vy = 0; }
+        zoneHit(e, e.r, true);
+      } else if (e.type === 'rbat') {
+        e.t += dt;
+        var nx = e.x + e.vx * dt, ny = e.y + e.vy * dt;
+        if (SOLID[tileAt(Math.floor((nx + Math.sign(e.vx) * 12) / TILE), Math.floor(e.y / TILE))] || nx < R0.x0 + TILE + 12 || nx > R0.x1 - TILE - 12) e.vx = -e.vx; else e.x = nx;
+        if (SOLID[tileAt(Math.floor(e.x / TILE), Math.floor((ny + Math.sign(e.vy) * 10) / TILE))] || ny < R0.y0 + TILE + 10 || ny > R0.y1 - 2 * TILE - 10) e.vy = -e.vy; else e.y = ny;
+        zoneHit(e, 11, false);
+      } else if (e.type === 'spider') {
+        e.t += dt; e.y = e.y0 + (e.y1 - e.y0) * (.5 - .5 * Math.cos(e.t * Math.PI * 2 / e.per));
+        zoneHit(e, 11, false);
+      }
+    });
+    if (Z.exit && Z.exit.room === P.room && P.onGround && P.nap <= 0 && Math.abs(P.x - Z.exit.x) < 16 && Math.abs(P.y - Z.exit.y) < 12) leaveZone();
+  }
+  function zoneHit(e, r, hard) {
+    if (P.nap > 0) return;
+    var nx = clamp(e.x, P.x - P.w / 2, P.x + P.w / 2), ny = clamp(e.y, P.y - P.h, P.y), dx = e.x - nx, dy = e.y - ny;
+    if (dx * dx + dy * dy > r * r) return;
+    if (hard) { if (P.inv <= 0) { hurt(e.x); P.vy = -420; } }
+    else { bump(e.x); if (e.type === 'rbat') { e.vx = (e.x < P.x ? -1 : 1) * Math.abs(e.vx); e.vy = -Math.abs(e.vy); } }
+  }
+  function zoneCamera(dt) {
+    var Z = curZone(), ri = P.room >= 0 ? P.room : roomOf(Z, P.x, P.y - 24), rm = Z.rooms[ri];
+    var rw = RW * TILE, rh = RH * TILE, vh = view.h - view.reserve, tx, ty;
+    if (view.w >= rw) tx = rm.x0 - (view.w - rw) / 2; else tx = clamp(P.x - view.w / 2, rm.x0, rm.x1 - view.w);
+    if (vh >= rh) ty = rm.y0 - (vh - rh) * .7; else ty = clamp(P.y - 24 - vh / 2, rm.y0, rm.y1 - vh);
+    if (cam.room !== ri) { cam.x = tx; cam.y = ty; cam.room = ri; return; } // przeskok ekranu
+    cam.x = lerp(cam.x, tx, Math.min(1, dt * 10)); cam.y = lerp(cam.y, ty, Math.min(1, dt * 10));
+  }
+  function zoneHUD() {
+    var Z = curZone(); if (!Z) return;
+    $('hudStop').textContent = CX_NAME[Z.key] + ' · ' + fill(PT('page.game.cx.room', 'komnata {n} z {m}'), { n: P.room + 1, m: Z.rooms.length });
+  }
+
   /* ---------- 6. Fizyka, gracz, przeciwnicy ---------- */
   var trip, prog, L, P, D, state = 'loading', prevState = 'play', playNo = 0, demo = false, diffKey = 'medium';
   var cam = { x: 0, y: 0 }, view = { w: 640, h: 384, s: 1, dpr: 1, cssW: 0, cssH: 0, reserve: 0 };
@@ -848,10 +1379,13 @@
   var SIM = false, simEv = [], simStop = false, botMode = false;
 
   function tileAt(x, y) {
+    if (P && P.zone >= 0) return zoneTile(L.cx[P.zone], x, y);
     if (x < 0 || x >= L.W) return 1;
-    if (y < 0 || y >= ROWS) return 0;
+    if (y < 0) return (L.sky && y >= -L.skyH) ? L.sky[(y + L.skyH) * L.W + x] : 0;
+    if (y >= ROWS) return 0;
     return L.grid[y * L.W + x];
   }
+  function inSkyCols(px) { var c = Math.floor(px / TILE); return !!L.sky && c >= L.skyX0 && c <= L.skyX1; }
   function solidAt(px, py) { return SOLID[tileAt(Math.floor(px / TILE), Math.floor(py / TILE))] === 1; }
   function ev(name) { if (SIM) simEv.push(name); }
 
@@ -859,7 +1393,8 @@
     var hearts = clamp(D.hearts + prog.missions, D.hearts, D.cap);
     return { x: 3 * TILE, y: GROUND * TILE, vx: 0, vy: 0, w: 22, h: 48, onGround: false, facing: 1, coyote: 0, jumpBuf: 0, airJumps: 0,
       inv: 0, hurtT: 0, nap: 0, land: 0, phase: 0, t: 0, hearts: hearts, startHearts: hearts, safe: { x: 3 * TILE, y: GROUND * TILE }, safeT: 0,
-      checkpoint: { x: 3 * TILE, y: GROUND * TILE }, ride: -1, under: 0, power: null, fly: 0, zip: -1, zv: 0, zipCool: 0, cart: -1, onRaft: -1, glow: 0 };
+      checkpoint: { x: 3 * TILE, y: GROUND * TILE }, ride: -1, under: 0, power: null, fly: 0, zip: -1, zv: 0, zipCool: 0, cart: -1, onRaft: -1, glow: 0,
+      zone: -1, room: -1, roomPending: false, roomEntry: null, bag: [], climb: false, climbCool: 0, ladT: 0 };
   }
   function secAt(px) { return L.sections[L.sec[clamp(Math.floor(px / TILE), 0, L.W - 1)]]; }
   function curPower() { return P.power; }
@@ -872,10 +1407,10 @@
     updateMovers(dt);
     updatePlayer(dt);
     if (SIM && simStop) return;
-    updateEntities(dt);
+    if (P.zone >= 0) updateZone(dt); else updateEntities(dt);
     if (!SIM) updateParticles(dt);
     updateCamera(dt);
-    var si = L.sec[clamp(Math.floor(P.x / TILE), 0, L.W - 1)];
+    var si = P.zone >= 0 ? curSec : L.sec[clamp(Math.floor(P.x / TILE), 0, L.W - 1)];
     if (si !== curSec) enterSection(si);
     var S = L.sections[curSec]; if (S && !S.done && P.nap <= 0) S.time += dt;
   }
@@ -887,7 +1422,7 @@
         if (m.active) {
           var steer = P.onRaft === i ? ((input.right ? 1 : 0) - (input.left ? 1 : 0)) : 0;
           m.x += (m.v0 + steer * 55) * dt;
-          if (m.x >= m.endX) { m.x = m.endX; m.active = false; m.done = true; if (P.onRaft === i) P.onRaft = -1; toast('Brzeg! Wysiadamy.'); }
+          if (m.x >= m.endX) { m.x = m.endX; m.active = false; m.done = true; if (P.onRaft === i) P.onRaft = -1; toast(PT('page.game.t.raft_end', 'Brzeg! Wysiadamy.')); }
         }
         m.dx = m.x - ox; m.dy = 0; continue;
       }
@@ -911,7 +1446,8 @@
     if (P.inv > 0 && (P.zip >= 0 || P.cart >= 0)) P.inv -= dt;
     if (P.zip >= 0) { updateZip(dt); return; }
     if (P.cart >= 0) { updateCartRide(dt); return; }
-    for (var pi = 0; pi < L.plaques.length; pi++) {
+    var inZ = P.zone >= 0;
+    for (var pi = 0; pi < (inZ ? 0 : L.plaques.length); pi++) {
       var pq = L.plaques[pi];
       if (!pq.solved && Math.abs(P.x - pq.x) < 26 && Math.abs(P.y - pq.y) < 10 && input.jumpPressed && !SIM && state === 'play') { input.jumpPressed = false; openMosaic(pq); return; }
     }
@@ -926,7 +1462,9 @@
     P.vx += (target - P.vx) * Math.min(1, dt * k);
     if (!slippery && Math.abs(P.vx) < 2 && !ax) P.vx = 0;
     if (ax) P.facing = ax;
-
+    var climbing = inZ && updateClimb(dt, ax);
+    if (P.climb) P.vx = 0;
+    if (!climbing) {
     if (input.jumpPressed) { P.jumpBuf = .13; input.jumpPressed = false; }
     if (P.jumpBuf > 0) P.jumpBuf -= dt;
     if (P.onGround) { P.coyote = .1; P.airJumps = power === 'doublejump' ? 1 : 0; } else P.coyote -= dt;
@@ -935,17 +1473,18 @@
       else if (P.airJumps > 0) { P.vy = -JUMP_V * .9; P.airJumps--; P.jumpBuf = 0; sfx('jump2'); puff(P.x, P.y, 6, '#fff'); }
     }
     if (power === 'balloon') { // balonik: trzymaj skok — w górę, puść — powoli w dół
-      P.fly -= dt;
-      if (P.fly <= 0) { setPower(null); toast('Balonik odleciał.'); }
-      else if (!P.onGround || input.jump) { var tvy = input.jump ? -175 : 75; P.vy += (tvy - P.vy) * Math.min(1, dt * 4); if (P.y - P.h < 8 && P.vy < 0) P.vy = 0; }
+      P.fly -= (P.zone < 0 && P.y < 0 && inSkyCols(P.x)) ? dt * .5 : dt; // w strefie nieba balonik trzyma dłużej (dzieci mają czas na lot do komnaty)
+      if (P.fly <= 0) { setPower(null); toast(PT('page.game.t.balloon_gone', 'Balonik odleciał.')); }
+      else if (!P.onGround || input.jump) { var tvy = input.jump ? -175 : 75; P.vy += (tvy - P.vy) * Math.min(1, dt * 4); var capY = (P.zone < 0 && inSkyCols(P.x)) ? -L.skyH * TILE + 8 : 8; if (P.zone < 0 && P.y - P.h < capY && P.vy < 0) P.vy = 0; }
     }
     if (power !== 'balloon' || P.fly <= 0) {
       if (!input.jump && P.vy < -260) P.vy = -260;
       P.vy += G * dt;
     }
     if (power === 'glide' && input.jump && P.vy > 90) P.vy = 90;
+    }
     if (P.vy > MAX_FALL) P.vy = MAX_FALL;
-    var wind = windAt(P.x) * (P.onGround ? .5 : 1);
+    var wind = inZ ? (P.onGround && P.under === 12 ? -L.cx[P.zone].conv : P.onGround && P.under === 13 ? L.cx[P.zone].conv : 0) : windAt(P.x) * (P.onGround ? .5 : 1);
 
     // ruch w poziomie
     P.x += (P.vx + wind) * dt;
@@ -954,20 +1493,20 @@
     if (dir > 0) {
       var cx = Math.floor((P.x + hw) / TILE);
       for (var ry = Math.floor((top + 2) / TILE); ry <= Math.floor((bot - 2) / TILE); ry++)
-        if (SOLID[tileAt(cx, ry)]) { P.x = cx * TILE - hw - .01; P.vx = Math.min(P.vx, 0); break; }
+        if (SOLID[tileAt(cx, ry)]) { if (inZ) wallTouch(cx, ry); P.x = cx * TILE - hw - .01; P.vx = Math.min(P.vx, 0); break; }
     } else if (dir < 0) {
       cx = Math.floor((P.x - hw) / TILE);
       for (ry = Math.floor((top + 2) / TILE); ry <= Math.floor((bot - 2) / TILE); ry++)
-        if (SOLID[tileAt(cx, ry)]) { P.x = (cx + 1) * TILE + hw + .01; P.vx = Math.max(P.vx, 0); break; }
+        if (SOLID[tileAt(cx, ry)]) { if (inZ) wallTouch(cx, ry); P.x = (cx + 1) * TILE + hw + .01; P.vx = Math.max(P.vx, 0); break; }
     }
     // bramy z pytaniami i drzwi z płytą
-    for (var i = 0; i < L.gates.length; i++) {
+    for (var i = 0; i < (inZ ? 0 : L.gates.length); i++) {
       var gt = L.gates[i];
       if (gt.open || Math.abs(gt.x - P.x) > 80) continue;
       if (P.x + hw > gt.x + 2 && P.x - hw < gt.x + 30) { P.x = gt.x + 2 - hw; P.vx = Math.min(P.vx, 0); }
       if (P.x + hw >= gt.x - 2 && P.x < gt.x && P.onGround && state === 'play') { openQuiz(gt); return; }
     }
-    for (i = 0; i < L.minis.length; i++) {
+    for (i = 0; i < (inZ ? 0 : L.minis.length); i++) {
       var dm = L.minis[i];
       if (dm.type === 'door' && !dm.open && Math.abs(dm.x - P.x) < 80 && P.x + hw > dm.x + 2 && P.x - hw < dm.x + 30) { P.x = dm.x + 2 - hw; P.vx = Math.min(P.vx, 0); }
     }
@@ -981,7 +1520,7 @@
       var row = Math.floor(P.y / TILE), rowTop = row * TILE;
       for (var cc = c0; cc <= c1; cc++) {
         var tv = tileAt(cc, row);
-        if (SOLID[tv] || (ONEWAY[tv] && prevBot <= rowTop + .5)) {
+        if (SOLID[tv] || (ONEWAY[tv] && prevBot <= rowTop + .5) || (tv === 10 && !P.climb && prevBot <= rowTop + .5 && !climbTile(tileAt(cc, row - 1)))) {
           if (!wasGround && P.vy > 300) { P.land = 1; if (P.vy > 500) puff(P.x, rowTop, 4, 'rgba(255,255,255,.8)'); }
           if (tv === 8 && !wasGround && P.vy > 150) openChest(cc, row);
           P.y = rowTop; P.vy = 0; P.onGround = true;
@@ -991,22 +1530,23 @@
           break;
         }
       }
-      if (!P.onGround) for (var mi = 0; mi < L.movers.length; mi++) {
+      if (!P.onGround && !inZ) for (var mi = 0; mi < L.movers.length; mi++) {
         var m = L.movers[mi];
         if (Math.abs(m.x - P.x) > 200) continue;
         if (P.x + hw - 2 > m.x && P.x - hw + 2 < m.x + m.w && prevBot <= m.y - m.dy + 1 && P.y >= m.y) {
           P.y = m.y; P.vy = 0; P.onGround = true; P.ride = mi; P.under = 1;
-          if (m.ax === 'raft' && !m.done && P.onRaft < 0) { P.onRaft = mi; if (!m.active) { m.active = true; toast('Spływ! ← → steruje tratwą, skacz nad skałami'); ev('raft'); } }
+          if (m.ax === 'raft' && !m.done && P.onRaft < 0) { P.onRaft = mi; if (!m.active) { m.active = true; toast(PT('page.game.t.raft', 'Spływ! ← → steruje tratwą, skacz nad skałami')); ev('raft'); } }
           break;
         }
       }
-      L.springs.forEach(function (sp) {
+      if (!inZ) L.springs.forEach(function (sp) {
         if (Math.abs(P.x - sp.x) < 20 && prevBot <= sp.y - 12 && P.y >= sp.y - 14) { P.y = sp.y - 14; P.vy = -SPRING_V; P.onGround = false; sp.squash = 1; sfx('spring'); }
       });
     } else {
       var rowT = Math.floor((P.y - P.h) / TILE);
       for (cc = c0; cc <= c1; cc++) if (SOLID[tileAt(cc, rowT)]) { if (tileAt(cc, rowT) === 8) openChest(cc, rowT); P.y = (rowT + 1) * TILE + P.h; P.vy = 0; break; }
     }
+    if (P.climb && P.onGround) P.climb = false;
     if (P.land > 0) P.land = Math.max(0, P.land - dt * 6);
     if (P.inv > 0) P.inv -= dt;
 
@@ -1018,7 +1558,7 @@
     }
     if (P.onRaft >= 0) L.raftRocks.forEach(function (rk) { if (Math.abs(rk.x - P.x) < 10 + hw && P.y > rk.top + 4) hurt(rk.x); });
     // tyrolka: złap linę rękami
-    if (P.zipCool <= 0) for (var zi = 0; zi < L.zips.length; zi++) {
+    if (P.zipCool <= 0 && !inZ) for (var zi = 0; zi < L.zips.length; zi++) {
       var z = L.zips[zi];
       if (P.x > z.x0 - 4 && P.x < z.x1 - 24 && (P.vy >= 0 || P.onGround)) {
         var cy = zipY(z, P.x), head = P.y - P.h;
@@ -1026,10 +1566,10 @@
       }
     }
     // wagonik
-    for (var ci = 0; ci < L.carts.length; ci++) {
+    for (var ci = 0; ci < (inZ ? 0 : L.carts.length); ci++) {
       var ct = L.carts[ci];
       if (!ct.active && !ct.done && Math.abs(P.x - ct.x) < 24 && Math.abs(P.y - ct.y) < 30) {
-        P.cart = ci; ct.active = true; ct.s = 0; P.vx = 0; ev('cart'); toast('Wagonik! Skok = zwrotnica na tajny tor'); sfx('gate'); return;
+        P.cart = ci; ct.active = true; ct.s = 0; P.vx = 0; ev('cart'); toast(PT('page.game.t.cart', 'Wagonik! Skok = zwrotnica na tajny tor')); sfx('gate'); return;
       }
     }
 
@@ -1037,7 +1577,7 @@
     P.safeT -= dt;
     if (P.onGround && P.ride < 0 && P.safeT <= 0 && solidAt(P.x - hw - 6, P.y + 4) && solidAt(P.x + hw + 6, P.y + 4) && !nearHazard()) { P.safe = { x: P.x, y: P.y }; P.safeT = .3; }
     var inWater = tileAt(Math.floor(P.x / TILE), Math.floor((P.y - 6) / TILE)) === 3;
-    if (P.y > ROWS * TILE + 50 || inWater) fallOut(inWater);
+    if (P.y > (inZ ? L.cx[P.zone].H : ROWS) * TILE + 50 || inWater) fallOut(inWater);
     if (P.x < 16) P.x = 16;
     if (P.onGround && Math.abs(P.vx) > 10) P.phase += dt * Math.abs(P.vx) / 13;
   }
@@ -1069,7 +1609,7 @@
   function openChest(cx, cy) {
     var ci = L.chestAt[cy * L.W + cx]; if (ci < 0) return;
     var c = L.chestList[ci]; if (c.open) return;
-    if (c.locked) { toast('Zamknięta. Ułóż mozaikę na tablicy obok!'); return; }
+    if (c.locked) { toast(PT('page.game.t.chest_locked', 'Zamknięta. Ułóż mozaikę na tablicy obok!')); return; }
     c.open = true; L.grid[cy * L.W + cx] = 9; ev('chest'); sfx('fanfare');
     var parts = c.content.split(':');
     if (parts[0] === 'coins') addCoins(6, cx * TILE + 16, cy * TILE);
@@ -1088,10 +1628,13 @@
   function respawnCheckpoint() {
     resetRaft(); P.zip = -1; P.cart = -1;
     L.carts.forEach(function (c) { if (c.done || c.active) { c.done = false; c.active = false; c.s = 0; c.branch = 0; c.x = c.sx; c.y = c.main[0][1]; } });
+    P.zone = P.checkpoint.zone != null ? P.checkpoint.zone : -1; P.climb = false; P.room = -1; cam.room = -1;
+    if (P.zone >= 0) P.roomEntry = { x: P.checkpoint.x, y: P.checkpoint.y };
     P.x = P.checkpoint.x; P.y = P.checkpoint.y; P.vx = P.vy = 0; P.hearts = P.startHearts; P.inv = 2; P.ride = -1;
     P.safe = { x: P.x, y: P.y };
-    resetMinis();
-    updateHUD(); toast('Quo odpoczął. Dasz radę!');
+    resetMinis(); updateCamera(1);
+    if (!SIM && P.zone < 0 && curSec >= 0) $('hudStop').textContent = fill(PT('page.game.hud.stop', 'Przystanek {n} z {m}'), { n: curSec + 1, m: L.sections.length }) + ' · ' + stopName(curSec);
+    updateHUD(); toast(PT('page.game.t.rested', 'Quo odpoczął. Dasz radę!'));
   }
   function resetMinis() {
     L.minis.forEach(function (m) {
@@ -1114,18 +1657,20 @@
     P.hearts--;
     updateHUD();
     if (P.hearts <= 0) { startNap(); return; }
-    resetRaft();
-    P.x = P.safe.x; P.y = P.safe.y; P.vx = P.vy = 0; P.inv = 1.6; P.ride = -1;
-    toast(water ? 'Plusk! Woda jest zimna. Jeszcze raz!' : 'Ups! Spróbuj jeszcze raz.');
+    resetRaft(); P.climb = false;
+    var back = P.zone >= 0 && P.roomEntry ? P.roomEntry : P.safe; // w komnatach: wejście do komnaty
+    P.x = back.x; P.y = back.y; P.vx = P.vy = 0; P.inv = 1.6; P.ride = -1;
+    toast(water ? PT('page.game.t.splash', 'Plusk! Woda jest zimna. Jeszcze raz!') : PT('page.game.t.oops', 'Ups! Spróbuj jeszcze raz.'));
   }
   function hurt(fromX, forward) {
     if (P.inv > 0 || P.nap > 0) return;
     P.hearts--; P.inv = 1.6; P.hurtT = .35; ev('hurt');
     if (P.power) { // moc wypada i miga przez 2 s — można ją złapać z powrotem
-      L.items.push({ type: 'pu', kind: P.power, fly: P.fly, x: P.x, y: P.y - 30, vy: -320, vx: (P.x < fromX ? -1 : 1) * 90, alive: true, life: 2.2, delay: .45 });
-      setPower(null); toast('Ojej, moc wypadła! Złap ją!');
+      if (P.zone >= 0) L.cx[P.zone].items.push({ k: 'pu', kind: P.power, fly: P.fly, x: P.x + (P.x < fromX ? -40 : 40), y: P.y - 30, room: P.room, taken: false, life: 2.2, delay: .45 });
+      else L.items.push({ type: 'pu', kind: P.power, fly: P.fly, x: P.x, y: P.y - 30, vy: -320, vx: (P.x < fromX ? -1 : 1) * 90, alive: true, life: 2.2, delay: .45 });
+      setPower(null); toast(PT('page.game.t.power_lost', 'Ojej, moc wypadła! Złap ją!'));
     }
-    if (P.onRaft >= 0) { /* zostaje na tratwie */ }
+    P.climb = false;
     P.vx = forward ? 280 : (P.x < fromX ? -1 : 1) * 260; P.vy = -320; P.onGround = false; P.ride = -1;
     sfx('hit'); updateHUD();
     if (P.hearts <= 0) startNap();
@@ -1135,7 +1680,7 @@
     if (P.hurtT > 0) return;
     P.hurtT = .3; P.vx = (P.x < fromX ? -1 : 1) * 330; P.vy = -260; P.onGround = false; P.ride = -1; sfx('bump'); ev('bump');
   }
-  function startNap() { P.nap = 1.4; P.vx = 0; P.vy = 0; ev('nap'); toast('Quo musi chwilę odpocząć…'); }
+  function startNap() { P.nap = 1.4; P.vx = 0; P.vy = 0; ev('nap'); toast(PT('page.game.t.nap', 'Quo musi chwilę odpocząć…')); }
 
   function addCoins(n, x, y) {
     stats.coins += n; updateHUD();
@@ -1156,11 +1701,11 @@
     }
     // zagubione naklejki
     L.hidden.forEach(function (h) {
-      if (h.taken || P.nap > 0) return;
+      if (h.taken || P.nap > 0 || h.zone != null) return;
       var dx = P.x - h.x, dy = (P.y - 24) - h.y;
       if (dx * dx + dy * dy < 30 * 30) {
         h.taken = true; L.sections[h.sec].hidden++; stats.hiddenTotal++; ev('hidden'); updateHUD(); sfx('fanfare'); sparkle(h.x, h.y); sparkle(h.x, h.y);
-        toast('Zagubiona naklejka! ' + L.sections[h.sec].hidden + ' z 3');
+        toast(fill(PT('page.game.t.hidden', 'Zagubiona naklejka! {n} z 3'), { n: L.sections[h.sec].hidden }));
       }
     });
     L.items.forEach(function (it) {
@@ -1178,7 +1723,7 @@
       var dx = P.x - it.x, dy = (P.y - 24) - (it.y + (it.dy || 0));
       if (dx * dx + dy * dy < 28 * 28) {
         it.alive = false; ev('item');
-        if (it.type === 'pu') { setPower(it.kind, it.fly); sfx('fanfare'); toast('Moc: ' + POWER[it.kind].name); }
+        if (it.type === 'pu') { setPower(it.kind, it.fly); sfx('fanfare'); toast(fill(PT('page.game.t.power', 'Moc: {name}'), { name: POWER[it.kind].name })); }
         else if (it.type === 'firefly') { P.glow = Math.min(P.glow + 70, 210); sfx('coin'); sparkle(it.x, it.y); }
         else if (it.type === 'hat') { collectHat(it.kind); }
       }
@@ -1186,12 +1731,12 @@
     var TR = L.treasure;
     if (TR && P.nap <= 0 && Math.abs(P.x - TR.x) < 30 && Math.abs(P.y - TR.y) < 24) {
       if (!TR.open) { TR.open = true; ev('treasure'); if (!SIM) startTreasure(TR); }
-      else if (!TR.seen && !SIM) { TR.seen = true; toast('Skarb Quo już jest w albumie!'); }
+      else if (!TR.seen && !SIM) { TR.seen = true; toast(PT('page.game.t.treasure_again', 'Skarb Quo już jest w albumie!')); }
     }
     if (P.glow > 0) P.glow = Math.max(0, P.glow - 5 * dt);
     L.carts.forEach(function (c) { if (c.done && !c.active && P.onGround && Math.abs(P.x - c.sx) < 60 && P.cart < 0) { c.done = false; c.s = 0; c.branch = 0; c.x = c.sx; c.y = c.main[0][1]; } });
     L.chests.forEach(function (ch) {
-      if (!ch.open && Math.abs(P.x - ch.x) < 24 && Math.abs(P.y - ch.y) < 30) { ch.open = true; addCoins(10, ch.x, ch.y - 16); sfx('fanfare'); toast('Tajna kryjówka! +10 kamyczków'); }
+      if (!ch.open && Math.abs(P.x - ch.x) < 24 && Math.abs(P.y - ch.y) < 30) { ch.open = true; addCoins(10, ch.x, ch.y - 16); sfx('fanfare'); toast(PT('page.game.t.stash', 'Tajna kryjówka! +10 kamyczków')); }
     });
     L.springs.forEach(function (sp) { if (sp.squash > 0) sp.squash = Math.max(0, sp.squash - dt * 4); });
     // kruche półki
@@ -1260,26 +1805,30 @@
     L.landmarks.forEach(function (lm) {
       if (!lm.done && P.x >= lm.x - 10 && P.nap <= 0 && Math.abs(P.y - lm.y) < 80) { lm.done = true; startCelebration(lm); }
     });
+    for (var di = 0; di < L.cxDoors.length; di++) { // drzwi do komnat
+      var dd = L.cxDoors[di];
+      if (P.onGround && P.nap <= 0 && state === 'play' && Math.abs(P.x - dd.x) < 14 && Math.abs(P.y - dd.y) < 8) { enterZone(dd.zi); return; }
+    }
   }
 
   function updateMinis(dt) {
     L.minis.forEach(function (m) {
       if (m.type === 'boulder') {
         if (m.done) return;
-        if (!m.active) { if (P.x > m.trig && P.x < m.endX && P.nap <= 0) { m.active = true; m.x = P.x - 340; m.y = GROUND * TILE - m.r; toast('Uciekaj przed głazem!'); sfx('gate'); ev('boulder'); } else return; }
+        if (!m.active) { if (P.x > m.trig && P.x < m.endX && P.nap <= 0) { m.active = true; m.x = P.x - 340; m.y = GROUND * TILE - m.r; toast(PT('page.game.t.boulder', 'Uciekaj przed głazem!')); sfx('gate'); ev('boulder'); } else return; }
         m.x += m.v * dt; m.rot += m.v * dt / m.r;
         var best = null;
         for (var cx = Math.floor((m.x - m.r * .5) / TILE); cx <= Math.floor((m.x + m.r * .5) / TILE); cx++)
           for (var r = 2; r < ROWS; r++) { var v = tileAt(cx, r); if (SOLID[v] || ONEWAY[v]) { if (best == null || r < best) best = r; break; } }
         if (best != null) m.y = lerp(m.y, best * TILE - m.r, Math.min(1, dt * 10));
-        if (m.x + m.r >= m.endX) { m.done = true; m.active = false; addCoins(3, m.x, m.y); if (!SIM) puff(m.x, m.y, 14, '#A9B2BF'); sfx('pop'); toast('Uff! Głaz rozbity.'); return; }
+        if (m.x + m.r >= m.endX) { m.done = true; m.active = false; addCoins(3, m.x, m.y); if (!SIM) puff(m.x, m.y, 14, '#A9B2BF'); sfx('pop'); toast(PT('page.game.t.boulder_end', 'Uff! Głaz rozbity.')); return; }
         var nx = clamp(m.x, P.x - P.w / 2, P.x + P.w / 2), ny = clamp(m.y, P.y - P.h, P.y);
         if ((m.x - nx) * (m.x - nx) + (m.y - ny) * (m.y - ny) < m.r * m.r && P.nap <= 0) {
           var had = P.inv <= 0; hurt(m.x, true); if (had) m.x = P.x - 300;
         }
       } else if (m.type === 'door') {
         var onPlate = P.onGround && Math.abs(P.x - m.plateX) < 22;
-        if (onPlate && !m.on && !m.done) { m.open = true; m.t = m.T; sfx('gate'); ev('plate'); if (!m.toasted) { toast('Brama otwarta! Zdążysz, zanim się zamknie?'); m.toasted = 1; } }
+        if (onPlate && !m.on && !m.done) { m.open = true; m.t = m.T; sfx('gate'); ev('plate'); if (!m.toasted) { toast(PT('page.game.t.door_open', 'Brama otwarta! Zdążysz, zanim się zamknie?')); m.toasted = 1; } }
         m.on = onPlate;
         if (m.open && !m.done) {
           m.t -= dt;
@@ -1289,7 +1838,7 @@
         m.lift = clamp(m.lift + (m.open ? dt * 4 : -dt * 4), 0, 1);
       } else if (m.type === 'bridge') {
         var onBridge = P.onGround && P.x > m.x0 && P.x < m.x1 && P.y <= GROUND * TILE + 1;
-        if (m.wave < 0 && onBridge) { m.wave = m.x0 - 40; ev('bridge'); toast('Most się wali — biegnij!'); }
+        if (m.wave < 0 && onBridge) { m.wave = m.x0 - 40; ev('bridge'); toast(PT('page.game.t.bridge', 'Most się wali — biegnij!')); }
         if (m.wave >= m.x0 - 40) {
           m.wave += m.v * dt;
           m.idx.forEach(function (ci) { var c = L.crumbles[ci]; if (c.s === 0 && c.x * TILE + 16 < m.wave) { c.s = 1; c.t = .12; } });
@@ -1326,11 +1875,15 @@
   }
 
   function updateCamera(dt) {
+    if (P.zone >= 0) { zoneCamera(dt); return; }
     var tx = clamp(P.x - view.w * .38, 0, L.W * TILE - view.w);
     cam.x = lerp(cam.x, tx, Math.min(1, dt * 8));
     var levelH = ROWS * TILE, bottomY = levelH + view.reserve, ty;
     if (view.h >= bottomY) ty = bottomY - view.h;
     else ty = clamp(P.y - view.h * .64, 0, bottomY - view.h);
+    // Strefa nieba (Skarb Quo): kamera jedzie w górę tylko za balonikiem nad sufitem poziomu albo gdy Quo już jest wysoko w chmurach
+    // (tam bez balonika nie da się wejść), więc zwykła gra nigdy nie pokazuje komnaty.
+    if (L.sky && inSkyCols(P.x) && ((P.power === 'balloon' && P.y < 2 * TILE) || P.y < -6 * TILE)) ty = Math.min(ty, P.y - view.h * .55);
     cam.y = lerp(cam.y, ty, Math.min(1, dt * 5));
   }
 
@@ -1358,6 +1911,7 @@
   }
 
   function render() {
+    if (P.zone >= 0 && state !== 'celebrate') { renderZone(); return; }
     var k = view.s * view.dpr, W = view.w, H = view.h;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.imageSmoothingEnabled = true;
@@ -1365,6 +1919,7 @@
     drawBackground(ctx, bl.a, cam.x, cam.y, W, H, gameT);
     if (bl.b && bl.m > 0) { ctx.globalAlpha = bl.m; drawBackground(ctx, bl.b, cam.x, cam.y, W, H, gameT); ctx.globalAlpha = 1; }
     ctx.setTransform(k, 0, 0, k, -cam.x * k, -cam.y * k);
+    drawSkyZone();
     drawCaveMouths();
     drawWind(true);
     drawTiles();
@@ -1373,6 +1928,7 @@
     drawZips();
     drawMovers();
     drawLandmarks();
+    drawCxDoors();
     drawGates();
     drawMinis();
     drawPlaques();
@@ -1417,7 +1973,7 @@
     L.gates.forEach(function (gt) { hole(gt.x + 16, gt.g * TILE - 120, 70); });
     L.landmarks.forEach(function (lm) { hole(lm.x, lm.y - 90, 110); });
     L.coins.forEach(function (c) { if (!c.taken) hole(c.x, c.y, 24); });
-    L.hidden.forEach(function (c) { if (!c.taken) hole(c.x, c.y, 34); });
+    L.hidden.forEach(function (c) { if (!c.taken && c.zone == null) hole(c.x, c.y, 34); });
     L.drippers.forEach(function (d) { hole(d.x, d.y + 14, 30); if (d.drop) hole(d.drop.x, d.drop.y, 34); });
     L.items.forEach(function (it) { if (it.alive) hole(it.x, it.y + (it.dy || 0), it.type === 'firefly' ? 46 : 36); });
     L.chestList.forEach(function (c) { if (!c.open) hole(c.x * TILE + 16, c.y * TILE + 16, 40); });
@@ -1462,6 +2018,7 @@
     for (var x = Math.max(0, c0); x <= Math.min(Wd - 1, c1); x++) {
       var tk = L.sections[L.sec[x]].terrain, T = TER[tk];
       for (var y = r0; y <= r1; y++) {
+        if (y < 0 && L.sky && y >= -L.skyH && x >= L.skyX0 && x <= L.skyX1) { drawSkyTile(x, y, L.sky[(y + L.skyH) * Wd + x]); continue; }
         var ty = y < 0 ? 0 : y >= ROWS ? ROWS - 1 : y;
         var v = L.grid[ty * Wd + x];
         var solidLike = v === 1 || v === 5 || v === 6;
@@ -1507,9 +2064,35 @@
       }
     }
   }
+  function drawSkyTile(x, y, v) { // komnata Skarbu Quo i chmurki w strefie nieba
+    if (!v) return;
+    var px = x * TILE, py = y * TILE;
+    if (v === 2) {
+      ctx.fillStyle = 'rgba(14,26,43,.18)'; ctx.beginPath(); ell(ctx, px + 16, py + 12, 20, 7, 0); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ell(ctx, px + 16, py + 6, 19, 8, 0); ell(ctx, px + 8, py + 2, 9, 7, 0); ell(ctx, px + 22, py, 10, 8, 0); ctx.fill();
+      return;
+    }
+    var sk = function (cx, cy) { return cy < 0 && cy >= -L.skyH && L.sky[(cy + L.skyH) * L.W + cx] === 1; };
+    drawSolid(TER.stone, 'stone', px, py, !sk(x, y - 1), !sk(x, y + 1), !sk(x - 1, y), !sk(x + 1, y), hashXY(x, y));
+    if (!sk(x, y + 1) && (!L.treasure || py >= L.treasure.y1)) { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ell(ctx, px + 16, py + TILE + 2, 22, 9, 0); ctx.fill(); }
+  }
+  function drawSkyZone() { // nad poziomem: coraz głębszy błękit i chmury — widać to tylko, gdy kamera pojedzie za balonikiem
+    if (!L.sky || cam.y > -40) return;
+    var x0 = L.skyX0 * TILE - 400, x1 = (L.skyX1 + 1) * TILE + 400, top = -L.skyH * TILE - 200;
+    if (x1 < cam.x || x0 > cam.x + view.w) return;
+    var g = ctx.createLinearGradient(0, top, 0, 0);
+    g.addColorStop(0, 'rgba(46,104,190,.85)'); g.addColorStop(.6, 'rgba(120,170,230,.4)'); g.addColorStop(1, 'rgba(141,187,234,0)');
+    ctx.fillStyle = g; ctx.fillRect(Math.max(cam.x, x0 - 600), Math.max(cam.y, top), view.w + 20, -Math.max(cam.y, top));
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    for (var i = 0; i < 14; i++) {
+      var h = hashXY(i, 77), cx = L.skyX0 * TILE + (h % ((L.skyX1 - L.skyX0 + 1) * TILE)), cy = -(9 + (h >> 7) % 12) * TILE;
+      if (cx < cam.x - 80 || cx > cam.x + view.w + 80 || cy < cam.y - 40 || cy > cam.y + view.h + 40) continue;
+      var r = 14 + (h >> 3) % 16; ctx.beginPath(); ell(ctx, cx, cy, r * 1.7, r * .7, 0); ell(ctx, cx - r * .6, cy + 3, r * .8, r * .5, 0); ell(ctx, cx + r * .3, cy - r * .35, r * .8, r * .6, 0); ctx.fill();
+    }
+  }
   function drawSolid(T, tk, x, y, top, bottom, left, right, h) {
     ctx.fillStyle = T.fill; ctx.fillRect(x, y, TILE, TILE);
-    if (tk === 'stone') {
+    if (tk === 'stone' || tk === 'crypt') {
       ctx.fillStyle = T.fillDk; var off = (y / TILE) % 2 ? 0 : 16;
       ctx.fillRect(x, y + 15, TILE, 2); ctx.fillRect(x + off, y, 2, 15); ctx.fillRect(x + (off + 16) % 32, y + 17, 2, 15);
       ctx.fillStyle = T.speck; ctx.fillRect(x + 4, y + 3, 6, 2);
@@ -1655,7 +2238,7 @@
       ctx.fillStyle = '#0B4EA2'; ctx.beginPath(); ell(ctx, hx, hy, 6, 6, 0); ctx.fill();
       ctx.fillStyle = '#FFC629'; ctx.fillRect(hx - 12, hy + 6, 24, 4);
       ctx.strokeStyle = '#0B4EA2'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx, hy + 6); ctx.stroke();
-      if (P.zip < 0 && Math.abs(P.x - z.x0) < 200) { ctx.fillStyle = '#062A58'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('tyrolka', z.x0 + 10, z.y0 - 22); }
+      if (P.zip < 0 && Math.abs(P.x - z.x0) < 200) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.zip', 'tyrolka'), z.x0 + 10, z.y0 - 22, 160); }
     });
   }
   function drawTracks() {
@@ -1677,7 +2260,7 @@
       if (c.branch) { ctx.moveTo(j[0] - 34, j[1] - 60); ctx.lineTo(j[0] - 22, j[1] - 72); ctx.lineTo(j[0] - 30, j[1] - 72); ctx.moveTo(j[0] - 22, j[1] - 72); ctx.lineTo(j[0] - 22, j[1] - 64); }
       else { ctx.moveTo(j[0] - 36, j[1] - 66); ctx.lineTo(j[0] - 20, j[1] - 66); ctx.lineTo(j[0] - 26, j[1] - 71); ctx.moveTo(j[0] - 20, j[1] - 66); ctx.lineTo(j[0] - 26, j[1] - 61); }
       ctx.stroke();
-      if (P.cart >= 0 && L.carts[P.cart] === c && c.s < c.jS) { ctx.fillStyle = '#FFC629'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Skok = tajny tor ↗', j[0], j[1] - 92); }
+      if (P.cart >= 0 && L.carts[P.cart] === c && c.s < c.jS) { ctx.fillStyle = '#FFC629'; label(PT('page.game.c.cart', 'Skok = tajny tor ↗'), j[0], j[1] - 92, 260); }
     });
   }
   function drawCarts() {
@@ -1702,7 +2285,7 @@
       ctx.fillStyle = '#E8DEC8'; ctx.fillRect(q.x - 20, q.y - 68, 40, 38);
       var cols = ['#0B4EA2', '#FFC629', '#1F7A48', '#C81E36', '#E8A04B', '#0B4EA2', '#1F7A48', '#FFC629'];
       for (var i = 0; i < 9; i++) { if (i === 8 && !q.solved) continue; ctx.fillStyle = cols[(i * (q.solved ? 1 : 5)) % 8]; ctx.fillRect(q.x - 18 + (i % 3) * 12.3, q.y - 66 + Math.floor(i / 3) * 11.6, 11, 10.5); }
-      if (!q.solved && Math.abs(P.x - q.x) < 160) { ctx.fillStyle = '#062A58'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Skok przy tablicy = mozaika', q.x, q.y - 84); }
+      if (!q.solved && Math.abs(P.x - q.x) < 160) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.mosaic', 'Skok przy tablicy = mozaika'), q.x, q.y - 84, 300); }
     });
   }
   function drawWind(back) {
@@ -1732,7 +2315,7 @@
   }
   function drawHidden() {
     L.hidden.forEach(function (h) {
-      if (h.taken || h.x < cam.x - 40 || h.x > cam.x + view.w + 40) return;
+      if (h.taken || h.zone != null || h.x < cam.x - 40 || h.x > cam.x + view.w + 40) return;
       var b = reduceMotion ? 0 : Math.sin(gameT * 2.4 + h.x) * 3;
       ctx.save(); ctx.translate(h.x, h.y + b); ctx.rotate(.12);
       var gl = ctx.createRadialGradient(0, 0, 4, 0, 0, 30); gl.addColorStop(0, 'rgba(255,198,41,.6)'); gl.addColorStop(1, 'rgba(255,198,41,0)');
@@ -1785,7 +2368,7 @@
         ctx.fillStyle = '#fff'; ctx.beginPath(); ell(ctx, -3, -1, 2.6, 2.8, 0); ell(ctx, 3, -1, 2.6, 2.8, 0); ctx.fill();
         ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, -2.6, -.6, 1.3, 1.6, 0); ell(ctx, 3.4, -.6, 1.3, 1.6, 0); ctx.fill();
         ctx.fillStyle = 'rgba(240,120,140,.7)'; ctx.beginPath(); ell(ctx, -5, 3, 1.6, 1, 0); ell(ctx, 5, 3, 1.6, 1, 0); ctx.fill();
-        if (e.st === 1) { ctx.fillStyle = '#FFC629'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', 0, -16); }
+        if (e.st === 1) { ctx.fillStyle = '#FFC629'; ctx.font = font(18); ctx.textAlign = 'center'; ctx.fillText('!', 0, -16); }
         ctx.restore();
       }
     });
@@ -1833,12 +2416,12 @@
         ctx.restore();
         ctx.fillStyle = '#2B3D5A'; ctx.fillRect(m.x - 10, base - H - 10, 52, 12);
         if (m.open && !m.done) {
-          ctx.fillStyle = '#FFC629'; ctx.font = '900 26px system-ui,sans-serif'; ctx.textAlign = 'center';
-          var s = Math.ceil(m.t);
-          ctx.fillText(s + ' s', m.x + 16, base - H - 18); ctx.fillText(s + ' s', m.plateX, m.g * TILE - 64);
+          ctx.fillStyle = '#FFC629';
+          var s = fill(PT('page.game.c.seconds', '{n} s'), { n: Math.ceil(m.t) });
+          label(s, m.x + 16, base - H - 18, 120, 26); label(s, m.plateX, m.g * TILE - 64, 120, 26);
         } else if (!m.done) {
-          ctx.fillStyle = '#FFC629'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center';
-          ctx.fillText('stań na płycie', m.plateX, m.g * TILE - 60);
+          ctx.fillStyle = '#FFC629';
+          label(PT('page.game.c.plate', 'stań na płycie'), m.plateX, m.g * TILE - 60, 220);
         }
       }
     });
@@ -1856,8 +2439,8 @@
       ctx.stroke();
       ctx.fillStyle = '#3B2A00'; ctx.fillRect(sp.x - 17, sp.y - hgt - 5, 34, 7);
       ctx.fillStyle = '#FFC629'; ctx.fillRect(sp.x - 16, sp.y - hgt - 4, 32, 5);
-      ctx.fillStyle = '#0B4EA2'; ctx.font = '900 15px system-ui,sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('skrót', sp.x, sp.y - hgt - 10);
+      ctx.fillStyle = '#0B4EA2';
+      label(PT('page.game.c.shortcut', 'skrót'), sp.x, sp.y - hgt - 10, 140);
     });
     L.chests.forEach(function (ch) {
       if (ch.x < cam.x - 40 || ch.x > cam.x + view.w + 40) return;
@@ -1894,7 +2477,7 @@
         ctx.fillStyle = '#9AA3AF'; ctx.beginPath(); ell(ctx, 0, 0, 42, 42, 0); ctx.fill();
         ctx.fillStyle = '#7D8796'; ctx.beginPath(); ell(ctx, -14, -12, 10, 7, 0); ell(ctx, 16, 14, 8, 6, 0); ctx.fill();
         ctx.restore();
-        if (!gt.open) { ctx.fillStyle = '#062A58'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('przepchnij!', x + 16, base - 100); }
+        if (!gt.open) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.push', 'przepchnij!'), x + 16, base - 100, 200); }
         return;
       }
       if (gt.kind === 'rope') { // szyb z liną
@@ -1902,7 +2485,7 @@
         ctx.strokeStyle = '#C99A60'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + 16, 2 * TILE); ctx.lineTo(x + 16 + Math.sin(gameT * 2) * 3, base - 20); ctx.stroke();
         ctx.fillStyle = 'rgba(79,164,160,.8)'; ctx.fillRect(x - 6, base - 16, 44, 16);
         if (gt.open) return;
-        ctx.fillStyle = '#FFC629'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('lina w górę', x + 16, base - 140);
+        ctx.fillStyle = '#FFC629'; label(PT('page.game.c.rope', 'lina w górę'), x + 16, base - 140, 200);
         return;
       }
       if (gt.kind === 'organ') { // dźwięczące nacieki nad bramą
@@ -1915,7 +2498,7 @@
       var my = base - H - 30, ok = gt.open;
       ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, x + 16, my, 19, 19, 0); ctx.fill();
       ctx.fillStyle = ok ? '#1F7A48' : '#0B4EA2'; ctx.beginPath(); ell(ctx, x + 16, my, 17, 17, 0); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = '900 24px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff'; ctx.font = font(24); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(ok ? '✓' : gt.kind === 'organ' ? '♪' : '?', x + 16, my + 1);
       ctx.textBaseline = 'alphabetic';
     });
@@ -1929,7 +2512,7 @@
       if (lm.done && (!celebration || celebration.lm !== lm)) {
         ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, x, y - 82, 17, 17, 0); ctx.fill();
         ctx.fillStyle = '#1F7A48'; ctx.beginPath(); ell(ctx, x, y - 82, 15, 15, 0); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = '900 20px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✓', x, y - 81); ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#fff'; ctx.font = font(20); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✓', x, y - 81); ctx.textBaseline = 'alphabetic';
         return;
       }
       var bob = reduceMotion ? 0 : Math.sin(gameT * 2) * 3, S = 104;
@@ -1966,6 +2549,7 @@
     ctx.fillStyle = 'rgba(14,26,43,.18)'; ctx.beginPath(); ell(ctx, P.x, groundBelow(P.x, P.y) - 1, 12, 3, 0); ctx.fill();
     if (P.zip >= 0) pose = quoPose('jump', P.t);
     if (P.cart >= 0) pose = quoPose('cheer', P.t);
+    if (P.climb) pose = quoPose('climb', P.t, { phase: P.y / 9 });
     if (P.power === 'balloon') {
       var bx = P.x + 8 * P.facing, by = P.y - 100 + (reduceMotion ? 0 : Math.sin(P.t * 3) * 3);
       ctx.strokeStyle = '#3B2A00'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(P.x + 6 * P.facing, P.y - 40); ctx.quadraticCurveTo(bx - 4 * P.facing, by + 40, bx, by + 20); ctx.stroke();
@@ -1979,8 +2563,9 @@
     drawQuo(ctx, P.x, P.y, 1, P.facing, pose, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
   }
   function groundBelow(x, y) {
-    for (var r = Math.max(0, Math.floor(y / TILE)); r < ROWS; r++) { var v = tileAt(Math.floor(x / TILE), r); if (SOLID[v] || ONEWAY[v]) return r * TILE; }
-    return ROWS * TILE + 200;
+    var inZ = P && P.zone >= 0, maxR = inZ ? L.cx[P.zone].H : ROWS, r0 = Math.max(Math.floor(y / TILE), inZ ? 0 : L.sky ? -L.skyH : 0);
+    for (var r = r0; r < maxR; r++) { var v = tileAt(Math.floor(x / TILE), r); if (SOLID[v] || ONEWAY[v] || v === 10) return r * TILE; }
+    return maxR * TILE + 200;
   }
   function drawParticles() {
     particles.forEach(function (p) {
@@ -1988,6 +2573,236 @@
       ctx.fillStyle = p.col; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     });
     ctx.globalAlpha = 1;
+  }
+  /* --- Rysowanie komnat --- */
+  TER.crypt = { fill: '#8A7B66', fillDk: '#6E614D', speck: '#9C8E77', top: '#A39377', topHi: '#CDBFA2', plat: '#7A6A52', platDk: '#54473A', back: '#2E261F', backLn: '#3B3128' };
+  TER.cave.back = '#0F1B30'; TER.cave.backLn = '#16263F';
+  function renderZone() {
+    var Z = curZone(), k = view.s * view.dpr, ri = P.room >= 0 ? P.room : roomOf(Z, P.x, P.y - 24), rm = Z.rooms[ri], T = TER[rm.theme];
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.fillStyle = '#070C16'; ctx.fillRect(0, 0, view.w, view.h);
+    ctx.setTransform(k, 0, 0, k, -cam.x * k, -cam.y * k);
+    ctx.save(); ctx.beginPath(); ctx.rect(rm.x0, rm.y0, rm.x1 - rm.x0, rm.y1 - rm.y0); ctx.clip();
+    ctx.fillStyle = T.back; ctx.fillRect(rm.x0, rm.y0, rm.x1 - rm.x0, rm.y1 - rm.y0);
+    ctx.fillStyle = T.backLn;
+    for (var y = rm.y0; y < rm.y1; y += 24) { ctx.fillRect(rm.x0, y, rm.x1 - rm.x0, 2); for (var x = rm.x0 + ((y / 24) % 2 ? 0 : 24); x < rm.x1; x += 48) ctx.fillRect(x, y, 2, 24); }
+    var c0 = rm.x0 / TILE, r0 = rm.y0 / TILE;
+    for (var r = r0; r < r0 + RH; r++) for (var c = c0; c < c0 + RW; c++) drawZoneTile(Z, T, rm.theme, c, r);
+    drawZoneBars(Z, ri);
+    if (Z.exit && Z.exit.room === ri) drawExitDoor(Z.exit.x, Z.exit.y, true);
+    Z.coins.forEach(function (c) { if (!c.taken && roomOf(Z, c.x, c.y) === ri) drawCoin(c); });
+    Z.items.forEach(function (it) { if (!it.taken && it.room === ri) drawZoneItem(it); });
+    L.hidden.forEach(function (h) {
+      if (h.zone !== P.zone || h.taken || roomOf(Z, h.x, h.y) !== ri) return;
+      ctx.save(); ctx.translate(h.x, h.y + (reduceMotion ? 0 : Math.sin(gameT * 2.4 + h.x) * 3)); ctx.rotate(.12);
+      var gl = ctx.createRadialGradient(0, 0, 4, 0, 0, 30); gl.addColorStop(0, 'rgba(255,198,41,.6)'); gl.addColorStop(1, 'rgba(255,198,41,0)');
+      ctx.fillStyle = gl; ctx.fillRect(-30, -30, 60, 60); drawSticker(ctx, stopIcons[h.sec], 34); ctx.restore();
+    });
+    Z.enemies.forEach(function (e) { if (e.room === ri) drawZoneEnemy(e); });
+    drawPlayer();
+    drawParticles();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2; ctx.strokeRect(rm.x0 - 1, rm.y0 - 1, rm.x1 - rm.x0 + 2, rm.y1 - rm.y0 + 2);
+    if (rm.dark) drawZoneDark(Z, ri);
+    drawZoneHUD(Z, ri);
+  }
+  function drawCoin(c) {
+    var b = reduceMotion ? 0 : Math.sin(gameT * 3 + c.ph) * 2.5, y = c.y + b;
+    ctx.fillStyle = '#3B2A00'; ctx.beginPath(); ell(ctx, c.x, y, 9, 7.5, 0); ctx.fill();
+    ctx.fillStyle = '#FFC629'; ctx.beginPath(); ell(ctx, c.x, y, 7.5, 6, 0); ctx.fill();
+    ctx.fillStyle = '#FFE48A'; ctx.beginPath(); ell(ctx, c.x - 2.5, y - 2, 3, 1.8, 0); ctx.fill();
+  }
+  function drawZoneTile(Z, T, theme, c, r) {
+    var v = Z.grid[r * Z.W + c], px = c * TILE, py = r * TILE;
+    if (!v) return;
+    function sol(x, y) { if (x < 0 || y < 0 || x >= Z.W || y >= Z.H) return true; var w = Z.grid[y * Z.W + x]; return w === 1 || w === 16; }
+    if (v === 1 || v === 16) {
+      drawSolid(T, theme === 'cave' ? 'cave' : 'crypt', px, py, !sol(c, r - 1), !sol(c, r + 1), !sol(c - 1, r), !sol(c + 1, r), hashXY(c, r));
+      if (v === 16) { // pęknięta ściana
+        ctx.fillStyle = 'rgba(201,166,107,.45)'; ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        ctx.strokeStyle = '#1B140E'; ctx.lineWidth = 2.5; ctx.beginPath();
+        ctx.moveTo(px + 6, py + 2); ctx.lineTo(px + 14, py + 12); ctx.lineTo(px + 10, py + 20); ctx.lineTo(px + 20, py + 30);
+        ctx.moveTo(px + 14, py + 12); ctx.lineTo(px + 26, py + 8); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,214,120,.35)'; ctx.fillRect(px + 12, py + 11, 3, 3);
+      }
+    } else if (v === 2) drawPlatform(T, theme, px, py, Z.grid[r * Z.W + c - 1] === 2, Z.grid[r * Z.W + c + 1] === 2);
+    else if (v === 3) {
+      var surf = r === 0 || Z.grid[(r - 1) * Z.W + c] !== 3;
+      ctx.fillStyle = 'rgba(54,140,150,.85)'; ctx.fillRect(px, py + (surf ? 8 : 0), TILE, TILE - (surf ? 8 : 0));
+      if (surf) { ctx.fillStyle = '#7CC8C4'; ctx.fillRect(px, py + 7 + (reduceMotion ? 0 : Math.sin(gameT * 3 + c) * 2), TILE, 3); }
+    } else if (v === 10) { // drabina
+      ctx.fillStyle = '#4A2F17'; ctx.fillRect(px + 5, py, 5, TILE); ctx.fillRect(px + 22, py, 5, TILE);
+      ctx.fillStyle = '#A9763D'; ctx.fillRect(px + 6, py, 3, TILE); ctx.fillRect(px + 23, py, 3, TILE);
+      for (var i = 4; i < TILE; i += 10) { ctx.fillStyle = '#4A2F17'; ctx.fillRect(px + 5, py + i, 22, 5); ctx.fillStyle = '#C99A60'; ctx.fillRect(px + 6, py + i + 1, 20, 2); }
+    } else if (v === 11) { // lina (jaskinia) albo łańcuch (krypta)
+      var sw = reduceMotion ? 0 : Math.sin(gameT * 1.6 + c) * 1.5;
+      if (theme === 'cave') { ctx.fillStyle = '#6B4522'; ctx.fillRect(px + 14 + sw, py, 5, TILE); ctx.fillStyle = '#C99A60'; for (i = 0; i < TILE; i += 8) ctx.fillRect(px + 15 + sw, py + i, 3, 4); }
+      else { ctx.strokeStyle = '#B9C6D8'; ctx.lineWidth = 2.5; for (i = 0; i < TILE; i += 10) { ctx.beginPath(); ctx.ellipse(px + 16 + sw, py + i + 5, i % 20 ? 2 : 4, 5, 0, 0, Math.PI * 2); ctx.stroke(); } }
+    } else if (v === 12 || v === 13) { // ruchoma posadzka
+      ctx.fillStyle = '#1E2C44'; ctx.fillRect(px, py, TILE, TILE);
+      ctx.fillStyle = '#3F4756'; ctx.fillRect(px, py, TILE, 10);
+      var dir = v === 13 ? 1 : -1, off = reduceMotion ? 0 : ((gameT * Z.conv * dir) % 16 + 16) % 16;
+      ctx.fillStyle = '#FFC629';
+      for (var k2 = -16; k2 < TILE; k2 += 16) { var ax = px + k2 + off; if (ax < px - 4 || ax > px + TILE - 8) continue; ctx.beginPath(); ctx.moveTo(ax + (dir > 0 ? 0 : 8), py + 2); ctx.lineTo(ax + (dir > 0 ? 8 : 0), py + 5); ctx.lineTo(ax + (dir > 0 ? 0 : 8), py + 8); ctx.fill(); }
+      ctx.fillStyle = 'rgba(14,26,43,.5)'; ctx.fillRect(px, py + 10, TILE, 2);
+    } else if (v === 14 || v === 15) { // znikające mostki
+      var left = bridgeLeft(Z, v), on = left >= 0, warn = on && left < .5;
+      if (!on) { ctx.strokeStyle = 'rgba(201,154,96,.35)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.strokeRect(px + 1, py + 1, TILE - 2, 10); ctx.setLineDash([]); }
+      else if (!warn || reduceMotion || Math.floor(gameT * 10) % 2) {
+        ctx.fillStyle = '#4A2F17'; ctx.fillRect(px, py, TILE, 12); ctx.fillStyle = v === 14 ? '#C99A60' : '#A9C7E8'; ctx.fillRect(px + 1, py + 1, TILE - 2, 8);
+        ctx.fillStyle = '#4A2F17'; ctx.fillRect(px + 15, py + 1, 2, 8);
+      }
+    } else if (v === 7) {
+      ctx.fillStyle = '#0E1A2B'; ctx.beginPath();
+      for (i = 0; i < 4; i++) { ctx.moveTo(px + i * 8, py + TILE); ctx.lineTo(px + i * 8 + 4, py + 10); ctx.lineTo(px + i * 8 + 8, py + TILE); }
+      ctx.fill();
+    } else if (DOOR_COL[v]) { // drzwi na klucz
+      var col = COL_RGB[DOOR_COL[v]], topD = Z.grid[(r - 1) * Z.W + c] !== v;
+      ctx.fillStyle = '#3B2A00'; ctx.fillRect(px + 2, py, TILE - 4, TILE);
+      ctx.fillStyle = '#8C5E2E'; ctx.fillRect(px + 4, py + (topD ? 3 : 0), TILE - 8, TILE - (topD ? 3 : 0));
+      ctx.fillStyle = col; ctx.fillRect(px + 4, py + 12, TILE - 8, 7);
+      if (Z.grid[(r + 1) * Z.W + c] !== v) { ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, px + 16, py + 6, 4, 4, 0); ctx.fill(); ctx.fillRect(px + 14, py + 8, 4, 8); }
+    }
+  }
+  function drawZoneBars(Z, ri) {
+    Z.bars.forEach(function (b) {
+      if (b.room !== ri) return;
+      var x = b.c * TILE, y0 = b.r0 * TILE, hgt = (b.r1 - b.r0 + 1) * TILE, lift = barLift(b) * (hgt - 10);
+      ctx.save(); ctx.beginPath(); ctx.rect(x - 2, y0, TILE + 4, hgt); ctx.clip();
+      for (var i = 0; i < 3; i++) { ctx.fillStyle = '#1B140E'; ctx.fillRect(x + 3 + i * 10, y0 - lift, 7, hgt); ctx.fillStyle = '#9C8E77'; ctx.fillRect(x + 4 + i * 10, y0 - lift, 4, hgt); }
+      ctx.fillStyle = '#1B140E'; for (var yy = 20; yy < hgt; yy += 48) ctx.fillRect(x + 1, y0 - lift + yy, TILE - 2, 5);
+      ctx.restore();
+      ctx.fillStyle = '#54473A'; ctx.fillRect(x - 4, y0 - 6, TILE + 8, 8);
+    });
+  }
+  function drawExitDoor(x, y, open) {
+    ctx.fillStyle = '#3B2A00'; ctx.beginPath(); ctx.moveTo(x - 22, y); ctx.lineTo(x - 22, y - 46); ctx.arc(x, y - 46, 22, Math.PI, 0); ctx.lineTo(x + 22, y); ctx.fill();
+    var g = ctx.createLinearGradient(0, y - 66, 0, y);
+    g.addColorStop(0, open ? '#FFF4CF' : '#0E1A2B'); g.addColorStop(1, open ? '#7CC88A' : '#2B3D5A');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 17, y); ctx.lineTo(x - 17, y - 46); ctx.arc(x, y - 46, 17, Math.PI, 0); ctx.lineTo(x + 17, y); ctx.fill();
+    if (open && !reduceMotion) { ctx.fillStyle = 'rgba(255,244,207,' + (.25 + .2 * Math.sin(gameT * 3)).toFixed(2) + ')'; ctx.beginPath(); ell(ctx, x, y - 34, 34, 40, 0); ctx.fill(); }
+    ctx.fillStyle = '#FFC629'; ctx.beginPath(); ctx.moveTo(x, y - 82); ctx.lineTo(x + 9, y - 72); ctx.lineTo(x - 9, y - 72); ctx.fill();
+  }
+  function drawItemIcon(c, k, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    if (k.indexOf('key:') === 0) {
+      var col = COL_RGB[k.slice(4)];
+      c.fillStyle = '#0E1A2B'; c.beginPath(); ell(c, -6, 0, 8, 8, 0); c.fill(); c.fillRect(-2, -3, 16, 6); c.fillRect(8, 0, 3, 7); c.fillRect(12, 0, 3, 5);
+      c.fillStyle = col; c.beginPath(); ell(c, -6, 0, 6, 6, 0); c.fill(); c.fillRect(-1, -1.5, 14, 3); c.fillRect(9, 0, 1.5, 5.5); c.fillRect(13, 0, 1.5, 3.5);
+      c.fillStyle = '#0E1A2B'; c.beginPath(); ell(c, -6, 0, 2.2, 2.2, 0); c.fill();
+    } else if (k === 'torch') {
+      c.fillStyle = '#4A2F17'; c.fillRect(-3, -2, 6, 16); c.fillStyle = '#A9763D'; c.fillRect(-2, -2, 4, 15);
+      c.fillStyle = '#E8A912'; c.beginPath(); c.moveTo(-6, -2); c.quadraticCurveTo(-7, -12, 0, -18); c.quadraticCurveTo(7, -12, 6, -2); c.fill();
+      c.fillStyle = '#FFF4CF'; c.beginPath(); c.moveTo(-3, -2); c.quadraticCurveTo(-3, -9, 0, -12); c.quadraticCurveTo(3, -9, 3, -2); c.fill();
+    } else if (k === 'pickaxe') {
+      c.rotate(-.6); c.fillStyle = '#4A2F17'; c.fillRect(-2, -6, 4, 22); c.fillStyle = '#A9763D'; c.fillRect(-1, -6, 2, 21);
+      c.fillStyle = '#3F4756'; c.beginPath(); c.moveTo(-14, -4); c.quadraticCurveTo(0, -14, 14, -4); c.lineTo(12, -2); c.quadraticCurveTo(0, -9, -12, -2); c.fill();
+      c.fillStyle = '#B9C6D8'; c.fillRect(-3, -10, 6, 5);
+    }
+    c.restore();
+  }
+  function drawZoneItem(it) {
+    var b = reduceMotion ? 0 : Math.sin(gameT * 3 + it.x) * 2;
+    if (it.k === 'chest') { drawChest(it.x - 16, it.y - 32, it.open, null); return; }
+    if (it.k === 'pu') { if (it.life > 0 && it.life < 1.6 && Math.floor(it.life * 8) % 2) return; drawPuIcon(it.kind, it.x, it.y + b, 1.15); return; }
+    var gl = ctx.createRadialGradient(it.x, it.y, 2, it.x, it.y, 26); gl.addColorStop(0, 'rgba(255,230,140,.55)'); gl.addColorStop(1, 'rgba(255,230,140,0)');
+    ctx.fillStyle = gl; ctx.fillRect(it.x - 26, it.y - 26, 52, 52);
+    drawItemIcon(ctx, it.k, it.x, it.y + b, 1.25);
+  }
+  function drawZoneEnemy(e) {
+    if (e.type === 'rstone') {
+      ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.rot);
+      ctx.fillStyle = '#3F3529'; ctx.beginPath(); ell(ctx, 0, 0, e.r + 1.5, e.r + 1.5, 0); ctx.fill();
+      ctx.fillStyle = '#9C8E77'; ctx.beginPath(); ell(ctx, 0, 0, e.r, e.r, 0); ctx.fill();
+      ctx.fillStyle = '#7A6A52'; ctx.beginPath(); ell(ctx, -5, -4, 4, 3, 0); ell(ctx, 5, 5, 3, 2.5, 0); ctx.fill();
+      ctx.restore();
+    } else if (e.type === 'rbat') {
+      var flap = reduceMotion ? .5 : Math.sin(e.t * 18) * .5 + .5;
+      ctx.save(); ctx.translate(e.x, e.y); ctx.fillStyle = '#4A2E5A';
+      ctx.beginPath(); ctx.moveTo(-4, -2); ctx.lineTo(-20, -8 + flap * 14); ctx.lineTo(-14, 2); ctx.lineTo(-8, 4); ctx.closePath();
+      ctx.moveTo(4, -2); ctx.lineTo(20, -8 + flap * 14); ctx.lineTo(14, 2); ctx.lineTo(8, 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ell(ctx, 0, 0, 8.5, 8, 0); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ell(ctx, -3, -1, 2.6, 2.8, 0); ell(ctx, 3, -1, 2.6, 2.8, 0); ctx.fill();
+      ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, -2.6, -.6, 1.3, 1.6, 0); ell(ctx, 3.4, -.6, 1.3, 1.6, 0); ctx.fill();
+      ctx.restore();
+    } else if (e.type === 'spider') {
+      ctx.strokeStyle = 'rgba(230,236,245,.75)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(e.x, e.top); ctx.lineTo(e.x, e.y - 8); ctx.stroke();
+      ctx.save(); ctx.translate(e.x, e.y);
+      ctx.strokeStyle = '#0E1A2B'; ctx.lineWidth = 2; ctx.beginPath();
+      for (var i = 0; i < 4; i++) { var a = (i - 1.5) * .45; ctx.moveTo(0, 0); ctx.lineTo(-13, 4 + a * 10); ctx.lineTo(-16, 10 + a * 8); ctx.moveTo(0, 0); ctx.lineTo(13, 4 + a * 10); ctx.lineTo(16, 10 + a * 8); }
+      ctx.stroke();
+      ctx.fillStyle = '#2E3550'; ctx.beginPath(); ell(ctx, 0, 0, 9, 8, 0); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ell(ctx, -3, -2, 2.6, 3, 0); ell(ctx, 3, -2, 2.6, 3, 0); ctx.fill();
+      ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, -3, -1.4, 1.3, 1.6, 0); ell(ctx, 3, -1.4, 1.3, 1.6, 0); ctx.fill();
+      ctx.restore();
+    }
+  }
+  var shadeZ = document.createElement('canvas'), szctx = shadeZ.getContext('2d');
+  function drawZoneDark(Z, ri) { // ciemność w niskiej rozdzielczości (1/4) — tanio na telefonach, i tak jest rozmyta
+    var sctx = szctx, sw = Math.max(1, Math.round(view.cssW / 4)), sh = Math.max(1, Math.round(view.cssH / 4)), sc = sw / view.w;
+    if (shadeZ.width !== sw || shadeZ.height !== sh) { shadeZ.width = sw; shadeZ.height = sh; }
+    sctx.globalCompositeOperation = 'source-over'; sctx.clearRect(0, 0, sw, sh);
+    sctx.fillStyle = 'rgba(2,6,16,.94)'; sctx.fillRect(0, 0, sw, sh);
+    sctx.globalCompositeOperation = 'destination-out';
+    function hole(x, y, r) {
+      var sx = (x - cam.x) * sc, sy = (y - cam.y) * sc, rr = r * sc;
+      var g = sctx.createRadialGradient(sx, sy, rr * .3, sx, sy, rr); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      sctx.fillStyle = g; sctx.beginPath(); sctx.arc(sx, sy, rr, 0, Math.PI * 2); sctx.fill();
+    }
+    var torch = hasBag('torch'), R = (torch ? 230 : 72) + (P.power === 'lantern' ? 90 : 0) + (curHat === 'helmet' ? 40 : 0) + (reduceMotion ? 0 : Math.sin(gameT * 9) * (torch ? 5 : 2));
+    hole(P.x, P.y - 24, R);
+    Z.items.forEach(function (it) { if (!it.taken && it.room === ri) hole(it.x, it.y, 34); });
+    L.hidden.forEach(function (h) { if (h.zone === P.zone && !h.taken && roomOf(Z, h.x, h.y) === ri) hole(h.x, h.y, 34); });
+    if (Z.exit && Z.exit.room === ri) hole(Z.exit.x, Z.exit.y - 40, 80);
+    if (torch) { // ciepłe światło pochodni w tej samej małej warstwie
+      sctx.globalCompositeOperation = 'source-over';
+      var tx = (P.x - cam.x) * sc, ty = (P.y - 24 - cam.y) * sc, gg = sctx.createRadialGradient(tx, ty, 2, tx, ty, R * sc);
+      gg.addColorStop(0, 'rgba(255,190,90,.2)'); gg.addColorStop(1, 'rgba(255,190,90,0)');
+      sctx.fillStyle = gg; sctx.fillRect(tx - R * sc, ty - R * sc, R * sc * 2, R * sc * 2);
+    }
+    // tylko prostokąt komnaty (poza nią i tak jest prawie czarno): mniej pikseli do złożenia
+    var rm = Z.rooms[ri], k = view.s * view.dpr, x0 = clamp(rm.x0 - cam.x, 0, view.w), y0 = clamp(rm.y0 - cam.y, 0, view.h), x1 = clamp(rm.x1 - cam.x, 0, view.w), y1 = clamp(rm.y1 - cam.y, 0, view.h);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (x1 > x0 && y1 > y0) ctx.drawImage(shadeZ, x0 * sc, y0 * sc, (x1 - x0) * sc, (y1 - y0) * sc, x0 * k, y0 * k, (x1 - x0) * k, (y1 - y0) * k);
+    if (!torch) { // podpowiedź tylko w ciemnej komnacie bez pochodni
+      var k3 = view.s * view.dpr; ctx.setTransform(k3, 0, 0, k3, 0, 0); ctx.fillStyle = '#FFF4CF';
+      label(PT('page.game.cx.dark', 'Ciemno! Pochodnia by się przydała.'), view.w / 2, view.h - view.reserve - 24, view.w - 40);
+    }
+  }
+  function hudTop() { var h = $('hud'); return h && !h.hidden ? Math.max(60, h.getBoundingClientRect().bottom + 6) : 60; }
+  function drawZoneHUD(Z, ri) {
+    var d = view.dpr, cw = view.cssW, top = hudTop();
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    // plecak: 4 miejsca
+    var s = 44, gx = 10;
+    ctx.fillStyle = 'rgba(6,42,88,.72)'; roundRect(ctx, gx - 4, top - 4, 4 * (s + 6) + 2, s + 8, 12); ctx.fill();
+    for (var i = 0; i < 4; i++) {
+      var x = gx + i * (s + 6);
+      ctx.fillStyle = 'rgba(255,255,255,.94)'; roundRect(ctx, x, top, s, s, 9); ctx.fill();
+      if (P.bag[i]) drawItemIcon(ctx, P.bag[i], x + s / 2, top + s / 2 + (P.bag[i] === 'torch' ? 4 : 0), 1.15);
+    }
+    // mapka: odwiedzone komnaty
+    var cwid = 26, ch = 20, gap = 3, mw = Z.GW * (cwid + gap) - gap, mx = cw - 10 - mw;
+    ctx.fillStyle = 'rgba(6,42,88,.72)'; roundRect(ctx, mx - 6, top - 4, mw + 12, Z.GH * (ch + gap) - gap + 8, 10); ctx.fill();
+    Z.rooms.forEach(function (rm, k) {
+      if (!rm.seen && k !== ri) return;
+      var x = mx + rm.rx * (cwid + gap), y = top + rm.ry * (ch + gap);
+      ctx.fillStyle = k === ri ? '#FFC629' : rm.dark ? '#5D6B82' : '#E2EBF7'; roundRect(ctx, x, y, cwid, ch, 4); ctx.fill();
+      if (Z.exit && Z.exit.room === k) { ctx.fillStyle = '#1F7A48'; ctx.beginPath(); ctx.moveTo(x + 8, y + ch - 3); ctx.lineTo(x + 8, y + 9); ctx.arc(x + 13, y + 9, 5, Math.PI, 0); ctx.lineTo(x + 18, y + ch - 3); ctx.fill(); }
+    });
+  }
+  /* Wejście w murze opactwa (świat główny) */
+  function drawCxDoors() {
+    L.cxDoors.forEach(function (dd) {
+      if (dd.x < cam.x - 200 || dd.x > cam.x + view.w + 400) return;
+      var x = dd.x, y = dd.y, Z = L.cx[dd.zi];
+      ctx.fillStyle = '#54473A'; ctx.fillRect(x - 30, y - 92, 60, 92);
+      ctx.fillStyle = '#A48B67'; ctx.fillRect(x - 27, y - 89, 54, 89);
+      ctx.fillStyle = Z.done ? '#2B3D5A' : '#0E1A2B'; ctx.beginPath(); ctx.moveTo(x - 18, y); ctx.lineTo(x - 18, y - 52); ctx.arc(x, y - 52, 18, Math.PI, 0); ctx.lineTo(x + 18, y); ctx.fill();
+      ctx.fillStyle = '#FFC629'; ctx.beginPath(); ell(ctx, x - 9, y - 40, 2.5, 2.5, 0); ell(ctx, x + 9, y - 40, 2.5, 2.5, 0); ctx.fill(); // oczy w ciemności :)
+      if (Math.abs(P.x - x) < 260) { ctx.fillStyle = '#062A58'; label(CX_NAME[Z.key], x, y - 104, 260); }
+      drawExitDoor(Z.back.x, Z.back.y, Z.done);
+    });
   }
 
   /* ---------- 8. Świętowanie przystanku ---------- */
@@ -2004,7 +2819,7 @@
     if (!reduceMotion) for (var i = 0; i < 90; i++) conf.push({ x: Math.random(), y: -Math.random() * .6, vx: (Math.random() - .5) * .15, vy: .18 + Math.random() * .25, rot: Math.random() * 6, vr: (Math.random() - .5) * 8, col: ['#FFC629', '#0B4EA2', '#C81E36', '#1F7A48', '#FFFFFF'][i % 5], w: 6 + Math.random() * 6 });
     celebration = { lm: lm, t: 0, conf: conf, dance: 'dance' + (lm.sec % 4), counted: false };
     var ct = $('celebrateText');
-    ct.innerHTML = '<b>Brawo! ' + '★★★'.slice(0, S.stars) + '<i class="dim">' + '★★★'.slice(S.stars) + '</i></b><span>Naklejka: ' + esc(trip.stops[lm.sec].name) + '</span><small>Dotknij, aby pominąć</small>';
+    ct.innerHTML = '<b>' + esc(PT('page.game.cel.bravo', 'Brawo!')) + ' ' + '★★★'.slice(0, S.stars) + '<i class="dim">' + '★★★'.slice(S.stars) + '</i></b><span>' + esc(fill(PT('page.game.cel.sticker', 'Naklejka: {name}'), { name: stopName(lm.sec) })) + '</span><small>' + esc(PT('page.game.cel.skip', 'Dotknij, aby pominąć')) + '</small>';
     ct.hidden = false; $('hudStop').style.visibility = 'hidden'; $('pad').style.visibility = 'hidden';
     sfx('fanfare');
   }
@@ -2017,7 +2832,7 @@
     if (!reduceMotion) for (var i = 0; i < 120; i++) conf.push({ x: Math.random(), y: -Math.random() * .6, vx: (Math.random() - .5) * .15, vy: .18 + Math.random() * .25, rot: Math.random() * 6, vr: (Math.random() - .5) * 8, col: ['#FFC629', '#FFD95A', '#E8A912', '#FFFFFF', '#0B4EA2'][i % 5], w: 6 + Math.random() * 6 });
     celebration = { lm: null, treasure: T, t: 0, conf: conf, dance: 'dance1', counted: false };
     var ct = $('celebrateText');
-    ct.innerHTML = '<b>Znalazłeś Skarb Quo!</b><span>Pokaż go rodzicom — czeka w ich panelu.</span><small>Dotknij, aby iść dalej</small>';
+    ct.innerHTML = '<b>' + esc(PT('page.game.treasure.found', 'Znalazłeś Skarb Quo!')) + '</b><span>' + esc(PT('page.game.treasure.show', 'Pokaż go rodzicom — czeka w ich panelu.')) + '</span><small>' + esc(PT('page.game.cel.next', 'Dotknij, aby iść dalej')) + '</small>';
     ct.hidden = false; $('hudStop').style.visibility = 'hidden'; $('pad').style.visibility = 'hidden';
     sfx('fanfare');
   }
@@ -2092,6 +2907,57 @@
   /* ---------- 9. Interfejs ---------- */
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function fmtT(s) { s = Math.round(s); return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); }
+  /* Treść wycieczki z frasassi.json: klucze page.game.<trip>.s<nr>.name i page.game.<trip>.<id pytania>.q / a0–a3 / hint
+     (polski tekst + obiekt "i18n" w JSON — z niego ui-translate.mjs bierze źródło). */
+  function stopName(i) { var s = trip.stops[i]; return PT('page.game.' + trip.trip + '.s' + s.key + '.name', s.name); }
+  function qText(stop, q, f) {
+    var pl = f === 'q' ? q.q : f === 'hint' ? q.hint : q.answers[+f.slice(1)];
+    return q.id ? PT('page.game.' + trip.trip + '.' + q.id + '.' + f, pl) : pl;
+  }
+  function langTag() { var l = (window.PT && window.PT.lang) || 'pl'; return l === 'no' ? 'nb' : l; }
+  // Napisy na płótnie: krój strony z zapasowymi (cyrylica, diakrytyki), min. 18 px na ekranie; za długie — mniejsze, potem w 2 linie.
+  function wrapLines(c, t, maxW) {
+    var words = String(t).split(' '), lines = [], cur = '';
+    words.forEach(function (w) { var n = cur ? cur + ' ' + w : w; if (cur && c.measureText(n).width > maxW) { lines.push(cur); cur = w; } else cur = n; });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function label(t, x, y, maxW, size) {
+    var min = 18 / view.s, f = Math.max(size || 18, min);
+    ctx.textAlign = 'center'; ctx.font = font(f);
+    var w = ctx.measureText(t).width;
+    if (w > maxW && f > min) { f = Math.max(min, f * maxW / w); ctx.font = font(f); w = ctx.measureText(t).width; }
+    if (w <= maxW) { ctx.fillText(t, x, y); return; }
+    var ls = wrapLines(ctx, t, maxW);
+    for (var i = 0; i < ls.length; i++) ctx.fillText(ls[i], x, y - (ls.length - 1 - i) * f * 1.12);
+  }
+  function fitText(c, t, x, y, maxW, size, weight) {
+    var f = size; c.font = font(f, weight);
+    var w = c.measureText(t).width; if (w > maxW) { f = Math.max(size * .72, f * maxW / w); c.font = font(f, weight); }
+    c.fillText(t, x, y, maxW);
+  }
+  // Tabele z napisami wypełniane po wczytaniu tłumaczeń (PT.ready)
+  function i18nTables() {
+    DIFF.easy.label = PT('page.game.diff.easy', 'Łatwy'); DIFF.easy.ages = PT('page.game.diff.easy_age', '5–7 lat');
+    DIFF.medium.label = PT('page.game.diff.medium', 'Średni'); DIFF.medium.ages = PT('page.game.diff.medium_age', '8–10 lat');
+    DIFF.hard.label = PT('page.game.diff.hard', 'Trudny'); DIFF.hard.ages = PT('page.game.diff.hard_age', '11+');
+    POWER.magnet.name = PT('page.game.pw.magnet', 'Magnes na kamyczki');
+    POWER.lantern.name = PT('page.game.pw.lantern', 'Latarka');
+    POWER.doublejump.name = PT('page.game.pw.doublejump', 'Podwójny skok');
+    POWER.glide.name = PT('page.game.pw.glide', 'Szybowanie — trzymaj skok');
+    POWER.balloon.name = PT('page.game.pw.balloon', 'Balonik — trzymaj skok, by lecieć');
+    HATS.helmet = PT('page.game.hat.helmet', 'Kask z lampką');
+    HATS.hood = PT('page.game.hat.hood', 'Kaptur mnicha');
+    HATS.explorer = PT('page.game.hat.explorer', 'Kapelusz odkrywcy');
+    ITEM_NAME.torch = PT('page.game.item.torch', 'pochodnia');
+    ITEM_NAME.pickaxe = PT('page.game.item.pickaxe', 'kilof');
+    ITEM_NAME['key:red'] = PT('page.game.item.key_red', 'czerwony klucz');
+    ITEM_NAME['key:blue'] = PT('page.game.item.key_blue', 'niebieski klucz');
+    ITEM_NAME['key:green'] = PT('page.game.item.key_green', 'zielony klucz');
+    CX_NAME.easy = PT('page.game.cx.easy', 'Piwnice opactwa');
+    CX_NAME.medium = PT('page.game.cx.medium', 'Labirynt pod opactwem');
+    CX_NAME.hard = PT('page.game.cx.hard', 'Komnaty jaskini');
+  }
   var toastTimer = null;
   function toast(msg, ms) {
     if (SIM) return;
@@ -2113,12 +2979,12 @@
     if (S.power && !S.given) { S.given = true; setPower(S.power); }
     if (SIM) return;
     var stop = trip.stops[si];
-    $('hudStop').textContent = 'Przystanek ' + (si + 1) + ' z ' + L.sections.length + ' · ' + stop.name;
+    $('hudStop').textContent = fill(PT('page.game.hud.stop', 'Przystanek {n} z {m}'), { n: si + 1, m: L.sections.length }) + ' · ' + stopName(si);
     powerHUD();
-    var msg = stop.name + ' · cel czasu ' + fmtT(S.par);
-    if (S.power) msg += ' · moc z zadania foto: ' + POWER[S.power].name;
-    else if (S.terrain === 'cave') msg += ' · ciemno! Zadanie foto dałoby latarkę';
-    if (S.shortcut) msg += ' · szukaj trampoliny „skrót”!';
+    var msg = stopName(si) + ' · ' + fill(PT('page.game.hud.par', 'cel czasu {t}'), { t: fmtT(S.par) });
+    if (S.power) msg += ' · ' + fill(PT('page.game.hud.photo_power', 'moc z zadania foto: {name}'), { name: POWER[S.power].name });
+    else if (S.terrain === 'cave') msg += ' · ' + PT('page.game.hud.dark', 'ciemno! Zadanie foto dałoby latarkę');
+    if (S.shortcut) msg += ' · ' + PT('page.game.hud.shortcut', 'szukaj trampoliny „skrót”!');
     toast(msg, 3800);
     updateHUD();
   }
@@ -2148,12 +3014,12 @@
   function playOrgan() {
     if (!organ) return;
     organ.ready = false; organ.pos = 0;
-    $('organStatus').textContent = 'Słuchaj i patrz… (' + organ.seq.length + ' dźwięki)';
+    $('organStatus').textContent = fill(PT('page.game.organ.listen', 'Słuchaj i patrz… Dźwięków: {n}'), { n: organ.seq.length });
     Array.prototype.forEach.call($('organPads').children, function (b) { b.disabled = true; });
     organ.seq.forEach(function (k, i) { setTimeout(function () { lightPad(k, 520); }, i * 700); });
     setTimeout(function () {
       if (!organ) return; organ.ready = true;
-      $('organStatus').textContent = 'Twoja kolej! Dotknij nacieków w tej samej kolejności.';
+      $('organStatus').textContent = PT('page.game.organ.turn', 'Twoja kolej! Dotknij nacieków w tej samej kolejności.');
       Array.prototype.forEach.call($('organPads').children, function (b) { b.disabled = false; });
       $('organPads').children[0].focus({ preventScroll: true });
     }, organ.seq.length * 700 + 200);
@@ -2163,10 +3029,10 @@
     lightPad(i, 300);
     if (organ.seq[organ.pos] === i) {
       organ.pos++;
-      if (organ.pos >= organ.seq.length) { organ.ready = false; $('organStatus').textContent = 'Brawo! Brama się otwiera · +5 kamyczków'; addCoins(5); sfx('ok'); setTimeout(function () { closeOrgan(true); }, 900); }
+      if (organ.pos >= organ.seq.length) { organ.ready = false; $('organStatus').textContent = PT('page.game.organ.ok', 'Brawo! Brama się otwiera · +5 kamyczków'); addCoins(5); sfx('ok'); setTimeout(function () { closeOrgan(true); }, 900); }
     } else {
       organ.ready = false; organ.gate.fails++; sfx('no');
-      $('organStatus').textContent = 'Prawie! Posłuchaj jeszcze raz.';
+      $('organStatus').textContent = PT('page.game.organ.again', 'Prawie! Posłuchaj jeszcze raz.');
       if (organ.gate.fails >= 2) $('organSkip').hidden = false;
       setTimeout(playOrgan, 1100);
     }
@@ -2191,13 +3057,13 @@
     state = 'mash'; input.left = input.right = input.jump = false; P.vx = 0;
     var c = MASH[gate.kind][D.key], rope = gate.kind === 'rope';
     mash = { gate: gate, kind: gate.kind, n: c.n, T: c.T, dec: c.dec, p: 0, t: 0, last: '', running: false, done: false };
-    $('mashTitle').textContent = rope ? 'Wspinaczka po linie' : 'Głaz w poprzek ścieżki';
+    $('mashTitle').textContent = rope ? PT('page.game.mash.rope', 'Wspinaczka po linie') : PT('page.game.mash.push', 'Głaz w poprzek ścieżki');
     $('mashStage').className = 'mash-stage ' + gate.kind;
     $('mashTap').hidden = !rope; $('mashL').hidden = rope; $('mashR').hidden = rope;
     $('mashThreatIcon').textContent = rope ? '' : '🦇';
     $('mashSkip').hidden = gate.fails < 2; $('mashRetry').hidden = true;
-    $('mashStatus').textContent = rope ? 'Stukaj w TAP! (albo spację), zanim woda w szybie podejdzie wyżej. Pierwsze stuknięcie startuje.'
-      : 'Na zmianę ◀ i ▶ (albo strzałki ← →) — zepchnij głaz, zanim przyleci nietoperz. Pierwsze stuknięcie startuje.';
+    $('mashStatus').textContent = rope ? PT('page.game.mash.rope_help', 'Stukaj w TAP! (albo spację), zanim woda w szybie podejdzie wyżej. Pierwsze stuknięcie startuje.')
+      : PT('page.game.mash.push_help', 'Na zmianę ◀ i ▶ (albo strzałki ← →) — zepchnij głaz, zanim przyleci nietoperz. Pierwsze stuknięcie startuje.');
     drawMash();
     $('mashScreen').hidden = false; setPad(false);
     setTimeout(function () { (rope ? $('mashTap') : $('mashL')).focus({ preventScroll: true }); }, 30);
@@ -2209,7 +3075,7 @@
     mash.p = Math.min(1, mash.p + 1 / mash.n);
     sfx('pop');
     if (!reduceMotion) { var st = $('mashStage'); st.classList.remove('bump'); void st.offsetWidth; st.classList.add('bump'); }
-    if (mash.p >= 1) { mash.done = true; $('mashStatus').textContent = 'Udało się! +8 kamyczków'; addCoins(8); sfx('ok'); drawMash(); setTimeout(function () { closeMash(true); }, 900); }
+    if (mash.p >= 1) { mash.done = true; $('mashStatus').textContent = PT('page.game.mash.ok', 'Udało się! +8 kamyczków'); addCoins(8); sfx('ok'); drawMash(); setTimeout(function () { closeMash(true); }, 900); }
     drawMash();
   }
   function updateMash(dt) {
@@ -2219,7 +3085,7 @@
     var lost = mash.kind === 'rope' ? (mash.t > .8 && waterLevel() >= mash.p) : mash.t >= mash.T;
     if (lost) {
       mash.done = true; mash.gate.fails++; sfx('no');
-      $('mashStatus').textContent = mash.kind === 'rope' ? 'Quo zjechał powoli w dół. Spróbuj jeszcze raz — szybciej!' : 'Nietoperz przeleciał i głaz wrócił. Spróbuj jeszcze raz!';
+      $('mashStatus').textContent = mash.kind === 'rope' ? PT('page.game.mash.rope_lost', 'Quo zjechał powoli w dół. Spróbuj jeszcze raz — szybciej!') : PT('page.game.mash.push_lost', 'Nietoperz przeleciał i głaz wrócił. Spróbuj jeszcze raz!');
       $('mashRetry').hidden = false; if (mash.gate.fails >= 2) $('mashSkip').hidden = false;
       setTimeout(function () { $('mashRetry').focus({ preventScroll: true }); }, 30);
     }
@@ -2238,13 +3104,13 @@
       th.style.left = (92 - (mash.running ? mash.t / mash.T : 0) * 30) + '%';
     }
   }
-  function retryMash() { if (!mash || mash.p >= 1 || !mash.done) return; mash.p = 0; mash.t = 0; mash.running = false; mash.done = false; mash.last = ''; $('mashRetry').hidden = true; $('mashStatus').textContent = 'Jeszcze raz! Pierwsze stuknięcie startuje.'; drawMash(); }
+  function retryMash() { if (!mash || mash.p >= 1 || !mash.done) return; mash.p = 0; mash.t = 0; mash.running = false; mash.done = false; mash.last = ''; $('mashRetry').hidden = true; $('mashStatus').textContent = PT('page.game.mash.retry', 'Jeszcze raz! Pierwsze stuknięcie startuje.'); drawMash(); }
   function closeMash(ok) {
     if (!mash) return;
     var gate = mash.gate, kind = mash.kind; mash = null;
     $('mashScreen').hidden = true; setPad(true);
     gate.open = true; stats.gates++;
-    if (ok && kind === 'rope') { P.x = gate.x + 4 * TILE; P.y = gate.g * TILE; P.vx = P.vy = 0; addCoins(4); toast('Skrót z szybu! +4 kamyczki'); } // skrót
+    if (ok && kind === 'rope') { P.x = gate.x + 4 * TILE; P.y = gate.g * TILE; P.vx = P.vy = 0; addCoins(4); toast(PT('page.game.t.rope_short', 'Skrót z szybu! +4 kamyczki')); } // skrót
     if (D.cpGates) P.checkpoint = { x: Math.max(P.x, gate.x + 56), y: P.y };
     input.jumpPressed = false; state = 'play';
   }
@@ -2260,7 +3126,7 @@
     }
     mosaic = { pq: pq, t: t };
     $('mosaicSkip').hidden = pq.closes < 2;
-    $('mosaicStatus').textContent = 'Dotknij kafelka obok pustego pola.';
+    $('mosaicStatus').textContent = PT('page.game.mosaic.help', 'Dotknij kafelka obok pustego pola.');
     renderMosaic();
     $('mosaicScreen').hidden = false; setPad(false);
   }
@@ -2269,7 +3135,7 @@
     g.innerHTML = '';
     mosaic.t.forEach(function (v, i) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'mtile' + (v === 8 ? ' empty' : '');
-      b.setAttribute('aria-label', v === 8 ? 'puste pole' : 'kafelek ' + (v + 1));
+      b.setAttribute('aria-label', v === 8 ? PT('page.game.mosaic.empty', 'puste pole') : fill(PT('page.game.mosaic.tile', 'kafelek {n}'), { n: v + 1 }));
       if (v !== 8) { b.style.backgroundImage = 'url(' + img + ')'; b.style.backgroundPosition = (v % 3) * 50 + '% ' + Math.floor(v / 3) * 50 + '%'; }
       b.addEventListener('click', function () { slideTile(i); });
       g.appendChild(b);
@@ -2280,7 +3146,7 @@
     var e = mosaic.t.indexOf(8), adj = (Math.abs(i - e) === 3) || (Math.abs(i - e) === 1 && Math.floor(i / 3) === Math.floor(e / 3));
     if (!adj) return;
     mosaic.t[e] = mosaic.t[i]; mosaic.t[i] = 8; sfx('pop'); renderMosaic();
-    if (mosaic.t.every(function (v, k) { return v === k; })) { $('mosaicStatus').textContent = 'Brawo! Skrzynia otwarta.'; sfx('ok'); setTimeout(function () { closeMosaic(true); }, 900); }
+    if (mosaic.t.every(function (v, k) { return v === k; })) { $('mosaicStatus').textContent = PT('page.game.mosaic.ok', 'Brawo! Skrzynia otwarta.'); sfx('ok'); setTimeout(function () { closeMosaic(true); }, 900); }
   }
   function closeMosaic(solved) {
     if (!mosaic) return;
@@ -2293,19 +3159,19 @@
   }
 
   /* --- Przebrania Quo (tylko wygląd, zapis lokalny) --- */
-  var HATS = { helmet: 'Kask z lampką', hood: 'Kaptur mnicha', explorer: 'Kapelusz odkrywcy' };
+  var HATS = { helmet: 'Kask z lampką', hood: 'Kaptur mnicha', explorer: 'Kapelusz odkrywcy' }; // nazwy z PT w i18nTables()
   function ownedHats() { return lsJSON(LS + 'hats') || []; }
   function collectHat(kind) {
     if (SIM) return;
     var h = ownedHats(); if (h.indexOf(kind) < 0) { h.push(kind); lsSet(LS + 'hats', JSON.stringify(h)); }
     curHat = kind; lsSet(LS + 'hat', kind);
-    sfx('fanfare'); toast('Nowe przebranie: ' + HATS[kind] + '!', 3200);
+    sfx('fanfare'); toast(fill(PT('page.game.t.hat', 'Nowe przebranie: {name}!'), { name: HATS[kind] }), 3200);
   }
   function renderHats() {
-    var own = ownedHats(), el = $('hatPicker'), html = '<button type="button" class="hat-btn" data-hat="" aria-pressed="' + (!curHat) + '">Bez przebrania</button>';
+    var own = ownedHats(), el = $('hatPicker'), html = '<button type="button" class="hat-btn" data-hat="" aria-pressed="' + (!curHat) + '">' + esc(PT('page.game.hat.none', 'Bez przebrania')) + '</button>';
     Object.keys(HATS).forEach(function (k) {
       var has = own.indexOf(k) >= 0;
-      html += '<button type="button" class="hat-btn" data-hat="' + k + '" aria-pressed="' + (curHat === k) + '"' + (has ? '' : ' disabled') + '>' + (has ? HATS[k] : '🔒 ukryte') + '</button>';
+      html += '<button type="button" class="hat-btn" data-hat="' + k + '" aria-pressed="' + (curHat === k) + '"' + (has ? '' : ' disabled') + '>' + esc(has ? HATS[k] : '🔒 ' + PT('page.game.hat.locked', 'ukryte')) + '</button>';
     });
     el.innerHTML = html;
     Array.prototype.forEach.call(el.children, function (b) { b.addEventListener('click', function () { curHat = b.dataset.hat || null; lsSet(LS + 'hat', curHat || ''); renderHats(); }); });
@@ -2313,7 +3179,7 @@
 
   /* --- Tryb foto: ramka z Quo i naklejką przystanku, zapis lokalny --- */
   function photoSec() {
-    if (!L || !P) return -1;
+    if (!L || !P || P.zone >= 0) return -1;
     if (state === 'celebrate' && celebration) return celebration.lm ? celebration.lm.sec : -1;
     for (var i = 0; i < L.landmarks.length; i++) { var lm = L.landmarks[i]; if (lm.done && Math.abs(P.x - lm.x) < 260) return lm.sec; }
     return -1;
@@ -2329,12 +3195,12 @@
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.strokeStyle = '#fff'; x.lineWidth = 28; x.strokeRect(0, 0, 480, 360);
     x.fillStyle = '#fff'; x.fillRect(0, 300, 480, 60);
-    x.fillStyle = '#062A58'; x.font = '900 22px system-ui,sans-serif'; x.textAlign = 'center';
-    var nm = trip.stops[si].name; x.fillText(nm.length > 34 ? nm.slice(0, 33) + '…' : nm, 240, 330);
-    x.font = '700 18px system-ui,sans-serif'; x.fillStyle = '#5D6B82'; x.fillText('Quo: Wyprawa · ' + new Date().toLocaleDateString('pl-PL'), 240, 352);
+    x.fillStyle = '#062A58'; x.textAlign = 'center';
+    fitText(x, stopName(si), 240, 330, 440, 22, 900);
+    x.fillStyle = '#5D6B82'; fitText(x, PT('page.game.title', 'Quo: Wyprawa') + ' · ' + new Date().toLocaleDateString(langTag()), 240, 352, 440, 18, 700);
     var data = c.toDataURL('image/jpeg', .72), all = lsJSON(LS + 'photos') || {}, list = (all[trip.trip] || []).filter(function (p) { return p.sec !== si; });
     list.push({ sec: si, data: data }); list.sort(function (a, b) { return a.sec - b.sec; }); all[trip.trip] = list;
-    try { localStorage.setItem(LS + 'photos', JSON.stringify(all)); toast('📸 Zdjęcie w albumie!'); } catch (e) { toast('Brak miejsca na zdjęcie w pamięci telefonu.'); }
+    try { localStorage.setItem(LS + 'photos', JSON.stringify(all)); toast('📸 ' + PT('page.game.t.photo', 'Zdjęcie w albumie!')); } catch (e) { toast(PT('page.game.t.photo_full', 'Brak miejsca na zdjęcie w pamięci telefonu.')); }
     sfx('ok');
     var fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
   }
@@ -2353,12 +3219,12 @@
   function showQuestion() {
     var gate = quizGate, stop = trip.stops[gate.sec], q = stop.quests[gate.qs[gate.qn]], box = $('quizAnswers');
     gate.tries = 0;
-    $('quizStop').textContent = 'Przystanek ' + (gate.sec + 1) + ' · ' + stop.name + (gate.qs.length > 1 ? ' · pytanie ' + (gate.qn + 1) + ' z ' + gate.qs.length : '');
-    $('quizQ').textContent = q.q;
+    $('quizStop').textContent = fill(PT('page.game.quiz.stop', 'Przystanek {n}'), { n: gate.sec + 1 }) + ' · ' + stopName(gate.sec) + (gate.qs.length > 1 ? ' · ' + fill(PT('page.game.quiz.count', 'pytanie {i} z {n}'), { i: gate.qn + 1, n: gate.qs.length }) : '');
+    $('quizQ').textContent = qText(stop, q, 'q');
     var hint = $('quizHint'); hint.textContent = ''; hint.className = 'quiz-hint';
     var hb = $('quizHintBtn'); hb.hidden = !D.freeHint; hb.disabled = false;
     box.innerHTML = '';
-    var a = q.answers.slice(0, D.opts).map(function (txt, i) { return { txt: txt, ok: i === q.correct }; });
+    var a = q.answers.slice(0, D.opts).map(function (txt, i) { return { txt: qText(stop, q, 'a' + i), ok: i === q.correct }; });
     for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
     a.forEach(function (o) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'answer'; b.textContent = o.txt;
@@ -2378,7 +3244,7 @@
       Array.prototype.forEach.call($('quizAnswers').children, function (b) { b.disabled = true; });
       $('quizHintBtn').hidden = true;
       var more = gate.qn < gate.qs.length - 1;
-      hint.className = 'quiz-hint good'; hint.textContent = 'Brawo! ' + (more ? 'Jeszcze jedno pytanie' : 'Brama się otwiera') + (bonus ? ' · +' + bonus + ' kamyczków' : '');
+      hint.className = 'quiz-hint good'; hint.textContent = PT('page.game.cel.bravo', 'Brawo!') + ' ' + (more ? PT('page.game.quiz.more', 'Jeszcze jedno pytanie') : PT('page.game.quiz.open', 'Brama się otwiera')) + (bonus ? ' · ' + fill(PT('page.game.quiz.bonus', '+{n} kamyczków'), { n: bonus }) : '');
       sfx('ok');
       if (bonus) addCoins(bonus);
       if (more) { setTimeout(function () { gate.qn++; showQuestion(); }, reduceMotion ? 600 : 900); return; }
@@ -2393,7 +3259,7 @@
     } else {
       gate.tries++;
       btn.classList.add('no'); btn.disabled = true;
-      hint.textContent = 'Prawie! Podpowiedź: ' + q.hint + (D.freeHint ? '' : ' (bez premii)');
+      hint.textContent = fill(PT('page.game.quiz.almost', 'Prawie! Podpowiedź: {hint}'), { hint: qText(trip.stops[gate.sec], q, 'hint') }) + (D.freeHint ? '' : ' ' + PT('page.game.quiz.nobonus', '(bez premii)'));
       $('quizHintBtn').hidden = true;
       sfx('no');
     }
@@ -2411,27 +3277,27 @@
     b.stars = L.sections.map(function (S, i) { return Math.max(S.stars, (b.stars || [])[i] || 0); });
     rec.best[D.key] = b;
     lsSet(LS + trip.trip, JSON.stringify(rec));
-    $('endDiff').textContent = 'Poziom: ' + D.label + ' (' + D.ages + ')';
+    $('endDiff').textContent = fill(PT('page.game.end.level', 'Poziom: {label} ({ages})'), { label: D.label, ages: D.ages });
     $('albumGrid').innerHTML = L.sections.map(function (S, i) {
       var s = trip.stops[i];
-      return '<div class="sticker"><img src="' + ICONS + 'icon-' + esc(s.icon) + '-128.webp" alt="" width="120" height="120"><p>' + esc(s.name) + '</p>' +
-        '<p class="stars" aria-label="' + S.stars + ' z 3 gwiazdek">' + '★★★'.slice(0, S.stars) + '<span class="dim">' + '★★★'.slice(S.stars) + '</span></p>' +
-        '<p class="meta">Ukryte: ' + S.hidden + '/3 · czas ' + fmtT(S.time) + ' (cel ' + fmtT(S.par) + ')</p></div>';
+      return '<div class="sticker"><img src="' + ICONS + 'icon-' + esc(s.icon) + '-128.webp" alt="" width="120" height="120"><p>' + esc(stopName(i)) + '</p>' +
+        '<p class="stars" aria-label="' + esc(fill(PT('page.game.end.stars_aria', '{n} z 3 gwiazdek'), { n: S.stars })) + '">' + '★★★'.slice(0, S.stars) + '<span class="dim">' + '★★★'.slice(S.stars) + '</span></p>' +
+        '<p class="meta">' + esc(fill(PT('page.game.end.meta', 'Ukryte: {h}/3 · czas {t} (cel {p})'), { h: S.hidden, t: fmtT(S.time), p: fmtT(S.par) })) + '</p></div>';
     }).join('') + ((stats.treasure || (window.QuoTreasure && QuoTreasure.found(trip.trip))) ?
       '<div class="sticker sticker-gold"><svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#FFD95A" stroke="#0E1A2B" stroke-width="5"/>' +
       '<rect x="32" y="58" width="56" height="34" fill="#E8A912" stroke="#3B2A00" stroke-width="4"/><path d="M32 58 Q60 30 88 58 Z" fill="#FFC629" stroke="#3B2A00" stroke-width="4"/>' +
       '<rect x="55" y="54" width="10" height="14" fill="#C81E36" stroke="#3B2A00" stroke-width="3"/></svg>' +
-      '<p>Skarb Quo</p><p class="meta">Pokaż go rodzicom — czeka w ich panelu.</p></div>' : '');
+      '<p>' + esc(PT('page.game.treasure.name', 'Skarb Quo')) + '</p><p class="meta">' + esc(PT('page.game.treasure.show', 'Pokaż go rodzicom — czeka w ich panelu.')) + '</p></div>' : '');
     $('totals').innerHTML =
-      '<div><span>Gwiazdki</span><b>' + total + ' / ' + L.sections.length * 3 + '</b></div>' +
-      '<div><span>Kamyczki</span><b>' + stats.coins + '</b></div>' +
-      '<div><span>Zagubione naklejki</span><b>' + stats.hiddenTotal + ' / ' + L.hidden.length + '</b></div>' +
-      '<div><span>Pytania za pierwszym razem</span><b>' + stats.firstTry + ' / ' + stats.questions + '</b></div>' +
-      '<div><span>Czas wyprawy</span><b>' + fmtT(gameT) + '</b></div>' +
-      '<div><span>Rekord (' + D.label + ')</span><b>' + b.stars.reduce(function (a, s) { return a + s; }, 0) + ' ★ · ' + b.coins + ' kamyczków</b></div>' +
-      (total > prevTotal && prevTotal ? '<div class="new"><span>Nowy rekord gwiazdek!</span></div>' : '');
+      '<div><span>' + esc(PT('page.game.end.stars', 'Gwiazdki')) + '</span><b>' + total + ' / ' + L.sections.length * 3 + '</b></div>' +
+      '<div><span>' + esc(PT('page.game.end.coins', 'Kamyczki')) + '</span><b>' + stats.coins + '</b></div>' +
+      '<div><span>' + esc(PT('page.game.end.hidden', 'Zagubione naklejki')) + '</span><b>' + stats.hiddenTotal + ' / ' + L.hidden.length + '</b></div>' +
+      '<div><span>' + esc(PT('page.game.end.first', 'Pytania za pierwszym razem')) + '</span><b>' + stats.firstTry + ' / ' + stats.questions + '</b></div>' +
+      '<div><span>' + esc(PT('page.game.end.time', 'Czas wyprawy')) + '</span><b>' + fmtT(gameT) + '</b></div>' +
+      '<div><span>' + esc(fill(PT('page.game.end.record', 'Rekord ({label})'), { label: D.label })) + '</span><b>' + esc(fill(PT('page.game.end.record_val', '{s} ★ · {c} kamyczków'), { s: b.stars.reduce(function (a, s) { return a + s; }, 0), c: b.coins })) + '</b></div>' +
+      (total > prevTotal && prevTotal ? '<div class="new"><span>' + esc(PT('page.game.end.new', 'Nowy rekord gwiazdek!')) + '</span></div>' : '');
     var photos = ((lsJSON(LS + 'photos') || {})[trip.trip]) || [];
-    $('photoGallery').innerHTML = photos.length ? '<p class="kicker">Zdjęcia z wyprawy</p><div class="photos">' + photos.map(function (p) { return '<img src="' + p.data + '" alt="Zdjęcie: Quo przy przystanku ' + (p.sec + 1) + '" width="240" height="180">'; }).join('') + '</div>' : '<p class="help">Przy naklejce przystanku dotknij 📸, żeby zrobić zdjęcie do albumu.</p>';
+    $('photoGallery').innerHTML = photos.length ? '<p class="kicker">' + esc(PT('page.game.end.photos', 'Zdjęcia z wyprawy')) + '</p><div class="photos">' + photos.map(function (p) { return '<img src="' + p.data + '" alt="' + esc(fill(PT('page.game.end.photo_alt', 'Zdjęcie: Quo przy przystanku {n}'), { n: p.sec + 1 })) + '" width="240" height="180">'; }).join('') + '</div>' : '<p class="help">' + esc(PT('page.game.end.photo_help', 'Przy naklejce przystanku dotknij 📸, żeby zrobić zdjęcie do albumu.')) + '</p>';
     $('endScreen').hidden = false;
     sfx('fanfare');
     setTimeout(function () { $('btnAgain').focus({ preventScroll: true }); }, 50);
@@ -2442,13 +3308,13 @@
     var powers = trip.stops.filter(function (s, i) { return p.stops[i].photo && s.powerup; }).map(function (s) { return POWER[s.powerup].name.split(' —')[0]; });
     var Dd = DIFF[diffKey], extra = Math.min(p.missions, Dd.cap - Dd.hearts);
     var html = '';
-    if (!p.found && !demo) html += '<p>Na tym telefonie nie ma jeszcze punktów z wycieczki. Gra działa i bez nich — jest tylko trochę trudniej.</p>';
-    else html += '<p>Punkty z waszej wycieczki:</p>';
-    html += '<div class="row' + (p.missions ? '' : ' off') + '"><i>❤️</i>Misje: ' + p.missions + ' z ' + p.missionsTotal + ' → +' + extra + ' serduszek (start: ' + (Dd.hearts + extra) + ')</div>';
-    html += '<div class="row' + (p.photos ? '' : ' off') + '"><i>📷</i>Zadania foto: ' + p.photos + ' z ' + p.photosTotal + (powers.length ? ' → ' + powers.join(', ') : ' → brak mocy') + '</div>';
-    html += '<div class="row' + (p.full ? '' : ' off') + '"><i>⭐</i>Całe przystanki: ' + p.full + ' z ' + trip.stops.length + ' → tajne skróty</div>';
+    if (!p.found && !demo) html += '<p>' + esc(PT('page.game.bonus.none', 'Na tym telefonie nie ma jeszcze punktów z wycieczki. Gra działa i bez nich — jest tylko trochę trudniej.')) + '</p>';
+    else html += '<p>' + esc(PT('page.game.bonus.head', 'Punkty z waszej wycieczki:')) + '</p>';
+    html += '<div class="row' + (p.missions ? '' : ' off') + '"><i>❤️</i>' + esc(fill(PT('page.game.bonus.missions', 'Misje: {m} z {t} → +{e} serduszek (start: {s})'), { m: p.missions, t: p.missionsTotal, e: extra, s: Dd.hearts + extra })) + '</div>';
+    html += '<div class="row' + (p.photos ? '' : ' off') + '"><i>📷</i>' + esc(fill(PT('page.game.bonus.photos', 'Zadania foto: {p} z {t}'), { p: p.photos, t: p.photosTotal }) + (powers.length ? ' → ' + powers.join(', ') : ' → ' + PT('page.game.bonus.nopower', 'brak mocy'))) + '</div>';
+    html += '<div class="row' + (p.full ? '' : ' off') + '"><i>⭐</i>' + esc(fill(PT('page.game.bonus.full', 'Całe przystanki: {f} z {n} → tajne skróty'), { f: p.full, n: trip.stops.length })) + '</div>';
     var rec = loadRecord(), b = rec.best[diffKey];
-    if (b && b.stars) html += '<div class="row"><i>🏆</i>Rekord na tym poziomie: ' + b.stars.reduce(function (a, s) { return a + s; }, 0) + ' / 12 ★</div>';
+    if (b && b.stars) html += '<div class="row"><i>🏆</i>' + esc(fill(PT('page.game.bonus.record', 'Rekord na tym poziomie: {s} / {n} ★'), { s: b.stars.reduce(function (a, s) { return a + s; }, 0), n: trip.stops.length * 3 })) + '</div>';
     el.innerHTML = html;
     document.querySelectorAll('.diff-btn').forEach(function (bt) { bt.setAttribute('aria-pressed', bt.dataset.diff === diffKey ? 'true' : 'false'); });
   }
@@ -2533,7 +3399,7 @@
     soundOn = on;
     if (on && !AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
     if (AC && AC.state === 'suspended') AC.resume();
-    ['btnSound', 'btnSound2'].forEach(function (id) { $(id).textContent = 'Dźwięk: ' + (on ? 'włączony' : 'wyłączony'); $(id).setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    ['btnSound', 'btnSound2'].forEach(function (id) { $(id).textContent = on ? PT('page.game.sound.on', 'Dźwięk: włączony') : PT('page.game.sound.off', 'Dźwięk: wyłączony'); $(id).setAttribute('aria-pressed', on ? 'true' : 'false'); });
     if (on) sfx('coin');
   }
 
@@ -2553,6 +3419,7 @@
   }
 
   function boot() {
+    i18nTables();
     genBackgrounds();
     demo = lsGet(LS + 'demo') === '1';
     var sd = lsGet(LS + 'diff'); if (DIFF[sd]) diffKey = sd;
@@ -2588,7 +3455,7 @@
     renderHats();
     $('quizHintBtn').addEventListener('click', function () {
       if (!quizGate) return; var q = trip.stops[quizGate.sec].quests[quizGate.qs[quizGate.qn]];
-      $('quizHint').textContent = 'Podpowiedź: ' + q.hint; $('quizHintBtn').hidden = true;
+      $('quizHint').textContent = fill(PT('page.game.quiz.hint', 'Podpowiedź: {hint}'), { hint: qText(trip.stops[quizGate.sec], q, 'hint') }); $('quizHintBtn').hidden = true;
     });
     window.addEventListener('resize', resize);
     resize();
@@ -2602,7 +3469,7 @@
         updateCamera(1);
         state = 'menu';
       });
-    }).catch(function () { toast('Nie udało się wczytać danych wycieczki.', 8000); });
+    }).catch(function () { toast(PT('page.game.t.load_err', 'Nie udało się wczytać danych wycieczki.'), 8000); });
     requestAnimationFrame(frame);
   }
 
@@ -2617,11 +3484,13 @@
     tileAt: function (x, y) { return tileAt(x, y); },
     snapshot: function () { return structuredClone({ L: L, P: P, stats: stats, gameT: gameT, curSec: curSec, cx: cam.x, cy: cam.y, inp: input }); },
     restore: function (s) { var c = structuredClone(s); L = c.L; P = c.P; stats = c.stats; gameT = c.gameT; curSec = c.curSec; cam.x = c.cx; cam.y = c.cy; input.left = c.inp.left; input.right = c.inp.right; input.jump = c.inp.jump; input.jumpPressed = false; },
-    simulate: function (prog, prev) {
-      SIM = true; simEv = []; simStop = false; var p = prev || 0, n = 0;
-      try { for (var i = 0; i < prog.length; i++) { setIn(prog[i], p); p = prog[i]; step(DT); n++; if (simStop || P.nap > 0) break; } }
+    simulate: function (prog, prev, tg) { // tg = {x, y}: najbliższe podejście do celu i pierwsza klatka „na miejscu” (bot w komnatach)
+      SIM = true; simEv = []; simStop = false; var p = prev || 0, n = 0, minD = 1e9, hitAt = -1, z0 = P.zone;
+      try { for (var i = 0; i < prog.length; i++) { setIn(prog[i], p); p = prog[i]; step(DT); n++;
+        if (tg && P.zone === z0) { var dx = Math.abs(P.x - tg.x), dy = Math.abs(P.y - tg.y), dd = dx + 1.4 * dy; if (dd < minD) minD = dd; if (hitAt < 0 && dx < 18 && dy < 26 && (P.onGround || P.climb)) hitAt = i; }
+        if (simStop || P.nap > 0) break; } }
       finally { SIM = false; }
-      return { x: P.x, y: P.y, hearts: P.hearts, nap: P.nap > 0, ev: simEv.slice(), onGround: P.onGround, n: n, sec: curSec };
+      return { x: P.x, y: P.y, hearts: P.hearts, nap: P.nap > 0, ev: simEv.slice(), onGround: P.onGround, n: n, sec: curSec, zone: P.zone, climb: P.climb, bag: P.bag.length, minD: minD, hitAt: hitAt };
     },
     advance: function (prog, prev) {
       var p = prev || 0;
@@ -2630,7 +3499,14 @@
     },
     get mash() { return mash ? { kind: mash.kind, p: mash.p, done: mash.done, running: mash.running, fails: mash.gate.fails } : null; },
     get organ() { return organ ? { seq: organ.seq.slice(), ready: organ.ready, fails: organ.gate.fails } : null; },
-    teleport: function (x, y) { P.x = x; P.y = y; P.vx = P.vy = 0; cam.x = clamp(P.x - view.w * .38, 0, L.W * TILE - view.w); }
+    teleport: function (x, y) { P.x = x; P.y = y; P.vx = P.vy = 0; cam.x = clamp(P.x - view.w * .38, 0, L.W * TILE - view.w); },
+    get zone() { // komnaty: dla bota testowego (punkty trasy) i zrzutów
+      if (P.zone < 0) return null; var Z = L.cx[P.zone];
+      return { zi: P.zone, key: Z.key, room: P.room, rooms: Z.rooms.length, seen: Z.rooms.filter(function (r) { return r.seen; }).length, bag: P.bag.slice(), route: Z.route, dark: Z.rooms[P.room] ? Z.rooms[P.room].dark : false, climb: P.climb };
+    },
+    enterZone: function (zi) { enterZone(zi); }
   };
-  boot();
+  // Najpierw tłumaczenia (page-i18n.js), potem pierwszy tekst gry. Bez sieci po 2,5 s gramy po polsku.
+  var i18nReady = window.PT && window.PT.ready ? window.PT.ready : Promise.resolve();
+  Promise.race([i18nReady, new Promise(function (r) { setTimeout(r, 2500); })]).then(boot, boot);
 })();
