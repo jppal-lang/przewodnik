@@ -1,7 +1,7 @@
 // Wikidata: twarde dane o zabytkach bez AI i bez tokenów (JP 2026-10-26).
 // Daty, autorzy, patroni, styl, ochrona, wysokość, strona oficjalna, współrzędne — z elementu Wikidata
 // powiązanego z artykułem Wikipedii przystanku. Używane w researchu (pewne fakty z URL) i do sprawdzenia pinezek.
-const UA = { 'User-Agent': 'QuolinoBot/1.0 (quolino.com; kontakt przez stronę)' };
+const UA = { 'User-Agent': 'QuolinoBot/1.0 (quolino.com)' };   // tylko ASCII — inaczej fetch odrzuca nagłówek
 const cache = new Map();
 async function getJson(url) {
   if (cache.has(url)) return cache.get(url);
