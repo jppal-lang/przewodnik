@@ -646,103 +646,213 @@
       '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form>') + '</div>';
   }
   // ── Pytania z kontroli (JP 2026-10-26): każde ostrzeżenie i błąd z kontroli całej trasy jako osobna pozycja z własnym polem odpowiedzi.
-  // Odpowiedź to zwykła uwaga (pole review.e.N / review.w.N) — idzie tym samym przyciskiem „Wyślij uwagi do poprawki”.
-  // „Popraw wg propozycji” = dosłowna podmiana stare → nowe (bez AI), „Zostaw” = bez zmiany; własny tekst = poprawka przez Gemini.
-  var QA_YES = '✓ Popraw według propozycji', QA_NO = '✗ Zostaw bez zmian';
-  // Grupowanie (JP 2026-10-26, mniej klikania): najpierw blokujące, potem ostrzeżenia zebrane wg rodzaju problemu
-  // („Zasada #10”, „Walidator”, „Literówka/interpunkcja”…) z przyciskami dla całej grupy. Pola review.e.N / review.w.N bez zmian.
+  // Odpowiedź to zwykła uwaga (pole review.e.N / review.w.N, N = indeks w review.errors / review.warnings) — idzie przyciskiem „Wyślij uwagi do poprawki”.
+  // Stała zasada JP: „uwagi i rozstrzygnięcia w czerwonej ramce przy konkretnym przystanku; zawsze kilka możliwości z rekomendacją”.
+  // Dlatego pytania renderują się W sekcji przystanku (#st-<stop_key>), a pytania do całej trasy — w „Opisie miasta”.
+  // Na górze szkicu zostaje tylko skrót: liczniki, linki do przystanków i przyciski „dla całej grupy” (wg rodzaju reguły).
+  // Treści odpowiedzi rozumie serwer: „✓” = podmiana stare → nowe, „✂” = usunięcie cytowanego fragmentu (stare → ""), „✗” = bez zmian.
+  var QA_YES = '✓ Popraw według propozycji', QA_CUT = '✂ Usuń fragment', QA_NO = '✗ Zostaw bez zmian';
+  var QA_OPT = { fix: 'Popraw według propozycji', cut: 'Usuń fragment', keep: 'Zostaw bez zmian', own: 'Własna decyzja' };
+  var QA_BODY = { fix: QA_YES, cut: QA_CUT, keep: QA_NO };
   function qaPlural(n) { var d = n % 10, t = n % 100; return n === 1 ? 'pytanie' : d >= 2 && d <= 4 && (t < 12 || t > 14) ? 'pytania' : 'pytań'; }
+  function plForm(n, one, few, many) { var d = n % 10, t = n % 100; return n + ' ' + (n === 1 ? one : d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many); }
   function qaProblem(e) { return String(e && e.problem || '').replace(/^\[(nie blokuje|drobiazg)\]\s*/i, ''); }
   function qaGroupKey(e) { var m = qaProblem(e).match(/^(Zasada #\d+|Walidator|[^:(]{3,40}?)\s*[:(]/); return m ? m[1].trim() : 'Inne'; }
-  function qaItemHtml(x) {
-    var e = x.e || {}, field = 'review.' + x.k + '.' + x.i, label = 'Pytanie ' + x.n;
-    var has = commentsFor(e.stop_key || null, field).length, fixable = !!(e.old || e['new']);
-    var where = e.stop_key ? (stopName(e.stop_key) || e.stop_key) : 'Cała trasa';
-    var prop = fixable ? '<p class="adm-q__prop">Propozycja: ' + (e.old ? '<del>' + esc(e.old) + '</del>' : '') + (e.old && e['new'] ? ' → ' : '') + (e['new'] ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>'
-      : e.fix ? '<p class="adm-q__prop">Propozycja: ' + esc(e.fix) + '</p>' : '';
-    var quick = state.readOnly ? '' : '<div class="adm-q__quick">' + (fixable ? '<button type="button" class="qc-btn qc-btn--sm" data-qa="yes">Popraw wg propozycji</button>' : '') +
-      '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa="no">Zostaw tak</button></div>';
-    return '<li class="adm-q__it' + (x.block ? ' is-block' : '') + (has ? ' is-done' : '') + '"' + (fixable ? ' data-fixable' : '') + '><p class="adm-q__head"><b>' + x.n + '.</b> ' +
-      '<a href="#st-' + esc(e.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a>' + (x.block ? ' <span class="adm-q__tag">blokuje</span>' : '') + '</p>' +
-      '<p class="adm-q__txt">' + esc(qaProblem(e)) + '</p>' + prop + quick + commentBox(e.stop_key || null, field, label) + '</li>';
+  function qaHasOld(e) { return e != null && e.old != null && String(e.old) !== ''; }
+  function qaHasNew(e) { return e != null && e['new'] != null && String(e['new']) !== ''; }
+  // Rekomendacja — deterministyczna, bez AI. Zwraca { opt: 'fix'|'cut'|'keep'|'own', why: krótki powód }.
+  function qaRecommend(e, block) {
+    var p = qaProblem(e), hasOld = qaHasOld(e), hasNew = qaHasNew(e);
+    if (block) {
+      // błąd blokujący z gotową poprawką → poprawiamy
+      if (hasNew) return { opt: 'fix', why: 'błąd blokujący, poprawka gotowa' };
+      // fakt sprzeczny ze źródłem (albo zdradzający rozwiązanie) i wiemy, który fragment → usuwamy
+      if (hasOld && /sprzeczn|niezgodn|zdradza/i.test(p)) return { opt: 'cut', why: 'fakt niezgodny ze źródłem — bezpieczniej usunąć' };
+      // brak gotowej poprawki → decyduje JP
+      return { opt: 'own', why: 'kontrola nie podała gotowej poprawki' };
+    }
+    // ostrzeżenie o braku źródła dla cytowanego fragmentu (bez propozycji) → zostawiamy, to zwykle fakt niesporny
+    if (!hasNew && hasOld && /Zasada #10|nie ma w źródle|bez źródła/i.test(p)) return { opt: 'keep', why: 'fakt niesporny, tylko brak przypisu' };
+    // styl, powtórzenia, gramatyka, literówki z gotową poprawką → poprawiamy
+    if (hasNew && /styl|powtórz|gramaty|literówk|interpunk/i.test(p)) return { opt: 'fix', why: 'drobna poprawka językowa, gotowa' };
+    // ujednolicenie do „sprawdź na miejscu” — zasada wspólna #6 (nie wymyślać faktów)
+    if (hasNew && /sprawdź na miejscu/i.test(String(e['new']))) return { opt: 'fix', why: 'ujednolicenie do „sprawdź na miejscu”' };
+    return { opt: 'keep', why: 'ostrzeżenie nie blokuje publikacji' };
   }
-  function qaGroupHtml(title, list, block) {
-    var fixable = list.some(function (x) { return x.e && (x.e.old || x.e['new']); });
-    var bulk = state.readOnly || block ? '' : '<div class="adm-q__bulk">' +
-      (fixable ? '<button type="button" class="qc-btn qc-btn--sm" data-qa-all="yes">Popraw wszystkie wg propozycji</button>' : '') +
-      '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa-all="no">Zostaw wszystkie</button>' +
-      '<span class="adm-q__prog" role="status" aria-live="polite"></span></div>';
-    return '<details class="adm-q__grp' + (block ? ' is-block' : '') + '"' + (block || list.length <= 3 ? ' open' : '') + '>' +
-      '<summary class="adm-q__gh"><span class="adm-q__gt">' + esc(title) + ' · ' + list.length + ' ' + qaPlural(list.length) + '</span>' +
-      ' <small class="adm-q__gsum"></small></summary>' + bulk +
-      '<ol class="adm-q__list">' + list.map(qaItemHtml).join('') + '</ol></details>';
-  }
-  function questionsHtml(it) {
-    var rv = it && it.review || {}, errs = [], groups = {}, order = [], n = 0;
-    (rv.errors || []).forEach(function (e, i) { errs.push({ k: 'e', i: i, e: e, block: true, n: ++n }); });
+  // lista pytań do wersji: najpierw błędy, potem ostrzeżenia wg grup; numeracja wspólna dla skrótu i ramek
+  function qaItems(it, keys) {
+    var rv = it && it.review || {}, out = [], groups = {}, order = [], n = 0;
+    (rv.errors || []).forEach(function (e, i) { out.push({ k: 'e', i: i, e: e || {}, block: true, g: 'Blokujące', n: ++n }); });
+    var ws = [];
     (rv.warnings || []).forEach(function (e, i) {
       var g = qaGroupKey(e);
       if (!groups[g]) { groups[g] = []; order.push(g); }
-      groups[g].push({ k: 'w', i: i, e: e, block: false });
+      var x = { k: 'w', i: i, e: e || {}, block: false, g: g }; groups[g].push(x); ws.push(x);
     });
     if (order.indexOf('Inne') > 0) { order.splice(order.indexOf('Inne'), 1); order.push('Inne'); }   // „Inne” zawsze na końcu
-    order.forEach(function (g) { groups[g].forEach(function (x) { x.n = ++n; }); });
-    if (!n) return '';
-    return '<h3>Pytania z kontroli <b class="adm-n">' + n + '</b> <small class="adm-q__sum"></small></h3>' +
-      '<p class="adm-q__hint">Najpierw błędy blokujące, niżej ostrzeżenia zebrane wg rodzaju. Odpowiedz przyciskiem przy pytaniu, całą grupą albo wpisz, co zrobić; potem „Wyślij uwagi do poprawki”.</p>' +
-      (errs.length ? qaGroupHtml('Blokujące', errs, true) : '') +
-      order.map(function (g) { return qaGroupHtml(g, groups[g], false); }).join('');
+    order.forEach(function (g) { groups[g].forEach(function (x) { x.n = ++n; out.push(x); }); });
+    // pytanie do przystanku, którego nie ma w szkicu → ramka „Opis miasta” (z nazwą klucza)
+    out.forEach(function (x) { var sk = x.e.stop_key || null; x.box = sk && keys && keys[sk] ? sk : '_city'; x.orphan = sk && x.box === '_city' ? sk : null; });
+    return { list: out, order: order, groups: groups };
   }
-  // licznik „odpowiedziane X z Y” (całość i per grupa) — po każdej odpowiedzi, także wpisanej ręcznie
+  function qaOptHtml(x, opt, rec, detail) {
+    var on = rec.opt === opt;
+    return '<button type="button" class="adm-qo' + (on ? ' is-rec' : '') + '" data-qa="' + opt + '">' +
+      '<span class="adm-qo__radio" aria-hidden="true"></span><span class="adm-qo__main"><span class="adm-qo__t">' + esc(QA_OPT[opt]) + (opt === 'own' ? '…' : '') +
+      (on ? ' <span class="adm-qo__rec">Rekomendacja</span>' : '') + '</span>' + (detail || '') +
+      (on ? '<span class="adm-qo__why">' + esc(rec.why) + '</span>' : '') + '</span></button>';
+  }
+  function qaItemHtml(x) {
+    var e = x.e, field = 'review.' + x.k + '.' + x.i, label = 'Pytanie ' + x.n, stop = e.stop_key || null;
+    var hasOld = qaHasOld(e), hasNew = qaHasNew(e), rec = qaRecommend(e, x.block);
+    var opts = '';
+    if (!state.readOnly) {
+      opts = '<div class="adm-qo__list" role="group" aria-label="Rozstrzygnięcie pytania ' + x.n + '">' +
+        (hasNew ? qaOptHtml(x, 'fix', rec, '<span class="adm-qo__d">' + (hasOld ? '<del>' + esc(e.old) + '</del> → ' : '') + '<ins>' + esc(e['new']) + '</ins></span>') : '') +
+        (hasOld ? qaOptHtml(x, 'cut', rec, '<span class="adm-qo__d"><del>' + esc(e.old) + '</del></span>') : '') +
+        qaOptHtml(x, 'keep', rec, hasOld && !hasNew ? '<span class="adm-qo__d">„' + esc(e.old) + '”</span>' : '') +
+        qaOptHtml(x, 'own', rec, '<span class="adm-qo__d">wpisz, co zrobić</span>') + '</div>';
+    }
+    var prop = state.readOnly && (hasOld || hasNew) ? '<p class="adm-q__prop">Propozycja: ' + (hasOld ? '<del>' + esc(e.old) + '</del>' : '') + (hasOld && hasNew ? ' → ' : '') + (hasNew ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>' : '';
+    var fix = e.fix ? '<p class="adm-q__prop">Wskazówka kontroli: ' + esc(e.fix) + '</p>' : '';
+    return '<li class="adm-q__it' + (x.block ? ' is-block' : '') + '" id="q-' + x.k + x.i + '" data-qg="' + esc(x.g) + '" data-rec="' + rec.opt + '"' + (hasNew ? ' data-fixable' : '') + '>' +
+      '<p class="adm-q__head"><b>' + x.n + '.</b> <span class="adm-q__tag' + (x.block ? '' : ' adm-q__tag--w') + '">' + (x.block ? 'blokuje' : 'ostrzeżenie') + '</span>' +
+      (x.orphan ? ' <span class="adm-q__where">przystanek: ' + esc(x.orphan) + '</span>' : '') +
+      '<span class="adm-q__done"><span class="adm-q__ok" aria-hidden="true">✓</span> Rozstrzygnięte: <b class="adm-q__ans"></b>' +
+      (state.readOnly ? '' : ' <button type="button" class="adm-linkbtn" data-qa-change>Zmień</button>') + '</span></p>' +
+      '<div class="adm-q__body"><p class="adm-q__txt">' + esc(qaProblem(e)) + '</p>' + prop + fix + opts +
+      '<div class="adm-q__own">' + commentBox(stop, field, label) + '</div></div></li>';
+  }
+  // czerwona ramka w sekcji przystanku (albo „Opisu miasta”) — wywoływana przy budowie szkicu
+  function qaBoxHtml(key) {
+    var list = (state.qa ? state.qa.list : []).filter(function (x) { return x.box === key; });
+    if (!list.length) return '';
+    var block = list.some(function (x) { return x.block; });
+    return '<div class="adm-qbox' + (block ? ' is-block' : '') + '" id="qb-' + esc(key) + '" data-qbox="' + esc(key) + '">' +
+      '<p class="adm-qbox__h">Do rozstrzygnięcia · <b data-qbox-n>' + list.length + '</b><small data-qbox-sum></small></p>' +
+      '<ol class="adm-q__list">' + list.map(qaItemHtml).join('') + '</ol></div>';
+  }
+  // skrót na górze szkicu: liczniki, linki do ramek, przyciski grupowe
+  function questionsHtml(it) {
+    var q = state.qa; if (!q || !q.list.length) return '';
+    var byBox = {}, boxes = [];
+    q.list.forEach(function (x) { if (!byBox[x.box]) { byBox[x.box] = 0; boxes.push(x.box); } byBox[x.box]++; });
+    var links = boxes.map(function (k) {
+      var nm = k === '_city' ? 'Cała trasa' : (stopName(k) || k);
+      return '<li><a href="#st-' + esc(k) + '" class="adm-qs__lnk" data-qlink="' + esc(k) + '"><span>' + esc(nm) + '</span> <b class="adm-n" data-qleft="' + esc(k) + '">' + byBox[k] + '</b></a></li>';
+    }).join('');
+    var grp = state.readOnly ? '' : q.order.map(function (g) {
+      var list = q.groups[g], fixable = list.some(function (x) { return qaHasNew(x.e); });
+      return '<div class="adm-q__grp" data-g="' + esc(g) + '"><p class="adm-q__gh">' + esc(g) + ' · ' + list.length + ' ' + qaPlural(list.length) + ' <small class="adm-q__gsum"></small></p>' +
+        '<div class="adm-q__bulk">' + (fixable ? '<button type="button" class="qc-btn qc-btn--sm" data-qa-all="fix">Popraw wszystkie wg propozycji</button>' : '') +
+        '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa-all="keep">Zostaw wszystkie</button>' +
+        '<span class="adm-q__prog" role="status" aria-live="polite"></span></div></div>';
+    }).join('');
+    return '<h3>Do rozstrzygnięcia: <span data-qsum></span></h3>' +
+      '<p class="adm-q__hint">Każde pytanie stoi w czerwonej ramce przy swoim przystanku. Wybierz jedną z możliwości (rekomendacja jest zaznaczona); potem „Wyślij uwagi do poprawki”.</p>' +
+      '<ul class="adm-qs__stops">' + links + '</ul>' +
+      (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy ostrzeżeń naraz</summary>' + grp + '</details>' : '');
+  }
+  function qaLastBody(li) {
+    var box = li.querySelector('.adm-cm'); if (!box) return null;
+    var list = commentsFor(box.getAttribute('data-stop') || null, box.getAttribute('data-field') || null);
+    return { n: list.length, body: list.length ? String(list[list.length - 1].body || '') : '' };
+  }
+  function qaAnsLabel(body) {
+    if (body.indexOf('✓') === 0) return QA_OPT.fix;
+    if (body.indexOf('✂') === 0) return QA_OPT.cut;
+    if (body.indexOf('✗') === 0) return QA_OPT.keep;
+    return QA_OPT.own + ': ' + (body.length > 80 ? body.slice(0, 80) + '…' : body);
+  }
+  // stan wszystkich pytań: rozstrzygnięte = jest uwaga do pola (nowsza niż moment kliknięcia „Zmień”)
   function qaRefresh() {
-    var rq = document.getElementById('revQs'); if (!rq) return;
-    [].forEach.call(rq.querySelectorAll('.adm-q__it'), function (li) {
-      var box = li.querySelector('.adm-cm');
-      if (box && commentsFor(box.getAttribute('data-stop') || null, box.getAttribute('data-field') || null).length) li.classList.add('is-done');
+    var items = $d.querySelectorAll('.adm-q__it'); if (!items.length) return;
+    var left = {}, leftB = 0, leftW = 0, all = items.length, done = 0;
+    [].forEach.call(items, function (li) {
+      var c = qaLastBody(li); if (!c) return;
+      var seen = +(li.getAttribute('data-seen') || 0), isDone = c.n > seen;
+      if (li.classList.contains('is-pending')) isDone = true;
+      li.classList.toggle('is-done', isDone);
+      if (isDone && c.n > seen) { li.classList.remove('is-own'); li.querySelector('.adm-q__ans').textContent = qaAnsLabel(c.body); }
+      if (isDone) { done++; return; }
+      if (li.classList.contains('is-block')) leftB++; else leftW++;
+      var bx = li.closest('[data-qbox]'), k = bx ? bx.getAttribute('data-qbox') : '_city';
+      left[k] = (left[k] || 0) + 1;
     });
-    var all = rq.querySelectorAll('.adm-q__it'), done = rq.querySelectorAll('.adm-q__it.is-done'), sum = rq.querySelector('.adm-q__sum');
-    if (sum) sum.textContent = 'odpowiedziane ' + done.length + ' z ' + all.length;
-    [].forEach.call(rq.querySelectorAll('.adm-q__grp'), function (g) {
-      var a = g.querySelectorAll('.adm-q__it').length, d = g.querySelectorAll('.adm-q__it.is-done').length, gs = g.querySelector('.adm-q__gsum');
-      if (gs) gs.textContent = d === a ? '✓ wszystkie odpowiedziane' : 'odpowiedziane ' + d + ' z ' + a;
-      g.classList.toggle('is-done', d === a);
+    [].forEach.call($d.querySelectorAll('[data-qbox]'), function (bx) {
+      var k = bx.getAttribute('data-qbox'), n = left[k] || 0, a = bx.querySelectorAll('.adm-q__it').length;
+      bx.querySelector('[data-qbox-n]').textContent = n;
+      bx.querySelector('[data-qbox-sum]').textContent = n ? ' · rozstrzygnięte ' + (a - n) + ' z ' + a : ' · wszystkie rozstrzygnięte ✓';
+      bx.classList.toggle('is-clear', !n);
+    });
+    [].forEach.call(document.querySelectorAll('[data-qleft]'), function (el) {
+      var n = left[el.getAttribute('data-qleft')] || 0;
+      el.textContent = n; el.classList.toggle('is-zero', !n);
+      if (el.classList.contains('adm-qdot')) { el.hidden = !n; el.title = n ? n + ' do rozstrzygnięcia' : ''; }
+    });
+    var sum = document.querySelector('[data-qsum]');
+    if (sum) sum.textContent = (leftB || leftW ? plForm(leftB, 'blokujący', 'blokujące', 'blokujących') + ', ' + plForm(leftW, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') : 'wszystko rozstrzygnięte ✓') +
+      ' · rozstrzygnięte ' + done + ' z ' + all;
+    var rq = document.getElementById('revQs');
+    if (rq) rq.classList.toggle('is-clear', !leftB && !leftW);
+    [].forEach.call(document.querySelectorAll('.adm-q__grp[data-g]'), function (g) {
+      var key = g.getAttribute('data-g'), its = [].filter.call(items, function (li) { return li.getAttribute('data-qg') === key; });
+      var d = its.filter(function (li) { return li.classList.contains('is-done'); }).length, gs = g.querySelector('.adm-q__gsum');
+      if (gs) gs.textContent = d === its.length ? '✓ wszystkie rozstrzygnięte' : 'rozstrzygnięte ' + d + ' z ' + its.length;
+      g.classList.toggle('is-done', d === its.length);
       if (!g.classList.contains('is-busy')) [].forEach.call(g.querySelectorAll('[data-qa-all]'), function (b) {
-        var left = g.querySelectorAll('.adm-q__it:not(.is-done)' + (b.getAttribute('data-qa-all') === 'yes' ? '[data-fixable]' : '')).length;
-        b.disabled = !left;
+        b.disabled = !its.some(function (li) { return !li.classList.contains('is-done') && (b.getAttribute('data-qa-all') !== 'fix' || li.hasAttribute('data-fixable')); });
       });
     });
   }
-  function qaAnswer(li, yes) {
-    var form = li && li.querySelector('.adm-cm__form');
-    if (!form || form.classList.contains('is-busy')) return Promise.resolve();
-    form.querySelector('textarea').value = yes ? QA_YES : QA_NO;
-    li.classList.add('is-done');
-    var p = sendComment(form);
+  // zapis odpowiedzi — kolejka: jedna uwaga naraz, każde pytanie najwyżej raz (do kliknięcia „Zmień”)
+  var qaQueue = Promise.resolve();
+  function qaAnswer(li, opt) {
+    if (!li || !QA_BODY[opt] || li.classList.contains('is-pending') || li.classList.contains('is-done')) return qaQueue;
+    var form = li.querySelector('.adm-cm__form'); if (!form) return qaQueue;
+    li.classList.add('is-pending', 'is-done'); li.classList.remove('is-own');
+    li.querySelector('.adm-q__ans').textContent = QA_OPT[opt] + ' (zapisuję…)';
     qaRefresh();
-    return p;
+    qaQueue = qaQueue.then(function () {
+      form.querySelector('textarea').value = QA_BODY[opt];
+      return sendComment(form);
+    }).catch(function (e) { if (window.console) console.error('Pytanie z kontroli:', e); })
+      .then(function () { li.classList.remove('is-pending'); qaRefresh(); });
+    return qaQueue;
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-qa]');
-    if (b) { qaAnswer(b.closest('.adm-q__it'), b.getAttribute('data-qa') === 'yes'); return; }
+    if (b) {
+      var li = b.closest('.adm-q__it'), opt = b.getAttribute('data-qa');
+      if (opt === 'own') {
+        li.classList.add('is-own');
+        var ta = li.querySelector('.adm-cm__form textarea'); if (ta) ta.focus();
+        return;
+      }
+      qaAnswer(li, opt); return;
+    }
+    b = e.target.closest('[data-qa-change]');
+    if (b) {
+      var it = b.closest('.adm-q__it'), c = qaLastBody(it);
+      it.setAttribute('data-seen', c ? c.n : 0);     // nowa odpowiedź zastąpi poprzednią
+      it.classList.remove('is-done'); qaRefresh();
+      var first = it.querySelector('.adm-qo.is-rec') || it.querySelector('.adm-qo'); if (first) first.focus();
+      return;
+    }
     b = e.target.closest('[data-qa-all]'); if (!b || b.disabled) return;
     var g = b.closest('.adm-q__grp'); if (!g || g.classList.contains('is-busy')) return;
-    var yes = b.getAttribute('data-qa-all') === 'yes', prog = g.querySelector('.adm-q__prog');
-    var todo = [].filter.call(g.querySelectorAll('.adm-q__it:not(.is-done)'), function (li) { return !yes || li.hasAttribute('data-fixable'); });
+    var opt2 = b.getAttribute('data-qa-all'), key = g.getAttribute('data-g'), prog = g.querySelector('.adm-q__prog');
+    var todo = [].filter.call($d.querySelectorAll('.adm-q__it:not(.is-done)'), function (li) {
+      return li.getAttribute('data-qg') === key && (opt2 !== 'fix' || li.hasAttribute('data-fixable'));
+    });
     if (!todo.length) return;
     g.classList.add('is-busy');
-    var btns = g.querySelectorAll('[data-qa-all], [data-qa]');
-    [].forEach.call(btns, function (x) { x.disabled = true; });
-    var k = 0;
-    todo.reduce(function (p, li) {
-      return p.then(function () { k++; if (prog) prog.textContent = 'Zapisuję ' + k + '/' + todo.length + '…'; return qaAnswer(li, yes); });
-    }, Promise.resolve()).then(function () {
+    [].forEach.call(g.querySelectorAll('[data-qa-all]'), function (x) { x.disabled = true; });
+    if (prog) prog.textContent = 'Zapisuję ' + todo.length + '…';
+    var last; todo.forEach(function (li) { last = qaAnswer(li, opt2); });
+    last.then(function () {
       if (prog) prog.textContent = 'Zapisano ' + todo.length + '.';
-    }, function () {
-      if (prog) prog.textContent = 'Zapisano ' + k + ' z ' + todo.length + ' — reszta nie przeszła.';
-    }).then(function () {
-      g.classList.remove('is-busy');
-      [].forEach.call(g.querySelectorAll('[data-qa]'), function (x) { x.disabled = false; });
-      qaRefresh();
+      g.classList.remove('is-busy'); qaRefresh();
     });
   });
   // wszystkie uwagi do wersji z zakładki, w jednym miejscu (także te do przystanków, których w tej wersji już nie ma)
@@ -971,6 +1081,8 @@
     if (noEn) warn.push(['soft', noEn + ' z ' + newStops.length + ' przystanków bez tłumaczenia EN — inne języki zobaczą tekst zapasowy.']);
     if (!ctr.title) warn.push(['', 'Brak tytułu miasta po polsku.']);
 
+    var qkeys = {}; stops.forEach(function (x) { qkeys[x.key] = 1; });
+    state.qa = qaItems(it, qkeys);     // pytania z kontroli — rozkładane do ramek przy przystankach
     var title = ctr.title || it.city_name || it.city_slug;
     var route = routeUrl(c, newStops, draft.stop_translations, title);
     var html = '<article class="adm-sheet" style="--team:' + esc(team) + '">' +
@@ -1007,6 +1119,7 @@
 
     // opis miasta — każde pole z uwagami
     html += '<section class="adm-sheet__sec adm-anchor" id="st-_city" data-spy="_city"><h3>Opis miasta</h3>' +
+      qaBoxHtml('_city') +
       '<div class="adm-rows">' + cell('Cała wycieczka', null, 'Uwaga ogólna do całego szkicu', null, false, commentBox(null, null, 'Cała wycieczka')) +
       CITY_TR.map(function (f) { return cell(f[1], pctr ? pctr[f[0]] : null, ctr[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1])); }).join('') +
       CITY_FIELDS.map(function (f) { return cell(f[1], pc ? pc[f[0]] : null, c[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1])); }).join('') +
@@ -1035,7 +1148,7 @@
       '<li><a href="#st-_city" data-to="_city"><span class="adm-toc__no">★</span><span class="adm-toc__nm">Opis miasta</span><b class="adm-n" data-count="_city">0</b></a></li>' +
       stops.map(function (x) {
         return '<li class="adm-toc__' + x.kind + '"><a href="#st-' + esc(x.key) + '" data-to="' + esc(x.key) + '"><span class="adm-toc__no">' + num(x.s.stop_number) + '</span>' +
-          '<span class="adm-toc__nm">' + esc(x.t.name || '(bez nazwy)') + '</span><b class="adm-n" data-count="' + esc(x.key) + '">0</b></a></li>';
+          '<span class="adm-toc__nm">' + esc(x.t.name || '(bez nazwy)') + '</span><b class="adm-qdot" data-qleft="' + esc(x.key) + '" hidden></b><b class="adm-n" data-count="' + esc(x.key) + '">0</b></a></li>';
       }).join('') + '</ol>' + (state.readOnly ? '' : '<div class="adm-toc__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
       '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div>') + '</nav>';
 
@@ -1069,13 +1182,13 @@
       '<img class="adm-stop__ic" src="' + icon(s.category) + '" alt="" width="48" height="48" loading="lazy">' +
       '<span class="adm-stop__name">' + esc(t.name || '(bez nazwy PL)') + '<small>' + esc([s.category, s.time_label, s.visit_duration ? minLabel(s.visit_duration) : ''].filter(Boolean).join(' · ')) + '</small></span>' +
       '<span class="adm-stopx__tags">' + chip + histHtml + '</span></header>';
-    if (x.kind === 'del') return '<section class="adm-stopx adm-anchor" data-kind="del" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
+    if (x.kind === 'del') return '<section class="adm-stopx adm-anchor" data-kind="del" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head + qaBoxHtml(x.key) +
       '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver)) + '</div></section>';
     var rows = cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver)) +
       STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver)); }).join('') +
       blockRows(x.key, ver) +
       STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver)); }).join('');
-    return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
+    return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head + qaBoxHtml(x.key) +
       '<div class="adm-rows">' + rows + '</div></section>';
   }
 
