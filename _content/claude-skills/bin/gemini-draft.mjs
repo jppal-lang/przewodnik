@@ -20,6 +20,7 @@ import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { triageErrors, gateErrors } from './jev.mjs';
+import { stopWikidata, dist } from './wikidata.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -345,6 +346,11 @@ async function stopBlocks(meta, pl, cityTitle) {
 Szukaj w sieci (oficjalne → Wikipedia w języku kraju → inne rzetelne). Każdy fakt z PEŁNYM URL strony, na której jest.
 ${researchQuestions(cat)}
 Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …”.`, `${pl.name} (${name}, ${region}) — historia, legendy, ciekawostki, popkultura`, `research ${tag}`); })();
+  // twarde dane z Wikidata (bez AI): daty, autorzy, patron, styl, ochrona, strona oficjalna — pewne fakty z URL (JP 2026-10-26)
+  if (!/## Pewne dane \(Wikidata\)/.test(r.text)) try {
+    const wd = await stopWikidata(meta, { lang: meta.wiki_lang || (country === 'it' ? 'it' : 'en'), name: pl.name, near: meta.lat && meta.lon ? { lat: +meta.lat, lon: +meta.lon } : null });
+    if (wd?.lines?.length) { r.text = `## Pewne dane (Wikidata ${wd.qid}: ${wd.label})\n${wd.lines.join('\n')}\n\n${r.text}`; log(`${slug}: ${tag} — Wikidata ${wd.qid}: ${wd.lines.length} pewnych danych`); }
+  } catch (e) { log(`${tag}: Wikidata niedostępna (${e.message.slice(0, 80)})`); }
   writeFileSync(fRes, r.text);
   writeFileSync(fRes + '.by', RESEARCHER);
   const write = async (fix) => {
@@ -504,7 +510,7 @@ async function main() {
     if (resume && existsSync(fRv) && readFileSync(fRv, 'utf8').trim()) { rv = JSON.parse(readFileSync(fRv, 'utf8')); log(`${slug}: kontrola trasy z pliku (wznowienie)`); }
     else {
       log(`${slug}: ④ kontrola Claude — cała trasa`);
-      try { rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
+      try { await pinCheck(trip).catch(() => {}); rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
       catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
     }
     // ④c pętla: poprawki po kontroli CAŁEJ trasy → ponowna kontrola, najwyżej 3 rundy (JP 2026-10-25) — do JP trafia tekst po poprawkach
@@ -607,6 +613,76 @@ function applyReplacements(trip, blocks, errors) {
   return { done, changes };
 }
 
+// ── pinezki: współrzędne przystanków porównane z Wikidata (kod, bez AI); różnica > 300 m → poprawka automatyczna ──
+async function pinCheck(trip) {
+  const changes = [];
+  for (const m of trip.meta.stops ?? []) {
+    if (!m.wiki_article || m.lat == null || m.lon == null) continue;
+    const wd = await stopWikidata(m, { lang: m.wiki_lang || (country === 'it' ? 'it' : 'en') }).catch(() => null);
+    if (!wd?.coord) continue;
+    const d = dist({ lat: +m.lat, lon: +m.lon }, wd.coord);
+    if (d > 300) { changes.push({ path: `meta.stops.${m.stop_key}.lat/lon`, before: `${m.lat}, ${m.lon}`, after: `${wd.coord.lat.toFixed(5)}, ${wd.coord.lon.toFixed(5)}`, why: `pinezka ${Math.round(d)} m od miejsca wg Wikidata ${wd.qid}`, auto: true });
+      m.lat = +wd.coord.lat.toFixed(5); m.lon = +wd.coord.lon.toFixed(5); }
+  }
+  if (changes.length) log(`${slug}: pinezki poprawione wg Wikidata: ${changes.length}`);
+  return changes;
+}
+
+// ── dopytanie (JP 2026-10-26): „krótkie zapytanie, krótka odpowiedź” zamiast przepisywania przystanku ──
+// Model dostaje TYLKO teksty pól, których dotyczą uwagi, uwagę i (gdy trzeba faktu) wycinek researchu tego przystanku.
+// Zwraca dosłowny fragment + zamiennik (najwyżej 2 zdania) albo ustawienie pola liczbowego; podmianę robi kod (applyReplacements).
+// Jedno wywołanie na całą rundę. Czego nie da się poprawić bez nowego faktu spoza materiału — zostaje do decyzji JP.
+const META_SET = /^meta\.(stops\.\d+\.(time_label|duration_min|lat|lon|opening_hours)|city\.(duration_hours|duration_type))$/;
+function stopTexts(trip, sk) {
+  const out = [];
+  const add = (path, v) => { if (typeof v === 'string' && v.trim()) out.push({ path, text: v }); else if (Array.isArray(v)) v.forEach((x, i) => add(`${path}[${i}]`, x)); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) add(`${path}.${k}`, x); };
+  if (sk) { add(`content.stops.${sk}`, trip.content.stops?.[sk]); add(`content.day_plan.${sk}`, trip.content.day_plan?.[sk]);
+    const i = trip.meta.stops.findIndex(x => x.stop_key === sk); if (i >= 0) { const m = trip.meta.stops[i]; out.push({ path: `meta.stops.${i}`, text: JSON.stringify({ time_label: m.time_label, duration_min: m.duration_min, lat: m.lat, lon: m.lon, opening_hours: m.opening_hours }) }); } }
+  else { add('content.city', trip.content.city); out.push({ path: 'meta.city', text: JSON.stringify({ duration_hours: trip.meta.city?.duration_hours, duration_type: trip.meta.city?.duration_type }) });
+    out.push({ path: 'meta.stops', text: JSON.stringify(trip.meta.stops.map((m, i) => ({ i, key: m.stop_key, time_label: m.time_label, duration_min: m.duration_min }))) }); add('content.day_plan', trip.content.day_plan); }
+  return out;
+}
+function researchSnippet(trip, sk, problem) {
+  const m = sk ? trip.meta.stops.find(x => x.stop_key === sk) : null;
+  const f = m ? join(dir, `v2-stop-${m.stop_number}-research.md`) : join(dir, 'research.md');
+  if (!existsSync(f)) return '';
+  const words = [...new Set(String(problem).toLowerCase().match(/\p{L}{5,}/gu) ?? [])];
+  const paras = readFileSync(f, 'utf8').split(/\n\s*\n/).map(t => ({ t, n: words.filter(w => t.toLowerCase().includes(w)).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
+  return paras.slice(0, 3).map(x => x.t.slice(0, 700)).join('\n\n');
+}
+async function microFix(trip, blocks, errors) {
+  if (!errors.length) return { done: new Set(), changes: [] };
+  const items = errors.map((e, id) => ({ id, stop_key: e.stop_key ?? null, problem: String(e.problem).slice(0, 400), hint: e.fix ? String(e.fix).slice(0, 300) : undefined,
+    material: researchSnippet(trip, e.stop_key ?? null, e.problem) || undefined }));
+  // teksty raz na przystanek (kilka uwag do jednego przystanku nie powtarza jego treści)
+  const TEXTS = {}; for (const it of items) TEXTS[it.stop_key ?? 'trasa'] ??= stopTexts(trip, it.stop_key).map(t => ({ path: t.path, text: t.text.slice(0, 1500) })).slice(0, 30);
+  log(`${slug}: dopytanie — ${items.length} krótkich poprawek w jednym zapytaniu`);
+  const out = await geminiJson(`Krótkie poprawki tekstu wycieczki Quolino (rodzinny przewodnik). Dla KAŻDEJ uwagi podaj jedną z odpowiedzi:
+A) {"id": N, "quote": "fragment skopiowany ZNAK W ZNAK z jednego z tekstów", "replace": "poprawiony fragment, najwyżej 2 zdania; \"\" = usuń"}
+B) dla pól liczbowych i godzin w meta: {"id": N, "path": "meta.stops.<i>.time_label" albo "meta.city.duration_hours" itp., "value": nowa wartość}
+C) {"id": N, "skip": "dlaczego nie da się poprawić bez nowego faktu"} — gdy poprawka wymaga faktu, którego nie ma w MATERIALE ani w tekstach.
+Zasady: zmieniaj najmniej, jak się da (fragment = zdanie albo jego część). Nowe fakty WYŁĄCZNIE z pola "material". Bez długich myślników „—” i „–”.
+Polszczyzna naturalna. Nie przepisuj całych akapitów. Odpowiedz wyłącznie JSON-em: {"fixes": [ … ]}. ${JSON_QUOTE_RULE}
+TEKSTY (wg przystanku; „trasa” = opis i plan całej trasy):
+${JSON.stringify(TEXTS)}
+UWAGI:
+${JSON.stringify(items)}`, 'dopytanie');
+  const fixes = Array.isArray(out?.fixes) ? out.fixes : [];
+  const done = new Set(), changes = [], subs = [];
+  for (const f of fixes) {
+    const e = errors[f.id]; if (!e) continue;
+    if (f.path && META_SET.test(f.path) && f.value != null) {
+      const ks = f.path.split('.'), last = ks.pop(); let o = trip; for (const k of ks) o = o?.[/^\d+$/.test(k) ? +k : k];
+      if (o && last in o) { changes.push({ path: f.path, before: String(o[last]), after: String(f.value), why: String(e.problem).slice(0, 200), auto: true }); o[last] = f.value; done.add(f.id); }
+    } else if (typeof f.quote === 'string' && typeof f.replace === 'string') subs.push({ i: f.id, err: { ...e, old: f.quote, new: f.replace } });
+  }
+  const r2 = applyReplacements(trip, blocks, subs.map(x => x.err));
+  [...r2.done].forEach(j => done.add(subs[j].i));
+  changes.push(...r2.changes);
+  log(`${slug}: dopytanie — poprawione ${done.size} z ${errors.length}, bez materiału ${fixes.filter(f => f.skip).length}`);
+  return { done, changes };
+}
+
 // ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
 const MAX_ROUNDS = +(opt('--rounds') ?? 1);   // JP 2026-10-25: jedna runda poprawek, potem próg i do JP
 async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
@@ -618,6 +694,9 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     // 1) podmiany wskazane przez kontrolę (old → new): skrypt, zero tokenów; 2) reszta przez Gemini (tylko to, czego nie da się podmienić)
     const before = rv.errors.length;
     // 0) Jev rozdziela: drobiazg → ostrzeżenie (nie poprawiamy), podmiana → skrypt, przepisanie → Gemini
+    // próg NA POCZĄTKU (JP 2026-10-26): nie wydajemy tokenów na poprawianie drobiazgów — od razu do ostrzeżeń dla JP
+    { const g0 = await gateErrors(rv.errors); if (g0.soft.length) { rv.warnings = [...(rv.warnings ?? []), ...g0.soft.map(e => ({ ...e, problem: `[nie blokuje] ${e.problem}` }))]; rv.errors = g0.block; log(`${slug}: próg przed poprawkami — ${g0.block.length} blokuje, ${g0.soft.length} do ostrzeżeń`); } }
+    if (!rv.errors.length) break;
     const tri = await triageErrors(rv.errors);
     const minor = tri ? rv.errors.filter((_, i) => tri[i] === 'drobiazg') : [];
     if (minor.length) { rv.warnings = [...(rv.warnings ?? []), ...minor.map(e => ({ ...e, problem: `[drobiazg] ${e.problem}` }))];
@@ -625,14 +704,14 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     const mech = applyReplacements(trip, blocks, rv.errors);
     const rest = rv.errors.filter((_, i) => !mech.done.has(i));
     log(`${slug}: ${tri ? `Jev: drobiazgi ${minor.length} (do ostrzeżeń) · ` : ''}poprawki bez modelu: ${mech.done.size} · do Gemini: ${rest.length}`);
-    const cms = rest.map(e => ({ stop_key: e.stop_key ?? null, field: e.field ?? null, field_label: 'kontrola Claude' + (e.field ? ` (${e.field})` : ''),
-      body: String(e.problem) + (e.fix ? ' → ' + e.fix : '') }));
-    const ap = cms.length ? await applyComments(trip, blocks, cms, cityTitle, 'Claude') : { changes: [], summaries: [] };
-    ap.changes = [...mech.changes, ...ap.changes];
+    // reszta: dopytanie (krótko), nie przepisywanie przystanku (JP 2026-10-26)
+    let mf = { done: new Set(), changes: [] };
+    try { mf = await microFix(trip, blocks, rest); } catch (e) { log(`${slug}: dopytanie nie wyszło (${e.message.slice(0, 160)}) — błędy zostają do decyzji JP`); }
+    const ap = { changes: [...mech.changes, ...mf.changes], summaries: [] };
     persist?.();
     log(`${slug}: ④ kontrola Claude — cała trasa po rundzie ${round} (${ap.changes.length} zmian)`);
     let next;
-    try { next = await fullReview(slug, trip); } catch (e) { next = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: rv.errors, warnings: [] }; }
+    try { await pinCheck(trip).catch(() => {}); next = await fullReview(slug, trip); } catch (e) { next = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: rv.errors, warnings: [] }; }
     history.push({ round, errors: next.errors?.length ?? 0, facts: next.facts ?? null, changes: ap.changes.length });
     const better = (next.errors?.length ?? 0) < before;
     rv = next;
@@ -689,7 +768,7 @@ async function recheckMain() {
       errors: (prev.errors ?? []).filter((_, i) => !res.has(i) && !soft.has(i)) };
     rv.verdict = rv.errors.length ? 'fix' : 'ok';
     log(`${slug}: bez nowej kontroli — poprawione ${res.size}, do ostrzeżeń ${soft.size}, zostaje ${rv.errors.length}`);
-  } else try { rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
+  } else try { await pinCheck(trip).catch(() => {}); rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
   // każda runda = podwersja szkicu: v5 → v5a, v5b, v5c (JP 2026-10-25). Numer w bazie rośnie jak zwykle, etykieta w content.label.
   const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)[1];
   const gl = await guidelinesVersion();
