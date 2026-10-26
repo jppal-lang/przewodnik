@@ -799,13 +799,20 @@ async function recheckMain() {
   // --set '[{"path":"meta.duration_hours","value":6}]': ręczne ustawienie pola (liczby, godziny) — ścieżka od korzenia {meta, content}
   for (const st of (opt('--set') ? JSON.parse(opt('--set')) : [])) {
     const ks = st.path.split('.'), last = ks.pop(); let o = trip;
-    for (const k of ks) o = o?.[/^\d+$/.test(k) ? +k : k];
+    for (const k of ks) o = Array.isArray(o) && !/^\d+$/.test(k) ? o.find(x => x?.stop_key === k) : o?.[/^\d+$/.test(k) ? +k : k];   // meta.stops.<stop_key>.lat też działa
     if (o && last in o) { patchChanges.push({ before: String(o[last]), after: String(st.value), why: `poprawka ręczna (${st.path})`, auto: true }); o[last] = st.value; log(`${slug}: ustawiono ${st.path} = ${st.value}`); }
     else log(`${slug}: UWAGA brak pola ${st.path}`);
   }
   // klucze z wartością null spoza formatu (np. „notes”) — walidator ich nie przyjmuje
-  const dropNull = (o) => { if (o && typeof o === 'object') for (const k of Object.keys(o)) { if ((k === 'notes' || k === '_notes') && o[k] == null) delete o[k]; else dropNull(o[k]); } };
-  dropNull(trip.content);
+  const DROP = new Set(['notes', '_notes', ...String(opt('--drop-keys') ?? '').split(',').filter(Boolean)]);
+  const dropNull = (o) => { if (o && typeof o === 'object') for (const k of Object.keys(o)) { if (DROP.has(k) && o[k] == null) delete o[k]; else dropNull(o[k]); } };
+  dropNull(trip.content); dropNull(trip.meta);
+  // notatki redakcyjne zagnieżdżone w przystanku (stops.<k>._notes / notes) → główna tablica _notes (kontrakt IMPORT.md)
+  for (const [k, st] of Object.entries(trip.content.stops ?? {})) for (const nk of ['_notes', 'notes']) if (st && st[nk] != null) {
+    const arr = Array.isArray(st[nk]) ? st[nk] : [st[nk]];
+    (trip.content._notes ??= []).push(...arr.map(n => typeof n === 'string' ? { stop_key: k, field: 'g', note: n } : { stop_key: k, field: /^[a-g]$/.test(n?.field) ? n.field : 'g', note: String(n?.note ?? JSON.stringify(n)) }));
+    delete st[nk]; patchChanges.push({ before: `stops.${k}.${nk}`, after: '_notes', why: 'notatki w głównej tablicy', auto: true });
+  }
   log(`${slug}: ④ kontrola Claude — cała trasa (szkic v${cur.version})`);
   let rv;
   // --no-review --resolved 0,2,5 --soft 4: bez nowej pełnej kontroli (każda kolejna znajduje „nowe” drobiazgi i proces się nie zbiega).
