@@ -649,36 +649,101 @@
   // Odpowiedź to zwykła uwaga (pole review.e.N / review.w.N) — idzie tym samym przyciskiem „Wyślij uwagi do poprawki”.
   // „Popraw wg propozycji” = dosłowna podmiana stare → nowe (bez AI), „Zostaw” = bez zmiany; własny tekst = poprawka przez Gemini.
   var QA_YES = '✓ Popraw według propozycji', QA_NO = '✗ Zostaw bez zmian';
+  // Grupowanie (JP 2026-10-26, mniej klikania): najpierw blokujące, potem ostrzeżenia zebrane wg rodzaju problemu
+  // („Zasada #10”, „Walidator”, „Literówka/interpunkcja”…) z przyciskami dla całej grupy. Pola review.e.N / review.w.N bez zmian.
+  function qaPlural(n) { var d = n % 10, t = n % 100; return n === 1 ? 'pytanie' : d >= 2 && d <= 4 && (t < 12 || t > 14) ? 'pytania' : 'pytań'; }
+  function qaProblem(e) { return String(e && e.problem || '').replace(/^\[(nie blokuje|drobiazg)\]\s*/i, ''); }
+  function qaGroupKey(e) { var m = qaProblem(e).match(/^(Zasada #\d+|Walidator|[^:(]{3,40}?)\s*[:(]/); return m ? m[1].trim() : 'Inne'; }
+  function qaItemHtml(x) {
+    var e = x.e || {}, field = 'review.' + x.k + '.' + x.i, label = 'Pytanie ' + x.n;
+    var has = commentsFor(e.stop_key || null, field).length, fixable = !!(e.old || e['new']);
+    var where = e.stop_key ? (stopName(e.stop_key) || e.stop_key) : 'Cała trasa';
+    var prop = fixable ? '<p class="adm-q__prop">Propozycja: ' + (e.old ? '<del>' + esc(e.old) + '</del>' : '') + (e.old && e['new'] ? ' → ' : '') + (e['new'] ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>'
+      : e.fix ? '<p class="adm-q__prop">Propozycja: ' + esc(e.fix) + '</p>' : '';
+    var quick = state.readOnly ? '' : '<div class="adm-q__quick">' + (fixable ? '<button type="button" class="qc-btn qc-btn--sm" data-qa="yes">Popraw wg propozycji</button>' : '') +
+      '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa="no">Zostaw tak</button></div>';
+    return '<li class="adm-q__it' + (x.block ? ' is-block' : '') + (has ? ' is-done' : '') + '"' + (fixable ? ' data-fixable' : '') + '><p class="adm-q__head"><b>' + x.n + '.</b> ' +
+      '<a href="#st-' + esc(e.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a>' + (x.block ? ' <span class="adm-q__tag">blokuje</span>' : '') + '</p>' +
+      '<p class="adm-q__txt">' + esc(qaProblem(e)) + '</p>' + prop + quick + commentBox(e.stop_key || null, field, label) + '</li>';
+  }
+  function qaGroupHtml(title, list, block) {
+    var fixable = list.some(function (x) { return x.e && (x.e.old || x.e['new']); });
+    var bulk = state.readOnly || block ? '' : '<div class="adm-q__bulk">' +
+      (fixable ? '<button type="button" class="qc-btn qc-btn--sm" data-qa-all="yes">Popraw wszystkie wg propozycji</button>' : '') +
+      '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa-all="no">Zostaw wszystkie</button>' +
+      '<span class="adm-q__prog" role="status" aria-live="polite"></span></div>';
+    return '<details class="adm-q__grp' + (block ? ' is-block' : '') + '"' + (block || list.length <= 3 ? ' open' : '') + '>' +
+      '<summary class="adm-q__gh"><span class="adm-q__gt">' + esc(title) + ' · ' + list.length + ' ' + qaPlural(list.length) + '</span>' +
+      ' <small class="adm-q__gsum"></small></summary>' + bulk +
+      '<ol class="adm-q__list">' + list.map(qaItemHtml).join('') + '</ol></details>';
+  }
   function questionsHtml(it) {
-    var rv = it && it.review || {}, items = [];
-    (rv.errors || []).forEach(function (e, i) { items.push({ k: 'e', i: i, e: e, block: true }); });
-    (rv.warnings || []).forEach(function (e, i) { items.push({ k: 'w', i: i, e: e, block: false }); });
-    if (!items.length) return '';
-    var answered = 0;
-    var list = items.map(function (x, n) {
-      var e = x.e || {}, field = 'review.' + x.k + '.' + x.i, label = 'Pytanie ' + (n + 1);
-      var has = commentsFor(e.stop_key || null, field).length; if (has) answered++;
-      var where = e.stop_key ? (stopName(e.stop_key) || e.stop_key) : 'Cała trasa';
-      var prob = String(e.problem || '').replace(/^\[nie blokuje\]\s*/, '');
-      var prop = e.old || e['new'] ? '<p class="adm-q__prop">Propozycja: ' + (e.old ? '<del>' + esc(e.old) + '</del>' : '') + (e.old && e['new'] ? ' → ' : '') + (e['new'] ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>'
-        : e.fix ? '<p class="adm-q__prop">Propozycja: ' + esc(e.fix) + '</p>' : '';
-      var quick = state.readOnly ? '' : '<div class="adm-q__quick">' + (e.old || e['new'] ? '<button type="button" class="qc-btn qc-btn--sm" data-qa="yes">Popraw wg propozycji</button>' : '') +
-        '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa="no">Zostaw tak</button></div>';
-      return '<li class="adm-q__it' + (x.block ? ' is-block' : '') + (has ? ' is-done' : '') + '"><p class="adm-q__head"><b>' + (n + 1) + '.</b> ' +
-        '<a href="#st-' + esc(e.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a>' + (x.block ? ' <span class="adm-q__tag">blokuje</span>' : '') + '</p>' +
-        '<p class="adm-q__txt">' + esc(prob) + '</p>' + prop + quick + commentBox(e.stop_key || null, field, label) + '</li>';
-    }).join('');
-    return '<h3>Pytania z kontroli <b class="adm-n">' + items.length + '</b> <small class="adm-q__sum">odpowiedziane ' + answered + ' z ' + items.length + '</small></h3>' +
-      '<p class="adm-q__hint">Każde pytanie ma własne pole. Odpowiedz przyciskiem albo wpisz, co zrobić; potem „Wyślij uwagi do poprawki”.</p><ol class="adm-q__list">' + list + '</ol>';
+    var rv = it && it.review || {}, errs = [], groups = {}, order = [], n = 0;
+    (rv.errors || []).forEach(function (e, i) { errs.push({ k: 'e', i: i, e: e, block: true, n: ++n }); });
+    (rv.warnings || []).forEach(function (e, i) {
+      var g = qaGroupKey(e);
+      if (!groups[g]) { groups[g] = []; order.push(g); }
+      groups[g].push({ k: 'w', i: i, e: e, block: false });
+    });
+    if (order.indexOf('Inne') > 0) { order.splice(order.indexOf('Inne'), 1); order.push('Inne'); }   // „Inne” zawsze na końcu
+    order.forEach(function (g) { groups[g].forEach(function (x) { x.n = ++n; }); });
+    if (!n) return '';
+    return '<h3>Pytania z kontroli <b class="adm-n">' + n + '</b> <small class="adm-q__sum"></small></h3>' +
+      '<p class="adm-q__hint">Najpierw błędy blokujące, niżej ostrzeżenia zebrane wg rodzaju. Odpowiedz przyciskiem przy pytaniu, całą grupą albo wpisz, co zrobić; potem „Wyślij uwagi do poprawki”.</p>' +
+      (errs.length ? qaGroupHtml('Blokujące', errs, true) : '') +
+      order.map(function (g) { return qaGroupHtml(g, groups[g], false); }).join('');
+  }
+  // licznik „odpowiedziane X z Y” (całość i per grupa) — po każdej odpowiedzi, także wpisanej ręcznie
+  function qaRefresh() {
+    var rq = document.getElementById('revQs'); if (!rq) return;
+    [].forEach.call(rq.querySelectorAll('.adm-q__it'), function (li) {
+      var box = li.querySelector('.adm-cm');
+      if (box && commentsFor(box.getAttribute('data-stop') || null, box.getAttribute('data-field') || null).length) li.classList.add('is-done');
+    });
+    var all = rq.querySelectorAll('.adm-q__it'), done = rq.querySelectorAll('.adm-q__it.is-done'), sum = rq.querySelector('.adm-q__sum');
+    if (sum) sum.textContent = 'odpowiedziane ' + done.length + ' z ' + all.length;
+    [].forEach.call(rq.querySelectorAll('.adm-q__grp'), function (g) {
+      var a = g.querySelectorAll('.adm-q__it').length, d = g.querySelectorAll('.adm-q__it.is-done').length, gs = g.querySelector('.adm-q__gsum');
+      if (gs) gs.textContent = d === a ? '✓ wszystkie odpowiedziane' : 'odpowiedziane ' + d + ' z ' + a;
+      g.classList.toggle('is-done', d === a);
+      if (!g.classList.contains('is-busy')) [].forEach.call(g.querySelectorAll('[data-qa-all]'), function (b) {
+        var left = g.querySelectorAll('.adm-q__it:not(.is-done)' + (b.getAttribute('data-qa-all') === 'yes' ? '[data-fixable]' : '')).length;
+        b.disabled = !left;
+      });
+    });
+  }
+  function qaAnswer(li, yes) {
+    var form = li && li.querySelector('.adm-cm__form');
+    if (!form || form.classList.contains('is-busy')) return Promise.resolve();
+    form.querySelector('textarea').value = yes ? QA_YES : QA_NO;
+    li.classList.add('is-done');
+    var p = sendComment(form);
+    qaRefresh();
+    return p;
   }
   document.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-qa]'); if (!b) return;
-    var li = b.closest('.adm-q__it'), form = li && li.querySelector('.adm-cm__form'); if (!form) return;
-    form.querySelector('textarea').value = b.getAttribute('data-qa') === 'yes' ? QA_YES : QA_NO;
-    sendComment(form);
-    li.classList.add('is-done');
-    var all = document.querySelectorAll('.adm-q__it'), sum = document.querySelector('.adm-q__sum');
-    if (sum) sum.textContent = 'odpowiedziane ' + document.querySelectorAll('.adm-q__it.is-done').length + ' z ' + all.length;
+    var b = e.target.closest('[data-qa]');
+    if (b) { qaAnswer(b.closest('.adm-q__it'), b.getAttribute('data-qa') === 'yes'); return; }
+    b = e.target.closest('[data-qa-all]'); if (!b || b.disabled) return;
+    var g = b.closest('.adm-q__grp'); if (!g || g.classList.contains('is-busy')) return;
+    var yes = b.getAttribute('data-qa-all') === 'yes', prog = g.querySelector('.adm-q__prog');
+    var todo = [].filter.call(g.querySelectorAll('.adm-q__it:not(.is-done)'), function (li) { return !yes || li.hasAttribute('data-fixable'); });
+    if (!todo.length) return;
+    g.classList.add('is-busy');
+    var btns = g.querySelectorAll('[data-qa-all], [data-qa]');
+    [].forEach.call(btns, function (x) { x.disabled = true; });
+    var k = 0;
+    todo.reduce(function (p, li) {
+      return p.then(function () { k++; if (prog) prog.textContent = 'Zapisuję ' + k + '/' + todo.length + '…'; return qaAnswer(li, yes); });
+    }, Promise.resolve()).then(function () {
+      if (prog) prog.textContent = 'Zapisano ' + todo.length + '.';
+    }, function () {
+      if (prog) prog.textContent = 'Zapisano ' + k + ' z ' + todo.length + ' — reszta nie przeszła.';
+    }).then(function () {
+      g.classList.remove('is-busy');
+      [].forEach.call(g.querySelectorAll('[data-qa]'), function (x) { x.disabled = false; });
+      qaRefresh();
+    });
   });
   // wszystkie uwagi do wersji z zakładki, w jednym miejscu (także te do przystanków, których w tej wersji już nie ma)
   function verCommentsHtml() {
@@ -704,6 +769,7 @@
     if (vc) { vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML; }
     refreshTabs();
     updateCounts();
+    qaRefresh();
   }
   function updateCounts() {
     // najnowszy szkic: otwarte uwagi; starsza wersja (tylko podgląd): wszystkie uwagi tej wersji
@@ -797,13 +863,13 @@
 
   function sendComment(form) {
     var box = form.closest('.adm-cm'), ta = form.querySelector('textarea'), body = ta.value.trim(), it = state.current;
-    if (!body || !it) return;
+    if (!body || !it) return Promise.resolve();
     var row = { city_slug: it.city_slug, city_version: it.version, stop_key: box.getAttribute('data-stop') || null,
       field: box.getAttribute('data-field') || null, field_label: box.getAttribute('data-label'),
       stop_version: box.hasAttribute('data-sv') ? +box.getAttribute('data-sv') : null, body: body };
     ta.value = ''; autosize(ta);
     form.classList.add('is-busy');
-    api('/draft_comments', { method: 'POST', body: row }).then(function (res) {
+    return api('/draft_comments', { method: 'POST', body: row }).then(function (res) {
       var saved = (res && res[0]) || Object.assign({ status: 'new', created_at: new Date().toISOString() }, row);
       if (!DEMO) state.comments.push(saved); else state.comments = state.demo.comments.filter(function (c) { return c.city_slug === it.city_slug; });
     }).catch(function () {
@@ -979,7 +1045,7 @@
     var vc = document.getElementById('verComments');
     vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML;    // po wstawieniu menu: nazwy przystanków z menu
     var rq = document.getElementById('revQs');
-    if (rq) { rq.innerHTML = questionsHtml(it); rq.hidden = !rq.innerHTML; }
+    if (rq) { rq.innerHTML = questionsHtml(it); rq.hidden = !rq.innerHTML; qaRefresh(); }
     drawMap(newStops, draft.stop_translations);
     updateCounts();
     spy();
