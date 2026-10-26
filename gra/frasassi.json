@@ -1,0 +1,172 @@
+{
+  "trip": "frasassi",
+  "title": "Jaskinie Frasassi",
+  "region": "Marche",
+  "source": "wlochy/marche/frasassi.html",
+  "progress": {
+    "legacyKey": "quolino_missions:frasassi",
+    "note": "Klucze zadań jak w kids-view.js: <nr>-misja-<i> oraz <nr>-foto. Gdy przystanki dostaną stop_key w Supabase, wpisz go w qcKey — gra czyta wtedy też qc.task.<qcKey>-mission / -photo (city.html)."
+  },
+  "stops": [
+    {
+      "key": "01",
+      "qcKey": null,
+      "name": "Parking przy kasach (San Vittore)",
+      "category": "parking",
+      "icon": "parking",
+      "missions": 2,
+      "photo": true,
+      "powerup": "magnet",
+      "kids": [
+        "Z parkingu widać ściany wąwozu — a w nich, niewidoczne, kryją się kilometry korytarzy. Wszystko odkryte za życia waszych dziadków.",
+        "Sprawdźcie godzinę na biletach. Spóźnialscy zostają na parkingu — grupa wchodzi bez nich."
+      ],
+      "photoTask": "Ściana wąwozu z parkingu — „przed”: po wyjściu podpiszecie, co kryło się w środku.",
+      "quests": [
+        {
+          "q": "Co kryje się w ścianach wąwozu przy parkingu?",
+          "answers": ["Kilometry korytarzy jaskiń", "Stary zamek rycerski", "Kopalnia złota"],
+          "correct": 0,
+          "hint": "Popatrz na ściany wąwozu: w środku są długie podziemne… korytarze!",
+          "source": "Z parkingu widać ściany wąwozu — a w nich, niewidoczne, kryją się kilometry korytarzy."
+        },
+        {
+          "q": "Co trzeba sprawdzić na biletach do jaskiń?",
+          "answers": ["Godzinę wejścia", "Kolor biletu", "Imię przewodnika"],
+          "correct": 0,
+          "hint": "Spóźnialscy zostają na parkingu. Liczy się czas!",
+          "source": "Sprawdźcie godzinę na biletach. Spóźnialscy zostają na parkingu — grupa wchodzi bez nich."
+        }
+      ]
+    },
+    {
+      "key": "02",
+      "qcKey": null,
+      "name": "Trasa turystyczna jaskiń",
+      "category": "cave",
+      "icon": "viewpoint-nature",
+      "missions": 3,
+      "photo": true,
+      "powerup": "lantern",
+      "kids": [
+        "Stalaktyt rośnie około milimetra na... 10 lat. Policzcie, ile lat ma sopel długości waszej ręki.",
+        "Odkrywcy zmierzyli głębokość przepaści, licząc sekundy spadania kamienia. Fizyka w praktyce.",
+        "Stalaktyt wisi z sufitu, stalagmit rośnie z podłogi. Jak spotkają się w pół drogi — powstaje kolumna. Znajdźcie jedną."
+      ],
+      "photoTask": "Sprawdźcie przy wejściu zasady fotografowania; jeśli wolno — „Giganci” z człowiekiem w kadrze dla skali. Bez flesza, łokcie oparte o barierkę.",
+      "quests": [
+        {
+          "q": "Jak odkrywcy zmierzyli, jak głęboka jest przepaść?",
+          "answers": ["Liczyli sekundy spadania kamienia", "Spuścili długą miarkę", "Zapytali nietoperza"],
+          "correct": 0,
+          "hint": "Wrzucili coś w szczelinę i słuchali, jak długo spada.",
+          "source": "Odkrywcy zmierzyli głębokość przepaści, licząc sekundy spadania kamienia."
+        },
+        {
+          "q": "Co rośnie z podłogi jaskini?",
+          "answers": ["Stalagmit", "Stalaktyt", "Grzyb"],
+          "correct": 0,
+          "hint": "Stalaktyt wisi z sufitu. A ten drugi rośnie z dołu…",
+          "source": "Stalaktyt wisi z sufitu, stalagmit rośnie z podłogi."
+        },
+        {
+          "q": "Co powstaje, gdy stalaktyt i stalagmit spotkają się w pół drogi?",
+          "answers": ["Kolumna", "Most", "Jeziorko"],
+          "correct": 0,
+          "hint": "Sopel z góry i sopel z dołu łączą się w jeden słup.",
+          "source": "Jak spotkają się w pół drogi — powstaje kolumna."
+        },
+        {
+          "q": "Jak szybko rośnie stalaktyt?",
+          "answers": ["Około milimetra na 10 lat", "Metr na rok", "Centymetr na dzień"],
+          "correct": 0,
+          "hint": "Bardzo, bardzo wolno — szybciej rosną paznokcie.",
+          "source": "Stalaktyt rośnie około milimetra na... 10 lat."
+        },
+        {
+          "q": "W którym roku odkryto jaskinie Frasassi?",
+          "answers": ["W 1971", "W 1828", "W 1060"],
+          "correct": 0,
+          "hint": "Odkryto je za życia waszych dziadków.",
+          "source": "Odkryte dopiero w 1971 roku przez grupę speleologów z Ankony…"
+        },
+        {
+          "q": "Jaka temperatura jest w jaskini przez cały rok?",
+          "answers": ["14°C — bluzy!", "30°C — upał!", "Mróz poniżej zera"],
+          "correct": 0,
+          "hint": "Chłodno, ale nie mroźno. Przyda się bluza.",
+          "source": "w jaskini stałe 14°C — bluzy!"
+        }
+      ]
+    },
+    {
+      "key": "03",
+      "qcKey": null,
+      "name": "San Vittore alle Chiuse i mostek na Sentino",
+      "category": "church",
+      "icon": "church",
+      "missions": 2,
+      "photo": true,
+      "powerup": "doublejump",
+      "kids": [
+        "Ten kościół ma prawie 1000 lat i zero ozdób — sama geometria kamienia. Policzcie okna: da się na palcach.",
+        "Ta mała rzeczka wyrzeźbiła całe jaskinie, które widzieliście. Kropla po kropli, przez miliony lat."
+      ],
+      "photoTask": "Opactwo odbite w Sentino od strony mostku — symetria kamienia i wody.",
+      "quests": [
+        {
+          "q": "Ile lat ma kościół San Vittore?",
+          "answers": ["Prawie 1000 lat", "Około 10 lat", "Około 100 lat"],
+          "correct": 0,
+          "hint": "To bardzo, bardzo stary kościół — prawie tysiąc świeczek na torcie!",
+          "source": "Ten kościół ma prawie 1000 lat i zero ozdób — sama geometria kamienia."
+        },
+        {
+          "q": "Kto wyrzeźbił jaskinie Frasassi?",
+          "answers": ["Rzeczka Sentino — kropla po kropli", "Górnicy z kilofami", "Wiatr w jedną noc"],
+          "correct": 0,
+          "hint": "Przechodzisz przez nią po mostku. Woda pracowała miliony lat.",
+          "source": "Ta mała rzeczka wyrzeźbiła całe jaskinie, które widzieliście. Kropla po kropli, przez miliony lat."
+        }
+      ]
+    },
+    {
+      "key": "04",
+      "qcKey": null,
+      "name": "Świątynia Valadiera w skalnej paszczy",
+      "category": "monument",
+      "icon": "church",
+      "missions": 2,
+      "photo": true,
+      "powerup": "glide",
+      "kids": [
+        "Kościół w jaskini: na zewnątrz góra, w środku marmur. Kto pierwszy wpadł na taki pomysł? Papież, który tu się urodził.",
+        "Obok jest klasztorek wykuty w skale — mieszkali w nim ludzie. Sprawdźcie, gdzie kończy się mur, a zaczyna góra."
+      ],
+      "photoTask": "Świątynia w skalnej paszczy z dołu ścieżki — cała bryła w otworze groty, człowiek dla skali.",
+      "quests": [
+        {
+          "q": "Kto wpadł na pomysł kościoła w jaskini?",
+          "answers": ["Papież, który tu się urodził", "Król na białym koniu", "Rybak z rzeki"],
+          "correct": 0,
+          "hint": "To ktoś bardzo ważny w Kościele, kto pochodził właśnie z tych stron.",
+          "source": "Kto pierwszy wpadł na taki pomysł? Papież, który tu się urodził."
+        },
+        {
+          "q": "Co jest obok świątyni, wykute w skale?",
+          "answers": ["Klasztorek, w którym mieszkali ludzie", "Basen", "Wieża z zegarem"],
+          "correct": 0,
+          "hint": "Ludzie mieszkali tam w środku góry — mur łączy się ze skałą.",
+          "source": "Obok jest klasztorek wykuty w skale — mieszkali w nim ludzie."
+        },
+        {
+          "q": "Jaki kształt ma świątynia Valadiera?",
+          "answers": ["Ośmioboczny", "Okrągły jak beczka", "Trójkątny"],
+          "correct": 0,
+          "hint": "Policz boki: tyle, ile nóg ma pająk.",
+          "source": "…neoklasyczna, ośmioboczna świątynia z białego trawertynu stoi wewnątrz otworu ogromnej groty…"
+        }
+      ]
+    }
+  ]
+}

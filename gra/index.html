@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#062A58">
+<title>Quo: Wyprawa — Frasassi (demo)</title>
+<link rel="icon" href="../quolino.ico">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div id="app" class="app">
+  <canvas id="game" aria-label="Gra: Quo idzie przez Jaskinie Frasassi"></canvas>
+
+  <!-- Pasek gry -->
+  <header class="hud" id="hud" hidden>
+    <div class="hud-left">
+      <span class="hud-pill" title="Serduszka"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.3-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 15.7 12 21 12 21z" fill="#C81E36"/></svg><b id="hudHearts">3</b><span class="sr">serduszek</span></span>
+      <span class="hud-pill" title="Kamyczki"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="13" rx="8" ry="6.5" fill="#FFC629" stroke="#3B2A00" stroke-width="1.6"/><ellipse cx="9.5" cy="10.5" rx="2.6" ry="1.5" fill="#FFF4CF"/></svg><b id="hudCoins">0</b><span class="sr">kamyczków</span></span>
+      <span class="hud-power" id="hudPower" hidden></span>
+    </div>
+    <div class="hud-right">
+      <span class="hud-pill hud-album" id="hudAlbum" title="Naklejki w albumie"><img src="../media/icons/quo-album-128.webp" alt="" width="28" height="28"><b id="hudStickers">0/4</b><span class="sr">naklejek</span></span>
+      <button class="hud-btn" id="btnPause" type="button" aria-label="Pauza"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg></button>
+    </div>
+    <div class="hud-stop" id="hudStop"></div>
+  </header>
+
+  <!-- Sterowanie dotykowe -->
+  <div class="pad" id="pad" hidden>
+    <div class="pad-left">
+      <button class="pad-btn" id="padLeft" type="button" aria-label="W lewo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="pad-btn" id="padRight" type="button" aria-label="W prawo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <button class="pad-btn pad-jump" id="padJump" type="button" aria-label="Skok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Skok</span></button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="celebrate-text" id="celebrateText" aria-live="polite" hidden></div>
+
+  <!-- Ekran startowy -->
+  <section class="screen" id="startScreen">
+    <div class="card">
+      <img class="card-quo" src="../media/icons/pose-13-celebration-jump-256.webp" alt="" width="150" height="150">
+      <p class="kicker">Nagroda za wycieczkę</p>
+      <h1>Quo: Wyprawa</h1>
+      <p class="lead">Jaskinie Frasassi · Marche</p>
+      <div class="bonus" id="bonusList"></div>
+      <label class="demo-toggle">
+        <input type="checkbox" id="demoToggle">
+        <span>Tryb demo: symuluj punkty z trasy</span>
+      </label>
+      <button class="btn btn-primary" id="btnStart" type="button">Graj</button>
+      <button class="btn btn-ghost" id="btnSound" type="button" aria-pressed="false">Dźwięk: wyłączony</button>
+      <p class="help"><span class="help-keys"><b>Klawiatura:</b> ← → (lub A D) idź · spacja / ↑ / W skok · P pauza.<br></span><b>Telefon:</b> przyciski na dole ekranu.</p>
+    </div>
+  </section>
+
+  <!-- Pauza -->
+  <section class="screen" id="pauseScreen" hidden>
+    <div class="card">
+      <h2>Pauza</h2>
+      <button class="btn btn-primary" id="btnResume" type="button">Graj dalej</button>
+      <button class="btn btn-ghost" id="btnSound2" type="button" aria-pressed="false">Dźwięk: wyłączony</button>
+      <button class="btn btn-ghost" id="btnRestart" type="button">Zacznij od nowa</button>
+    </div>
+  </section>
+
+  <!-- Quest przy bramie -->
+  <section class="screen quiz" id="quizScreen" hidden role="dialog" aria-modal="true" aria-labelledby="quizQ">
+    <div class="card card-quiz">
+      <div class="quiz-head">
+        <img src="../media/icons/pose-05-curious-sitting-128.webp" alt="" width="84" height="84">
+        <div>
+          <p class="kicker" id="quizStop"></p>
+          <p class="quiz-ask">Quo pyta:</p>
+        </div>
+      </div>
+      <h2 id="quizQ"></h2>
+      <div class="answers" id="quizAnswers"></div>
+      <p class="quiz-hint" id="quizHint" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- Koniec -->
+  <section class="screen" id="endScreen" hidden>
+    <div class="card card-end">
+      <img class="card-quo" src="../media/icons/pose-15-gold-medal-256.webp" alt="" width="150" height="150">
+      <h2>Wyprawa ukończona!</h2>
+      <p class="lead">Twój album z Frasassi</p>
+      <div class="album" id="albumGrid"></div>
+      <div class="totals" id="totals"></div>
+      <button class="btn btn-primary" id="btnAgain" type="button">Zagraj jeszcze raz</button>
+    </div>
+  </section>
+
+  <noscript><p class="noscript">Ta gra potrzebuje włączonego JavaScriptu.</p></noscript>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
