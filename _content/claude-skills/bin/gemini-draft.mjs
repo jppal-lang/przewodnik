@@ -340,6 +340,14 @@ async function stopBlocks(meta, pl, cityTitle) {
   const cat = meta.category;
   const tag = `${meta.stop_number} ${pl.name}`;
   const fRes = join(dir, `v2-stop-${meta.stop_number}-research.md`);
+  // parking, restauracja, lody, słodycze (JP 2026-10-26): bez osobnego researchu i bez pisania bloków przez AI — tekst ze szkicu,
+  // dane z karty miejsca (godziny, ceny z oficjalnej strony / OSM). Bloki legenda/ciekawostka/fun fact/popkultura: brak (stan none).
+  if (PRACTICAL_CATS.has(cat) && !argv.includes('--practical-ai')) {
+    const chk = `przystanek praktyczny (${cat}) — bez legend i ciekawostek, dane z karty miejsca`;
+    const rec = normalizeRecord({ marked: { desc_paragraphs: pl.desc_paragraphs ?? [] }, state: Object.fromEntries(['legend', 'curiosity', 'fun_fact', 'pop_culture'].map(b => [b, { state: 'none', checked: chk }])), sources: [] }, { category: cat, today: TODAY });
+    log(`${slug}: ③ przystanek ${tag} (${cat}) — praktyczny, bez AI`);
+    return { rec, gap: null, validator: validateStop(rec, { category: cat }) };
+  }
   const r = !FRESH && existsSync(fRes) && STOP_RESEARCH_OK.has(fRes) ? { text: readFileSync(fRes, 'utf8') } : await (async () => {
   log(`${slug}: ③ przystanek ${tag} (${cat}) — research bloków`);
   return researchCall(`Research bloków przystanku Quolino. Miejsce: ${pl.name} (${cat}), trasa: ${cityTitle}, ${name}, ${region}, ${country}.

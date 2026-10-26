@@ -225,6 +225,7 @@ export async function extraCheck(slug, trip) {
   units.push({ key: '_city', name: city, category: 'city', wiki: trip.meta?.city?.wiki_article, wikiLang: trip.meta?.city?.wiki_lang,
                links: [], text: { lead: cityTxt.lead, good_to_know: cityTxt.good_to_know, hero_note: cityTxt.hero_note } });
   for (const s of trip.meta?.stops ?? []) {
+    if (NO_WIKI.includes(s.category)) continue;   // przystanki praktyczne: bez sprawdzania faktów przez Claude (JP 2026-10-26) — godziny i ceny sprawdza kod
     const pl = trip.content?.stops?.[s.stop_key] ?? {};
     units.push({ key: s.stop_key, stop: s, name: pl.name ?? s.stop_key, category: s.category, wiki: s.wiki_article,
       links: [s.verify_url, s.website, ...(s.sources ?? [])].filter(Boolean),
