@@ -67,6 +67,9 @@ Uwzględniaj też, gdy dotyczy: fazy budowy i restauracji, funkcję (polityczną
 gospodarczą), dzieła sztuki, symbole, inskrypcje, relikwie, współczesne znaczenie, potwierdzone związki z popkulturą.
 Rozbudowa opisu bierze fakty **wyłącznie z researchu** (`research.md`) — niczego nie zmyślamy; brakujący materiał
 = notatka w `_notes`, nie wymyślony akapit.
+**Gdy fizycznie nie ma materiału na minimum słów** (JP 2026-10-26): nie dopychaj tekstu — napisz krócej i dodaj notatkę
+redakcyjną `{"stop_key":"…","field":"b","note":"ZA MAŁO MATERIAŁU: czego brakuje"}`. Notatki nie trafiają do widoku
+użytkownika; walidator zamienia wtedy niedobór słów w uwagę (nie błąd).
 
 ### Zasada zagranicznego turysty
 Wyjaśniaj od podstaw: **święty** (kim był, kiedy żył, dlaczego ważny, dlaczego tutaj),

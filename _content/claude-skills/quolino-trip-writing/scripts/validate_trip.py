@@ -324,8 +324,12 @@ def validate_city(folder: Path):
                     paras = [x for x in (st.get("desc_paragraphs") or []) if isinstance(x, str)]
                     words = sum(len(WORD.findall(x)) for x in paras)
                     need = SMALL_MIN if cat == "monument" else SIGHT_MIN if cat in SIGHTS else PLACE_MIN if cat in PLACE else None
+                    # JP 2026-10-26: gdy fizycznie brak materiału, notatka redakcyjna _notes (field b, „ZA MAŁO MATERIAŁU”) zamienia błąd w uwagę
+                    thin = any(isinstance(n, dict) and n.get("stop_key") == key and n.get("field") == "b"
+                               and re.search(r"za ma[łl]o materia[łl]u|research nie wystarczy|brak materia[łl]u", str(n.get("note", "")), re.I)
+                               for n in (data.get("_notes") or []))
                     if need and (n_par < need[0] or words < need[1]):
-                        err(slug, f"{code}: {key} — opis rodzica poniżej minimum ({cat}: {n_par} akap., {words} słów; "
+                        (warn if thin else err)(slug, f"{code}: {key} — opis rodzica poniżej minimum ({cat}: {n_par} akap., {words} słów; "
                                   f"minimum {need[0]} akapity i {need[1]} słów). Rozbuduj z researchu wg szkieletu: hak, "
                                   f"historia i ludzie, „Kim był…”, co oglądać, legenda, ciekawostka")
                     if cat in SIGHTS:
@@ -335,7 +339,7 @@ def validate_city(folder: Path):
                             if w < PARA_MIN_WORDS or sn < PARA_MIN_SENTENCES:
                                 short.append(f"{i} ({w} słów, {sn} zd.)")
                         if short:
-                            err(slug, f"{code}: {key} — akapity za krótkie: {', '.join(short)}. Akapit zabytku ma mieć min. "
+                            (warn if thin else err)(slug, f"{code}: {key} — akapity za krótkie: {', '.join(short)}. Akapit zabytku ma mieć min. "
                                       f"{PARA_MIN_WORDS} słów i {PARA_MIN_SENTENCES}+ zdania; jednozdaniowe „akapity” (cięcie tekstu, "
                                       f"by zaliczyć próg) to błąd — połącz je w pełne akapity")
                     for i, ptxt in enumerate(paras):

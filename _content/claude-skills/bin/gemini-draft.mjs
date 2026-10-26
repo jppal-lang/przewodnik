@@ -355,10 +355,10 @@ RESEARCH PRZYSTANKU:
 ${r.text}`, `bloki ${tag}`);
     return { rec: normalizeRecord(raw, { category: cat, today: TODAY }), gap: raw?.gap ?? null };
   };
-  let w = await write(null), v = validateStop(w.rec, { category: cat });
+  let w = await write(null), v = validateStop(w.rec, { category: cat, thin: w.gap });
   if (v.errors.length) {
     log(`  ${tag}: walidator ${v.errors.length} błędów — runda poprawek Gemini`);
-    w = await write({ errors: v.errors, rec: w.rec }); v = validateStop(w.rec, { category: cat });
+    w = await write({ errors: v.errors, rec: w.rec }); v = validateStop(w.rec, { category: cat, thin: w.gap });
   }
   return { rec: w.rec, gap: w.gap, validator: v };
 }
@@ -396,7 +396,7 @@ ${JSON.stringify({ marked: b.marked, state: b.state, sources: b.sources })}
 RESEARCH PRZYSTANKU:
 ${research}`, `poprawki ${tag}`);
   const rec = normalizeRecord(raw, { category: cat, today: TODAY });
-  return { rec, gap: raw?.gap ?? b.gap ?? null, validator: validateStop(rec, { category: cat }) };
+  return { rec, gap: raw?.gap ?? b.gap ?? null, validator: validateStop(rec, { category: cat, thin: raw?.gap ?? b.gap }) };
 }
 
 // ── ④ kontrola Claude §5 (nic nie pisze) ───────────────────────────────────────────────────────
@@ -509,7 +509,11 @@ async function main() {
   log(`${slug}: ⑤ zapis wersji`);
   // _notes.field: baza przyjmuje tylko a–g (a dane, b opis, c misja, d wskazówka, e lokalny smak, f źródła, g uwaga) — Gemini podaje nazwy pól
   const NOTE_FIELD = { desc_paragraphs: 'b', desc: 'b', kids_box: 'c', quest: 'c', photo_task: 'c', hint: 'd', local_flavor: 'e', sources: 'f', source: 'f' };
-  trip.content._notes = (Array.isArray(trip.content._notes) ? trip.content._notes : []).filter(n => n && n.note).map(n => ({
+  // luki z bloków przystanków (gap) → notatka redakcyjna „ZA MAŁO MATERIAŁU” (niewidoczna dla użytkownika; walidator wtedy nie blokuje krótszego opisu)
+  trip.content._notes = Array.isArray(trip.content._notes) ? trip.content._notes : [];
+  for (const [k, b] of Object.entries(blocks)) if (b?.gap && !trip.content._notes.some(n => n?.stop_key === k && /ZA MAŁO MATERIAŁU/.test(n.note ?? '')))
+    trip.content._notes.push({ stop_key: k, field: 'b', note: `ZA MAŁO MATERIAŁU: ${String(b.gap).slice(0, 400)}` });
+  trip.content._notes = trip.content._notes.filter(n => n && n.note).map(n => ({
     stop_key: n.stop_key ?? null, note: String(n.note),
     field: /^[a-g]$/.test(n.field) ? n.field : NOTE_FIELD[n.field] ?? (/hour|price|cost|ztl|phone|website|time|rating|reserv|lat|lon|maps/i.test(n.field ?? '') ? 'a' : 'g') }));
   // bez „—” i „–” (JP 2026-10-25) — mechanicznie, w całej treści i w blokach
@@ -754,7 +758,7 @@ Odpowiedz JSON-em: {"meta": {…tylko zmienione pola…}, "pl": {…tylko zmieni
     if (out.record) {
       const rec = normalizeRecord(out.record, { category: m.category, today: TODAY });
       changes.push({ path: `blocks.${key}`, before: b ? { marked: b.marked } : null, after: { marked: rec.marked }, why: list(cs) });
-      blocks[key] = { ...(b ?? {}), ...rec, validator: validateStop(rec, { category: m.category }), revisedBy: who, fixRound: b?.fixRound };
+      blocks[key] = { ...(b ?? {}), ...rec, validator: validateStop(rec, { category: m.category, thin: b?.gap }), revisedBy: who, fixRound: b?.fixRound };
       if (rec.marked.desc_paragraphs.length) pl.desc_paragraphs = rec.marked.desc_paragraphs.map(stripRefs);
       if (CHECK) {
         log(`${slug}: ④ kontrola Claude po poprawkach (${who}) — ${m.stop_number} ${pl.name}`);

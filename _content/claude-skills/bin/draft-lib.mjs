@@ -158,6 +158,8 @@ Legenda, ciekawostka i popkultura NIE wchodzą do opisu (standard docs/TRESC-PRZ
 które pisze stop-content.mjs; w opisie najwyżej jedno zdanie-zapowiedź. Każdy akapit wnosi nową treść; bez wypełniaczy („zachwyca”,
 „warto zobaczyć”, „bogata historia”) — zamiast przymiotnika fakt. Legenda nigdy nie jest podana jako fakt.
 Rozbudowując opis, bierz fakty WYŁĄCZNIE z researchu; czego tam nie ma — nie wymyślaj, dodaj notatkę w content._notes.
+GDY FIZYCZNIE NIE MA MATERIAŁU na minimum słów (JP 2026-10-26): NIE dopychaj tekstu wypełniaczami ani powtórzeniami — napisz krócej i dodaj notatkę redakcyjną
+(pole „gap” albo content._notes: {stop_key, field: "b", note: "ZA MAŁO MATERIAŁU: czego brakuje"}). Notatki redakcyjne nie trafiają do widoku użytkownika; walidator traktuje wtedy krótszy opis jako ostrzeżenie, nie błąd.
 AKAPIT TO AKAPIT: przy zabytku min. 40 słów i 2+ zdania. Jednozdaniowe „akapity” (cięcie tekstu, by zaliczyć próg) to błąd walidatora.`;
 
 // research.md szkicu (z trip-draft) — kontrola i poprawki sprawdzają, czy opis go wykorzystał
@@ -235,7 +237,7 @@ export async function describeOps(trip, keys) {
     const r = await describeStop(trip, s.stop_key, {});
     models.add(r.model);
     if (r.paragraphs.length) ops.push({ op: 'set', path: `content.stops.${s.stop_key}.desc_paragraphs`, value: r.paragraphs, why: 'opis rodzica (osobne wywołanie)' });
-    if (r.gap) notes.push({ stop_key: s.stop_key, field: 'b', note: `Research nie wystarczył do pełnego opisu: ${r.gap}` });
+    if (r.gap) notes.push({ stop_key: s.stop_key, field: 'b', note: `ZA MAŁO MATERIAŁU: ${r.gap}` });
   }
   if (notes.length !== (trip.content._notes ?? []).length) ops.push({ op: 'set', path: 'content._notes', value: notes, why: 'luki w researchu' });
   return { ops, models: [...models] };

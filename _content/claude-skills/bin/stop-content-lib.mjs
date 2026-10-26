@@ -60,7 +60,8 @@ function ngrams(ws, n) { const out = new Set(); for (let i = 0; i + n <= ws.leng
 
 // ── walidator mechaniczny (§5.5 + reguły CLAUDE.md) ─────────────────────────────────────────────
 // validateStop(rec, {category}) → {errors: [{block, problem}], warnings: [{block, problem}]}
-export function validateStop(rec, { category = null } = {}) {
+// thin: notatka redakcyjna „za mało materiału” (gap) — niedobór słów opisu jest wtedy ostrzeżeniem, nie błędem (JP 2026-10-26)
+export function validateStop(rec, { category = null, thin = null } = {}) {
   const errors = [], warnings = [];
   const E = (block, problem) => errors.push({ block, problem });
   const W = (block, problem) => warnings.push({ block, problem });
@@ -169,7 +170,7 @@ export function validateStop(rec, { category = null } = {}) {
     // ale nie podlega minimum 40 słów na akapit — wzorzec Frasassi 21 zaakceptowany przez JP 2026-10-18
     const story = [...plainDesc]; while (story.length > 1 && PRACTICAL_PARA.test(story.at(-1))) story.pop();
     const perPara = (x) => /^akapity /.test(x);
-    for (const p of [...descProblems(category, plainDesc).filter(x => !perPara(x)), ...descProblems(category, story).filter(perPara)]) E('desc', `opis: ${p}`);
+    for (const p of [...descProblems(category, plainDesc).filter(x => !perPara(x)), ...descProblems(category, story).filter(perPara)]) (thin ? W : E)('desc', `opis: ${p}${thin ? ' (za mało materiału — notatka redakcyjna)' : ''}`);
     desc.forEach((p, i) => { if (LEGEND_PARA.test(stripRefs(p))) E('desc', `desc_paragraphs[${i}]: akapit legendy/ciekawostki/popkultury w opisie — przenieś do bloku, w opisie najwyżej jedno zdanie-zapowiedź`); });
     const mentions = plainDesc.flatMap(sentences).filter(s => LEGEND_MENTION.test(s));
     if (mentions.length > 1) E('desc', `opis opowiada legendę (${mentions.length} zdania o legendzie/tradycji) — legenda idzie do bloku legend, w opisie najwyżej jedno zdanie-zapowiedź`);
