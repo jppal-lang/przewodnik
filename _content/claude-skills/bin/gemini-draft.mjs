@@ -783,18 +783,50 @@ async function reviseMain() {
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle;
   await loadRules(q);
-  const { changes, summaries } = await applyComments(trip, blocks, comments, cityTitle, argv.includes('--no-learn') ? 'Claude' : 'JP');
-  if (!changes.length) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
+  // Odpowiedzi JP na „Pytania z kontroli” (pole review.e.N / review.w.N, panel JP 2026-10-26):
+  //   „✓ Popraw według propozycji” → dosłowna podmiana stare → nowe z kontroli (bez AI), „✗ Zostaw” → bez zmian,
+  //   własny tekst → zwykła uwaga dla Gemini z treścią pytania. Pytania z odpowiedzią znikają z listy w nowej wersji.
+  const isQ = (c) => /^review\.[ew]\.\d+$/.test(c.field ?? '');
+  const revs = {};
+  for (const v of new Set(comments.filter(isQ).map(c => +(c.city_version ?? cur.version)))) {
+    const [row] = v === cur.version ? [cur] : await q(`SELECT review FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, v]);
+    revs[v] = row?.review ?? {};
+  }
+  const itemOf = (c) => { const [, k, i] = c.field.split('.'); const rvv = revs[+(c.city_version ?? cur.version)] ?? {}; return (k === 'e' ? rvv.errors : rvv.warnings)?.[+i] ?? null; };
+  const lit = [], ask = [], answered = new Set();
+  for (const c of comments) {
+    if (!isQ(c)) { ask.push(c); continue; }
+    const it = itemOf(c); if (it) answered.add(`${it.stop_key ?? ''}|${it.problem}`);
+    if (/^✓/.test(c.body.trim()) && it?.old) lit.push({ find: it.old, replace: it.new ?? '' });
+    else if (/^✗/.test(c.body.trim())) continue;
+    else ask.push({ ...c, field: null, field_label: 'pytanie z kontroli', body: `Pytanie z kontroli: ${it?.problem ?? c.field_label}${it?.old ? ` (fragment: „${it.old}”)` : ''}. Decyzja JP: ${c.body}` });
+  }
+  const litChanges = [];
+  if (lit.length) {
+    const walk = (o) => { if (typeof o === 'string') { let t = o; for (const p of lit) if (p.find && t.includes(p.find)) { t = t.split(p.find).join(p.replace); litChanges.push({ before: p.find, after: p.replace, why: 'pytanie z kontroli: zgoda JP na propozycję', auto: true }); } return t.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1'); }
+      if (Array.isArray(o)) return o.map(walk); if (o && typeof o === 'object') { for (const k of Object.keys(o)) o[k] = walk(o[k]); } return o; };
+    trip.content = walk(trip.content); trip.meta = walk(trip.meta); for (const k of Object.keys(blocks)) blocks[k] = walk(blocks[k]);
+    log(`${slug}: pytania z kontroli — ${lit.length} zgód, ${litChanges.length} podmian`);
+  }
+  const ap = ask.length ? await applyComments(trip, blocks, ask, cityTitle, argv.includes('--no-learn') ? 'Claude' : 'JP') : { changes: [], summaries: [] };
+  const changes = [...litChanges, ...ap.changes], summaries = [...(lit.length ? [`pytania z kontroli: ${lit.length} poprawek wg propozycji`] : []), ...ap.summaries];
+  if (!changes.length && !answered.size) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
   const fails = Object.values(blocks).filter(x => x?.check?.verdict === 'fix').length;
-  const rv = { verdict: fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: [], warnings: [] };
+  // poprzednia kontrola przechodzi dalej bez pytań, na które JP już odpowiedział (każda nowa pełna kontrola znajdowała „nowe” drobiazgi)
+  const prev = cur.review ?? {}, open = (e) => !answered.has(`${e.stop_key ?? ''}|${e.problem}`);
+  const left = (prev.errors ?? []).filter(open);
+  const rv = { ...prev, verdict: left.length || fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: left, warnings: (prev.warnings ?? []).filter(open), rounds: [] };
   trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
-  const saved = await saveDraft(q, trip, { note: `poprawki JP (${comments.length} uwag, nowy proces)`, source: 'revise', changes, review: rv });
-  await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
-             trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks)]);
+  const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)?.[1] ?? String(cur.version);
+  const [nl] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
+  const label = `v${base}${String.fromCharCode(97 + nl.n)}`;
+  const saved = await saveDraft(q, trip, { note: `${label}: poprawki JP (${comments.length} uwag${answered.size ? `, w tym ${answered.size} odpowiedzi na pytania z kontroli` : ''})`, source: 'revise', changes, review: rv });
+  await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
+             trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks), label]);
   const gl = await guidelinesVersion();
   await stampGuidelines(saved.version, gl, rv.verdict === 'ok');
   let learned = [];
-  if (!argv.includes('--no-learn')) try { learned = await learn(q, { slug, version: saved.version, say: comments.map(x => x.body).join('\n'), context, changes, trip }); }
+  if (!argv.includes('--no-learn') && ask.some(x => !/^Pytanie z kontroli/.test(x.body))) try { learned = await learn(q, { slug, version: saved.version, say: ask.filter(x => !/^Pytanie z kontroli/.test(x.body)).map(x => x.body).join('\n'), context, changes, trip }); }
   catch (e) { log(`zasady: ${e.message.slice(0, 160)}`); }
   event(`gotowe: szkic v${saved.version} po poprawkach (${changes.length} zmian) · wytyczne ${gl ?? '?'}`, { stage: 7, status: 'done' });
   const out = { slug, version: saved.version, from: cur.version, changes: changes.length, summary: rv.summary, verdict: rv.verdict, learned, preview: previewUrl(saved.token) };

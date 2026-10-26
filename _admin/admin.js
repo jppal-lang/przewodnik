@@ -101,7 +101,7 @@
         .map(function (v) { return { city_slug: v.city_slug, version: v.version, region: ((v.content || {}).city || {}).region_slug || null }; });
       var m = path.match(/^\/admin_versions\?city_slug=eq\.([^&]+)/);
       if (m) return d.versions.filter(function (v) { return v.city_slug === decodeURIComponent(m[1]); })
-        .map(function (v) { return { city_slug: v.city_slug, version: v.version, status: v.status, source: v.source || 'manual', note: v.note || null, created_at: v.created_at || '2026-10-0' + v.version + 'T10:00:00Z', content: v.content }; });
+        .map(function (v) { return { city_slug: v.city_slug, version: v.version, status: v.status, source: v.source || 'manual', note: v.note || null, created_at: v.created_at || '2026-10-0' + v.version + 'T10:00:00Z', content: v.content, review: v.review || null }; });
       m = path.match(/^\/draft_comments\?city_slug=eq\.([^&]+)/);
       if (m && (!opts || !opts.method)) return d.comments.filter(function (c) { return c.city_slug === decodeURIComponent(m[1]); });
       if (path === '/draft_comments' && opts && opts.method === 'POST') {
@@ -488,7 +488,7 @@
     var known = (state.trips || []).filter(function (t) { return t.slug === slug; })[0];
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję ' + esc(known ? known.name : slug) + '…</p></div>';
     Promise.all([
-      api('/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content&order=version.asc'),
+      api('/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content,review&order=version.asc'),
       loadComments(slug),
       loadToken(slug)
     ]).then(function (res) {
@@ -564,7 +564,7 @@
     if (isNewest && row.status === 'draft' && T.published != null && T.published !== row.version) base = all.filter(function (r) { return r.version === T.published; })[0];
     else base = all.filter(function (r) { return r.version < row.version; }).pop() || null;
     var c = row.content.city || {};
-    var it = { label: (row.content || {}).label || null, city_slug: T.slug, version: row.version, status: row.status, source: row.source, note: row.note, created_at: row.created_at,
+    var it = { label: (row.content || {}).label || null, city_slug: T.slug, version: row.version, status: row.status, source: row.source, note: row.note, created_at: row.created_at, review: row.review || null,
       city_name: T.name, bandana_color: c.bandana_color, published_version: base ? base.version : null,
       baseIsLive: !!(base && base.version === T.published && isNewest), isNewest: isNewest };
     state.readOnly = !(isNewest && row.status === 'draft');
@@ -645,6 +645,41 @@
       (state.readOnly ? '' : '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="Uwaga dla Hermesa…"></textarea>' +
       '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form>') + '</div>';
   }
+  // ── Pytania z kontroli (JP 2026-10-26): każde ostrzeżenie i błąd z kontroli całej trasy jako osobna pozycja z własnym polem odpowiedzi.
+  // Odpowiedź to zwykła uwaga (pole review.e.N / review.w.N) — idzie tym samym przyciskiem „Wyślij uwagi do poprawki”.
+  // „Popraw wg propozycji” = dosłowna podmiana stare → nowe (bez AI), „Zostaw” = bez zmiany; własny tekst = poprawka przez Gemini.
+  var QA_YES = '✓ Popraw według propozycji', QA_NO = '✗ Zostaw bez zmian';
+  function questionsHtml(it) {
+    var rv = it && it.review || {}, items = [];
+    (rv.errors || []).forEach(function (e, i) { items.push({ k: 'e', i: i, e: e, block: true }); });
+    (rv.warnings || []).forEach(function (e, i) { items.push({ k: 'w', i: i, e: e, block: false }); });
+    if (!items.length) return '';
+    var answered = 0;
+    var list = items.map(function (x, n) {
+      var e = x.e || {}, field = 'review.' + x.k + '.' + x.i, label = 'Pytanie ' + (n + 1);
+      var has = commentsFor(e.stop_key || null, field).length; if (has) answered++;
+      var where = e.stop_key ? (stopName(e.stop_key) || e.stop_key) : 'Cała trasa';
+      var prob = String(e.problem || '').replace(/^\[nie blokuje\]\s*/, '');
+      var prop = e.old || e['new'] ? '<p class="adm-q__prop">Propozycja: ' + (e.old ? '<del>' + esc(e.old) + '</del>' : '') + (e.old && e['new'] ? ' → ' : '') + (e['new'] ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>'
+        : e.fix ? '<p class="adm-q__prop">Propozycja: ' + esc(e.fix) + '</p>' : '';
+      var quick = state.readOnly ? '' : '<div class="adm-q__quick">' + (e.old || e['new'] ? '<button type="button" class="qc-btn qc-btn--sm" data-qa="yes">Popraw wg propozycji</button>' : '') +
+        '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa="no">Zostaw tak</button></div>';
+      return '<li class="adm-q__it' + (x.block ? ' is-block' : '') + (has ? ' is-done' : '') + '"><p class="adm-q__head"><b>' + (n + 1) + '.</b> ' +
+        '<a href="#st-' + esc(e.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a>' + (x.block ? ' <span class="adm-q__tag">blokuje</span>' : '') + '</p>' +
+        '<p class="adm-q__txt">' + esc(prob) + '</p>' + prop + quick + commentBox(e.stop_key || null, field, label) + '</li>';
+    }).join('');
+    return '<h3>Pytania z kontroli <b class="adm-n">' + items.length + '</b> <small class="adm-q__sum">odpowiedziane ' + answered + ' z ' + items.length + '</small></h3>' +
+      '<p class="adm-q__hint">Każde pytanie ma własne pole. Odpowiedz przyciskiem albo wpisz, co zrobić; potem „Wyślij uwagi do poprawki”.</p><ol class="adm-q__list">' + list + '</ol>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-qa]'); if (!b) return;
+    var li = b.closest('.adm-q__it'), form = li && li.querySelector('.adm-cm__form'); if (!form) return;
+    form.querySelector('textarea').value = b.getAttribute('data-qa') === 'yes' ? QA_YES : QA_NO;
+    sendComment(form);
+    li.classList.add('is-done');
+    var all = document.querySelectorAll('.adm-q__it'), sum = document.querySelector('.adm-q__sum');
+    if (sum) sum.textContent = 'odpowiedziane ' + document.querySelectorAll('.adm-q__it.is-done').length + ' z ' + all.length;
+  });
   // wszystkie uwagi do wersji z zakładki, w jednym miejscu (także te do przystanków, których w tej wersji już nie ma)
   function verCommentsHtml() {
     var list = verComments(state.tabVersion), sent = list.filter(isSent);
@@ -890,6 +925,7 @@
           '<button type="button" class="adm-linkbtn" data-goto="' + esc(nw) + '">Przejdź do v' + esc(nw) + '</button>') + '</p>';
     }
     html += '<section class="adm-sheet__sec adm-vc" id="verComments"></section>';
+    html += '<section class="adm-sheet__sec adm-q" id="revQs" hidden></section>';
 
     html += '<p class="adm-cmwarn" id="cmWarn" hidden>Baza nie przyjmuje jeszcze uwag (brak tabeli <code>admin.draft_comments</code>). Uwagi zapisują się w tej przeglądarce i wyślą się same, gdy Hermes ją doda.</p>';
 
@@ -942,6 +978,8 @@
     $p.setAttribute('aria-labelledby', 'tab-v' + it.version);
     var vc = document.getElementById('verComments');
     vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML;    // po wstawieniu menu: nazwy przystanków z menu
+    var rq = document.getElementById('revQs');
+    if (rq) { rq.innerHTML = questionsHtml(it); rq.hidden = !rq.innerHTML; }
     drawMap(newStops, draft.stop_translations);
     updateCounts();
     spy();

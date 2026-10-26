@@ -61,7 +61,7 @@ async function revise(slug, rows, thread) {
   const [v] = await q(`SELECT content->>'workflow' AS wf FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
   const v2 = v?.wf === 'v2';
   const cmFile = join(dir, 'comments.json');
-  if (v2) writeFileSync(cmFile, JSON.stringify(rows.map(r => ({ id: r.id, stop_key: r.stop_key ?? null, field: r.field ?? null, field_label: r.field_label ?? null, body: r.body }))));
+  if (v2) writeFileSync(cmFile, JSON.stringify(rows.map(r => ({ id: r.id, city_version: r.city_version ?? null, stop_key: r.stop_key ?? null, field: r.field ?? null, field_label: r.field_label ?? null, body: r.body }))));
   try {
     const env = { ...process.env, PATH: `/opt/data/.local/bin:${process.env.PATH}` };
     const args = v2 ? [join(DIR, 'gemini-draft.mjs'), slug, '--revise', '--comments', cmFile, '--context', ctxFile, '--notify', thread]
