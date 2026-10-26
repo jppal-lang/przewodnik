@@ -510,7 +510,7 @@ async function main() {
     if (resume && existsSync(fRv) && readFileSync(fRv, 'utf8').trim()) { rv = JSON.parse(readFileSync(fRv, 'utf8')); log(`${slug}: kontrola trasy z pliku (wznowienie)`); }
     else {
       log(`${slug}: ④ kontrola Claude — cała trasa`);
-      try { await pinCheck(trip).catch(() => {}); rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
+      try { await pinCheck(trip).catch(() => {}); fixSchedule(trip); rv = await fullReview(slug, trip); writeFileSync(fRv, JSON.stringify(rv, null, 2)); }
       catch (e) { rv = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: [], warnings: [] }; }
     }
     // ④c pętla: poprawki po kontroli CAŁEJ trasy → ponowna kontrola, najwyżej 3 rundy (JP 2026-10-25) — do JP trafia tekst po poprawkach
@@ -613,6 +613,36 @@ function applyReplacements(trip, blocks, errors) {
   return { done, changes };
 }
 
+// ── plan dnia poprawiany kodem (JP 2026-10-26): godziny dotarcia rosną, starcza czasu na przejście, day_plan = time_label,
+// duration_hours/duration_type z planu. Te same progi co walidator (pieszo 3 km/h, >2 km auto 40 km/h + 10 min). Bez AI.
+function fixSchedule(trip) {
+  const mins = (t) => { const m = String(t ?? '').match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; };
+  const hhmm = (n) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+  const visit = (s) => +(String(s.visit_duration ?? '').match(/\d+/)?.[0] ?? NaN);
+  const km = (a, b) => (a.lat == null || b.lat == null) ? 0 : dist({ lat: +a.lat, lon: +a.lon }, { lat: +b.lat, lon: +b.lon }) / 1000 * 1.3;
+  const st = (trip.meta.stops ?? []).filter(s => !s.optional), changes = [];
+  for (let i = 1; i < st.length; i++) {
+    const a = st[i - 1], b = st[i], ta = mins(a.time_label), tb = mins(b.time_label), va = visit(a);
+    if (ta == null || tb == null || !Number.isFinite(va)) continue;
+    const d = km(a, b), need = d <= 2 ? Math.round(d / 3 * 60) : Math.round(d / 40 * 60) + 10;
+    if (tb - (ta + va) < need - 5) { const nt = Math.ceil((ta + va + need) / 5) * 5; changes.push({ path: `meta.stops.${b.stop_key}.time_label`, before: b.time_label, after: hhmm(nt), why: 'plan dnia: za mało czasu na przejście (kod)', auto: true }); b.time_label = hhmm(nt); }
+  }
+  const dp = trip.content.day_plan;
+  if (dp && typeof dp === 'object') for (const s of st) {
+    const line = dp[s.stop_key]; const m = String(line ?? '').match(/^\s*(\d{1,2}:\d{2})/);
+    if (m && s.time_label && mins(m[1]) !== mins(s.time_label)) { dp[s.stop_key] = String(line).replace(m[1], s.time_label); changes.push({ path: `content.day_plan.${s.stop_key}`, before: m[1], after: s.time_label, why: 'plan dnia = godzina dotarcia (kod)', auto: true }); }
+  }
+  const ts = st.map(s => [mins(s.time_label), visit(s)]).filter(([t]) => t != null);
+  if (ts.length && trip.meta.city) {
+    const span = (ts.at(-1)[0] + (Number.isFinite(ts.at(-1)[1]) ? ts.at(-1)[1] : 0) - ts[0][0]) / 60, want = Math.round(span * 2) / 2;
+    if (typeof trip.meta.city.duration_hours === 'number' && Math.abs(trip.meta.city.duration_hours - span) > 0.75) { changes.push({ path: 'meta.city.duration_hours', before: String(trip.meta.city.duration_hours), after: String(want), why: 'czas trasy z planu (kod)', auto: true }); trip.meta.city.duration_hours = want; }
+    const type = span <= 5 ? 'half_day' : 'full_day';
+    if (trip.meta.city.duration_type && trip.meta.city.duration_type !== type) { changes.push({ path: 'meta.city.duration_type', before: trip.meta.city.duration_type, after: type, why: 'rodzaj trasy z planu (kod)', auto: true }); trip.meta.city.duration_type = type; }
+  }
+  if (changes.length) log(`${slug}: plan dnia poprawiony kodem: ${changes.length} zmian`);
+  return changes;
+}
+
 // ── pinezki: współrzędne przystanków porównane z Wikidata (kod, bez AI); różnica > 300 m → poprawka automatyczna ──
 async function pinCheck(trip) {
   const changes = [];
@@ -632,14 +662,14 @@ async function pinCheck(trip) {
 // Model dostaje TYLKO teksty pól, których dotyczą uwagi, uwagę i (gdy trzeba faktu) wycinek researchu tego przystanku.
 // Zwraca dosłowny fragment + zamiennik (najwyżej 2 zdania) albo ustawienie pola liczbowego; podmianę robi kod (applyReplacements).
 // Jedno wywołanie na całą rundę. Czego nie da się poprawić bez nowego faktu spoza materiału — zostaje do decyzji JP.
-const META_SET = /^meta\.(stops\.\d+\.(time_label|duration_min|lat|lon|opening_hours)|city\.(duration_hours|duration_type))$/;
+const META_SET = /^meta\.(stops\.\d+\.(time_label|visit_duration|lat|lon|opening_hours)|city\.(duration_hours|duration_type))$/;
 function stopTexts(trip, sk) {
   const out = [];
   const add = (path, v) => { if (typeof v === 'string' && v.trim()) out.push({ path, text: v }); else if (Array.isArray(v)) v.forEach((x, i) => add(`${path}[${i}]`, x)); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) add(`${path}.${k}`, x); };
   if (sk) { add(`content.stops.${sk}`, trip.content.stops?.[sk]); add(`content.day_plan.${sk}`, trip.content.day_plan?.[sk]);
-    const i = trip.meta.stops.findIndex(x => x.stop_key === sk); if (i >= 0) { const m = trip.meta.stops[i]; out.push({ path: `meta.stops.${i}`, text: JSON.stringify({ time_label: m.time_label, duration_min: m.duration_min, lat: m.lat, lon: m.lon, opening_hours: m.opening_hours }) }); } }
+    const i = trip.meta.stops.findIndex(x => x.stop_key === sk); if (i >= 0) { const m = trip.meta.stops[i]; out.push({ path: `meta.stops.${i}`, text: JSON.stringify({ time_label: m.time_label, visit_duration: m.visit_duration, lat: m.lat, lon: m.lon, opening_hours: m.opening_hours }) }); } }
   else { add('content.city', trip.content.city); out.push({ path: 'meta.city', text: JSON.stringify({ duration_hours: trip.meta.city?.duration_hours, duration_type: trip.meta.city?.duration_type }) });
-    out.push({ path: 'meta.stops', text: JSON.stringify(trip.meta.stops.map((m, i) => ({ i, key: m.stop_key, time_label: m.time_label, duration_min: m.duration_min }))) }); add('content.day_plan', trip.content.day_plan); }
+    out.push({ path: 'meta.stops', text: JSON.stringify(trip.meta.stops.map((m, i) => ({ i, key: m.stop_key, time_label: m.time_label, visit_duration: m.visit_duration }))) }); add('content.day_plan', trip.content.day_plan); }
   return out;
 }
 function researchSnippet(trip, sk, problem) {
@@ -711,7 +741,7 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     persist?.();
     log(`${slug}: ④ kontrola Claude — cała trasa po rundzie ${round} (${ap.changes.length} zmian)`);
     let next;
-    try { await pinCheck(trip).catch(() => {}); next = await fullReview(slug, trip); } catch (e) { next = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: rv.errors, warnings: [] }; }
+    try { await pinCheck(trip).catch(() => {}); fixSchedule(trip); next = await fullReview(slug, trip); } catch (e) { next = { verdict: 'fix', summary: `kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`, errors: rv.errors, warnings: [] }; }
     history.push({ round, errors: next.errors?.length ?? 0, facts: next.facts ?? null, changes: ap.changes.length });
     const better = (next.errors?.length ?? 0) < before;
     rv = next;
@@ -768,7 +798,7 @@ async function recheckMain() {
       errors: (prev.errors ?? []).filter((_, i) => !res.has(i) && !soft.has(i)) };
     rv.verdict = rv.errors.length ? 'fix' : 'ok';
     log(`${slug}: bez nowej kontroli — poprawione ${res.size}, do ostrzeżeń ${soft.size}, zostaje ${rv.errors.length}`);
-  } else try { await pinCheck(trip).catch(() => {}); rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
+  } else try { await pinCheck(trip).catch(() => {}); fixSchedule(trip); rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
   // każda runda = podwersja szkicu: v5 → v5a, v5b, v5c (JP 2026-10-25). Numer w bazie rośnie jak zwykle, etykieta w content.label.
   const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)[1];
   const gl = await guidelinesVersion();

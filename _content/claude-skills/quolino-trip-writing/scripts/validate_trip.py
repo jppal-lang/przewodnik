@@ -124,6 +124,67 @@ def check_banned(city, where, text):
             err(city, f"{where}: {label} — „{m.group(0)}”")
 
 
+
+# ── plan dnia liczony kodem (JP 2026-10-26: Claude tego nie sprawdza — kod liczy bezbłędnie i za darmo) ──
+# Czas przejścia jest TYLKO do sprawdzenia planu (nie pokazujemy go nigdzie): pieszo 3 km/h (rodzina z dziećmi),
+# powyżej 2 km auto 40 km/h + 10 min na parkowanie. Odległość w linii prostej × 1,3.
+def _mins(t):
+    m = re.match(r"^(\d{1,2}):(\d{2})$", str(t or "").strip())
+    return int(m.group(1)) * 60 + int(m.group(2)) if m else None
+def _dist_km(a, b):
+    import math
+    try:
+        la1, lo1, la2, lo2 = map(lambda x: math.radians(float(x)), (a["lat"], a["lon"], b["lat"], b["lon"]))
+    except (TypeError, ValueError, KeyError):
+        return None
+    d = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371 * math.asin(math.sqrt(d)) * 1.3
+def _visit(s):
+    m = re.search(r"\d+", str(s.get("visit_duration") or s.get("duration_min") or ""))
+    return int(m.group(0)) if m else None
+def check_schedule(slug, meta, pl):
+    stops = [s for s in (meta.get("stops") or []) if not s.get("optional")]
+    seq = [(s, _mins(s.get("time_label")), _visit(s)) for s in stops]
+    for (a, ta, va), (b, tb, _) in zip(seq, seq[1:]):
+        ka, kb = a.get("stop_key"), b.get("stop_key")
+        if ta is None or tb is None:
+            continue
+        if tb <= ta:
+            err(slug, f"plan: {kb} ({b.get('time_label')}) nie jest po {ka} ({a.get('time_label')}) — godziny dotarcia muszą rosnąć"); continue
+        if va is None:
+            warn(slug, f"plan: {ka} bez visit_duration — nie da się sprawdzić, czy zdążą na {kb}"); continue
+        d = _dist_km(a, b)
+        need = 0 if d is None else (round(d / 3 * 60) if d <= 2 else round(d / 40 * 60) + 10)
+        gap = tb - (ta + va)
+        if gap < need - 5:   # 5 min tolerancji
+            err(slug, f"plan: po {ka} ({a.get('time_label')} + {va} min) zostaje {gap} min na przejście do {kb} ({b.get('time_label')}), potrzeba ok. {need} min "
+                      f"— przesuń {kb} na {(ta + va + need) // 60:02d}:{(ta + va + need) % 60:02d} albo skróć zwiedzanie {ka}")
+        elif gap - need > 90:
+            warn(slug, f"plan: między {ka} a {kb} {gap - need} min bez zajęcia — przerwa celowa?")
+    times = [(t, v) for _, t, v in seq if t is not None]
+    if times:
+        span = (times[-1][0] + (times[-1][1] or 0) - times[0][0]) / 60
+        c = meta.get("city") or {}
+        dh = c.get("duration_hours")
+        if isinstance(dh, (int, float)) and dh and abs(dh - span) > 0.75:
+            err(slug, f"city.duration_hours = {dh}, a plan od {stops[0].get('time_label')} do końca ostatniego przystanku trwa ok. {span:.1f} h — ustaw {round(span * 2) / 2}")
+        want = "half_day" if span <= 5 else "full_day"
+        if c.get("duration_type") and c.get("duration_type") != want:
+            warn(slug, f"city.duration_type = {c.get('duration_type')}, plan trwa {span:.1f} h — pasuje {want}")
+    dp = (pl or {}).get("day_plan") or {}
+    if isinstance(dp, dict):
+        for s in stops:
+            line = dp.get(s.get("stop_key"))
+            m = re.match(r"^\s*(\d{1,2}:\d{2})", str(line or ""))
+            if m and s.get("time_label") and _mins(m.group(1)) != _mins(s.get("time_label")):
+                err(slug, f"day_plan.{s.get('stop_key')} zaczyna się od {m.group(1)}, a time_label = {s.get('time_label')} — godziny muszą się zgadzać")
+    for s, t, v in seq:
+        oh = str(s.get("opening_hours") or "")
+        rng = [(_mins(a), _mins(b)) for a, b in re.findall(r"(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})", oh)]
+        rng = [r for r in rng if None not in r]
+        if t is not None and rng and not any(o <= t and t + (v or 0) <= cl for o, cl in rng):
+            warn(slug, f"plan: {s.get('stop_key')} — dotarcie {s.get('time_label')}{f' + {v} min' if v else ''} poza godzinami otwarcia „{oh}” (sprawdź dzień tygodnia)")
+
 def validate_city(folder: Path):
     slug = folder.name
     metas = list(folder.glob("*.meta.json"))
@@ -241,6 +302,8 @@ def validate_city(folder: Path):
     if c.get("status") == "published":
         warn(slug, "city.status = published — dokument niezatwierdzony przez JP ma mieć status draft")
     cat_of = {s.get("stop_key"): s.get("category") for s in stops}
+    _plf = next(iter(folder.glob("*.pl.json")), None)
+    check_schedule(slug, meta, load(_plf) if _plf else None)
 
     if stops[0].get("category") != "parking":
         err(slug, "przystanek 01 musi być parkingiem (WYTYCZNE §17)")

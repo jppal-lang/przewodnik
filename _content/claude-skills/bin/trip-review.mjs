@@ -52,6 +52,7 @@ Pozostałe przystanki sprawdzono wcześniej i się nie zmieniły — nie zgłasz
 Wynik walidatora mechanicznego (kod ${v.code}) — każdy błąd przepisz do "errors":
 ${validator}
 
+NIE sprawdzaj i NIE zgłaszaj arytmetyki planu (godziny dotarcia, czas przejść, duration_hours, zgodność day_plan z time_label), liczby słów i akapitów ani myślników — to liczy kod (walidator powyżej) i sam poprawia.
 Sprawdź też minimum głębokości opisu rodzica (zabytek 4 akapity i 300 słów, mały obiekt — monument — 3 akapity i 180 słów; ulica/punkt widokowy/zdjęcie 2 akapity i 120 słów)
 i szkielet opisu (hak, historia i ludzie, „Kim był…”, co oglądać, legenda, ciekawostka/popkultura/znaczenie dziś).
 ${research ? `Do wycieczki dołączony jest RESEARCH. Porównaj z nim opis każdego zabytku: czy wykorzystał ludzi, detale do oglądania, popkulturę
