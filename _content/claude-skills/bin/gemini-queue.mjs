@@ -8,7 +8,7 @@ import { writeFileSync, existsSync, readFileSync, unlinkSync, mkdirSync } from '
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { db, log } from './lib.mjs';
+import { db, log, agyQuotaOut, agyWeekCalls } from './lib.mjs';
 import { WORK, notify } from './draft-lib.mjs';
 import { importUsage } from './ai-usage-import.mjs';
 
@@ -20,6 +20,18 @@ const LOCK = join(WORK, '..', 'gemini-queue.lock');
 
 // karta „Koszty AI”: dziennik zużycia do bazy co 10 min, także gdy kolejka pracuje albo czeka na noc
 { const c0 = await db(); try { await importUsage(async (sql, p) => (await c0.query(sql, p)).rows); } catch (e) { log(`ai_usage: ${e.message.slice(0, 160)}`); } finally { await c0.end(); } }
+// próg tygodniowego limitu Antigravity (AI Pro): ostrzeżenie na #admin przy 50/80/90 %, raz na próg (JP 2026-10-26).
+// Limit planu nie jest publikowany — QUOLINO_AGY_WEEKLY_CALLS (domyślnie 150) to nasza ostrożna miara; po wyczerpaniu zapisujemy realną godzinę odnowienia.
+const AGY_BUDGET = +(process.env.QUOLINO_AGY_WEEKLY_CALLS ?? 150);
+{ const used = agyWeekCalls(), pct = Math.floor(used / AGY_BUDGET * 100), stF = join(WORK, '..', 'agy-alert.json');
+  let st = {}; try { st = JSON.parse(readFileSync(stF, 'utf8')); } catch {}
+  const lvl = [90, 80, 50].find(p => pct >= p) ?? 0;
+  if (lvl > (st.lvl ?? 0) || (lvl < (st.lvl ?? 0) && lvl === 0)) {
+    writeFileSync(stF, JSON.stringify({ lvl, at: new Date().toISOString() }));
+    if (lvl) await notify(ADMIN, `⚠️ Antigravity (AI Pro): ${used} wywołań w 7 dni ≈ ${pct}% przyjętego limitu ${AGY_BUDGET}. ${lvl >= 90 ? 'Nowe wycieczki czekają; rozpoczęte kończy Claude.' : 'Pilnuję.'}`).catch(() => {});
+  }
+  globalThis.__agyFull = pct >= 90 || !!agyQuotaOut();
+}
 if (argv.includes('--night')) {
   const h = +new Intl.DateTimeFormat('pl-PL', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Warsaw' }).format(new Date());
   if (h >= 7 && h < 22) process.exit(0);
@@ -35,7 +47,10 @@ const q = async (sql, p) => (await c.query(sql, p)).rows;
 try {
   await q(`UPDATE jobs SET status = 'queued' WHERE status = 'running' AND worker = 'gemini' AND created_at < now() - interval '3 hours'
              AND (result IS NULL OR result NOT LIKE 'v%')`).catch(() => {});
-  const [job] = await q(`SELECT id, city_slug, request FROM jobs WHERE status = 'queued' AND worker = 'gemini' AND kind = 'draft' ORDER BY id LIMIT 1`);
+  // strażnik: przy wyczerpanym limicie nie zaczynamy NOWEJ trasy (wznawiamy tylko rozpoczęte — mają zapisany postęp w work/drafts)
+  const queued = await q(`SELECT id, city_slug, request, result FROM jobs WHERE status = 'queued' AND worker = 'gemini' AND kind = 'draft' ORDER BY id`);
+  const job = queued.find(j => !globalThis.__agyFull || existsSync(join(WORK, j.city_slug)));
+  if (!job && queued.length) log(`kolejka: ${queued.length} nowych tras czeka na odnowienie limitu Antigravity (${agyQuotaOut() ?? 'próg 90%'})`);
   if (job) {
     const slug = job.city_slug;
     let req;
@@ -58,7 +73,7 @@ try {
       } catch (e) {
         const why = String(e.stderr || e.message || e).split('\n').filter(l => /BŁĄD|Error/.test(l)).pop() ?? String(e.message).slice(0, 300);
         // dzienny limit / brak odpowiedzi → wraca do kolejki (postęp zapisany w work/drafts, wznowienie od miejsca przerwania)
-        const back = /dzienny limit|bez odpowiedzi|timeout|ETIMEDOUT|429/i.test(why);
+        const back = /dzienny limit|bez odpowiedzi|timeout|ETIMEDOUT|429|quota|limit Antigravity|session limit|usage limit/i.test(why);
         await q(`UPDATE jobs SET status = $2, result = $3, finished_at = CASE WHEN $2 = 'failed' THEN now() END WHERE id = $1`,
           [job.id, back ? 'queued' : 'failed', why.slice(0, 500)]);
         log(`kolejka: #${job.id} ${slug} — ${back ? 'odłożone' : 'błąd'}: ${why.slice(0, 160)}`);

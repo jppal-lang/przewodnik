@@ -2,6 +2,7 @@
 import { readFileSync, appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { parseModelJson } from './json-repair.mjs';
 const require = createRequire('/opt/data/quolino/package.json');
 export const { Client } = require('pg');
 
@@ -57,10 +58,10 @@ export async function claude(skillName, prompt, { web = false } = {}) {
   return res.result;
 }
 
+// Najpierw zwykłe parsowanie, potem naprawa w kodzie (json-repair.mjs) — dopiero gdy i ona zawiedzie, błąd (i ewentualna naprawa przez model).
+export { repairJson } from './json-repair.mjs';
 export function extractJson(text) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fenced ? fenced[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
-  return JSON.parse(raw);
+  return parseModelJson(text, { onRepair: (e) => log(`naprawa JSON w kodzie (${String(e.message).slice(0, 100)})`) });
 }
 
 // Odpowiedź Claude jako JSON z jedną ponowną prośbą (Piza 2026-10-14: model wstawił prosty " w tekście i JSON.parse padł).
@@ -70,7 +71,7 @@ export const JSON_QUOTE_RULE = 'W tekstach wewnątrz JSON-a używaj wyłącznie 
 export async function claudeJson(skillName, prompt, { web = false, rawFile = null } = {}) {
   const raw = await claude(skillName, prompt, { web });
   try { return extractJson(raw); } catch (e1) {
-    log(`claudeJson: błąd parsowania (${e1.message.slice(0, 120)}) — ponawiam prośbą o sam poprawny JSON`);
+    log(`claudeJson: błąd parsowania także po naprawie w kodzie (${e1.message.slice(0, 120)}) — ponawiam prośbą o sam poprawny JSON`);
     let raw2 = '';
     try {
       raw2 = await claude(skillName, `Poniższa odpowiedź miała być JSON-em, ale nie da się jej sparsować (${e1.message.slice(0, 200)}). Zwróć TEN SAM werdykt ` +
@@ -252,4 +253,21 @@ export async function openrouterJson(skillName, prompt, task = 'draft', tries = 
 export async function translator(skillName, prompt, task) {
   if (env('OPENROUTER_API_KEY')) return openrouter(skillName, prompt, task);
   return { text: await claude(skillName, prompt), model: 'claude', cost: 0 };
+}
+
+// ── limit Antigravity (AI Pro) wspólny dla wszystkich skryptów (JP 2026-10-26) ──
+// Po „Individual quota reached … Resets in 128h41m” zapisujemy godzinę odnowienia; do tego czasu nikt nie próbuje Antigravity
+// (każda nieudana próba to minuta czekania), a kolejka wycieczek wie, kiedy wznowić.
+const AGY_QUOTA_F = '/opt/data/quolino/work/agy-quota.json';
+export function agyQuotaHit(message) {
+  const m = String(message).match(/Resets in\s*(?:(\d+)h)?\s*(?:(\d+)m)?/i);
+  const ms = m ? ((+(m[1] ?? 0)) * 60 + (+(m[2] ?? 0))) * 60_000 : 6 * 3600_000;
+  try { writeFileSync(AGY_QUOTA_F, JSON.stringify({ resetAt: new Date(Date.now() + ms).toISOString(), at: new Date().toISOString() })); } catch { /* bez znacznika */ }
+}
+export function agyQuotaOut() {
+  try { const j = JSON.parse(readFileSync(AGY_QUOTA_F, 'utf8')); return Date.parse(j.resetAt) > Date.now() ? j.resetAt : null; } catch { return null; }
+}
+// wywołania Antigravity w ostatnich 7 dniach (z dziennika kosztów) — do progu ostrzeżeń 50/80/90 %
+export function agyWeekCalls() {
+  try { const since = Date.now() - 7 * 86400_000; return readFileSync(COSTS, 'utf8').split('\n').reduce((n, l) => { try { const j = JSON.parse(l); return n + (j.provider === 'gemini' && j.billing === 'abonament' && Date.parse(j.at) > since ? 1 : 0); } catch { return n; } }, 0); } catch { return 0; }
 }

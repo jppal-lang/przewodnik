@@ -16,7 +16,8 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { claude, claudeUsage, claudeJson, extractJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
+import { agyQuotaHit, agyQuotaOut } from './lib.mjs';
+import { claude, claudeUsage, claudeJson, extractJson, repairJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { triageErrors, gateErrors } from './jev.mjs';
@@ -86,7 +87,8 @@ const cost = { usd: 0, calls: 0 };
 // ── Antigravity CLI (agy) na koncie Google AI Pro JP (JP 2026-10-24): Gemini z wyszukiwarką Google, limity planu Pro zamiast 20 zapytań/dobę.
 // Uruchamiany w pustym katalogu /tmp/gq (agent nie widzi plików Quolino ani .env), bez kluczy API w środowisku, --sandbox.
 const AGY = '/opt/data/home/.local/bin/agy';
-let USE_AGY = !argv.includes('--no-agy') && existsSync(AGY), AGY_QUOTA = argv.includes('--claude-writes');
+let USE_AGY = !argv.includes('--no-agy') && existsSync(AGY) && !agyQuotaOut(), AGY_QUOTA = argv.includes('--claude-writes') || !!agyQuotaOut();
+if (agyQuotaOut()) rawLog(`limit Antigravity (AI Pro) wyczerpany do ${agyQuotaOut()} — pisze Claude`);
 function agy(prompt, label, { tools = true } = {}) {
   if (prompt.length > 120_000) prompt = prompt.slice(0, 120_000) + '\n\n[materiał skrócony do limitu]';
   return new Promise((resolve, reject) => {
@@ -123,7 +125,7 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
       try { return await agy(ask, label + (i > 1 ? ' (ponownie)' : ''), { tools: !!search }); }
       catch (e) {
         // limit AI Pro wyczerpany (JP 2026-10-26): bez ponawiania, do końca przebiegu pisze Claude (abonament), a nie darmowy klucz (20 zapytań/dobę)
-        if (/quota reached|upgrade your subscription|RESOURCE_EXHAUSTED/i.test(e.message)) { USE_AGY = false; AGY_QUOTA = true; log(`${label}: limit Antigravity (AI Pro) wyczerpany — dalej pisze Claude`); break; }
+        if (/quota reached|upgrade your subscription|RESOURCE_EXHAUSTED/i.test(e.message)) { agyQuotaHit(e.message); USE_AGY = false; AGY_QUOTA = true; log(`${label}: limit Antigravity (AI Pro) wyczerpany — dalej pisze Claude`); break; }
         log(`${label}: Antigravity nie odpowiedział (${e.message.slice(0, 160)})${i < 2 ? ' — ponawiam' : ' — zapas: klucz API'}`);
       }
     }
@@ -203,7 +205,7 @@ albo adresy, których jesteś pewien. JSON: {"wiki": [{"lang": "${WLANG}", "titl
 // Gemini pisze potem tekst wyłącznie z tego materiału. --research gemini = dawna droga (wyszukiwarka Gemini albo pakiet źródeł).
 const RESEARCHER = opt('--research') ?? (existsSync(AGY) && !argv.includes('--no-agy') ? 'agy' : 'claude');
 async function researchCall(prompt, topic, label) {
-  if (RESEARCHER === 'agy') {
+  if (RESEARCHER === 'agy' && USE_AGY) {
     log(`${label}: research — Gemini z Google (Antigravity, AI Pro)`);
     try {
       const r = await agy(`${prompt}
@@ -251,6 +253,7 @@ async function geminiJson(prompt, label) {
   let { text } = await gemini(prompt, { json: true, label });
   for (let i = 0; ; i++) {
     try { return asJson(text); } catch (e) {
+      try { const j = JSON.parse(repairJson(text)); log(`${label}: naprawa JSON w kodzie (${e.message.slice(0, 80)})`); return j; } catch {}   // bez wywołania AI
       writeFileSync(join(dir, `v2-bad-json-${label.replace(/[^a-z0-9]+/gi, '-')}-${i}.txt`), text);
       if (i >= 2) throw new Error(`${label}: niepoprawny JSON po 2 naprawach (${e.message})`);
       log(`${label}: niepoprawny JSON (${e.message}) — naprawa ${i + 1}/2`);
