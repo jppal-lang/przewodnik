@@ -756,6 +756,8 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
     history.push({ round, errors: next.errors?.length ?? 0, facts: next.facts ?? null, changes: ap.changes.length });
     const better = (next.errors?.length ?? 0) < before;
     rv = next;
+    // próg także przed zapisem rundy — w panelu mają być tylko błędy blokujące, reszta w ostrzeżeniach (Spello v3a 2026-10-26: zapisało 53 zamiast 26)
+    { const gr = await gateErrors(next.errors ?? []); next.warnings = [...(next.warnings ?? []), ...gr.soft.map(e => ({ ...e, problem: `[nie blokuje] ${e.problem}` }))]; next.errors = gr.block; next.verdict = gr.block.length ? 'fix' : 'ok'; }
     if (onRound) { next.before = { errors: first?.errors?.length ?? 0, warnings: (first?.warnings ?? []).length, facts: first?.facts ?? null }; next.rounds = history.slice(); await onRound(round, next, ap); }
     if (!better) { log(`${slug}: runda ${round} nie zmniejszyła liczby błędów — koniec pętli`); break; }
   }
