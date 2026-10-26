@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=30">
+<link rel="stylesheet" href="styles.css?v=31">
 <script src="i18n-ui.js?v=7"></script>
 <script src="trip-ui.js?v=10"></script>
 <script src="kid-reward.js?v=3"></script>
@@ -737,6 +737,7 @@ function render(d) {
 function accessBox(err) {
   var h = '<div class="qc-box qc-access" id="qcAccess">';
   h += '<h2 class="qc-section__title">' + esc(ui('access.full_title', 'Pełna wycieczka po zalogowaniu')) + '</h2>';
+  h += '<img class="qc-access__quo" src="/media/icons/quo-pelna-wycieczka-256.webp" srcset="/media/icons/quo-pelna-wycieczka-256.webp 1x, /media/icons/quo-pelna-wycieczka-512.webp 2x" width="128" height="128" alt="" decoding="async" loading="lazy">';   // Quo zaprasza do środka (ikony z #quo-ikony, JP 2026-10-25)
   h += '<p>' + esc(ui('access.full_text', 'Po zalogowaniu zobaczysz plan dnia z godzinami, mapę trasy, parking, misje i zagadki dla dzieci, punkty awaryjne, pełne opisy przystanków oraz legendy, ciekawostki i popkulturę. Konto jest bezpłatne.')) + '</p>';
   var next = encodeURIComponent(location.pathname + location.search);
   h += '<p class="qc-access__acts"><a class="qc-btn qc-btn--primary" href="/zaloguj.html?next=' + next + '#rejestracja">' + esc(ui('access.signup', 'Załóż konto')) + '</a> ' +
@@ -1093,7 +1094,7 @@ loadPage(currentLang);
 })();
 </script>
 <script src="motion.js?v=4" defer></script>
-<script src="report-issue.js?v=3" defer></script>
+<script src="report-issue.js?v=4" defer></script>
 <script src="opinion.js?v=3" defer></script>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>

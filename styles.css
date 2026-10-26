@@ -295,6 +295,7 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 
 /* stopka */
 .footer{padding:40px 0 48px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;font-size:17px;color:var(--muted)}
+.footer__quo{width:clamp(88px,18vw,112px);height:auto;margin-bottom:-4px}
 
 /* =====================================================================
    KRAJ / REGION
@@ -1274,3 +1275,28 @@ html.qk-lock{overflow:hidden}
 .nav-acc:hover{transform:translateY(-1px);box-shadow:var(--lift-2)}
 .nav-acc:focus-visible{outline:3px solid var(--azzurro);outline-offset:2px}
 .nav-acc.is-in{background:var(--azzurro);color:#fff}
+
+/* =====================================================================
+   QUO NA STRONACH (ikony z #quo-ikony, JP 2026-10-25)
+   ===================================================================== */
+/* nagłówek z Quo: kontakt, współpraca, prywatność, 404 */
+/* gdy najdłuższe słowo tytułu nie mieści się obok Quo, Quo przechodzi nad tytuł (wrap-reverse), zamiast łamać słowo */
+.page-head{display:flex;flex-wrap:wrap-reverse;align-items:center;gap:0 12px}
+.page-head h1{flex:1 1 0;min-width:min-content}
+.page-quo{flex:none;width:clamp(88px,22vw,140px);height:auto;margin:-8px -6px 0 auto}
+/* stan formularza: wysłano / nie udało się wysłać */
+.state-quo{display:block;width:clamp(96px,24vw,128px);height:auto;margin:0 auto 12px}
+.state-quo[hidden]{display:none}
+/* karta miasta: zapowiedź pełnej wycieczki dla gościa */
+.qc-access{display:flow-root}
+.qc-access__quo{float:right;width:clamp(88px,22vw,128px);height:auto;margin:-6px -4px 8px 12px}
+/* atlas: kafle „wkrótce” */
+.atlas-region--soon .atlas-region__art img{object-fit:contain}
+.atlas-soon__head{display:flex;align-items:flex-end;gap:12px;margin-bottom:12px}
+.atlas-soon__head h3{margin-bottom:10px}
+.atlas-soon__quo{flex:none;width:clamp(80px,18vw,104px);height:auto}
+/* strona 404 */
+.nf{max-width:680px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.55;color:var(--ink)}
+.nf h1{font-size:clamp(34px,7vw,56px);line-height:1.02;margin:.2em 0 .3em}
+.nf .lead{font-size:20px;margin-bottom:24px}
+.nf__acts{display:flex;flex-wrap:wrap;gap:10px}

@@ -226,7 +226,7 @@
       });
       (co.soonRegions || []).forEach(function (r) {
         var li = el('li', 'atlas-region atlas-region--soon');
-        li.innerHTML = '<span class="atlas-region__no">' + pad(no + 1) + '</span><span class="atlas-region__art"></span>' +
+        li.innerHTML = '<span class="atlas-region__no">' + pad(no + 1) + '</span><span class="atlas-region__art"><img class="atlas-region__quo" src="/media/icons/quo-wkrotce-128.webp" srcset="/media/icons/quo-wkrotce-128.webp 1x, /media/icons/quo-wkrotce-256.webp 2x" width="60" height="60" alt="" decoding="async" loading="lazy"></span>' +
           '<span class="atlas-region__txt"><span class="atlas-region__name">' + esc(r.name) + '</span><span class="atlas-region__meta">' + esc(ui('chip.soon', 'Wkrótce')) + '</span></span>';
         ol.appendChild(li);
       });
@@ -235,7 +235,8 @@
     });
     if (soon.length && !solo) {
       var sb = el('section', 'atlas-soon');
-      sb.innerHTML = '<h3>' + esc(ui('chip.soon', 'Wkrótce')) + '</h3><ul>' + soon.map(function (c) {
+      // Quo śpi na walizce: te kraje czekają na swoje wycieczki (ikony z #quo-ikony, JP 2026-10-25)
+      sb.innerHTML = '<div class="atlas-soon__head"><img class="atlas-soon__quo" src="/media/icons/quo-wkrotce-256.webp" srcset="/media/icons/quo-wkrotce-256.webp 1x, /media/icons/quo-wkrotce-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy"><h3>' + esc(ui('chip.soon', 'Wkrótce')) + '</h3></div><ul>' + soon.map(function (c) {
         return '<li data-country="' + c + '">' + esc(countries[c].name) + '</li>';
       }).join('') + '</ul>';
       index.appendChild(sb);

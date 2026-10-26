@@ -53,7 +53,7 @@
     var s = document.createElement('style'); s.id = 'qr-css';
     s.textContent = '.qr-open{appearance:none;border:0;background:none;padding:6px 0;margin-top:10px;cursor:pointer;' +
       'font:600 13px Archivo,system-ui,sans-serif;color:var(--muted,#5D6B82);text-decoration:underline;text-underline-offset:3px}' +
-      '.qr-form{margin-top:10px;padding:12px;border:1px solid var(--rule,#D3DDEA);border-radius:12px;background:var(--card,#fff)}' +
+      '.qr-form{display:flow-root;margin-top:10px;padding:12px;border:1px solid var(--rule,#D3DDEA);border-radius:12px;background:var(--card,#fff)}' +
       '.qr-form b{display:block;margin-bottom:8px;font:800 14px Archivo,system-ui,sans-serif}' +
       '.qr-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}' +
       '.qr-types label{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--rule,#D3DDEA);' +
@@ -65,8 +65,19 @@
       '.qr-row button{appearance:none;border:2px solid var(--ink,#0E1A2B);border-radius:10px;padding:6px 14px;' +
       'font:700 14px Archivo,system-ui,sans-serif;cursor:pointer;background:var(--ink,#0E1A2B);color:#fff}' +
       '.qr-row button.qr-x{background:#fff;color:var(--ink,#0E1A2B)}' +
-      '.qr-msg{font-size:13px;color:var(--muted,#5D6B82)}';
+      '.qr-msg{font-size:13px;color:var(--muted,#5D6B82)}' +
+      '.qr-quo{float:right;width:clamp(80px,20vw,104px);height:auto;margin:-4px -4px 6px 10px}';
     document.head.appendChild(s);
+  }
+
+  // Quo w zgłoszeniu (ikony z #quo-ikony, JP 2026-10-25): lupa → notes po wysłaniu, zmięta koperta przy błędzie
+  function quo(slug) {
+    return '<img class="qr-quo" src="/media/icons/quo-' + slug + '-256.webp" srcset="/media/icons/quo-' + slug + '-256.webp 1x, /media/icons/quo-' + slug +
+      '-512.webp 2x" width="104" height="104" alt="" decoding="async" loading="lazy">';
+  }
+  function setQuo(f, slug) {
+    var q = f.querySelector('.qr-quo'); if (!q) return;
+    q.src = '/media/icons/quo-' + slug + '-256.webp'; q.srcset = '/media/icons/quo-' + slug + '-256.webp 1x, /media/icons/quo-' + slug + '-512.webp 2x';
   }
 
   function form(stop, btn) {
@@ -75,7 +86,7 @@
     var types = Object.keys(L.types).map(function (k, i) {
       return '<label><input type="radio" name="qr-type-' + num + '" value="' + k + '"' + (k === 'other' ? ' checked' : '') + '>' + esc(L.types[k]) + '</label>';
     }).join('');
-    f.innerHTML = '<b>' + esc(L.title) + '</b><div class="qr-types">' + types + '</div>' +
+    f.innerHTML = quo('zglos') + '<b>' + esc(L.title) + '</b><div class="qr-types">' + types + '</div>' +
       '<textarea maxlength="1000" placeholder="' + esc(L.ph) + '"></textarea>' +
       '<div class="qr-row"><button type="button" class="qr-send">' + esc(L.send) + '</button>' +
       '<button type="button" class="qr-x">' + esc(L.cancel) + '</button><span class="qr-msg" aria-live="polite"></span></div>';
@@ -86,16 +97,16 @@
       var msg = f.querySelector('.qr-msg'), send = f.querySelector('.qr-send');
       var type = (f.querySelector('input[type=radio]:checked') || {}).value || 'other';
       if (ta.value.trim().length < 5) { ta.focus(); return; }
-      send.disabled = true;
+      send.disabled = true; setQuo(f, 'zglos');
       var h = { 'Content-Type': 'application/json' };
       if (KEY) { h.apikey = KEY; h.Authorization = 'Bearer ' + KEY; }
       fetch(API + '/rpc/report_issue', {
         method: 'POST', headers: h,
         body: JSON.stringify({ p_city: city(), p_stop: num, p_type: type, p_message: ta.value.trim(), p_lang: lang(), p_client: client() })
       }).then(function (r) {
-        if (r.ok) { f.innerHTML = '<span class="qr-msg">' + esc(L.ok) + '</span>'; return; }
+        if (r.ok) { f.innerHTML = quo('zgloszenie-dzieki') + '<span class="qr-msg">' + esc(L.ok) + '</span>'; return; }
         return r.json().catch(function () { return null; }).then(function (j) { throw new Error(j && j.message && lang() === 'pl' ? j.message : L.err); });
-      }).catch(function (e) { msg.textContent = e.message || L.err; send.disabled = false; });
+      }).catch(function (e) { setQuo(f, 'blad-wysylki'); msg.textContent = e.message || L.err; send.disabled = false; });
     });
   }
 
