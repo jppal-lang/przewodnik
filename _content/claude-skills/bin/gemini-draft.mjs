@@ -22,6 +22,7 @@ import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLin
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { triageErrors, gateErrors } from './jev.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
+import { whoIs, namesFromProblem } from './kimbyl.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -695,6 +696,11 @@ async function microFix(trip, blocks, errors) {
   if (!errors.length) return { done: new Set(), changes: [] };
   const items = errors.map((e, id) => ({ id, stop_key: e.stop_key ?? null, problem: String(e.problem).slice(0, 400), hint: e.fix ? String(e.fix).slice(0, 300) : undefined,
     material: researchSnippet(trip, e.stop_key ?? null, e.problem) || undefined }));
+  // „Kim był…” — krótki opis postaci z Wikipedii (bez AI) jako materiał do poprawki (JP 2026-10-26)
+  for (const it of items) for (const n of namesFromProblem(it.problem)) {
+    const w = await whoIs(n, { city: name }).catch(() => null);
+    if (w) it.material = `KIM BYŁ ${n} (Wikipedia ${w.lang}: ${w.title}, ${w.url}): ${w.text}${it.material ? '\n\n' + it.material : ''}`;
+  }
   // teksty raz na przystanek (kilka uwag do jednego przystanku nie powtarza jego treści)
   const TEXTS = {}; for (const it of items) TEXTS[it.stop_key ?? 'trasa'] ??= stopTexts(trip, it.stop_key).map(t => ({ path: t.path, text: t.text.slice(0, 1500) })).slice(0, 30);
   log(`${slug}: dopytanie — ${items.length} krótkich poprawek w jednym zapytaniu`);
@@ -702,7 +708,7 @@ async function microFix(trip, blocks, errors) {
 A) {"id": N, "quote": "fragment skopiowany ZNAK W ZNAK z jednego z tekstów", "replace": "poprawiony fragment, najwyżej 2 zdania; \"\" = usuń"}
 B) dla pól liczbowych i godzin w meta: {"id": N, "path": "meta.stops.<i>.time_label" albo "meta.city.duration_hours" itp., "value": nowa wartość}
 C) {"id": N, "skip": "dlaczego nie da się poprawić bez nowego faktu"} — gdy poprawka wymaga faktu, którego nie ma w MATERIALE ani w tekstach.
-Zasady: zmieniaj najmniej, jak się da (fragment = zdanie albo jego część). Nowe fakty WYŁĄCZNIE z pola "material". Bez długich myślników „—” i „–”.
+Zasady: zmieniaj najmniej, jak się da (fragment = zdanie albo jego część). „Kim był/była” (lekcja 9): quote = zdanie, w którym postać się pojawia, replace = to samo zdanie z krótkim wyjaśnieniem z materiału „KIM BYŁ” (kim był, kiedy żył, czym zasłynął — prosto, dla rodziny), bez innych zmian. Nowe fakty WYŁĄCZNIE z pola "material". Bez długich myślników „—” i „–”.
 Polszczyzna naturalna. Nie przepisuj całych akapitów. Odpowiedz wyłącznie JSON-em: {"fixes": [ … ]}. ${JSON_QUOTE_RULE}
 TEKSTY (wg przystanku; „trasa” = opis i plan całej trasy):
 ${JSON.stringify(TEXTS)}
