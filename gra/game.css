@@ -163,3 +163,86 @@ h2{font-size:30px}
   .celebrate-text b{font-size:24px;display:inline}
   .celebrate-text span{display:inline;margin-left:8px}
 }
+
+/* Poziomy, przebrania, mini-gry (v2) */
+.diff{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.diff-btn{min-height:64px;border-radius:14px;border:2px solid var(--rule);background:#fff;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;color:var(--ink);padding:6px}
+.diff-btn b{font-size:20px;font-weight:900}
+.diff-btn span{font-size:18px;color:var(--muted);font-weight:600}
+.diff-btn[aria-pressed="true"]{border-color:var(--azzurro);background:var(--azzurro);color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22)}
+.diff-btn[aria-pressed="true"] span{color:var(--azzurro-50)}
+.sub-label{margin:0;font-size:18px;font-weight:800;color:var(--ink2);text-align:left}
+.hats{display:flex;flex-wrap:wrap;gap:8px}
+.hat-btn{min-height:48px;padding:0 14px;border-radius:999px;border:2px solid var(--rule);background:#fff;font:inherit;font-size:18px;font-weight:700;cursor:pointer;color:var(--ink)}
+.hat-btn[aria-pressed="true"]{border-color:var(--verde);background:var(--verde-50);color:var(--verde)}
+.hat-btn:disabled{color:var(--muted);cursor:default;opacity:.7}
+.hud-photo{font-size:24px;background:var(--sun)!important}
+.organ-status{margin:0;font-size:19px;font-weight:700;color:var(--azzurro-ink);min-height:2.6em}
+.organ-pads{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.organ-pad{height:120px;border:3px solid #0E1A2B;border-radius:12px 12px 50% 50%;background:var(--c);cursor:pointer;transition:transform .12s,filter .12s}
+.organ-pad.lit{filter:brightness(1.8) saturate(.6);transform:translateY(6px) scale(1.04);box-shadow:0 0 24px var(--c)}
+.organ-pad:disabled{cursor:default}
+.mosaic{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:min(100%,300px);aspect-ratio:1;margin:0 auto;background:#0E1A2B;padding:4px;border-radius:12px}
+.mtile{border:0;border-radius:6px;background-color:#fff;background-size:300% 300%;cursor:pointer;min-height:64px}
+.mtile.empty{background:#2B3D5A;cursor:default}
+.stars{font-size:24px!important;color:#C99A2E;letter-spacing:2px;margin-top:2px!important}
+.stars .dim,.celebrate-text .dim{color:rgba(59,42,0,.25);font-style:normal}
+.sticker .meta{font-size:18px!important;font-weight:600!important;color:var(--muted)}
+.totals .new{color:var(--verde)}
+.photos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.photos img{width:100%;height:auto;border-radius:8px;box-shadow:0 2px 0 rgba(6,42,88,.2)}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.flash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+@media (max-width:560px){ .diff-btn b{font-size:19px} .organ-pad{height:96px} }
+@media (max-height:520px) and (orientation:landscape){ .organ-pad{height:72px} .mosaic{width:min(100%,220px)} }
+@media (prefers-reduced-motion:reduce){ .flash.go{animation:none} .organ-pad{transition:none} }
+
+/* Szybkie stukanie */
+.mash-stage{position:relative;height:200px;border-radius:14px;overflow:hidden;background:linear-gradient(#0D2445,#2B3D5A)}
+.mash-stage.push{background:linear-gradient(#8DBBEA,#E2EBF7 70%,#C9AE84 70%)}
+.mash-stage.bump{animation:mbump .12s}
+@keyframes mbump{50%{transform:translateY(2px)}}
+.mash-water{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(79,164,160,.85);border-top:3px solid #7CC8C4}
+.mash-rope{position:absolute;left:50%;top:0;bottom:0;width:5px;margin-left:-2px;background:#C99A60}
+.mash-rock{position:absolute;width:110px;height:110px;border-radius:50%;background:#9AA3AF;border:4px solid #3F4756;bottom:4%;left:22%;display:none}
+.mash-quo{position:absolute;width:88px;height:88px;object-fit:contain;left:50%;margin-left:-44px;bottom:0}
+.mash-stage.push .mash-rope{display:none}
+.mash-stage.push .mash-rock{display:block;left:auto;right:auto;margin-left:70px}
+.mash-stage.push .mash-quo{margin-left:0;bottom:4%}
+.mash-stage.push .mash-rock{transform:translateX(0)}
+.mash-threat{position:absolute;top:12%;left:92%;font-size:40px;line-height:1}
+.mash-stage.rope .mash-threat{display:none}
+.mash-meter{height:16px;border-radius:999px;background:var(--azzurro-50);overflow:hidden}
+.mash-bar{height:100%;width:0;background:var(--sun);transition:width .08s}
+.mash-tap-label{margin:0;text-align:center;font-size:30px;font-weight:900;color:var(--rosso);letter-spacing:.04em}
+.mash-btns{display:flex;justify-content:center;gap:16px}
+.mash-btn{min-width:96px;min-height:96px;border-radius:24px;border:3px solid var(--azzurro-deep);background:var(--azzurro);color:#fff;font:inherit;font-size:34px;font-weight:900;cursor:pointer;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;box-shadow:inset 0 -6px 0 rgba(0,0,0,.25)}
+.mash-btn:active{transform:translateY(3px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.mash-big{min-width:160px;min-height:120px;border-radius:50%/40%;background:var(--rosso);font-size:36px}
+.screen,.card,.mash-btns{touch-action:manipulation}
+@media (max-height:520px) and (orientation:landscape){ .mash-stage{height:110px} .mash-quo{width:60px;height:60px} .mash-rock{width:70px;height:70px} .mash-btn{min-height:72px} .mash-big{min-height:80px} .mash-tap-label{font-size:22px} }
+@media (prefers-reduced-motion:reduce){ .mash-stage.bump{animation:none} .mash-bar{transition:none} }
+@media (max-width:420px){
+  .hud{gap:4px;padding-left:6px;padding-right:6px}
+  .hud-left,.hud-right{gap:4px}
+  .hud-pill{padding:0 8px 0 6px;gap:4px;font-size:18px}
+  .hud-pill svg{width:22px;height:22px}
+  .hud-pill img{width:24px;height:24px}
+  .hud-btn{width:44px;height:44px}
+  .hud-power{width:44px}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .card-mash{width:min(100%,800px);display:grid;grid-template-columns:1fr 230px;column-gap:16px;row-gap:6px;align-items:center;padding:10px 16px}
+  .card-mash > *{grid-column:1}
+  .card-mash .kicker{grid-row:1}
+  .card-mash h2{grid-row:2;font-size:24px}
+  .card-mash .organ-status{grid-row:3;font-size:18px;min-height:0}
+  .card-mash .mash-stage{grid-row:4;height:120px}
+  .card-mash .mash-meter{grid-row:5}
+  .card-mash .mash-tap-label{grid-column:2;grid-row:1 / span 2}
+  .card-mash .mash-btns{grid-column:2;grid-row:3 / span 2}
+  .card-mash #mashRetry{grid-column:2;grid-row:5}
+  .card-mash #mashSkip{grid-column:2;grid-row:6}
+}

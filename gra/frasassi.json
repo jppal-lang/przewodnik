@@ -25,17 +25,63 @@
       "quests": [
         {
           "q": "Co kryje się w ścianach wąwozu przy parkingu?",
-          "answers": ["Kilometry korytarzy jaskiń", "Stary zamek rycerski", "Kopalnia złota"],
+          "answers": [
+            "Kilometry korytarzy jaskiń",
+            "Stary zamek rycerski",
+            "Kopalnia złota",
+            "Gniazda orłów"
+          ],
           "correct": 0,
           "hint": "Popatrz na ściany wąwozu: w środku są długie podziemne… korytarze!",
           "source": "Z parkingu widać ściany wąwozu — a w nich, niewidoczne, kryją się kilometry korytarzy."
         },
         {
           "q": "Co trzeba sprawdzić na biletach do jaskiń?",
-          "answers": ["Godzinę wejścia", "Kolor biletu", "Imię przewodnika"],
+          "answers": [
+            "Godzinę wejścia",
+            "Kolor biletu",
+            "Imię przewodnika",
+            "Pogodę na jutro"
+          ],
           "correct": 0,
           "hint": "Spóźnialscy zostają na parkingu. Liczy się czas!",
           "source": "Sprawdźcie godzinę na biletach. Spóźnialscy zostają na parkingu — grupa wchodzi bez nich."
+        },
+        {
+          "q": "Skąd odjeżdża dowóz pod samo wejście do jaskiń?",
+          "answers": [
+            "Z parkingu przy kasach",
+            "Z portu w Ankonie",
+            "Z dworca w Rzymie",
+            "Z lotniska"
+          ],
+          "correct": 0,
+          "hint": "Zaczynacie tam, gdzie zostawiacie auto i odbieracie bilety.",
+          "source": "Duży parking przy kasach i centrum obsługi w rejonie San Vittore — stąd odjeżdża dowóz pod samo wejście do jaskiń."
+        },
+        {
+          "q": "Ile czasu przed swoją godziną trzeba być przy kasach?",
+          "answers": [
+            "Minimum 45 minut",
+            "Minutę",
+            "Tydzień",
+            "Wcale nie trzeba"
+          ],
+          "correct": 0,
+          "hint": "Trzy kwadranse zapasu.",
+          "source": "Bądźcie przy kasach minimum 45 minut przed swoją godziną."
+        },
+        {
+          "q": "Jak zwiedza się jaskinie Frasassi?",
+          "answers": [
+            "Z przewodnikiem, w grupie",
+            "Samemu, po ciemku",
+            "Na rowerze",
+            "Pływając łódką"
+          ],
+          "correct": 0,
+          "hint": "Wchodzicie o godzinie z biletu razem z innymi.",
+          "source": "zwiedzanie o godzinie z biletu, z przewodnikiem, w grupie."
         }
       ]
     },
@@ -57,45 +103,123 @@
       "quests": [
         {
           "q": "Jak odkrywcy zmierzyli, jak głęboka jest przepaść?",
-          "answers": ["Liczyli sekundy spadania kamienia", "Spuścili długą miarkę", "Zapytali nietoperza"],
+          "answers": [
+            "Liczyli sekundy spadania kamienia",
+            "Spuścili długą miarkę",
+            "Zapytali nietoperza",
+            "Zgadywali na oko"
+          ],
           "correct": 0,
           "hint": "Wrzucili coś w szczelinę i słuchali, jak długo spada.",
           "source": "Odkrywcy zmierzyli głębokość przepaści, licząc sekundy spadania kamienia."
         },
         {
           "q": "Co rośnie z podłogi jaskini?",
-          "answers": ["Stalagmit", "Stalaktyt", "Grzyb"],
+          "answers": [
+            "Stalagmit",
+            "Stalaktyt",
+            "Grzyb",
+            "Kryształowa lampa"
+          ],
           "correct": 0,
           "hint": "Stalaktyt wisi z sufitu. A ten drugi rośnie z dołu…",
           "source": "Stalaktyt wisi z sufitu, stalagmit rośnie z podłogi."
         },
         {
           "q": "Co powstaje, gdy stalaktyt i stalagmit spotkają się w pół drogi?",
-          "answers": ["Kolumna", "Most", "Jeziorko"],
+          "answers": [
+            "Kolumna",
+            "Most",
+            "Jeziorko",
+            "Tunel"
+          ],
           "correct": 0,
           "hint": "Sopel z góry i sopel z dołu łączą się w jeden słup.",
           "source": "Jak spotkają się w pół drogi — powstaje kolumna."
         },
         {
           "q": "Jak szybko rośnie stalaktyt?",
-          "answers": ["Około milimetra na 10 lat", "Metr na rok", "Centymetr na dzień"],
+          "answers": [
+            "Około milimetra na 10 lat",
+            "Metr na rok",
+            "Centymetr na dzień",
+            "Kilometr na tydzień"
+          ],
           "correct": 0,
           "hint": "Bardzo, bardzo wolno — szybciej rosną paznokcie.",
           "source": "Stalaktyt rośnie około milimetra na... 10 lat."
         },
         {
           "q": "W którym roku odkryto jaskinie Frasassi?",
-          "answers": ["W 1971", "W 1828", "W 1060"],
+          "answers": [
+            "W 1971",
+            "W 1828",
+            "W 1060",
+            "W 2020"
+          ],
           "correct": 0,
           "hint": "Odkryto je za życia waszych dziadków.",
           "source": "Odkryte dopiero w 1971 roku przez grupę speleologów z Ankony…"
         },
         {
           "q": "Jaka temperatura jest w jaskini przez cały rok?",
-          "answers": ["14°C — bluzy!", "30°C — upał!", "Mróz poniżej zera"],
+          "answers": [
+            "14°C — bluzy!",
+            "30°C — upał!",
+            "Mróz poniżej zera",
+            "50°C — jak w saunie"
+          ],
           "correct": 0,
           "hint": "Chłodno, ale nie mroźno. Przyda się bluza.",
           "source": "w jaskini stałe 14°C — bluzy!"
+        },
+        {
+          "q": "Jak nazwano pierwszą ogromną salę jaskini?",
+          "answers": [
+            "Abisso Ancona",
+            "Sala Rzymska",
+            "Grota Smoka",
+            "Pokój Króla"
+          ],
+          "correct": 0,
+          "hint": "Na cześć miasta, z którego byli odkrywcy.",
+          "source": "odkryto salę nazwaną na cześć ich miasta Abisso Ancona"
+        },
+        {
+          "q": "Co zmieściłoby się w pierwszej sali jaskini?",
+          "answers": [
+            "Katedra z Mediolanu",
+            "Tylko jeden samochód",
+            "Mały namiot",
+            "Nic, jest malutka"
+          ],
+          "correct": 0,
+          "hint": "Coś bardzo wysokiego, z iglicami.",
+          "source": "Pierwsza sala zmieściłaby katedrę z Mediolanu."
+        },
+        {
+          "q": "Jak nazywają się stalagmity wysokości kilkunastu metrów?",
+          "answers": [
+            "Giganci",
+            "Krasnale",
+            "Sople",
+            "Grzybki"
+          ],
+          "correct": 0,
+          "hint": "Są ogromne — jak olbrzymy z bajki.",
+          "source": "„Giganci” — stalagmity wysokości kilkunastu metrów"
+        },
+        {
+          "q": "Co buchało ze szczeliny, którą znalazł odkrywca?",
+          "answers": [
+            "Zimne powietrze",
+            "Gorąca para",
+            "Dym z ogniska",
+            "Bańki mydlane"
+          ],
+          "correct": 0,
+          "hint": "Znak wielkiej, chłodnej pustki w środku.",
+          "source": "natrafił na wąską szczelinę w skale, z której buchało zimne powietrze"
         }
       ]
     },
@@ -116,17 +240,75 @@
       "quests": [
         {
           "q": "Ile lat ma kościół San Vittore?",
-          "answers": ["Prawie 1000 lat", "Około 10 lat", "Około 100 lat"],
+          "answers": [
+            "Prawie 1000 lat",
+            "Około 10 lat",
+            "Około 100 lat",
+            "Został zbudowany w zeszłym roku"
+          ],
           "correct": 0,
           "hint": "To bardzo, bardzo stary kościół — prawie tysiąc świeczek na torcie!",
           "source": "Ten kościół ma prawie 1000 lat i zero ozdób — sama geometria kamienia."
         },
         {
           "q": "Kto wyrzeźbił jaskinie Frasassi?",
-          "answers": ["Rzeczka Sentino — kropla po kropli", "Górnicy z kilofami", "Wiatr w jedną noc"],
+          "answers": [
+            "Rzeczka Sentino — kropla po kropli",
+            "Górnicy z kilofami",
+            "Wiatr w jedną noc",
+            "Krety"
+          ],
           "correct": 0,
           "hint": "Przechodzisz przez nią po mostku. Woda pracowała miliony lat.",
           "source": "Ta mała rzeczka wyrzeźbiła całe jaskinie, które widzieliście. Kropla po kropli, przez miliony lat."
+        },
+        {
+          "q": "Co wyryto w kamieniu przy ołtarzu w San Vittore?",
+          "answers": [
+            "Symbol ósemki albo nieskończoności",
+            "Mapę skarbu",
+            "Podpis króla",
+            "Zegar słoneczny"
+          ],
+          "correct": 0,
+          "hint": "Wygląda jak cyfra, którą można rysować bez końca.",
+          "source": "Przy ołtarzu, po lewej stronie, wyryto w kamieniu symbol ósemki albo znaku nieskończoności"
+        },
+        {
+          "q": "Jakiego koloru jest rzeczka Sentino?",
+          "answers": [
+            "Zielonkawa",
+            "Czerwona",
+            "Czarna",
+            "Fioletowa"
+          ],
+          "correct": 0,
+          "hint": "Barwią ją minerały — kolor trawy.",
+          "source": "kamienny mostek nad rzeczką Sentino, zielonkawą od minerałów"
+        },
+        {
+          "q": "Ile ozdób ma kościół San Vittore?",
+          "answers": [
+            "Zero — sama geometria kamienia",
+            "Tysiąc złotych figur",
+            "Pełno kolorowych obrazów",
+            "Lampki na każdym oknie"
+          ],
+          "correct": 0,
+          "hint": "To bardzo skromny, surowy kościół.",
+          "source": "Ten kościół ma prawie 1000 lat i zero ozdób — sama geometria kamienia."
+        },
+        {
+          "q": "Co jest w budynku obok opactwa?",
+          "answers": [
+            "Małe muzeum speleologiczne",
+            "Kino",
+            "Basen",
+            "Sklep z zabawkami"
+          ],
+          "correct": 0,
+          "hint": "Muzeum o jaskiniach i ich badaczach.",
+          "source": "w budynku obok małe muzeum speleologiczne"
         }
       ]
     },
@@ -147,24 +329,75 @@
       "quests": [
         {
           "q": "Kto wpadł na pomysł kościoła w jaskini?",
-          "answers": ["Papież, który tu się urodził", "Król na białym koniu", "Rybak z rzeki"],
+          "answers": [
+            "Papież, który tu się urodził",
+            "Król na białym koniu",
+            "Rybak z rzeki",
+            "Kapitan statku"
+          ],
           "correct": 0,
           "hint": "To ktoś bardzo ważny w Kościele, kto pochodził właśnie z tych stron.",
           "source": "Kto pierwszy wpadł na taki pomysł? Papież, który tu się urodził."
         },
         {
           "q": "Co jest obok świątyni, wykute w skale?",
-          "answers": ["Klasztorek, w którym mieszkali ludzie", "Basen", "Wieża z zegarem"],
+          "answers": [
+            "Klasztorek, w którym mieszkali ludzie",
+            "Basen",
+            "Wieża z zegarem",
+            "Zjeżdżalnia"
+          ],
           "correct": 0,
           "hint": "Ludzie mieszkali tam w środku góry — mur łączy się ze skałą.",
           "source": "Obok jest klasztorek wykuty w skale — mieszkali w nim ludzie."
         },
         {
           "q": "Jaki kształt ma świątynia Valadiera?",
-          "answers": ["Ośmioboczny", "Okrągły jak beczka", "Trójkątny"],
+          "answers": [
+            "Ośmioboczny",
+            "Okrągły jak beczka",
+            "Trójkątny",
+            "Kwadratowy jak pudełko"
+          ],
           "correct": 0,
           "hint": "Policz boki: tyle, ile nóg ma pająk.",
           "source": "…neoklasyczna, ośmioboczna świątynia z białego trawertynu stoi wewnątrz otworu ogromnej groty…"
+        },
+        {
+          "q": "Z jakiego kamienia zbudowano świątynię Valadiera?",
+          "answers": [
+            "Z białego trawertynu",
+            "Z czerwonej cegły",
+            "Z drewna",
+            "Z lodu"
+          ],
+          "correct": 0,
+          "hint": "Jasny, biały kamień.",
+          "source": "ośmioboczna świątynia z białego trawertynu stoi wewnątrz otworu ogromnej groty"
+        },
+        {
+          "q": "Kto mieszkał w pustelni wykutej w skale?",
+          "answers": [
+            "Benedyktyni",
+            "Piraci",
+            "Rycerze",
+            "Nietoperze-detektywi"
+          ],
+          "correct": 0,
+          "hint": "Zakonnicy, mnisi.",
+          "source": "mieszkali w nim benedyktyni"
+        },
+        {
+          "q": "Kiedy przy świątyni jest najlepsze światło?",
+          "answers": [
+            "Do południa",
+            "Tylko w nocy",
+            "O północy",
+            "Po 15:00"
+          ],
+          "correct": 0,
+          "hint": "Po 15:00 grota tonie w cieniu.",
+          "source": "najlepsze światło do południa — po 15:00 grota tonie w cieniu"
         }
       ]
     }
