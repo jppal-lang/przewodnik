@@ -941,6 +941,7 @@ async function reviseMain() {
     if (!isQ(c)) { ask.push(c); continue; }
     const it = itemOf(c); if (it) answered.add(`${it.stop_key ?? ''}|${it.problem}`);
     if (/^✓/.test(c.body.trim()) && it?.old) lit.push({ find: it.old, replace: it.new ?? '' });
+    else if (/^✂/.test(c.body.trim()) && it?.old) lit.push({ find: it.old, replace: '' });   // „Usuń fragment” (panel, JP 2026-10-26)
     else if (/^✗/.test(c.body.trim())) continue;
     else ask.push({ ...c, field: null, field_label: 'pytanie z kontroli', body: `Pytanie z kontroli: ${it?.problem ?? c.field_label}${it?.old ? ` (fragment: „${it.old}”)` : ''}. Decyzja JP: ${c.body}` });
   }
