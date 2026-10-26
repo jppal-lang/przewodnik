@@ -3,6 +3,11 @@
 import { db } from './lib.mjs';
 const a = process.argv.slice(2), slug = a[0], opt = (n) => { const i = a.indexOf(n); return i < 0 ? null : a[i + 1]; };
 const c = await db();
+if (a.includes('--info')) {   // wątek Discorda miasta i lista wersji
+  const t = await c.query('SELECT slug, discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(e => ({ rows: [{ err: e.message }] }));
+  const v = await c.query(`SELECT version, status, content->>'label' AS label, content->>'workflow' AS wf, jsonb_array_length(coalesce(review->'errors','[]')) AS err, created_at::date AS d FROM public.city_versions WHERE city_slug = $1 ORDER BY version`, [slug]);
+  console.log(JSON.stringify(t.rows)); v.rows.forEach(x => console.log(JSON.stringify(x))); await c.end(); process.exit(0);
+}
 const { rows: [r] } = await c.query(opt('--v') ? `SELECT version, content->>'label' AS label, review, trip FROM public.city_versions WHERE city_slug=$1 AND version=$2`
   : `SELECT version, content->>'label' AS label, review, trip FROM public.city_versions WHERE city_slug=$1 ORDER BY version DESC LIMIT 1`, opt('--v') ? [slug, +opt('--v')] : [slug]);
 await c.end();
