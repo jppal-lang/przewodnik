@@ -1,0 +1,186 @@
+{
+  "_golden": "Wzorcowa wycieczka do testów regresji (bin/golden.test.mjs) — kształt {meta, content} z gemini-draft.mjs (SKELETON/writeTrip), treść ze starej strony wlochy/marche/frasassi.html. Współrzędne przybliżone. Nie publikować.",
+  "meta": {
+    "doc": { "version": "v1", "generated_at": "2026-10-26T00:00:00Z" },
+    "city": {
+      "slug": "frasassi", "country": "it", "region_slug": "marche", "url_slug": "grotte-di-frasassi",
+      "lat": 43.4012, "lon": 12.9658, "duration_type": "half_day", "duration_hours": 3,
+      "bandana_color": "#2E6B5E", "wiki_article": "Grotte di Frasassi", "wiki_lang": "it", "sort_order": 3, "status": "draft"
+    },
+    "stops": [
+      {
+        "stop_key": "parking-san-vittore", "stop_number": 1, "category": "parking", "optional": false, "sunset_spot": false,
+        "lat": 43.4009, "lon": 12.9663, "time_label": "09:15", "visit_duration": "30", "duration_min": 30,
+        "price": null, "price_status": "unverified", "opening_hours": null, "hours_status": "unverified", "ztl": null,
+        "year_built": null, "wiki_article": null,
+        "maps_query": "Parcheggio Grotte di Frasassi biglietteria, San Vittore delle Chiuse, Genga, Italia",
+        "verify_url": "https://www.frasassi.com", "whatsapp": null, "website": "https://www.frasassi.com", "phone": "+39 0732 97211",
+        "rating": null, "reviews_count": null, "reservation": null, "parking_cost": "sprawdź na miejscu",
+        "sources": ["https://www.frasassi.com"]
+      },
+      {
+        "stop_key": "grotte-frasassi", "stop_number": 2, "category": "monument", "optional": false, "sunset_spot": false,
+        "lat": 43.4006, "lon": 12.9619, "time_label": "10:00", "visit_duration": "75", "duration_min": 75,
+        "price": null, "price_status": "unverified", "opening_hours": null, "hours_status": "unverified", "ztl": null,
+        "year_built": "odkryte 1971", "wiki_article": "Grotte di Frasassi",
+        "maps_query": "Grotte di Frasassi, Genga, Italia", "verify_url": "https://www.frasassi.com",
+        "whatsapp": null, "website": "https://www.frasassi.com", "phone": "+39 0732 97211",
+        "rating": null, "reviews_count": null, "reservation": "recommended", "parking_cost": null,
+        "sources": ["https://www.frasassi.com", "https://it.wikipedia.org/wiki/Grotte_di_Frasassi"]
+      },
+      {
+        "stop_key": "abbazia-san-vittore", "stop_number": 3, "category": "church", "optional": false, "sunset_spot": false,
+        "lat": 43.4013, "lon": 12.9652, "time_label": "12:00", "visit_duration": "20", "duration_min": 20,
+        "price": null, "price_status": "unverified", "opening_hours": null, "hours_status": "unverified", "ztl": null,
+        "year_built": "1060-1080", "wiki_article": "Abbazia di San Vittore alle Chiuse",
+        "maps_query": "Abbazia di San Vittore alle Chiuse, Genga, Italia",
+        "verify_url": "https://it.wikipedia.org/wiki/Abbazia_di_San_Vittore_alle_Chiuse",
+        "whatsapp": null, "website": null, "phone": null,
+        "rating": null, "reviews_count": null, "reservation": null, "parking_cost": null,
+        "sources": ["https://it.wikipedia.org/wiki/Abbazia_di_San_Vittore_alle_Chiuse"]
+      },
+      {
+        "stop_key": "ponte-sentino", "stop_number": 4, "category": "viewpoint", "optional": true, "sunset_spot": false,
+        "lat": 43.4016, "lon": 12.9649, "time_label": "12:30", "visit_duration": "30", "duration_min": 30,
+        "price": null, "price_status": "unverified", "opening_hours": null, "hours_status": "unverified", "ztl": null,
+        "year_built": null, "wiki_article": null,
+        "maps_query": "Ponte sul Sentino, San Vittore delle Chiuse, Genga, Italia",
+        "verify_url": "https://it.wikipedia.org/wiki/Sentino",
+        "whatsapp": null, "website": null, "phone": null,
+        "rating": null, "reviews_count": null, "reservation": null, "parking_cost": null,
+        "sources": ["https://it.wikipedia.org/wiki/Sentino"]
+      },
+      {
+        "stop_key": "tempio-valadier", "stop_number": 5, "category": "church", "optional": true, "sunset_spot": false,
+        "lat": 43.4037, "lon": 12.9626, "time_label": "13:15", "visit_duration": "60", "duration_min": 60,
+        "price": null, "price_status": "unverified", "opening_hours": null, "hours_status": "unverified", "ztl": null,
+        "year_built": "1817", "wiki_article": "Tempio del Valadier",
+        "maps_query": "Tempio del Valadier, Genga, Italia",
+        "verify_url": "https://it.wikipedia.org/wiki/Tempio_del_Valadier",
+        "whatsapp": null, "website": null, "phone": null,
+        "rating": null, "reviews_count": null, "reservation": null, "parking_cost": null,
+        "sources": ["https://it.wikipedia.org/wiki/Tempio_del_Valadier"]
+      }
+    ],
+    "day_plan": [
+      { "stop_key": "parking-san-vittore", "time_label": "09:15", "duration_min": 30 },
+      { "stop_key": "grotte-frasassi", "time_label": "10:00", "duration_min": 75 },
+      { "stop_key": "abbazia-san-vittore", "time_label": "12:00", "duration_min": 20 },
+      { "stop_key": "ponte-sentino", "time_label": "12:30", "duration_min": 30 },
+      { "stop_key": "tempio-valadier", "time_label": "13:15", "duration_min": 60 }
+    ],
+    "emergency": [
+      { "type": "toilet", "maps_query": "Grotte di Frasassi biglietteria, San Vittore delle Chiuse, Genga, Italia" },
+      { "type": "playground", "maps_query": "Abbazia di San Vittore alle Chiuse, Genga, Italia" },
+      { "type": "pharmacy", "maps_query": "Farmacia Dr. Max, Via Giuseppe Miliani 2, Fabriano, Italia" },
+      { "type": "hospital", "maps_query": "Ospedale Engles Profili, Via Stelluti Scala 26, Fabriano, Italia" }
+    ]
+  },
+  "content": {
+    "lang": "pl",
+    "city": {
+      "title": "Jaskinie Frasassi",
+      "region_label": "Marche",
+      "subtitle": "Podziemna katedra, romańskie opactwo i świątynia w skalnej paszczy",
+      "lead": "Jaskinie odkryto dopiero w 1971 roku. Grupa speleologów z Ankony wrzuciła kamień w wąską szczelinę i słuchała, jak długo spada. Spadał długo, a pierwsza sala zmieściłaby katedrę z Mediolanu.",
+      "good_to_know": "W jaskini jest stale 14 stopni, więc bluzy dla wszystkich, nawet w upale. Bilety na konkretną godzinę wejścia kupcie wcześniej na frasassi.com.",
+      "hero_note": null,
+      "local_food": "Kanapki nad rzeką Sentino po wyjściu z jaskini; przy kasach jest bar."
+    },
+    "stops": {
+      "parking-san-vittore": {
+        "name": "Parking przy kasach (San Vittore)",
+        "desc_paragraphs": [
+          "Duży parking jest przy kasach i centrum obsługi w rejonie San Vittore. Stąd odjeżdża dowóz pod samo wejście do jaskiń, więc nie kombinujcie z podjeżdżaniem bliżej, bo ruch w wąwozie jest ograniczony.",
+          "Kolejność na miejscu: kasa albo odbiór biletów kupionych online, potem dowóz do wejścia i zwiedzanie o godzinie z biletu, z przewodnikiem, w grupie. Bądźcie przy kasach co najmniej 45 minut przed swoją godziną."
+        ],
+        "kids_box": null,
+        "hint": null,
+        "local_flavor": null,
+        "practical_note": "Przy kasach bar, toalety i sklepik; dowóz w cenie biletu.",
+        "dress_code": null,
+        "photo_task": "Ściana wąwozu z parkingu jako zdjęcie „przed”: po wyjściu podpiszecie, co kryło się w środku."
+      },
+      "grotte-frasassi": {
+        "name": "Grotte di Frasassi",
+        "desc_paragraphs": [
+          "25 września 1971 roku Rolando Silvestri, speleolog z klubu Gruppo Speleologico Marchigiano CAI w Ankonie, natrafił na wąską szczelinę w skale, z której wiało zimne powietrze. To był pewny znak, że w środku jest wielka pustka. Ekipa pod wodzą Giancarla Cappanery wrzuciła w otwór kamień i liczyła sekundy do uderzenia, a wynik dał głębię ponad 120 metrów.",
+          "Gdy pierwszy z nich zjechał na linie, latarka nie sięgnęła ani ścian, ani stropu. Salę nazwano na cześć ich miasta Abisso Ancona: ma 180 metrów długości, 120 szerokości i blisko 200 wysokości. W jej objętości, ponad 2 miliony metrów sześciennych, zmieściłaby się katedra mediolańska razem z iglicami.",
+          "Trasa turystyczna to około 1,5 kilometra chodników i mniej więcej 75 minut zwiedzania z przewodnikiem. Po drodze jest Sala 200, kryształowe jeziorka, Wielki Kanion, Sala Świec z formacjami jak zastygłe świeczniki i „Giganci”, czyli stalagmity wysokie na kilkanaście metrów. Wszystko jest oświetlone punktowo, a przewodnik mówi po włosku, zwykle ze streszczeniem po angielsku.",
+          "Praktycznie: w środku przez cały rok jest 14 stopni i wilgotno, więc bluzy są obowiązkowe dla wszystkich, choćby na zewnątrz było 35. Buty na płaskiej, przyczepnej podeszwie, bo chodniki bywają mokre. Wózki nie wjadą, ale dziewięciolatek przejdzie trasę bez wysiłku, schodów jest trochę, ale bez dramatu."
+        ],
+        "kids_box": "Znajdźcie kolumnę, czyli miejsce, gdzie stalaktyt z sufitu spotkał się ze stalagmitem z podłogi.",
+        "hint": "Stalaktyt wisi z sufitu, stalagmit rośnie z podłogi. Patrzcie tam, gdzie oba sięgają do siebie.",
+        "local_flavor": null,
+        "practical_note": "Bilet płatny, aktualne ceny na frasassi.com.",
+        "dress_code": null,
+        "photo_task": "Jeśli wolno fotografować: „Giganci” z człowiekiem w kadrze dla skali, bez flesza."
+      },
+      "abbazia-san-vittore": {
+        "name": "San Vittore alle Chiuse",
+        "desc_paragraphs": [
+          "Przy samym parkingu stoi opactwo San Vittore alle Chiuse, budowane w latach 1060-1080. To jeden z najczystszych przykładów romanizmu w Marche, a od 1902 roku pomnik narodowy Włoch. Nie jest dodatkiem do jaskiń, tylko osobnym celem, dla którego trzeba zostawić plecaki w aucie i wejść do środka.",
+          "Kościół ma plan krzyża greckiego wpisanego w kwadrat i niemal zupełnie gołe, kamienne ściany. Nad środkiem wznosi się przysadzista, ośmioboczna kopuła oparta na pendentywach, czyli trójkątnych przejściach z kwadratu do koła. W środku panuje mrok i chłód, więc po jaskini oczy szybko przyzwyczajają się do półcienia.",
+          "Przy ołtarzu, po lewej stronie, ktoś wyrył w kamieniu symbol przypominający ósemkę albo znak nieskończoności. Nikt nie wie, kto go zostawił ani po co, i właśnie ta zagadka najlepiej działa na dzieci. Zanim podejdziecie, dajcie im chwilę, żeby same znalazły znak, zanim ktoś dorosły go pokaże.",
+          "Opactwo należało do benedyktynów, którzy przez stulecia gospodarowali w wąwozie rzeki Sentino. W budynku obok działa dziś małe muzeum speleologiczne z mapami korytarzy i sprzętem pierwszych grotołazów. Dzięki temu łatwo połączyć dwie opowieści: tysiącletnie dzieje mnichów i zaledwie półwieczną przygodę odkrywców jaskini.",
+          "Wnętrze jest skromne, ale akustyka robi wrażenie: wystarczy szept pod kopułą, żeby dźwięk wrócił z każdej strony. Dzieci zwykle od razu to sprawdzają, więc umówcie się wcześniej na ciche słowa. Ławki stoją tylko w części nawy, reszta przestrzeni jest pusta i dobrze widać w niej kształt krzyża.",
+          "Od strony drogi budynek wygląda surowo, a najciekawsza bryła kryje się od tyłu, gdzie widać półkoliste absydy i masywną wieżę. Obejdźcie opactwo dookoła po trawie, zanim wejdziecie do muzeum. Z tej strony najlepiej rozumie się, jak prosta geometria składa się w jedną, zwartą całość bez żadnych ozdób."
+          ,"Praktycznie: wstęp jest wolny, a wizyta zajmuje kwadrans, chyba że dzieci wciągnie szukanie znaku przy ołtarzu. Po wyjściu najbliżej jest mostek na Sentino, gdzie można usiąść z kanapkami, zdjąć bluzy po chłodnej jaskini i spokojnie odpocząć przed podejściem do świątyni w grocie."
+        ],
+        "kids_box": "Policzcie okna w kościele i znajdźcie w kamieniu przy ołtarzu tajemniczy znak.",
+        "hint": "Znak jest po lewej stronie ołtarza, nisko, wyryty w kamieniu. Okien jest tak mało, że wystarczą palce.",
+        "local_flavor": null,
+        "practical_note": "Wstęp wolny; obok małe muzeum speleologiczne.",
+        "dress_code": "zakryte ramiona i kolana",
+        "photo_task": "Opactwo od strony tyłu, z absydami i wieżą w jednym kadrze."
+      },
+      "ponte-sentino": {
+        "name": "Mostek na Sentino",
+        "desc_paragraphs": [
+          "Obok opactwa San Vittore alle Chiuse przez rzeczkę Sentino przerzucono kamienny mostek. Woda jest zielonkawa od minerałów, a przy brzegu łatwo znaleźć płaski kamień na kanapki i moczenie stóp po chłodnych podziemiach. To dobre miejsce na przerwę między jaskinią a podejściem do świątyni, bo jest cień, trawa i spokój.",
+          "Rzeka to rzeźbiarka całego kompleksu: to jej woda przez miliony lat wypłukała jaskinie, którymi właśnie szliście. Z mostku dobrze widać opactwo odbite w wodzie, zwłaszcza w spokojny dzień bez wiatru. Jeśli dzieci mają jeszcze siłę, niech rzucą patyk z jednej strony mostu i sprawdzą, kiedy wypłynie z drugiej. Przy niskiej wodzie widać na dnie gładkie, okrągłe kamienie, które rzeka toczyła przez setki lat, aż straciły wszystkie kanty. Dzieci zwykle chcą zabrać jeden do domu, więc umówcie się, że zostaje tylko zdjęcie."
+        ],
+        "kids_box": "Rzućcie patyk z jednej strony mostu i policzcie, po ilu sekundach wypłynie z drugiej.",
+        "hint": "Stańcie po stronie, z której płynie woda. Najszybciej płynie środek nurtu.",
+        "local_flavor": "Kanapki nad Sentino to tutejszy rytuał po jaskini.",
+        "practical_note": null,
+        "dress_code": null,
+        "photo_task": "Opactwo odbite w Sentino od strony mostku: symetria kamienia i wody."
+      },
+      "tempio-valadier": {
+        "name": "Tempio del Valadier",
+        "desc_paragraphs": [
+          "Na końcu asfaltowej ścieżki w głębi wąwozu czeka widok, w który trudno uwierzyć. Neoklasyczna, ośmioboczna świątynia z białego trawertynu stoi wewnątrz otworu ogromnej groty, jak perła w rozchylonej muszli. Podejście jest strome, ale krótkie, a dzieci zwykle biegną pierwsze, bo chcą zobaczyć, co kryje skała.",
+          "Długo powtarzano, że świątynię zamówił w 1828 roku papież Leon XII, pochodzący właśnie stąd, z rodu della Genga, u słynnego rzymskiego architekta Giuseppe Valadiera. Badania archiwalne z 2016 roku przesuwają jednak datę na rok 1817. Budowę przypisują lokalnym budowniczym: Carlo Donatiemu, Tommasowi Zappatiemu i Pietrowi Ghinellemu.",
+          "Valadier najpewniej nigdy tu nie postawił stopy, a jego nazwisko zostało przy świątyni tylko z przyzwyczajenia. To dobry przykład na rozmowę z dziećmi o tym, skąd wiemy, kto co zbudował. Czasem jedna stara kartka w archiwum zmienia opowieść powtarzaną przez dwieście lat i trzeba poprawić tablice.",
+          "Głębiej w tej samej grocie kryje się coś starszego: pustelnia Santa Maria infra Saxa, klasztorek wykuty częściowo w litej skale. Wspominają go dokumenty już z 1029 roku. Mieszkali w nim benedyktyni, którzy zbudowali go, by przechować spaloną w pożarze figurę Madonny, i do dziś widać ślady ich pracy w kamieniu.",
+          "Zestawienie obu budowli, wypolerowanego klasycyzmu i surowej nory w kamieniu, to dobra lekcja architektury na kwadrans. Pokażcie dzieciom, gdzie kończy się mur, a zaczyna góra. W pustelni ta granica prawie znika, a w świątyni jest ostra jak linijka, bo każdy blok trawertynu został równo przycięty.",
+          "Praktycznie: wstęp jest wolny, a najlepsze światło jest do południa, bo po 15:00 grota tonie w cieniu. Ścieżka jest asfaltowa, więc da się ją pokonać w zwykłych butach. Weźcie wodę, bo przy samej świątyni nie ma ani kiosku, ani kranu z wodą pitną, a podejście w upale męczy także dorosłych. Na górze jest kilka ławek w cieniu skały, więc tam zróbcie przerwę, zanim zejdziecie tą samą drogą."
+        ],
+        "kids_box": "Sprawdźcie, gdzie w pustelni kończy się mur zbudowany przez ludzi, a zaczyna lita skała.",
+        "hint": "Patrzcie na łączenie ściany z sufitem groty: tam kamień zmienia kolor i fakturę.",
+        "local_flavor": null,
+        "practical_note": "Podejście strome, ale krótkie i asfaltowe.",
+        "dress_code": null,
+        "photo_task": "Świątynia w skalnej paszczy z dołu ścieżki, cała bryła w otworze groty i człowiek dla skali."
+      }
+    },
+    "day_plan": {
+      "parking-san-vittore": "09:15 Parking i kasy, odbiór biletów",
+      "grotte-frasassi": "10:00 Wejście do jaskiń o godzinie z biletu",
+      "abbazia-san-vittore": "12:00 San Vittore alle Chiuse",
+      "ponte-sentino": "12:30 Kanapki nad Sentino",
+      "tempio-valadier": "13:15 Podejście do świątyni Valadiera"
+    },
+    "emergency": {
+      "1": { "label": "Toalety", "description": "Przy kasach i centrum obsługi, San Vittore delle Chiuse." },
+      "2": { "label": "Plac zabaw", "description": "Park publiczny przy opactwie San Vittore, kilka kroków od kas." },
+      "3": { "label": "Apteka", "description": "Farmacia Dr. Max, Via Giuseppe Miliani 2, Fabriano." },
+      "4": { "label": "Szpital", "description": "Ospedale Engles Profili, Via Stelluti Scala 26, Fabriano." }
+    },
+    "_notes": [
+      { "stop_key": "parking-san-vittore", "field": "a", "note": "parking_cost niepotwierdzony: zasady parkowania zmieniają się sezonowo, sprawdź na miejscu" },
+      { "stop_key": "tempio-valadier", "field": "b", "note": "datowanie 1817 i budowniczowie według badań archiwalnych z 2016 roku; tradycyjnie 1828 i Valadier" }
+    ]
+  }
+}

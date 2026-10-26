@@ -1,0 +1,24 @@
+{
+  "_golden": "Wzorcowy rekord ops.stop_research (przypisy [n]) dla przystanku ponte-sentino z frasassi.trip.json — do testów validateStop/normalizeRecord.",
+  "stop_key": "ponte-sentino",
+  "marked": {
+    "desc_paragraphs": [
+      "Obok opactwa San Vittore alle Chiuse przez rzeczkę Sentino przerzucono kamienny mostek [1]. Woda jest zielonkawa od minerałów, a przy brzegu łatwo znaleźć płaski kamień na kanapki i moczenie stóp po chłodnych podziemiach. To dobre miejsce na przerwę między jaskinią a podejściem do świątyni, bo jest cień, trawa i spokój.",
+      "Rzeka to rzeźbiarka całego kompleksu: to jej woda przez miliony lat wypłukała jaskinie, którymi właśnie szliście [2]. Z mostku dobrze widać opactwo odbite w wodzie, zwłaszcza w spokojny dzień bez wiatru. Jeśli dzieci mają jeszcze siłę, niech rzucą patyk z jednej strony mostu i sprawdzą, kiedy wypłynie z drugiej. Przy niskiej wodzie widać na dnie gładkie, okrągłe kamienie, które rzeka toczyła przez setki lat, aż straciły wszystkie kanty. Dzieci zwykle chcą zabrać jeden do domu, więc umówcie się, że zostaje tylko zdjęcie."
+    ],
+    "legend": null,
+    "curiosity": null,
+    "fun_fact": null,
+    "pop_culture": null
+  },
+  "state": {
+    "legend": { "state": "none", "checked": "it.wikipedia Sentino, frasassi.com: brak legendy mostu" },
+    "curiosity": { "state": "none", "checked": "it.wikipedia Sentino: nic ponad opis" },
+    "fun_fact": { "state": "none", "checked": "it.wikipedia Sentino: brak liczby do fun factu" },
+    "pop_culture": { "state": "none", "checked": "it.wikipedia Sentino: brak filmów i książek" }
+  },
+  "sources": [
+    { "n": 1, "url": "https://it.wikipedia.org/wiki/Abbazia_di_San_Vittore_alle_Chiuse", "title": "Abbazia di San Vittore alle Chiuse (Wikipedia)", "lang": "it", "accessed": "2026-10-26" },
+    { "n": 2, "url": "https://it.wikipedia.org/wiki/Grotte_di_Frasassi", "title": "Grotte di Frasassi (Wikipedia)", "lang": "it", "accessed": "2026-10-26" }
+  ]
+}
