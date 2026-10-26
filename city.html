@@ -665,6 +665,7 @@ function render(d) {
 
   // ═══ QR DLA DZIECKA (panel zakładki) ═══
   html += '<section class="qc-box qc-box--qr qc-tabpanel" id="qr" role="tabpanel" aria-labelledby="tab-qr">';
+  html += '<img src="/media/icons/quo-qr-256.webp" srcset="/media/icons/quo-qr-256.webp 1x, /media/icons/quo-qr-512.webp 2x" width="120" height="120" alt="" decoding="async" loading="lazy" style="display:block;margin:0 auto">';   // Quo z telefonem (ikony z #quo-ikony, JP 2026-10-25)
   html += '<p class="qc-box__label">' + esc(ui('label.qr_kid', 'QR dla dziecka')) + '</p>';
   html += '<div class="qc-qr" id="qrCode"></div>';
   html += '<p style="margin-top:12px">' + esc(ui('qr.scan_text', 'Zeskanuj na drugim telefonie — dziecko dostanie tylko misje i zadania foto.')) + '</p>';
@@ -1095,7 +1096,7 @@ loadPage(currentLang);
 </script>
 <script src="motion.js?v=4" defer></script>
 <script src="report-issue.js?v=4" defer></script>
-<script src="opinion.js?v=3" defer></script>
+<script src="opinion.js?v=4" defer></script>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>
 </body>

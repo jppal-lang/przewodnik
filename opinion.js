@@ -51,7 +51,7 @@
   function css() {
     if (document.getElementById('qo-css')) return;
     var s = document.createElement('style'); s.id = 'qo-css';
-    s.textContent = '.qo-box{margin:28px 0 8px;padding:18px;border:2px solid var(--ink,#0E1A2B);border-radius:16px;background:var(--card,#fff)}' +
+    s.textContent = '.qo-box{display:flow-root;margin:28px 0 8px;padding:18px;border:2px solid var(--ink,#0E1A2B);border-radius:16px;background:var(--card,#fff)}' +
       '.qo-box h3{margin:0 0 4px;font:800 20px Archivo,system-ui,sans-serif}' +
       '.qo-box p{margin:0 0 12px;font-size:14px;color:var(--muted,#5D6B82)}' +
       '.qo-stars{display:flex;gap:4px;margin-bottom:6px}' +
@@ -64,13 +64,17 @@
       '.qo-row button{appearance:none;border:2px solid var(--ink,#0E1A2B);border-radius:10px;padding:8px 18px;' +
       'font:700 15px Archivo,system-ui,sans-serif;cursor:pointer;background:var(--ink,#0E1A2B);color:#fff}' +
       '.qo-row button.qo-x{background:#fff;color:var(--ink,#0E1A2B)}' +
-      '.qo-msg{font-size:14px;color:var(--muted,#5D6B82)}';
+      '.qo-msg{font-size:14px;color:var(--muted,#5D6B82)}' +
+      '.qo-quo{float:right;width:clamp(88px,22vw,120px);height:auto;margin:-6px -4px 6px 12px}';
     document.head.appendChild(s);
   }
 
+  // Quo z gwiazdą nad głową (ikony z #quo-ikony, JP 2026-10-25)
+  var QUO = '<img class="qo-quo" src="/media/icons/quo-ocena-256.webp" srcset="/media/icons/quo-ocena-256.webp 1x, /media/icons/quo-ocena-512.webp 2x" width="120" height="120" alt="" decoding="async" loading="lazy">';
+
   function thanks(box, c) {
     var L = t();
-    box.innerHTML = '<h3>' + esc(L.title) + '</h3><div class="qo-row"><span class="qo-msg">' + esc(L.ok) + '</span>' +
+    box.innerHTML = QUO + '<h3>' + esc(L.title) + '</h3><div class="qo-row"><span class="qo-msg">' + esc(L.ok) + '</span>' +
       '<button type="button" class="qo-x">' + esc(L.again) + '</button></div>';
     box.querySelector('.qo-x').addEventListener('click', function () { build(box, c, true); });
   }
@@ -79,7 +83,7 @@
     var L = t();
     if (done(c) && !force) return thanks(box, c);
     var stars = 0;
-    box.innerHTML = '<h3>' + esc(L.title) + '</h3><p>' + esc(L.sub) + '</p><div class="qo-stars" role="radiogroup">' +
+    box.innerHTML = QUO + '<h3>' + esc(L.title) + '</h3><p>' + esc(L.sub) + '</p><div class="qo-stars" role="radiogroup">' +
       [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" role="radio" aria-checked="false" data-n="' + n + '" aria-label="' + n + ' – ' + esc(L.stars[n - 1]) + '">★</button>'; }).join('') +
       '</div><div class="qo-lbl" aria-live="polite"></div><textarea maxlength="500" placeholder="' + esc(L.ph) + '"></textarea>' +
       '<div class="qo-row"><button type="button" class="qo-send">' + esc(L.send) + '</button><span class="qo-msg" aria-live="polite"></span></div>';

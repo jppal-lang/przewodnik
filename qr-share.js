@@ -21,6 +21,12 @@
       box.innerHTML = qr.createSvgTag({ scalable: true });
     } catch(e) { return; }
 
+    // Quo z telefonem przy kodzie (ikony z #quo-ikony, JP 2026-10-25); .qr-share to flex z zawijaniem
+    var wrap = box.parentNode;
+    if(wrap && !wrap.querySelector('.qr-share-quo')){
+      wrap.insertAdjacentHTML('beforeend', '<img class="qr-share-quo" src="/media/icons/quo-qr-256.webp" srcset="/media/icons/quo-qr-256.webp 1x, /media/icons/quo-qr-512.webp 2x" width="96" height="96" alt="" decoding="async" loading="lazy" style="flex:none">');
+    }
+
     var linkEl = document.querySelector('.qr-share-link');
     if(linkEl){ linkEl.textContent = url; linkEl.href = url; }
   }
