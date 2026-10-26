@@ -105,6 +105,13 @@ Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-polic
 | `qc.parent.codes`                 | wpisane kody `QUO-XXXX-XXXX` (na razie tylko podgląd, `konto.html`) |
 | `qc.parent.news`                  | zgoda na newsletter (`konto.html`)                          |
 | `qc.access`                       | klucz dostępu do pełnych wycieczek z linku `?k=` (`i18n-ui.js`; zapis i usunięcie z adresu; czyta `city.html` → RPC `trip_full`) |
+| `quolino_game_treasure_pending`   | gra → panel rodzica: skarby Quo czekające na zamianę na kupon, `[{trip, at}]` (zapisuje `gra/treasure.js`, gdy nie ma sesji albo serwer odmówił; `konto.html` po zalogowaniu woła `claim_game_treasure` i czyści wpisy; zostają przy `not_yet`, limicie i błędzie sieci) |
+| `quolino_game_treasure`           | gra: skarby już znalezione na tym urządzeniu `{<trip>: {at, level}}` — jeden na wycieczkę |
+| `quolino_game_demo`               | gra: przełącznik „Tryb demo: symuluj punkty z trasy” |
+| `quolino_game_diff`               | gra: ostatnio wybrany poziom (`easy` / `medium` / `hard`) |
+| `quolino_game_<wycieczka>`        | gra: rekordy i liczba rozgrywek per poziom, np. `quolino_game_frasassi` |
+| `quolino_game_hats`, `quolino_game_hat` | gra: zdobyte czapki Quo i aktualnie założona |
+| `quolino_game_photos`             | gra: zdjęcia z gry (JPEG ok. 30 KB, max 4 na wycieczkę), tylko na urządzeniu |
 | `adm.outbox`                      | panel admina: uwagi do szkiców, których API jeszcze nie przyjęło (`_admin/`, nie strona publiczna) |
 | sessionStorage `quolino_kidmode`  | widok dziecka na czas sesji                                 |
 
@@ -133,3 +140,27 @@ Strona miasta: `https://quolino.com/{lang}/{kraj}/{region}/{miasto}/`, np. `/pl/
 - Stare adresy dają 301 (jeden skok, z zachowaniem `?k=` i innych parametrów): `/{lang}/{region}/{miasto}/`, `city.html?c=…[&lang=…]`,
   `/wlochy/<region>/<miasto>.html`. `city.html?draft=…` (podgląd szkicu) działa bez zmian. Regiony i kraje zostają pod `region.html?r=`, `country.html?k=`.
 - Router, sitemap, canonical, hreflang, og:url i JSON-LD (TouristTrip, BreadcrumbList): `ssr/server.mjs`. Reguła Traefika: `ssr/compose-ssr.yml`.
+
+---
+
+## 9. KUPONY RODZICA — SKARB QUO Z GRY (JP 2026-10-26)
+
+SQL: `_content/claude-skills/sql/2026-10-26-skarb-kupony.sql` (po `deploy.sh approve`). Zasady produktu: `docs/KONTO-RODZICA.md` §6.
+
+- **`public.coupons`** `(id, user_id → auth.users ON DELETE CASCADE, code UNIQUE 'QUO-XXXX-XXXX', percent 1–50, source 'gra',
+  trip_slug, created_at, expires_at, used_at, order_ref)`; `UNIQUE (user_id, source, trip_slug)` = jeden kupon z gry na konto na wycieczkę.
+  Brak uprawnień dla `web_anon` — tylko przez RPC. RLS: SELECT tylko własnych wierszy (po `sub` z `request.jwt.claims`), bez polityk zapisu.
+- **Kupony się nie łączą:** najwyżej jeden kupon na zamówienie. Indeks `coupons_one_per_order` (unikalne `order_ref`) pilnuje tego już dziś;
+  przyszłe RPC płatności przyjmuje co najwyżej jeden kod i zużywa go w tej samej transakcji
+  (`UPDATE … SET used_at, order_ref WHERE code AND user_id AND used_at IS NULL AND expires_at > now()`, ROW_COUNT = 1). Nie łączy go z kodami `promo_codes`.
+- **`POST /rpc/claim_game_treasure {p_trip, p_level, p_token}`** → `{code, percent, expires_at, trip_slug, new}` albo `{error}`:
+  `invalid_session` (zły/wygasły token), `not_yet` (przed `ops.app_settings.treasure_from` = 2027-06-01; admin z `ops.member_admins` przechodzi),
+  `level` (tylko `trudny`), `not_found` (wycieczka nieopublikowana), `rate_limit` (5 nowych kuponów z gry na konto na dobę).
+  Kupon: −30%, ważny 7 dni od wydania, jednorazowy. Ten sam skarb drugi raz zwraca istniejący kupon (`new: false`).
+- **`POST /rpc/my_coupons {p_token, p_lang}`** → `{coupons: [{code, percent, source, trip_slug, trip_title, created_at, expires_at, used_at, state}]}`,
+  `state` = `active | used | expired`; aktywne pierwsze.
+- **Token w treści, nie w nagłówku:** Traefik zdejmuje `Authorization` przed PostgREST, więc jak w `trip_member` strona wysyła
+  `Authorization: Bearer <klucz anon>` i `p_token: <token logowania>` w treści; baza sprawdza podpis (`ops.jwt_claims`).
+- **Ustawienia i admini:** `ops.app_settings` (`treasure_from`), `ops.member_admins (sub)` — dopisanie JP do testów:
+  `INSERT INTO ops.member_admins (sub, note) SELECT id, 'JP' FROM auth.users WHERE email = '…';`
+

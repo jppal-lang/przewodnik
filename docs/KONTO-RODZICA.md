@@ -71,3 +71,20 @@ Klucze localStorage do listy w `docs/BACKEND.md` §6: `qc.kid.avatar`, `qc.kid.n
 - Progi odznak i ewentualne dodatkowe nagrody.
 - Czy kolorowanki robimy jako osobne grafiki (`-coloring.webp`) dla każdego miasta.
 - Animacja odsłonięcia całego obrazka.
+
+## 6. Skarb Quo z gry → kupon dla rodzica (decyzje JP 2026-10-26)
+
+- W grze przeglądarkowej (`gra/`, nagroda za wycieczkę) na poziomie **trudnym** jest ukryta skrzynia „Skarb Quo”.
+  **Dziecko nie widzi nic handlowego** — ani kuponu, ani procentów, ani odpowiedzi serwera.
+- **Rodzic** dostaje w panelu (`konto.html` → Plan i kody → „Skarby Quo”) kupon: **−30% na następną wycieczkę**,
+  **ważny 7 dni od wydania**, **jednorazowy**, **jeden na konto na wycieczkę** (źródło `gra`).
+- **Kupony się nie łączą** — najwyżej jeden kupon na zamówienie (dotyczy też kodów rabatowych z §2). Pilnuje tego baza i przyszła kasa (`docs/BACKEND.md` §9).
+- **Działa od startu płatności (1 czerwca 2027).** Wcześniej serwer odmawia (`not_yet`), a skarb czeka na urządzeniu; wyjątek: konto admina (testy).
+- Przepływ: gra zapisuje `{trip, at}` w `localStorage` `quolino_game_treasure_pending` (gdy rodzic nie jest zalogowany na tym urządzeniu albo serwer odmówił)
+  → panel po zalogowaniu woła `claim_game_treasure` dla każdego wpisu (poziom `trudny`), czyści odebrane i pokazuje komunikat
+  „Skarb Quo zamieniony na kupon!”. Niezalogowany widzi skarb „czeka na odbiór” i przycisk logowania.
+- Sekcja „Skarby Quo” pojawia się tylko, gdy konto ma kupony albo na urządzeniu czekają skarby. Przy każdym kuponie: nazwa wycieczki,
+  „−30% na następną wycieczkę”, kod z przyciskiem „Kopiuj kod”, „ważny do <data i godzina>”, stan (aktywny / wykorzystany / wygasł),
+  pod listą: „Kupony nie łączą się — jeden na zamówienie.” Podgląd na danych przykładowych: `konto.html?demo=1#plan` albo `?as=member`.
+- Dane na serwerze: kod, procent, wycieczka, daty wydania, ważności i użycia, numer zamówienia — przy koncie, usuwane razem z kontem.
+

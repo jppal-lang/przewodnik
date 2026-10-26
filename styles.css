@@ -1385,7 +1385,7 @@ html.qk-lock{overflow:hidden}
 .acc-quo{float:right;width:clamp(80px,14vw,112px);height:auto;margin:-8px 0 8px 12px}
 @media(max-width:560px){.acc-head__title,.acc-head__sub{padding-right:96px}}
 /* konto: na wąskim telefonie pigułka „Konto rodzica” w pasku skraca się zamiast rozpychać stronę */
-@media(max-width:380px){.acc-nav__me{min-width:0;padding:0 10px;gap:6px}#accNavMe{min-width:0;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:480px){.acc-nav__me{min-width:0;padding:0 10px;gap:6px}#accNavMe{min-width:0;overflow:hidden;text-overflow:ellipsis}}
 
 /* polityka prywatności (.pol) */
 .pol{max-width:760px;margin:0 auto;padding:28px 20px 56px;font-size:18px;line-height:1.6;color:var(--ink)}
@@ -1416,3 +1416,30 @@ html.qk-lock{overflow:hidden}
 .qr-row button:disabled{opacity:.6;cursor:default}
 .qr-msg{font-size:18px;color:var(--muted)}
 .qr-quo{float:right;width:clamp(80px,20vw,104px);height:auto;margin:-4px -4px 6px 10px}
+
+/* ── Panel rodzica: Skarby Quo — kupony za skarb z gry (2026-10-26, docs/KONTO-RODZICA.md §6) ── */
+.acc-trs{margin-bottom:24px;padding:20px 22px;border-radius:var(--r-stk);background:var(--sun-50);box-shadow:0 0 0 3px var(--sun),var(--lift-1)}
+.acc-trs__head{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:center}
+.acc-trs__head img{width:96px;height:96px;object-fit:contain}
+.acc-trs__sub{font-size:18px;line-height:1.45;color:var(--ink2);margin:8px 0 0}
+.acc-trs__msg{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 0;font-size:18px;line-height:1.45;color:#5A3E00}
+.acc-trs__list{list-style:none;margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.acc-trs__item{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:12px;background:var(--card);box-shadow:var(--lift-1)}
+.acc-trs__top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.acc-trs__trip{font-weight:900;font-size:20px;line-height:1.2}
+.acc-trs__state{font-size:18px;font-weight:800;padding:2px 10px;border-radius:var(--r-pill);background:var(--verde-50);color:var(--verde)}
+.acc-trs__val{margin:0;font-stretch:75%;font-weight:900;font-size:24px;line-height:1.15;color:var(--azzurro)}
+.acc-trs__code{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.acc-trs__code code{font-family:inherit;font-weight:900;font-size:22px;letter-spacing:.08em;padding:6px 12px;border-radius:10px;background:var(--page);outline:2px dashed var(--slot);outline-offset:-2px}
+.acc-trs .qc-btn,.acc-trs-flash .qc-btn{min-height:46px;font-size:18px}
+.acc-trs__exp{margin:0;font-size:18px;color:var(--ink2)}
+.acc-trs__item.is-used,.acc-trs__item.is-expired{background:var(--page);box-shadow:none}
+.acc-trs__item.is-used .acc-trs__val,.acc-trs__item.is-expired .acc-trs__val{color:var(--muted)}
+.acc-trs__item.is-used .acc-trs__code code,.acc-trs__item.is-expired .acc-trs__code code{color:var(--muted);text-decoration:line-through}
+.acc-trs__item.is-used .acc-trs__state{background:var(--azzurro-50);color:var(--azzurro-ink)}
+.acc-trs__item.is-expired .acc-trs__state{background:var(--rosso-50);color:var(--rosso)}
+.acc-trs__item.is-pending .acc-trs__state{background:var(--sun);color:var(--sun-ink)}
+.acc-trs__note{margin:16px 0 0;font-size:18px;line-height:1.45;color:var(--ink)}
+.acc-trs-flash{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 16px;padding-top:12px;padding-bottom:12px;background:var(--verde-50);color:var(--verde);font-size:18px;font-weight:800;text-align:center}
+.acc-trs-flash[hidden],.acc-trs[hidden],.acc-trs__msg[hidden]{display:none}
+@media(max-width:480px){.acc-trs{padding:16px}.acc-trs__head{grid-template-columns:64px minmax(0,1fr)}.acc-trs__head img{width:64px;height:64px}}

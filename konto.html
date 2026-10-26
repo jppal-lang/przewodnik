@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=32">
+<link rel="stylesheet" href="/styles.css?v=33">
 <script src="/page-i18n.js?v=2"></script>
 <script src="/kid-reward.js?v=3"></script>
 <script src="/auth.js?v=2"></script>
@@ -58,6 +58,7 @@
 </div>
 
 <p class="acc-preview" id="accPreview" hidden></p>
+<div class="acc-trs-flash wrap-wide" id="accTreasureFlash" role="status" hidden></div>
 
 <main class="wrap-wide acc-wrap">
 
@@ -106,6 +107,19 @@
 
   <!-- ═══ PLAN I KODY ═══ -->
   <section class="acc-panel" id="plan" role="tabpanel" aria-labelledby="t-plan" hidden>
+    <!-- Skarby Quo (JP 2026-10-26): kupony za skarb z gry (poziom trudny). Rysuje się tylko, gdy są kupony albo skarby czekające na odbiór. -->
+    <section class="acc-trs" id="accTreasure" aria-labelledby="accTreasureH" hidden>
+      <div class="acc-trs__head">
+        <img src="/media/icons/pose-15-gold-medal-256.webp" alt="" width="96" height="96" loading="lazy" decoding="async">
+        <div>
+          <h2 id="accTreasureH" data-t="page.account.treasure.h">Skarby Quo</h2>
+          <p class="acc-trs__sub" data-t="page.account.treasure.sub">Dziecko znalazło ukryty skarb w grze na poziomie trudnym. Dla Was to kupon na następną wycieczkę.</p>
+        </div>
+      </div>
+      <p class="acc-trs__msg" id="accTreasureMsg" hidden></p>
+      <ul class="acc-trs__list" id="accTreasureList"></ul>
+      <p class="acc-trs__note"><b data-t="page.account.treasure.no_stack">Kupony nie łączą się — jeden na zamówienie.</b> <span data-t="page.account.treasure.rules">Każdy kupon jest jednorazowy i ważny 7 dni od znalezienia skarbu.</span></p>
+    </section>
     <div class="acc-cols">
       <div class="acc-box">
         <h2 data-t="page.account.plan_h">Twój plan</h2>
@@ -532,6 +546,153 @@
   if (window.QAccAs) paint();
   else if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
   if (window.PT && PT.lang !== 'pl') PT.ready.then(function () { if (window.QAccAs) paint(); else if (window.QAuth) QAuth.ready.then(paint); });
+})();
+</script>
+<script>
+/* Skarby Quo (JP 2026-10-26; docs/KONTO-RODZICA.md §6). Gra (gra/) po znalezieniu skrzyni na poziomie trudnym dopisuje slug wycieczki
+   do localStorage „quolino_game_treasure_pending”. Tu, po zalogowaniu, zamieniamy każdy wpis na kupon (RPC claim_game_treasure)
+   i pokazujemy kupony rodzica (RPC my_coupons). Dziecko kuponów nie widzi. Token logowania idzie w treści wywołania (jak trip_member).
+   Format wpisów: ["frasassi", …] albo [{"trip":"frasassi","at":"…"}, …]. Przed 1.06.2027 serwer odpowiada „not_yet” — wpisy zostają. */
+(function () {
+  'use strict';
+  var API = 'https://api.quolino.com/rest/v1';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+  var PKEY = 'quolino_game_treasure_pending';
+  var LANG = (window.PT && PT.lang) || 'pl';
+  var AS = window.QAccAs, SAMPLE = AS === 'member' || /[?&]demo=1\b/.test(location.search);
+  var box = document.getElementById('accTreasure'), list = document.getElementById('accTreasureList'),
+      msg = document.getElementById('accTreasureMsg'), flash = document.getElementById('accTreasureFlash');
+  var state = { coupons: [], pending: [], titles: {}, note: '', made: 0 };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function cap(s) { s = String(s || '').replace(/-/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function readPending() {
+    var raw; try { raw = JSON.parse(localStorage.getItem(PKEY) || '[]'); } catch (e) { raw = []; }
+    if (!Array.isArray(raw)) raw = [];
+    var seen = {};
+    return raw.map(function (x) { return typeof x === 'string' ? x : (x && (x.trip || x.slug)) || ''; })
+      .map(function (s) { return String(s).toLowerCase().trim(); })
+      .filter(function (s) { if (!/^[a-z0-9-]{1,80}$/.test(s) || seen[s]) return false; seen[s] = 1; return true; });
+  }
+  function writePending(slugs) {
+    try { if (slugs.length) localStorage.setItem(PKEY, JSON.stringify(slugs.map(function (s) { return { trip: s }; }))); else localStorage.removeItem(PKEY); } catch (e) { /* prywatne okno */ }
+  }
+  function rpc(fn, body) {
+    return fetch(API + '/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status + ' ' + fn); return r.json(); });
+  }
+  function loadTitles(slugs) {
+    if (!slugs.length) return Promise.resolve();
+    var need = slugs.filter(function (s) { return !state.titles[s]; });
+    if (!need.length) return Promise.resolve();
+    return fetch(API + '/city_translations?select=city_slug,lang,title&city_slug=in.(' + need.map(encodeURIComponent).join(',') + ')&lang=in.(' + LANG + ',en,pl)',
+      { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        var rank = function (l) { return l === LANG ? 0 : l === 'en' ? 1 : 2; }, best = {};
+        rows.forEach(function (t) { if (!best[t.city_slug] || rank(t.lang) < rank(best[t.city_slug].lang)) best[t.city_slug] = t; });
+        Object.keys(best).forEach(function (k) { state.titles[k] = best[k].title; });
+      }).catch(function () { /* zostaje slug */ });
+  }
+  function when(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var o = { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+    try { return d.toLocaleString(LANG, o); } catch (e) { return d.toLocaleString('pl', o); }
+  }
+  function item(c) {
+    var st = c.state || 'active', title = c.trip_title || state.titles[c.trip_slug] || cap(c.trip_slug);
+    var label = { active: PT('page.account.treasure.state_active', 'aktywny'), used: PT('page.account.treasure.state_used', 'wykorzystany'), expired: PT('page.account.treasure.state_expired', 'wygasł') }[st];
+    var date = st === 'used' && c.used_at ? PT('page.account.treasure.used_on', 'wykorzystany') + ' ' + when(c.used_at)
+      : (st === 'expired' ? PT('page.account.treasure.expired_on', 'wygasł') : PT('page.account.treasure.valid_to', 'ważny do')) + ' ' + when(c.expires_at);
+    return '<li class="acc-trs__item is-' + esc(st) + '">' +
+      '<div class="acc-trs__top"><b class="acc-trs__trip">' + esc(title) + '</b><span class="acc-trs__state">' + esc(label) + '</span></div>' +
+      '<p class="acc-trs__val">' + esc(PT('page.account.treasure.value', '−{p}% na następną wycieczkę').replace('{p}', c.percent || 30)) + '</p>' +
+      '<div class="acc-trs__code"><code>' + esc(c.code) + '</code>' +
+      (st === 'active' ? '<button type="button" class="qc-btn qc-btn--sm" data-copy-code="' + esc(c.code) + '">' + esc(PT('page.account.treasure.copy', 'Kopiuj kod')) + '</button>' : '') + '</div>' +
+      '<p class="acc-trs__exp">' + esc(date) + '</p></li>';
+  }
+  function pendingItem(slug) {
+    return '<li class="acc-trs__item is-pending"><div class="acc-trs__top"><b class="acc-trs__trip">' + esc(state.titles[slug] || cap(slug)) + '</b>' +
+      '<span class="acc-trs__state">' + esc(PT('page.account.treasure.state_pending', 'czeka na odbiór')) + '</span></div>' +
+      '<p class="acc-trs__val">' + esc(PT('page.account.treasure.value', '−{p}% na następną wycieczkę').replace('{p}', 30)) + '</p></li>';
+  }
+  function render() {
+    var any = state.coupons.length || state.pending.length;
+    box.hidden = !any;
+    list.innerHTML = state.coupons.map(item).join('') + state.pending.map(pendingItem).join('');
+    msg.hidden = !state.note; msg.innerHTML = noteText(state.note);
+    flash.hidden = !state.made; flash.innerHTML = state.made ? flashText(state.made) : '';
+  }
+  function noteText(kind) {
+    if (kind === 'login') return esc(PT('page.account.treasure.login', 'Zaloguj się, żeby zamienić skarb na kupon.')) + ' <a class="qc-btn qc-btn--primary qc-btn--sm" href="/zaloguj.html">' + esc(PT('page.account.sign_in', 'Zaloguj się')) + '</a>';
+    if (kind === 'not_yet') return esc(PT('page.account.treasure.not_yet', 'Skarby z gry zamieniamy na kupony od 1 czerwca 2027. Zachowaliśmy je na tym urządzeniu — wrócą tu same.'));
+    if (kind === 'later') return esc(PT('page.account.treasure.later', 'Nie udało się teraz odebrać skarbu. Spróbujemy przy następnym wejściu na tę stronę.'));
+    return '';
+  }
+  function flashText(n) {
+    return '<span>' + esc(n === 1 ? PT('page.account.treasure.flash_one', 'Skarb Quo zamieniony na kupon!') : PT('page.account.treasure.flash_many', 'Skarby Quo zamienione na kupony!')) + ' ' +
+      esc(PT('page.account.treasure.flash_where', 'Kupon czeka w zakładce Plan i kody.')) + '</span>' +
+      '<a class="qc-btn qc-btn--sm" href="#plan">' + esc(PT('page.account.treasure.flash_go', 'Pokaż kupon')) + '</a>';
+  }
+
+  // zamiana czekających skarbów na kupony — po kolei, żeby limit na serwerze liczył się po ludzku
+  function claimAll(token, slugs) {
+    var keep = [], made = 0, note = '';
+    return slugs.reduce(function (p, slug) {
+      return p.then(function (stop) {
+        if (stop) { keep.push(slug); return true; }
+        return rpc('claim_game_treasure', { p_trip: slug, p_level: 'trudny', p_token: token }).then(function (r) {
+          if (r && r.code) { if (r['new']) made++; return false; }
+          var e = r && r.error;
+          if (e === 'level' || e === 'not_found') return false;                       // trwale niepoprawny wpis: usuwamy
+          keep.push(slug);
+          if (e === 'not_yet') { note = 'not_yet'; return false; }
+          note = 'later'; return true;                                                // limit, sesja, inne: spróbujemy później
+        }, function () { keep.push(slug); note = 'later'; return true; });
+      });
+    }, Promise.resolve(false)).then(function () { writePending(keep); return { keep: keep, made: made, note: note }; });
+  }
+
+  function sample() {
+    var d = function (h) { return new Date(Date.now() + h * 3600e3).toISOString(); };
+    return [
+      { code: 'QUO-SKRB-7KQ2', percent: 30, trip_slug: 'frasassi', trip_title: 'Jaskinie Frasassi', created_at: d(-30), expires_at: d(138), state: 'active' },
+      { code: 'QUO-MPX4-H9TA', percent: 30, trip_slug: 'assisi', trip_title: 'Asyż', created_at: d(-200), expires_at: d(-32), used_at: d(-60), state: 'used' },
+      { code: 'QUO-WQ3D-ZC8E', percent: 30, trip_slug: 'perugia', trip_title: 'Perugia', created_at: d(-400), expires_at: d(-232), state: 'expired' }
+    ];
+  }
+
+  function run() {
+    state.pending = readPending();
+    if (AS === 'guest') { state.pending = []; render(); return; }
+    if (SAMPLE) { state.coupons = sample(); state.pending = []; render(); return; }
+    var A = window.QAuth;
+    (A ? A.ready.then(function () { return A.session(); }) : Promise.resolve(null)).then(function (sess) {
+      if (!sess || !sess.at) {
+        state.coupons = [];
+        state.note = state.pending.length ? 'login' : '';
+        return loadTitles(state.pending).then(render);
+      }
+      return claimAll(sess.at, state.pending).then(function (res) {
+        state.pending = res.keep;
+        state.note = res.note;
+        state.made = res.made;
+        return rpc('my_coupons', { p_token: sess.at, p_lang: LANG }).then(function (r) {
+          state.coupons = (r && r.coupons) || [];
+        }, function () { state.coupons = []; if (!state.note) state.note = 'later'; });
+      }).then(function () { return loadTitles(state.pending); }).then(render);
+    }).catch(function () { render(); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-copy-code]'); if (!b) return;
+    var code = b.getAttribute('data-copy-code');
+    var done = function () { b.textContent = PT('page.account.treasure.copied', 'Skopiowano'); setTimeout(function () { b.textContent = PT('page.account.treasure.copy', 'Kopiuj kod'); }, 2500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, function () { window.prompt('', code); });
+    else window.prompt('', code);
+  });
+  run();
+  if (window.PT && PT.lang !== 'pl') PT.ready.then(render);
 })();
 </script>
 </body>
