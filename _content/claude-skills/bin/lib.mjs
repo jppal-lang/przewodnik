@@ -15,7 +15,9 @@ export const log = (...a) => console.error(new Date().toISOString().slice(11, 19
 
 export function run(cmd, args, { input, timeout = 15 * 60_000 } = {}) {
   return new Promise((resolve) => {
-    const p = spawn(cmd, args, { env: { ...process.env, HOME: '/opt/data/home' } });
+    // długotrwały token Claude (claude setup-token, ważny ok. roku) z /opt/data/.env — nie wygasa jak sesja /login (JP 2026-10-27)
+    const tok = env('CLAUDE_CODE_OAUTH_TOKEN');
+    const p = spawn(cmd, args, { env: { ...process.env, HOME: '/opt/data/home', ...(tok ? { CLAUDE_CODE_OAUTH_TOKEN: tok } : {}) } });
     let out = '', err = '';
     const t = setTimeout(() => { p.kill('SIGTERM'); err += '\n[przekroczony czas]'; }, timeout);
     p.stdout.on('data', d => out += d);
