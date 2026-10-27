@@ -233,3 +233,13 @@ export function mergeSources(json, entry) {
   all[sourcesKey(entry.trip, entry.stop_key)] = entry;
   return Object.fromEntries(Object.keys(all).sort().map(k => [k, all[k]]));
 }
+
+// gra „Quo: Wyprawa” (gra/icons/manifest.json): "media": { "<trasa>": ["<stop_key>", …] } → media/icons/place-<trasa>-<stop_key>-256/512.webp
+export function addToGameManifest(json, trip, key) {
+  const m = { ...(json ?? {}) };
+  m.media = { ...(m.media ?? {}) };
+  const list = [...(m.media[trip] ?? [])];
+  if (!list.includes(key)) list.push(key);
+  m.media[trip] = list;
+  return m;
+}

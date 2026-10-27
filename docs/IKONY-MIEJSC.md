@@ -23,7 +23,8 @@ Skrypt: `_content/claude-skills/bin/place-icons.mjs` (+ `place-icons-lib.mjs`, d
 2. **Generowanie (`gen`)**: Antigravity (Google AI Pro) dostaje 2 zdjęcia + obraz stylu i prompt (złota godzina, sam obiekt, płaskie tło magenta do wycięcia).
    Python wycina tło do przezroczystości i dopisuje metadane praw.
 3. **Ocena**: na Discordzie w kanale **#ikony-miejsc** (kategoria „Grafiki”) JP dostaje trzy pliki: oba zdjęcia źródłowe i ikonę, z linkami do Commons, autorami i licencjami.
-4. **Akceptacja (`ok`)**: WebP 64/128/256/512 → `media/icons/place-<trasa>-<stop_key>-<rozmiar>.webp` i wpis w `media/icons/place-sources.json`.
+4. **Akceptacja (`ok`)**: WebP 64/128/256/512 → `media/icons/place-<trasa>-<stop_key>-<rozmiar>.webp`, wpis w `media/icons/place-sources.json`
+   i (gdy plik jest w repo) klucz przystanku w `gra/icons/manifest.json` → `"media"`, z którego gra bierze własne naklejki przystanków.
 
 ## 3. Odpowiedzi JP w #ikony-miejsc
 

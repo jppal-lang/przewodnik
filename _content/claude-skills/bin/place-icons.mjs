@@ -487,6 +487,9 @@ async function cmdOk(trip, n) {
   const at = new Date().toISOString();
   const entry = L.sourcesEntry({ trip, stop, refs: refs?.picked, v: s.v, version: loadState(trip).version, at });
   writeFileSync(SOURCES, JSON.stringify(L.mergeSources(readJson(SOURCES), entry), null, 1) + '\n');
+  // gra czyta własne ikony przystanków z gra/icons/manifest.json („media”) — dopisujemy klucz, gdy plik jest w repo
+  const GM = join(REPO, 'gra/icons/manifest.json'), gm = readJson(GM);
+  if (gm) writeFileSync(GM, JSON.stringify(L.addToGameManifest(gm, trip, key), null, 2) + '\n');
   const pub = await run('sh', [REPO_SH, 'publish', `ikona miejsca ${trip} #${stop.n}: ${stop.name} (place-${trip}-${key}, WebP ${L.SIZES.join('/')} + źródła)`], { timeout: 5 * 60_000 });
   if (pub.code !== 0 || /BŁĄD/.test(pub.out)) throw new Error(`publikacja: ${(pub.err || pub.out).slice(-300)}`);
   patchStop(trip, key, x => { x.status = 'ok'; x.accepted_at = at; x.accepted_v = s.v; });

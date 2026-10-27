@@ -178,3 +178,11 @@ test('Discord: podpis z dwoma źródłami; rejestr źródeł', () => {
   const all = L.mergeSources({ 'zz/x': { a: 1 } }, e);
   assert.deepEqual(Object.keys(all), ['spello/porta-venere', 'zz/x']);
 });
+test('manifest gry: dopisanie klucza do "media" bez duplikatów', () => {
+  const m0 = { note: 'x', spello: [], media: { frasassi: [], spello: ['a'] } };
+  const m1 = L.addToGameManifest(m0, 'spello', 'porta-venere');
+  assert.deepEqual(m1.media.spello, ['a', 'porta-venere']);
+  assert.deepEqual(L.addToGameManifest(m1, 'spello', 'porta-venere').media.spello, ['a', 'porta-venere']);
+  assert.deepEqual(L.addToGameManifest({}, 'frasassi', 'abbazia').media, { frasassi: ['abbazia'] });
+  assert.deepEqual(m0.media.spello, ['a']);
+});
