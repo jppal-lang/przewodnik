@@ -80,13 +80,18 @@ async function ensureTrip(trip, { requireV2 = false } = {}) {
 // ── Wikimedia Commons ─────────────────────────────────────────────────────────────────────────
 const API = 'https://commons.wikimedia.org/w/api.php';
 async function getJson(url) {
-  for (let i = 0; i < 3; i++) {
-    const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(30_000) }).catch(() => null);
+  // Commons ogranicza tempo (429) — czekamy wg Retry-After, do 5 prób; między zapytaniami stała przerwa (grzeczny robot)
+  let last = '';
+  for (let i = 0; i < 5; i++) {
+    await sleep(700);
+    const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(30_000) }).catch((e) => { last = e.cause?.code ?? e.message; return null; });
     if (r?.ok) return r.json();
+    if (r) last = `HTTP ${r.status}`;
     if (r && r.status !== 429 && r.status < 500) throw new Error(`Commons ${r.status}: ${url.slice(0, 160)}`);
-    await sleep(5000 * (i + 1));
+    const ra = +(r?.headers?.get('retry-after') ?? 0);
+    await sleep(Math.max(ra * 1000, 8000 * (i + 1)));
   }
-  throw new Error(`Commons niedostępne: ${url.slice(0, 160)}`);
+  throw new Error(`Commons niedostępne (${last}): ${url.slice(0, 160)}`);
 }
 const api = (p) => getJson(`${API}?${new URLSearchParams({ format: 'json', formatversion: '2', ...p })}`);
 const II = (width) => ({ prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: String(width), iiextmetadatalanguage: 'en',
