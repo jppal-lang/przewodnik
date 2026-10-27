@@ -40,3 +40,4 @@ Szczegóły techniczne modelu 3D: `MASKOTKA-3D.md` (root repo).
 
 - `quolino-logo.svg` — logo w repo
 - `MASKOTKA-3D.md` — specyfikacja modelu 3D (osobny dokument, nie edytować stąd)
+- `docs/IKONY-MIEJSC.md` — ikony miejsc (ilustracje przystanków, bez Quo): źródła, styl, akceptacja

@@ -25,7 +25,7 @@ export async function qidByName(name, near, lang = 'it') {
   }
   return null;
 }
-async function entity(qid) { const j = await getJson(`https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`); return j?.entities?.[qid] ?? null; }
+export async function entity(qid) { const j = await getJson(`https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`); return j?.entities?.[qid] ?? null; }
 const coordOf = (e) => { const v = e?.claims?.P625?.[0]?.mainsnak?.datavalue?.value; return v ? { lat: v.latitude, lon: v.longitude } : null; };
 export function dist(a, b) { const R = 6371e3, r = (x) => x * Math.PI / 180; const d = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lon - a.lon) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(d)); }
 const PROPS = { P571: 'powstanie / rozpoczęcie budowy', P580: 'od', P582: 'do', P84: 'architekt', P170: 'twórca', P88: 'fundator / zleceniodawca',

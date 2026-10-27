@@ -38,11 +38,15 @@ export function aiUsage({ provider, model = null, role = null, billing = 'api', 
       script: process.argv[1]?.split('/').pop(), city: city ?? globalThis.__aiCity ?? process.argv[2] ?? null, run: run ?? globalThis.__aiRun ?? null }) + '\n');
   } catch { /* dziennik pomocniczy */ }
 }
-export async function claude(skillName, prompt, { web = false } = {}) {
-  const skill = readFileSync(`${SKILLS}/${skillName}/SKILL.md`, 'utf8');
-  const args = ['-p', '--output-format', 'json', '--append-system-prompt', skill,
+// read: katalog, z którego Claude może czytać pliki (np. miniatury zdjęć do obejrzenia) — narzędzie Read bez wyszukiwarki (ikony miejsc, JP 2026-10-27).
+// skillName = null → bez instrukcji umiejętności (samo zadanie z promptu).
+export async function claude(skillName, prompt, { web = false, read = null } = {}) {
+  const skill = skillName ? readFileSync(`${SKILLS}/${skillName}/SKILL.md`, 'utf8') : null;
+  const args = ['-p', '--output-format', 'json', ...(skill ? ['--append-system-prompt', skill] : []),
     '--disallowedTools', 'Bash,Edit,Write,MultiEdit,NotebookEdit' + (web ? '' : ',WebFetch,WebSearch')];
   if (web) args.push('--allowedTools', 'WebFetch,WebSearch,Read');
+  else if (read) args.push('--allowedTools', 'Read,Glob');
+  if (read) args.push('--add-dir', read);
   const r = await run('claude', args, { input: prompt });
   let res;
   try { res = JSON.parse(r.out); } catch { throw new Error(`claude: nieczytelna odpowiedź (kod ${r.code}) ${r.err.slice(-400)}`); }
@@ -51,7 +55,7 @@ export async function claude(skillName, prompt, { web = false } = {}) {
   claudeUsage.output += u.output_tokens ?? 0;
   // Claude Code na serwerze: z kluczem API płacimy realnie, bez klucza (logowanie kontem) to abonament — kwota tylko jako równowartość
   const api = !!process.env.ANTHROPIC_API_KEY, usd = +(res.total_cost_usd ?? 0);
-  aiUsage({ provider: 'claude', model: Object.keys(res.modelUsage ?? {})[0] ?? 'claude', role: globalThis.__aiRole?.() ?? `${skillName}${web ? ' (z wyszukiwaniem)' : ''}`,
+  aiUsage({ provider: 'claude', model: Object.keys(res.modelUsage ?? {})[0] ?? 'claude', role: globalThis.__aiRole?.() ?? `${skillName ?? 'claude'}${web ? ' (z wyszukiwaniem)' : ''}`,
     billing: api ? 'api' : 'abonament', tin: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0), tout: u.output_tokens ?? 0,
     usd: api ? usd : 0, usd_equiv: usd });
   if (res.is_error) throw new Error(`claude: ${res.result ?? res.subtype}`);
