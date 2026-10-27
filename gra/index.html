@@ -43,6 +43,17 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="celebrate-text" id="celebrateText" aria-live="polite" hidden></div>
 
+  <!-- Gra zablokowana: żaden etap nie jest jeszcze zatwierdzony (bez ?test=1) -->
+  <section class="screen" id="lockedScreen" hidden>
+    <div class="card">
+      <img class="card-quo" src="../media/icons/pose-13-celebration-jump-256.webp" alt="" width="150" height="150">
+      <p class="kicker" data-t="page.game.html.kicker">Nagroda za wycieczkę</p>
+      <h2 data-t="page.game.locked.title">Gra jeszcze śpi</h2>
+      <p class="lead" data-t="page.game.locked.text">Quo: Wyprawa odblokuje się po ukończeniu zatwierdzonej wycieczki. Wybierz trasę, zwiedzaj z Quo — a gra będzie na Ciebie czekać!</p>
+      <a class="btn btn-primary btn-link" href="../" data-t="page.game.locked.home">Wróć na stronę główną</a>
+    </div>
+  </section>
+
   <!-- Ekran startowy -->
   <section class="screen" id="startScreen">
     <div class="card">
@@ -50,6 +61,7 @@
       <p class="kicker" data-t="page.game.html.kicker">Nagroda za wycieczkę</p>
       <h1 data-t="page.game.title">Quo: Wyprawa</h1>
       <p class="lead" id="stageLead">&nbsp;</p>
+      <p class="test-badge" id="testBadge" hidden data-t="page.game.html.test_badge">wersja testowa</p>
       <p class="sub-label" id="tripLabel" data-t="page.game.html.trips">Wybierz wyprawę</p>
       <div class="trips" id="tripPicker" role="group" data-t-aria="page.game.html.trips" aria-label="Wybierz wyprawę"></div>
       <div class="diff" role="group" data-t-aria="page.game.html.diff" aria-label="Poziom trudności">

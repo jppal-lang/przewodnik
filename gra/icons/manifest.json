@@ -1,0 +1,6 @@
+{
+  "note": "Własne ikony miejsc (naklejki przystanków). Klucz = slug trasy, wartości = stop_key (qcKey przystanku, a gdy go brak — key). Pliki: gra/icons/<trasa>/<stop_key>-256.webp i -512.webp. \"media\": te same listy dla plików media/icons/place-<trasa>-<stop_key>-256.webp / -512.webp. Bez wpisu gra używa ikony kategorii.",
+  "frasassi": [],
+  "spello": [],
+  "media": { "frasassi": [], "spello": [] }
+}

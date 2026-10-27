@@ -5,6 +5,19 @@ Etap wybiera adres `gra/?trasa=<slug>` (domyślnie `frasassi`) albo przycisk „
 (lista z `stages.json`; wybór przeładowuje stronę z `?trasa=`, inne parametry zostają).
 Strona `gra/index.html` ma `noindex` i nie jest nigdzie podlinkowana.
 
+### Tylko zatwierdzone wyprawy (decyzja JP 2026-10-27)
+
+Grę wprowadzamy wyłącznie dla tras **ukończonych i zatwierdzonych przez JP**. Każdy etap w `stages.json` ma pole
+`"approved"` (dziś `false` dla Frasassi i Spello — ich nowe wersje tras nie są jeszcze zatwierdzone).
+
+- Wybór wyprawy i `?trasa=` pokazują tylko etapy z `"approved": true`.
+- Etapy niezatwierdzone są dostępne tylko z `?test=1` (JP, testy, boty) — na ekranie startowym i przy przycisku wyprawy
+  widać wtedy plakietkę „wersja testowa” (`page.game.html.test_badge`).
+- Gdy żaden etap nie jest zatwierdzony (i nie ma `?test=1`), zamiast gry pokazuje się ekran „Gra jeszcze śpi”
+  (`page.game.locked.title|text|home`) z linkiem na stronę główną. Brak `stages.json` bez `?test=1` = ten sam ekran.
+- Zatwierdzenie etapu = zmiana `"approved": false` → `true` w `stages.json` (nic więcej).
+- Boty testowe w `/root/pwt` otwierają grę z `?test=1`.
+
 Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Zero bibliotek, zero build stepu.
 
 ## Pliki
@@ -15,6 +28,7 @@ Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Z
 | `game.css` | wygląd (kolory z design systemu Quolino) |
 | `game.js` | silnik: budowa poziomu, fizyka, rysowanie, szkielet Quo, świętowanie |
 | `treasure.js` | Skarb Quo: zapis lokalny i odbiór na koncie rodzica |
+| `icons/manifest.json` | lista własnych ikon miejsc (naklejek przystanków) — patrz „Ikony miejsc” |
 | `stages.json` | lista etapów na ekranie startowym: slug, plik, ikona, napisy (klucze `page.game.*` + polski w `"i18n"`) |
 | `frasassi.json` | dane etapu Frasassi (ręcznie): przystanki, misje, pytania quizu (ze źródłem) |
 | `spello.json` | dane etapu Spello — szkielet z `tools/stage-from-trip.mjs`, pytania pisane ręcznie (ze źródłem) |
@@ -177,7 +191,57 @@ Każdy przystanek to kolejna sekcja. We Frasassi (bez `"game"`) teren wybiera `c
 
 Układ jest losowany z ziarna (wycieczka + przystanek + poziom), więc za każdym razem wygląda tak samo.
 Tła i kafle są rysowane w kodzie per teren — nowa wycieczka nie potrzebuje grafik.
-Ikona przystanku: `media/icons/icon-<icon>-256.webp` (nazwy jak w mapie QUE w panelu admina).
+Ikona przystanku: własna ikona miejsca (jeśli jest — patrz niżej), inaczej `media/icons/icon-<icon>-256.webp` (nazwy jak w mapie QUE w panelu admina).
+
+## Ikony miejsc (naklejka przystanku)
+
+Naklejka przystanku (słupek na końcu przystanku, zagubione naklejki, świętowanie, album, zdjęcie) może mieć **własną ikonę
+miejsca** zamiast ogólnej ikony kategorii. Gra nie zgaduje plików (żeby nie było błędów 404) — czyta listę z `gra/icons/manifest.json`:
+
+```json
+{ "frasassi": ["01", "02"], "spello": ["villa-dei-mosaici"], "media": { "spello": ["porta-venere"] } }
+```
+
+- `"<trasa>": [stop_key, …]` → pliki `gra/icons/<trasa>/<stop_key>-256.webp` i `gra/icons/<trasa>/<stop_key>-512.webp`.
+- `"media": { "<trasa>": [...] }` → pliki `media/icons/place-<trasa>-<stop_key>-256.webp` i `-512.webp` (wspólne ze stroną).
+- `stop_key` = `qcKey` przystanku w JSON etapu (Spello: `stop_key` z bazy, np. `villa-dei-mosaici`); Frasassi nie ma `qcKey` — wtedy `key` (`01`–`04`).
+- Plik: **przezroczysty WebP**, kwadrat **256×256** (słupek, album, zagubione naklejki) i **512×512** (świętowanie i zdjęcie),
+  styl naklejki: motyw miejsca + Quo, bez białego brzegu (biały brzeg, cień, połysk i zagięty róg dorysowuje gra), ok. 6% marginesu.
+- Brak pliku 512 → gra bierze 256; brak 256 → ikona kategorii. Bez wpisu w manifeście — zawsze ikona kategorii.
+
+## Oprawa graficzna (warstwa „art”)
+
+Wszystko rysuje kod (bez plików graficznych), w stylu „Album naklejek”: ciemny kontur (#1B1630) postaci i znajdziek, białe brzegi naklejek,
+płaskie kolory z tokenów Quolino. Rozgrywka, fizyka i kolizje są nietknięte — oprawa tylko czyta stan gry.
+
+- **Tła** (`makeLayers()` w sekcji 4c `game.js`): 3–4 warstwy parallax na teren + niebo, mgła i jaśniejsze, mniej nasycone dalekie warstwy,
+  jasna krawędź grzbietów. **Pora dnia** wzdłuż wycieczki: pierwszy przystanek rano (chłodne niebo, słońce po lewej), ostatni o zmierzchu
+  (złote niebo, słońce niżej, smugi światła); Spello ma osobne niebo belvedere/zmierzchu. Ruch: dryfujące chmury, ptaki, cyprysy na wietrze,
+  gwiazdy, światła w dolinie, płatki w uliczkach, smugi światła i pył w kościołach, poświata kryształów i smugi światła w jaskini.
+- **Kafle**: zaokrąglone narożniki, faktura, cień głębi (bez murów z ciosów), światło z lewej, cień z prawej i pod nawisem, trawa z kępkami,
+  nacieki z mokrym czubkiem. **Ozdoby** (kwiatki, kępy, kamyczki, grzybki, liście, kryształki, stalagmity, kałuże, chwasty w bruku, płatki,
+  tesery, bluszcz) wybiera ziarno kafla (`hashXY`) — zawsze te same, nigdy w równym rytmie, bez wpływu na grę.
+  Nieruchome kafle rysują się raz do „kawałków” (8 kolumn) w rozdzielczości ekranu i są kopiowane 1:1 (puste wiersze pomijane);
+  kawałek odświeża się sam, gdy zmieni się układ jego kafli. Komnaty: tło + nieruchome kafle komnaty też raz (`roomCache`).
+- **Quo**: cień zależny od wysokości, rozciąganie w locie i spłaszczenie przy lądowaniu, sprężyste opóźnienie ogona i głowy, końce chustki
+  na wietrze (`drawScarf`), oddech, mruganie, kurz spod łap i przy lądowaniu.
+- **Przeciwnicy** z konturem, oczami z błyskiem, mruganiem (nietoperz, żuk, kolczak, toczący się kamień z buźką, gołąb, pająk).
+- **Znajdźki i UI**: kamyczki z przelatującym błyskiem (gotowe klatki), gwiazdki i „+1” przy zbieraniu, skrzynie z otwieranym wiekiem i błyskiem,
+  naklejki z białym brzegiem, cieniem, połyskiem i zagiętym rogiem, moce z poświatą, HUD jako pigułki-naklejki (podskok przy zmianie liczby).
+- **Przejścia i świętowanie**: irys przy wejściu/wyjściu z komnat, po upadku i na starcie; świętowanie: promienie i poświata, naklejka „klaps”
+  z pierścieniem i iskrami, połysk, lot do albumu ze śladem, konfetti z dwóch armatek (grawitacja, opór, trzepotanie, dwustronne).
+- **Światło**: ciemność jaskini/komnat w niskiej rozdzielczości (1/3), ciepła poświata latarki/kasku, winieta i kolor pory dnia jako wąskie pasy.
+- **Wstrząs ekranu** przy mocnym lądowaniu, uderzeniu i „klapsie” naklejki; czerwony błysk brzegów przy utracie serduszka.
+- **prefers-reduced-motion**: bez wstrząsów, irysa (krótkie wygaszenie), konfetti, promieni, płatków, kołysania; chmury i gwiazdy stoją.
+
+Wydajność (cel: ~60 fps na średnim telefonie): duże gradienty są drogie przy programowym rysowaniu płótna, więc tła używają płaskich kolorów
+(gradient tylko 2-punktowy dla nieba, a niebo kończy się tam, gdzie zasłania je pełna warstwa), dalsze warstwy nie są wypełniane do dołu
+ekranu, elementy warstw poza ekranem są pomijane, kafle kopiowane 1:1 bez filtrowania, cząsteczek najwyżej 180, DPR najwyżej 2.
+
+**Podmiana na prawdziwe grafiki** (po wygenerowaniu): części Quo — `QUO_RIG.parts[*].src` (niżej); warstwy tła — `ART_SRC['<teren>.<nr warstwy>'] = 'plik.webp'`
+(szer. `PER` = 1600 px na okres powtarzania, przezroczysty WebP; nr warstwy = kolejność w `makeLayers()`), wtedy warstwa jest kopiowana
+z obrazka zamiast rysowana kodem; `LAYER_CACHE = true` przełącza wszystkie warstwy na gotowe obrazki (opłaca się, gdy płótno rysuje GPU).
+Kafle, ozdoby i przeciwnicy to osobne funkcje (`drawSolid`, `drawProp`, `drawPlatform`, `drawBat`, …) — każdą można zastąpić rysowaniem obrazka.
 
 ## Punkty z wycieczki → gra
 
@@ -233,14 +297,14 @@ Animacje w `quoPose()`: `idle`, `walk`, `jump`, `fall`, `glide`, `hurt`, `nap`, 
 
 - Prawdziwe: dane przystanków, misje i zadania foto ze strony `wlochy/marche/frasassi.html`; ikony przystanków
   i grafiki Quo na ekranach (start, quiz, koniec) z `media/icons/`.
-- Zastępcze: Quo w grze rysowany kodem (do podmiany na części), tła i kafle rysowane kodem, dźwięki to proste
-  „piknięcia” WebAudio (domyślnie wyłączone).
+- Zastępcze: Quo w grze rysowany kodem (do podmiany na części), tła i kafle rysowane kodem (oprawa jw.), ikony miejsc —
+  ikony kategorii do czasu własnych plików (manifest), dźwięki to proste „piknięcia” WebAudio (domyślnie wyłączone).
 - Jaskinia nie ma własnej ikony — używa `icon-viewpoint-nature`; świątynia Valadiera używa `icon-church`
   (`icon-monument` to Big Ben i Koloseum). Warto dorysować `icon-cave`.
 
 ## Test
 
-Z katalogu repo: `python3 -m http.server`, potem `http://localhost:8000/gra/`. Spello: `http://localhost:8000/gra/?trasa=spello` (Skarb Quo do testu: `&skarb=1`, poziom Trudny).
+Z katalogu repo: `python3 -m http.server`, potem `http://localhost:8000/gra/?test=1` (dopóki etapy nie są zatwierdzone). Spello: `http://localhost:8000/gra/?test=1&trasa=spello` (Skarb Quo do testu: `&skarb=1`, poziom Trudny).
 Do testów automatycznych strona wystawia `window.__quoGame`: stan, `snapshot()/restore()`, `simulate(wejścia)`
 (deterministyczna symulacja bez efektów ubocznych) i `advance(wejścia)`. Bot planujący sprawdza nimi,
 że każdy poziom da się przejść; dzieci tego nie widzą.

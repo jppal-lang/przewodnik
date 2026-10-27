@@ -1,9 +1,10 @@
 {
-  "note": "Etapy gry na ekranie startowym (gra/index.html?trasa=<slug>). file = dane etapu (frasassi.json ręcznie, reszta z gra/tools/stage-from-trip.mjs). Teksty: klucze page.game.* (polski w \"i18n\"; Frasassi używa starych kluczy z index.html).",
+  "note": "Etapy gry na ekranie startowym (gra/index.html?trasa=<slug>). approved = trasa ukończona i zatwierdzona przez JP — tylko takie etapy gra pokazuje; pozostałe wyłącznie z ?test=1 (plakietka „wersja testowa”). file = dane etapu (frasassi.json ręcznie, reszta z gra/tools/stage-from-trip.mjs). Teksty: klucze page.game.* (polski w \"i18n\"; Frasassi używa starych kluczy z index.html).",
   "default": "frasassi",
   "stages": [
     {
       "slug": "frasassi",
+      "approved": false,
       "file": "frasassi.json",
       "icon": "viewpoint-nature",
       "name": [
@@ -25,6 +26,7 @@
     },
     {
       "slug": "spello",
+      "approved": false,
       "file": "spello.json",
       "icon": "castle",
       "name": [
