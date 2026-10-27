@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=32">
+<link rel="stylesheet" href="styles.css?v=34">
 <script src="i18n-ui.js?v=7"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://quolino.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://quolino.com/","logo":{"@type":"ImageObject","url":"https://quolino.com/quolino-logo.svg"}}}
@@ -178,6 +178,60 @@
   </div>
 </section>
 
+<!-- Co dostajesz: gość / darmowe konto / wykupiona wycieczka (JP 2026-10-27). Teksty data-t="page.home.tiers.*" tłumaczy serwer (ui-translate.mjs). -->
+<section class="album-page" id="dostep" aria-labelledby="tiersTitle">
+  <div class="album-head">
+    <h2 id="tiersTitle" data-t="page.home.tiers.title">Co dostajesz</h2>
+    <p data-t="page.home.tiers.lead">Zobacz, co widzisz bez konta, co otwiera darmowe konto i co da wykupiona wycieczka.</p>
+  </div>
+  <div class="tiers">
+    <article class="tier" aria-labelledby="tierGuest">
+      <img class="tier-quo" src="media/icons/quo-zaloguj-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <p class="tier-tag" data-t="page.home.tiers.guest_tag">Gość</p>
+      <h3 id="tierGuest" data-t="page.home.tiers.guest_title">Bez konta</h3>
+      <ul class="tier-list">
+        <li data-t="page.home.tiers.guest_li1">Zapowiedź każdej wycieczki: zdjęcie, opis, czas zwiedzania i lista przystanków.</li>
+        <li data-t="page.home.tiers.guest_li2">Pierwsze akapity opisu każdego przystanku.</li>
+      </ul>
+      <div class="tier-foot">
+        <a class="btn btn--ghost tier-btn" href="#regiony"><span data-t="page.home.tiers.guest_cta">Przeglądaj wycieczki</span></a>
+      </div>
+    </article>
+    <article class="tier tier--main" aria-labelledby="tierAcc">
+      <img class="tier-quo" src="media/icons/quo-zalogowany-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <p class="tier-tag" data-t="page.home.tiers.acc_tag">Polecamy</p>
+      <h3 id="tierAcc" data-t="page.home.tiers.acc_title">Z darmowym kontem</h3>
+      <p class="tier-note" data-t="page.home.tiers.acc_note">Konto zakładasz tylko z adresem e-mail. Nie pytamy o imię, wiek ani telefon.</p>
+      <ul class="tier-list">
+        <li data-t="page.home.tiers.acc_li1">Pełne opisy przystanków: legendy, „kim był…”, ciekawostki.</li>
+        <li data-t="page.home.tiers.acc_li2">Plan dnia od parkingu po kolację: kolejność przystanków, godziny otwarcia, parking, lokale, punkty awaryjne.</li>
+        <li data-t="page.home.tiers.acc_li3">Widok dziecka przez kod QR: misje, zagadki, zadania foto i obrazek-nagroda do pobrania jako kolorowanka.</li>
+        <li data-t="page.home.tiers.acc_li4">Panel rodzica: album naklejek z odwiedzonych miejsc, wyzwania i kody.</li>
+        <li data-t="page.home.tiers.acc_li5">Jedna wycieczka do wyboru, darmowa na zawsze.</li>
+        <li class="tier-li--now" data-t="page.home.tiers.acc_li6">Do 1 czerwca 2027 wszystkie wycieczki są otwarte za darmo.</li>
+      </ul>
+      <div class="tier-foot">
+        <a class="btn btn--sun tier-btn" href="/zaloguj.html#rejestracja"><span data-t="page.home.tiers.acc_cta">Załóż darmowe konto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </article>
+    <article class="tier tier--paid" aria-labelledby="tierPaid">
+      <img class="tier-quo" src="media/icons/quo-pelna-wycieczka-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <p class="tier-tag" data-t="page.home.tiers.paid_tag">Od 1 czerwca 2027</p>
+      <h3 id="tierPaid" data-t="page.home.tiers.paid_title">Wykupiona wycieczka</h3>
+      <ul class="tier-list">
+        <li data-t="page.home.tiers.paid_li1">Wszystko, co daje konto, dla każdej wykupionej trasy.</li>
+        <li data-t="page.home.tiers.paid_li2">Dostęp od razu po zakupie.</li>
+        <li data-t="page.home.tiers.paid_li3">Zawsze aktualna trasa: poprawki redakcji dostajesz bez dopłat.</li>
+        <li data-t="page.home.tiers.paid_li4">Bonus dla dziecka po przejściu trasy: gra z Quo i naklejka do albumu.</li>
+      </ul>
+      <div class="tier-foot">
+        <p class="tier-fine" data-t="page.home.tiers.paid_note">Ceny pokażemy przed startem płatności.</p>
+      </div>
+    </article>
+  </div>
+  <p class="tiers-bonus" data-t="page.home.tiers.bonus">Najważniejsza jest wycieczka. Gra i filmy z Quo to dodatek za przejście trasy.</p>
+</section>
+
 <section class="album-page rules">
   <div class="rules-text">
     <h2 data-ui="home.about_h2">Rodzinne przewodniki po miastach Europy: od parkingu po ostatnią misję</h2>
@@ -281,6 +335,19 @@ function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e)
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ui(key, fallback) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fallback || key; }
 
+// Teksty data-t="page.home.*" (sekcja „Co dostajesz”): polski w HTML, tłumaczenia z ui_translations
+// (uzupełnia je serwer, ui-translate.mjs). Brak w języku → angielski → polski.
+function applyPageT(lang) {
+  var els = document.querySelectorAll('[data-t]');
+  els.forEach(function (el) { if (el.dataset.pl == null) el.dataset.pl = el.textContent; });
+  if (lang === 'pl') { els.forEach(function (el) { el.textContent = el.dataset.pl; }); return; }
+  sb('ui_translations', 'select=key,lang,value&key=like.page.home.*&lang=in.(' + encodeURIComponent(lang) + ',en)').then(function (rows) {
+    var d = {}, en = {};
+    (rows || []).forEach(function (r) { (r.lang === lang ? d : en)[r.key] = r.value; });
+    els.forEach(function (el) { var k = el.getAttribute('data-t'); el.textContent = d[k] || en[k] || el.dataset.pl; });
+  }).catch(function () { /* bez sieci: zostaje polski */ });
+}
+
 // ══════ LOAD PAGE ══════
 function loadPage(lang) {
   currentLang = lang;
@@ -316,6 +383,8 @@ function loadPage(lang) {
       var val = uiStrings[key];
       if (val) el.textContent = val;
     });
+
+    applyPageT(lang);
 
     // Update page title
     if (uiStrings['home.title']) document.title = uiStrings['home.title'];
