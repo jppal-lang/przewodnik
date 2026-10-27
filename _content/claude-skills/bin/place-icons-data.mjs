@@ -5,8 +5,8 @@
 //   files: ['File:….jpg', 'File:….jpg'] (dwa zdjęcia wybrane ręcznie — bez wyboru przez Claude), skip: true (bez ikony).
 export default {
   trips: [
-    { slug: 'spello' },
-    { slug: 'frasassi' },
+    { slug: 'spello', force: true },     // JP 2026-10-27: generować przed zatwierdzeniem nowej wersji trasy
+    { slug: 'frasassi', force: true },
   ],
   max: 3,            // przystanków na jedno uruchomienie kolejki
   maxPending: 6,     // tyle ikon może czekać na ocenę JP — więcej kolejka nie generuje (nie palimy limitu na zapas)

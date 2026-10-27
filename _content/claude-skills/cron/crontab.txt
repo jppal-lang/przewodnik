@@ -30,5 +30,5 @@ H=hermes-quolino-hermes-agent-1
 # Ikony miejsc (docs/IKONY-MIEJSC.md, JP 2026-10-27) — DODAJ RĘCZNIE do crontab roota (JP):
 # watch: odpowiedzi JP w #ikony-miejsc („ok N”, „N uwagi…”, „N inne zdjęcia”, „następne”); queue: najwyżej 3 przystanki na przebieg,
 # tylko gdy limit Antigravity (AI Pro) jest dostępny — przy wyczerpanym limicie kończy od razu i wznawia sama po odnowieniu.
-# */2 * * * *  docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node place-icons.mjs watch >> /root/quolino-web/place-icons.log 2>&1
-# 11,41 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node place-icons.mjs queue >> /root/quolino-web/place-icons.log 2>&1
+*/2 * * * *  docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node place-icons.mjs watch >> /root/quolino-web/place-icons.log 2>&1
+11,41 * * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node place-icons.mjs queue >> /root/quolino-web/place-icons.log 2>&1
