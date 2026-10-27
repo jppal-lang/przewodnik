@@ -1,6 +1,8 @@
-# Quo: Wyprawa — demo gry (Frasassi)
+# Quo: Wyprawa — demo gry (Frasassi, Spello)
 
-Platformówka 2D jako nagroda po wycieczce. Demo: jeden etap — Jaskinie Frasassi, trzy poziomy trudności.
+Platformówka 2D jako nagroda po wycieczce. Etapy: Jaskinie Frasassi i Spello, każdy w trzech poziomach trudności.
+Etap wybiera adres `gra/?trasa=<slug>` (domyślnie `frasassi`) albo przycisk „Wybierz wyprawę” na ekranie startowym
+(lista z `stages.json`; wybór przeładowuje stronę z `?trasa=`, inne parametry zostają).
 Strona `gra/index.html` ma `noindex` i nie jest nigdzie podlinkowana.
 
 Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Zero bibliotek, zero build stepu.
@@ -13,7 +15,11 @@ Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Z
 | `game.css` | wygląd (kolory z design systemu Quolino) |
 | `game.js` | silnik: budowa poziomu, fizyka, rysowanie, szkielet Quo, świętowanie |
 | `treasure.js` | Skarb Quo: zapis lokalny i odbiór na koncie rodzica |
-| `frasassi.json` | dane etapu: przystanki, misje, pytania quizu (ze źródłem) |
+| `stages.json` | lista etapów na ekranie startowym: slug, plik, ikona, napisy (klucze `page.game.*` + polski w `"i18n"`) |
+| `frasassi.json` | dane etapu Frasassi (ręcznie): przystanki, misje, pytania quizu (ze źródłem) |
+| `spello.json` | dane etapu Spello — szkielet z `tools/stage-from-trip.mjs`, pytania pisane ręcznie (ze źródłem) |
+| `data/<slug>.trip.json` | opublikowana wersja trasy z bazy (`game-export.mjs` na serwerze) — źródło dla generatora |
+| `tools/stage-from-trip.mjs` | generator etapu z eksportu trasy (node, bez zależności) |
 
 ## Jak grać
 
@@ -88,8 +94,8 @@ przy kolejnych grach.
   i Średnim każda komnata to punkt kontrolny; na Trudnym drzemka wraca na start przystanku, a ukończone komnaty potem przepuszczają
   od razu do wyjścia. Układ nigdy nie wymaga więcej niż 4 rzeczy naraz. 1–2 zagubione naklejki przystanku leżą w komnatach.
   Mapy komnat są tekstowe (`CX` w `game.js`, legenda w komentarzu sekcji 5b); `route` to punkty dla bota testowego.
-- **Przebrania** (tylko wygląd): kask z lampką (świeci mocniej w jaskini), kaptur mnicha, kapelusz odkrywcy.
-  Wybór na ekranie startowym.
+- **Przebrania** (tylko wygląd, osobno dla każdej wycieczki): Frasassi — kask z lampką (świeci mocniej w jaskini),
+  kaptur mnicha, kapelusz odkrywcy; Spello — wianek z kwiatów, kapelusz odkrywcy. Wybór na ekranie startowym.
 - **Tryb foto** 📸: przy naklejce przystanku robi „zdjęcie” Quo z naklejką. Zdjęcia są w albumie na końcu.
 
 ## Tłumaczenia (17 języków)
@@ -101,15 +107,66 @@ tłumaczenia z tabeli `ui_translations` (klucze `page.game.*`), brak tłumaczeni
 - `game.js`: każdy napis to `PT('page.game.…', 'tekst polski')` — dosłownie, w pojedynczych cudzysłowach (z tego czyta serwer).
   Zmienne części jako `{n}`, `{name}` itd., podmieniane po tłumaczeniu (`fill()`). Napisy na płótnie: krój strony z zapasowymi,
   min. 18 px na ekranie, za długie zmniejszają się, potem łamią w 2 linie. Gra czeka na tłumaczenia (najdłużej 2,5 s).
+- `stages.json`: nazwy etapów i napisy ekranu startowego/albumu (`page.game.stage.<slug>.*`; Frasassi — stare klucze `page.game.html.lead|album|canvas`).
+- `spello.json` (i kolejne z generatora): `"i18n"` odświeża `node gra/tools/stage-from-trip.mjs <slug>`.
 - `frasassi.json`: pytania mają stałe `id` (np. `s02q4`), a obiekt `"i18n"` trzyma klucze `page.game.frasassi.<id>.q|a0–a3|hint`
   i `page.game.frasassi.s<nr>.name` z polskim tekstem. Po zmianie treści przystanków odśwież go:
   `python3 -c "import json;f='gra/frasassi.json';d=json.load(open(f));d['i18n']={**{f\"page.game.{d['trip']}.s{s['key']}.name\":s['name'] for s in d['stops']},**{f\"page.game.{d['trip']}.{q['id']}.{k}\":v for s in d['stops'] for q in s['quests'] for k,v in [('q',q['q']),('hint',q['hint'])]+[(f'a{i}',a) for i,a in enumerate(q['answers'])]}};open(f,'w').write(json.dumps(d,indent=2,ensure_ascii=False)+'\n')"`
 - Serwer (`_content/claude-skills/bin/ui-translate.mjs`, co godzinę) zbiera polskie teksty z `*.html` w katalogu głównym i w `gra/`,
   z wywołań `PT('page.…', '…')` w `*.js` (katalog główny i `gra/`) oraz z obiektów `"i18n"` w `gra/*.json`, i tłumaczy brakujące.
 
+## Nowy etap z opublikowanej trasy
+
+1. Na serwerze: `node game-export.mjs <slug>` → `gra/data/<slug>.trip.json` (opublikowana wersja trasy).
+2. `node gra/tools/stage-from-trip.mjs <slug>` → `gra/<slug>.json`: przystanki w kolejności `sort_order`, polskie nazwy,
+   ikony naklejek (mapa QUE z panelu admina + emoji przystanku, bez powtórek, jeśli jest zapasowa), klucze postępu
+   (`qcKey` = `stop_key`; misja = jest `kids_box`, foto = jest `photo_task` — tak jak checkboxy w `city.html`),
+   teren i atrakcje w `"game"`, obiekt `"i18n"`. Parking, lody/słodycze i posiłek to krótkie łączniki bez pytań
+   (lokale dostają nazwę ogólną, np. „Przerwa na lody” — oryginał w `sourceName`; w widoku dziecka bez komercji).
+3. Pytania (`quests`) dopisz ręcznie: tylko fakty z polskich tekstów trasy (opis, misja, podpowiedź, lokalny smak…),
+   2–3 na przystanek zwiedzania, `source` = zdanie źródłowe dosłownie, poprawna odpowiedź pod indeksem `correct`
+   (błędne mogą być wymyślone). Uruchom generator ponownie — zachowa pytania i pola z `"manual"` (np. `["name","game"]`)
+   i odświeży `"i18n"`.
+4. Dopisz etap do `stages.json` (slug, plik, ikona, napisy `name`/`lead`/`album`/`canvas` + polski w `"i18n"`).
+
+### Spello (`spello.json`)
+
+11 przystanków. Sekcja ma długość `game.len × D.sec`, ale nie mniej, niż potrzeba na jej atrakcje (`spNeed`).
+Jedna brama z pytaniem na przystanek zwiedzania (Łatwy/Średni 1 pytanie, Trudny 2) — razem tyle pytań co we Frasassi;
+pytania zmieniają się przy kolejnych grach. Zagubione naklejki: 3 przy willi (1–2 z nich w komnatach), 2 przy innych
+przystankach, 1 na łączniku; gwiazdka za komplet.
+
+| Teren (`game.terrain`) | wygląd | przystanki |
+|---|---|---|
+| `olive` | zbocze z gajem oliwnym, Spello na wzgórzu w tle | parking (łącznik) |
+| `villa` | ruiny rzymskiej willi, kolumny, fragmenty mozaik, mozaikowy brzeg ścieżki | Villa dei Mosaici |
+| `gate` | rzymskie mury i brama z trzema łukami i wieżami, cyprysy, bloki różowo-białego kamienia | Porta Consolare, Via Giulia, Porta Venere |
+| `fresco` | wnętrze kościoła: kolumny, łuki, freski, smugi światła, posadzka | Sant'Andrea, Santa Maria Maggiore |
+| `alley` | strome uliczki: domy z kamienia, zielone okiennice, kwiaty, balkony, schodki | Vicoli, przerwa na lody (łącznik) |
+| `belvedere` | panorama doliny o zachodzie słońca: pola, wioski, cyprysy | Belvedere Panoramico |
+| `dusk` | ta sama panorama wieczorem, światła w dolinie, świetliki | kolacja (łącznik, koniec) |
+
+Atrakcje Spello (fakty w napisach tylko z tekstów trasy):
+- **Villa dei Mosaici**: mozaika-przesuwanka 3×3 z naklejki przystanku (skrzynia z podwójnym skokiem) i komnaty
+  „Wykop pod willą” / „Labirynt wykopalisk” / „Komnaty pod willą” (3 / 7 / 9 komnat) — te same, sprawdzone układy co pod
+  opactwem, w lustrzanym odbiciu, z motywem rzymskiego muru (opus reticulatum), mozaik i ciemnej cysterny. Na Średnim
+  i Trudnym przed naklejką: kładka nad wykopem, która wali się falą.
+- **Porta Consolare**: rzymska brama z kratą — dźwignia otwiera ją na 13 / 10 / 8 s (wszystkie poziomy), po drodze
+  schodki, przepaść, na Średnim/Trudnym żuk albo kolczak, na Trudnym krucha półka.
+- **Kościoły**: gołębie zamiast nietoperzy; w Santa Maria Maggiore (Średni/Trudny) rusztowanie z dwiema windami na półkę z naklejką.
+- **Porta Venere**: (Średni/Trudny) windy przy wieżach i spadające kamienie.
+- **Vicoli**: „Kwiatowy dywan” (tablica, skok) — dokończ wzór z płatków jak na Infiorate (o nich mówią teksty trasy):
+  Łatwy 4×4 i 2 kolory z podglądem, Średni 4×4 i 3 kolory z podglądem, Trudny 5×5 i 4 kolory bez podglądu (wzór
+  symetryczny). Nagroda: przebranie **wianek z kwiatów**. Pionowa wspinaczka po balkonach z donicami na wysoki zaułek
+  (na Średnim/Trudnym spada donica), schodki, wózek z kwiatami pod górę — szybkie ◀ ▶ jak przy głazie (raz na etap).
+- **Belvedere**: stojak z balonikami i przelot nad doliną (wszystkie poziomy; Łatwy z chmurką-półką, Średni/Trudny
+  szerzej i z podmuchami), wyspa w chmurach z kapeluszem odkrywcy. Skarb Quo (Trudny, flaga) — tu, nad wyspą,
+  jak we Frasassi: tylko balonikiem, kamera bez balonika go nie pokazuje, `claim` z `p_trip:'spello'`.
+- **Kolacja (wieczór)**: świetliki — każdy daje kamyczek. Ostatnia naklejka kończy wyprawę.
+
 ## Poziom z danych wycieczki
 
-Każdy przystanek z `frasassi.json` to kolejna sekcja. `category` wybiera teren:
+Każdy przystanek to kolejna sekcja. We Frasassi (bez `"game"`) teren wybiera `category`:
 
 | category | teren |
 |----------|-------|
@@ -125,7 +182,8 @@ Ikona przystanku: `media/icons/icon-<icon>-256.webp` (nazwy jak w mapie QUE w pa
 ## Punkty z wycieczki → gra
 
 Gra tylko CZYTA postęp wycieczki z tego urządzenia:
-`quolino_missions:frasassi` (klucze `<nr>-misja-<i>`, `<nr>-foto`) i `qc.task.<qcKey>-mission/-photo` (gdy JSON ma `qcKey`).
+`quolino_missions:frasassi` (klucze `<nr>-misja-<i>`, `<nr>-foto`) i `qc.task.<qcKey>-mission/-photo` (gdy JSON ma `qcKey`;
+Spello: `qcKey` = `stop_key`, np. `qc.task.villa-dei-mosaici-mission` — tak zapisuje `city.html`).
 
 | Z wycieczki | W grze |
 |-------------|--------|
@@ -135,8 +193,9 @@ Gra tylko CZYTA postęp wycieczki z tego urządzenia:
 
 Przełącznik „Tryb demo: symuluj punkty z trasy” na ekranie startowym.
 
-Klucze gry (tylko `localStorage`, prefiks `quolino_game_`): `demo`, `diff`, `frasassi` (rekordy per poziom),
-`hats`, `hat`, `photos` (zdjęcia JPEG ok. 30 KB każde, max 4 na wycieczkę), `treasure`, `treasure_pending`.
+Klucze gry (tylko `localStorage`, prefiks `quolino_game_`): `demo`, `diff`, `<slug>` (rekordy per poziom: `frasassi`,
+`spello`), przebrania per wycieczka — `hats`/`hat` (Frasassi) i `hats_<slug>`/`hat_<slug>` (np. `hats_spello`, `hat_spello`),
+`photos` (obiekt `{<slug>: [...]}`, zdjęcia JPEG ok. 30 KB każde, po jednym na przystanek), `treasure` (`{<slug>: …}`), `treasure_pending`.
 Przed publikacją: dopisać je w `docs/BACKEND.md` §6 i w `cookie-policy.html`.
 
 ## Quo — szkielet cut-out
@@ -181,7 +240,7 @@ Animacje w `quoPose()`: `idle`, `walk`, `jump`, `fall`, `glide`, `hurt`, `nap`, 
 
 ## Test
 
-Z katalogu repo: `python3 -m http.server`, potem `http://localhost:8000/gra/`.
+Z katalogu repo: `python3 -m http.server`, potem `http://localhost:8000/gra/`. Spello: `http://localhost:8000/gra/?trasa=spello` (Skarb Quo do testu: `&skarb=1`, poziom Trudny).
 Do testów automatycznych strona wystawia `window.__quoGame`: stan, `snapshot()/restore()`, `simulate(wejścia)`
 (deterministyczna symulacja bez efektów ubocznych) i `advance(wejścia)`. Bot planujący sprawdza nimi,
 że każdy poziom da się przejść; dzieci tego nie widzą.

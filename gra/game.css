@@ -255,3 +255,40 @@ button,.btn,.answer,.diff-btn,.hat-btn,.kicker,.toast,.celebrate-text,.organ-sta
 .diff-btn b,.diff-btn span{line-height:1.15}
 .pad-jump span{max-width:96px;font-size:18px;text-align:center;overflow-wrap:anywhere}
 .kicker{letter-spacing:.03em}
+
+/* Wybór wyprawy (etapy z gra/stages.json) */
+.trips{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.trip-btn{min-height:60px;display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:14px;border:2px solid var(--rule);background:#fff;font:inherit;font-size:19px;font-weight:800;color:var(--ink);cursor:pointer;text-align:left}
+.trip-btn img{width:44px;height:44px;object-fit:contain;flex:none}
+.trip-btn[aria-pressed="true"]{border-color:var(--verde);background:var(--verde-50);color:var(--verde)}
+.trip-btn:focus-visible,.cell:focus-visible,.petal:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+/* Kwiatowy dywan (Spello) */
+.carpet-wrap{display:flex;gap:12px;align-items:center;justify-content:center}
+.carpet{--n:4;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:4px;width:min(100%,300px);aspect-ratio:1;background:#3F6B38;padding:6px;border-radius:12px;flex:none}
+.cell{min-width:44px;min-height:44px;border:0;border-radius:50%;background:radial-gradient(circle at 50% 50%,#FFC629 0 16%,var(--c) 17% 100%);cursor:default;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.cell.empty{background:rgba(255,255,255,.12);border:2px dashed rgba(255,255,255,.7);cursor:pointer}
+.cell.wrong{cursor:pointer;outline:3px solid var(--rosso);outline-offset:-3px}
+.carpet-target{--n:4;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:2px;width:88px;aspect-ratio:1;background:#3F6B38;padding:4px;border-radius:8px;flex:none}
+.carpet-target i{border-radius:50%;background:var(--c)}
+.petals{display:flex;justify-content:center;gap:12px}
+.petal{width:56px;height:56px;border-radius:50%;border:3px solid var(--ink);background:radial-gradient(circle at 50% 50%,#FFC629 0 16%,var(--c) 17% 100%);cursor:pointer}
+.petal[aria-pressed="true"]{box-shadow:0 0 0 4px var(--sun);transform:scale(1.08)}
+@media (max-width:420px){ .carpet-wrap{flex-direction:column-reverse} .carpet-target{width:72px} }
+@media (max-height:520px) and (orientation:landscape){
+  .card-carpet{width:min(100%,760px);display:grid;grid-template-columns:1fr auto;column-gap:16px;row-gap:6px;padding:10px 16px}
+  .card-carpet > *{grid-column:1}
+  .card-carpet .carpet-wrap{grid-column:2;grid-row:1 / span 6}
+  .card-carpet .carpet{width:230px}
+  .card-carpet h2{font-size:24px}
+}
+/* Wózek pod górę (szybkie ◀ ▶ w uliczce Spello) */
+.mash-stage.cart{background:linear-gradient(#9CC8F0,#FBF1E6 55%,#E9CDC2 55%)}
+.mash-stage.cart .mash-rope{display:none}
+.mash-stage.cart .mash-rock{display:block;border-radius:8px;width:118px;height:62px;background:repeating-linear-gradient(#9A6A35 0 16px,#7A4E25 16px 19px);border:4px solid #3B2A00;bottom:16%;margin-left:70px}
+.mash-stage.cart .mash-rock::before{content:"";position:absolute;left:-2px;right:-2px;top:-24px;height:26px;border-radius:14px 14px 4px 4px;
+  background:radial-gradient(circle at 12% 60%,#E8467C 0 9px,transparent 10px),radial-gradient(circle at 30% 35%,#FFC629 0 9px,transparent 10px),radial-gradient(circle at 50% 60%,#FFFFFF 0 9px,transparent 10px),
+  radial-gradient(circle at 70% 35%,#C81E36 0 9px,transparent 10px),radial-gradient(circle at 88% 60%,#B07CE0 0 9px,transparent 10px),#4F8A3F}
+.mash-stage.cart .mash-rock::after{content:"";position:absolute;left:8px;right:8px;bottom:-26px;height:26px;
+  background:radial-gradient(circle at 13px 13px,#C99A60 0 6px,#0E1A2B 7px 12px,transparent 13px),radial-gradient(circle at calc(100% - 13px) 13px,#C99A60 0 6px,#0E1A2B 7px 12px,transparent 13px)}
+.mash-stage.cart .mash-quo{margin-left:0;bottom:4%}

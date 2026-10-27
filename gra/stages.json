@@ -1,0 +1,58 @@
+{
+  "note": "Etapy gry na ekranie startowym (gra/index.html?trasa=<slug>). file = dane etapu (frasassi.json ręcznie, reszta z gra/tools/stage-from-trip.mjs). Teksty: klucze page.game.* (polski w \"i18n\"; Frasassi używa starych kluczy z index.html).",
+  "default": "frasassi",
+  "stages": [
+    {
+      "slug": "frasassi",
+      "file": "frasassi.json",
+      "icon": "viewpoint-nature",
+      "name": [
+        "page.game.stage.frasassi.name",
+        "Jaskinie Frasassi"
+      ],
+      "lead": [
+        "page.game.html.lead",
+        "Jaskinie Frasassi · Marche"
+      ],
+      "album": [
+        "page.game.html.album",
+        "Twój album z Frasassi"
+      ],
+      "canvas": [
+        "page.game.html.canvas",
+        "Gra: Quo idzie przez Jaskinie Frasassi"
+      ]
+    },
+    {
+      "slug": "spello",
+      "file": "spello.json",
+      "icon": "castle",
+      "name": [
+        "page.game.stage.spello.name",
+        "Spello"
+      ],
+      "lead": [
+        "page.game.stage.spello.lead",
+        "Spello · Umbria"
+      ],
+      "album": [
+        "page.game.stage.spello.album",
+        "Twój album ze Spello"
+      ],
+      "canvas": [
+        "page.game.stage.spello.canvas",
+        "Gra: Quo idzie przez Spello"
+      ]
+    }
+  ],
+  "i18n": {
+    "page.game.stage.frasassi.name": "Jaskinie Frasassi",
+    "page.game.stage.spello.name": "Spello",
+    "page.game.stage.spello.lead": "Spello · Umbria",
+    "page.game.stage.spello.album": "Twój album ze Spello",
+    "page.game.stage.spello.canvas": "Gra: Quo idzie przez Spello",
+    "page.game.html.lead": "Jaskinie Frasassi · Marche",
+    "page.game.html.album": "Twój album z Frasassi",
+    "page.game.html.canvas": "Gra: Quo idzie przez Jaskinie Frasassi"
+  }
+}

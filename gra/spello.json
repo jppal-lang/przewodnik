@@ -1,0 +1,755 @@
+{
+  "trip": "spello",
+  "title": "Spello",
+  "region": "Umbria",
+  "source": "gra/data/spello.trip.json (wersja 1, published)",
+  "generated": "gra/tools/stage-from-trip.mjs — pytania i pola z „manual” są ręczne",
+  "progress": {
+    "legacyKey": null,
+    "note": "Postęp z wycieczki jak w city.html: qc.task.<qcKey>-mission (misja przystanku) i qc.task.<qcKey>-photo (zadanie foto)."
+  },
+  "hats": [
+    "crown",
+    "explorer"
+  ],
+  "treasureStop": "belvedere-panoramico",
+  "stops": [
+    {
+      "key": "01",
+      "qcKey": "parking-villa-dei-mosaici",
+      "name": "Parking Villa dei Mosaici",
+      "category": "parking",
+      "icon": "parking",
+      "missions": 1,
+      "photo": false,
+      "powerup": "magnet",
+      "kids": [
+        "Czy wiecie, że największe odkrycia są czasem dziełem przypadku? Zanim wejdziemy do willi, spróbujcie przewidzieć: co archeolog mógł zobaczyć jako pierwsze, kiedy z ziemi zaczęła wychodzić rzymska willa?"
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "olive",
+        "len": 0.2,
+        "hidden": 1,
+        "connector": true
+      },
+      "quests": []
+    },
+    {
+      "key": "02",
+      "qcKey": "villa-dei-mosaici",
+      "name": "Villa dei Mosaici",
+      "category": "museum",
+      "icon": "museum",
+      "missions": 1,
+      "photo": false,
+      "powerup": "doublejump",
+      "kids": [
+        "Misja „Dwa zegary\": znajdź na ekspozycji informację o 753 r. p.n.e. i sprawdź, ile lat później zaczęła powstawać Villa dei Mosaici. Potem odnajdź triclinium — salę bankietową — i zrób jej zdjęcie. Bonus: pokaż rodzicowi, gdzie na mozaice widzisz scenę nalewania wina."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "villa",
+        "len": 0.75,
+        "maxGates": 1,
+        "hidden": 3,
+        "chests": 1,
+        "mosaic": true,
+        "complex": true,
+        "mini": "trench"
+      },
+      "quests": [
+        {
+          "id": "s02q1",
+          "q": "Co budowano, gdy w 2005 roku z ziemi wyszła rzymska mozaika?",
+          "answers": [
+            "Publiczny parking",
+            "Basen",
+            "Szkołę",
+            "Most na rzece"
+          ],
+          "correct": 0,
+          "hint": "Zostawiliście tam auto — to tam zaczęło się odkrycie!",
+          "source": "W lipcu 2005 roku, w miejscowości Sant'Anna, podczas prac związanych z budową publicznego parkingu, z ziemi zaczęły wychodzić pozostałości starożytnej mozaiki."
+        },
+        {
+          "id": "s02q2",
+          "q": "Do czego służyło triclinium w rzymskiej willi?",
+          "answers": [
+            "Do uczt",
+            "Do spania",
+            "Do kąpieli",
+            "Do trzymania koni"
+          ],
+          "correct": 0,
+          "hint": "To sala bankietowa — było tam dużo jedzenia!",
+          "source": "Triclinium była rzymską salą przeznaczoną do uczt."
+        },
+        {
+          "id": "s02q3",
+          "q": "Jaka jest tradycyjna data założenia Rzymu?",
+          "answers": [
+            "753 r. p.n.e.",
+            "2005 r.",
+            "1270 r.",
+            "1501 r."
+          ],
+          "correct": 0,
+          "hint": "Szukaj jej na ekspozycji — to pierwszy „zegar” z misji „Dwa zegary”.",
+          "source": "Tradycyjna data założenia Rzymu to 753 r. p.n.e."
+        }
+      ]
+    },
+    {
+      "key": "03",
+      "qcKey": "porta-consolare",
+      "name": "Porta Consolare",
+      "category": "monument",
+      "icon": "monument",
+      "missions": 1,
+      "photo": false,
+      "powerup": "glide",
+      "kids": [
+        "Zagrajcie w archeologów. Znajdź na Porta Consolare trzy elementy pochodzące z różnych momentów historii bramy. Wybierz jeden i zrób zdjęcie. Następnie zdecyduj: co jest rzymskie, co zostało dodane później?"
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "gate",
+        "len": 0.45,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1,
+        "mini": "lever",
+        "miniAll": true
+      },
+      "quests": [
+        {
+          "id": "s03q1",
+          "q": "Ile marmurowych posągów stoi na Porta Consolare?",
+          "answers": [
+            "Trzy",
+            "Jeden",
+            "Dziesięć",
+            "Ani jednego"
+          ],
+          "correct": 0,
+          "hint": "Policz je na bramie — mniej niż palców jednej ręki.",
+          "source": "Trzy marmurowe posągi na bramie pochodzą z końca I wieku p.n.e. i zostały tu wykorzystane ponownie."
+        },
+        {
+          "id": "s03q2",
+          "q": "Jaka data widnieje na fasadzie Palazzo Comunale?",
+          "answers": [
+            "1270",
+            "2005",
+            "1831",
+            "1501"
+          ],
+          "correct": 0,
+          "hint": "To XIII wiek: dwanaście… siedemdziesiąt.",
+          "source": "Przy placu stoi Palazzo Comunale, którego pierwotna część pochodzi z XIII wieku; na fasadzie widnieje data 1270."
+        },
+        {
+          "id": "s03q3",
+          "q": "Kiedy przebudowywano Porta Consolare?",
+          "answers": [
+            "W renesansie",
+            "W zeszłym roku",
+            "W epoce dinozaurów",
+            "Nigdy"
+          ],
+          "correct": 0,
+          "hint": "W tej samej epoce, w której malował Pinturicchio.",
+          "source": "Brama była przebudowywana w renesansie, a trzy marmurowe posągi pochodzą z końca I wieku p.n.e. i zostały tu umieszczone później."
+        }
+      ]
+    },
+    {
+      "key": "04",
+      "qcKey": "sant-andrea",
+      "name": "Chiesa di Sant'Andrea",
+      "category": "church",
+      "icon": "church",
+      "missions": 1,
+      "photo": false,
+      "powerup": "magnet",
+      "kids": [
+        "Kościół pamięta ponad 1000 lat. Znajdź ślad, który wygląda na najstarszy. Nie podawaj roku — wskaż konkretny detal i wyjaśnij, dlaczego uważasz go za starszy od reszty."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "fresco",
+        "len": 0.4,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1
+      },
+      "quests": [
+        {
+          "id": "s04q1",
+          "q": "Z którego roku pochodzi pierwsza wzmianka o kościele Sant'Andrea?",
+          "answers": [
+            "1025",
+            "2005",
+            "1831",
+            "1501"
+          ],
+          "correct": 0,
+          "hint": "To ponad tysiąc lat temu.",
+          "source": "Pierwsza znana wzmianka o Sant'Andrea pochodzi z 1025 roku, kiedy kościół należał do dóbr mnichów kamedulskich z San Silvestro na Monte Subasio."
+        },
+        {
+          "id": "s04q2",
+          "q": "Komu biskup Spoleto przekazał kościół w 1253 roku?",
+          "answers": [
+            "Franciszkanom",
+            "Rycerzom",
+            "Piratom",
+            "Rzymskim legionistom"
+          ],
+          "correct": 0,
+          "hint": "Zakonnikom, których nazwa pochodzi od świętego Franciszka.",
+          "source": "W 1253 roku biskup Spoleto przekazał kościół wraz z domami, ogrodem i przyległymi gruntami franciszkanom."
+        },
+        {
+          "id": "s04q3",
+          "q": "Do kogo należał kościół w 1025 roku?",
+          "answers": [
+            "Do mnichów kamedulskich",
+            "Do kupców z Wenecji",
+            "Do cesarza Augusta",
+            "Do piekarzy ze Spello"
+          ],
+          "correct": 0,
+          "hint": "Do mnichów z San Silvestro na Monte Subasio.",
+          "source": "Pierwsza znana wzmianka o Sant'Andrea pochodzi z 1025 roku, kiedy kościół należał do dóbr mnichów kamedulskich z San Silvestro na Monte Subasio."
+        }
+      ]
+    },
+    {
+      "key": "05",
+      "qcKey": "santa-maria-maggiore",
+      "name": "Santa Maria Maggiore / Cappella Baglioni",
+      "category": "church",
+      "icon": "church",
+      "missions": 1,
+      "photo": false,
+      "powerup": "magnet",
+      "kids": [
+        "Pinturicchio zostawił tu swoją twarz. Odnajdź jego autoportret. Zrób zdjęcie i porównaj jego twarz z innymi osobami przedstawionymi we freskach."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "fresco",
+        "len": 0.4,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1,
+        "mini": "scaffold"
+      },
+      "quests": [
+        {
+          "id": "s05q1",
+          "q": "Kto namalował freski w Cappella Baglioni?",
+          "answers": [
+            "Pinturicchio",
+            "Rycerz Orlando",
+            "Biskup Spoleto",
+            "Cesarz August"
+          ],
+          "correct": 0,
+          "hint": "Artysta, który zostawił w kaplicy własną twarz.",
+          "source": "Pinturicchio został sprowadzony tutaj w 1500 roku przez Troilo Baglioniego, przeora kolegiaty Santa Maria Maggiore."
+        },
+        {
+          "id": "s05q2",
+          "q": "Co Pinturicchio zostawił w kaplicy oprócz fresków?",
+          "answers": [
+            "Własną twarz — autoportret",
+            "Swój kapelusz",
+            "Mapę skarbu",
+            "Złoty klucz"
+          ],
+          "correct": 0,
+          "hint": "Szukaj postaci, która nie należy do głównej historii — to sam artysta!",
+          "source": "Co ważne dla rodzinnej gry, Pinturicchio zostawił tu również własną twarz."
+        },
+        {
+          "id": "s05q3",
+          "q": "Ile Sybilli namalowano na sklepieniu kaplicy?",
+          "answers": [
+            "Cztery",
+            "Jedną",
+            "Dwanaście",
+            "Sto"
+          ],
+          "correct": 0,
+          "hint": "Tyle, ile jest pór roku.",
+          "source": "Na sklepieniu znajdują się cztery Sybille."
+        }
+      ]
+    },
+    {
+      "key": "06",
+      "qcKey": "via-giulia",
+      "name": "Via Giulia — Ślad Rzymski",
+      "category": "street",
+      "icon": "street",
+      "missions": 1,
+      "photo": false,
+      "powerup": "glide",
+      "kids": [
+        "Znajdź detal, który większość turystów może minąć bez zauważenia. Zrób zdjęcie i odpowiedz: co mówi Ci, że pochodzi ze starożytnego miasta?"
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "gate",
+        "len": 0.34,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1
+      },
+      "quests": [
+        {
+          "id": "s06q1",
+          "q": "Ile miast nałożonych jedno na drugie można odczytać w Spello?",
+          "answers": [
+            "Pięć",
+            "Jedno",
+            "Dwa",
+            "Dwadzieścia"
+          ],
+          "correct": 0,
+          "hint": "Rzymskie, średniowieczne, renesansowe, papieskie i współczesne — policz!",
+          "source": "Spello można czytać jak pięć miast nałożonych jedno na drugie."
+        },
+        {
+          "id": "s06q2",
+          "q": "Co zachowało się w rzymskiej warstwie Spello?",
+          "answers": [
+            "Mury, bramy, forum, termy i amfiteatr",
+            "Wieżowce i windy",
+            "Lotnisko",
+            "Stacja metra"
+          ],
+          "correct": 0,
+          "hint": "Wszystko to zbudowali starożytni Rzymianie.",
+          "source": "W rzymskiej warstwie miasta zachowały się mury, bramy, forum, domy, termy, amfiteatr i inne pozostałości."
+        },
+        {
+          "id": "s06q3",
+          "q": "Fragment jakiego łuku zachował się w Via Giulia?",
+          "answers": [
+            "Arco di Augusto",
+            "Łuku Tęczy",
+            "Łuku Smoka",
+            "Łuku Księżyca"
+          ],
+          "correct": 0,
+          "hint": "Łuk nosi imię rzymskiego cesarza Augusta.",
+          "source": "rzymski; fragment Arco di Augusto zachowany w Via Giulia"
+        }
+      ]
+    },
+    {
+      "key": "07",
+      "qcKey": "porta-venere",
+      "name": "Porta Venere + Torri di Properzio",
+      "category": "monument",
+      "icon": "castle",
+      "missions": 1,
+      "photo": false,
+      "powerup": "glide",
+      "kids": [
+        "Znajdź trzy różne epoki w jednym miejscu. Wskaż element rzymski, element średniowieczny i element będący wynikiem późniejszych zmian. Zrób jedno zdjęcie, na którym widać co najmniej dwa z nich."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "gate",
+        "len": 0.45,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1,
+        "mini": "tower"
+      },
+      "quests": [
+        {
+          "id": "s07q1",
+          "q": "Z jakiego kamienia zbudowano Porta Venere?",
+          "answers": [
+            "Z białego trawertynu",
+            "Z czerwonej cegły",
+            "Z drewna",
+            "Z lodu"
+          ],
+          "correct": 0,
+          "hint": "To jasny, biały kamień.",
+          "source": "Jest trójłukowa i wykonana z białego trawertynu; pomiędzy łukami zastosowano pilastry porządku doryckiego."
+        },
+        {
+          "id": "s07q2",
+          "q": "Ile boków mają wieże przy Porta Venere?",
+          "answers": [
+            "Dwanaście",
+            "Cztery",
+            "Trzy",
+            "Sto"
+          ],
+          "correct": 0,
+          "hint": "Tyle, ile miesięcy w roku.",
+          "source": "Mają plan dwunastoboczny i są zwykle datowane na XII wiek."
+        },
+        {
+          "id": "s07q3",
+          "q": "Kogo według legendy więziono w jednej z wież?",
+          "answers": [
+            "Rycerza Orlando",
+            "Smoka",
+            "Pinturicchia",
+            "Cesarza Augusta"
+          ],
+          "correct": 0,
+          "hint": "Legendarnego rycerza Karola Wielkiego.",
+          "source": "Z miejscem związana jest również lokalna opowieść o Orlando, według której jedna z wież miała być miejscem jego więzienia."
+        }
+      ]
+    },
+    {
+      "key": "08",
+      "qcKey": "vicoli-belvedere",
+      "name": "Vicoli / Belvedere — Finał Spaceru",
+      "category": "viewpoint",
+      "icon": "viewpoint-city",
+      "missions": 1,
+      "photo": false,
+      "powerup": "doublejump",
+      "kids": [
+        "Policz, ile różnych rodzajów kwiatów znajdziesz podczas spaceru. Sfotografuj najpiękniejszy. A potem czas na rodzinne selfie!"
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "alley",
+        "len": 0.64,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1,
+        "carpet": true,
+        "climb": true,
+        "cart": true,
+        "gateAt": [
+          0.22
+        ]
+      },
+      "quests": [
+        {
+          "id": "s08q1",
+          "q": "Z czego układa się wielkie dywany na Infiorate w Spello?",
+          "answers": [
+            "Z kwiatów",
+            "Z klocków",
+            "Ze śniegu",
+            "Z makaronu"
+          ],
+          "correct": 0,
+          "hint": "Spello jest szczególnie mocno związane z… kwiatami!",
+          "source": "Z czasem zwyczaj przekształcił się w wielką sztukę kwiatowych dywanów."
+        },
+        {
+          "id": "s08q2",
+          "q": "Od którego roku tradycja Infiorate jest zapisana w archiwum miejskim?",
+          "answers": [
+            "Od 1831",
+            "Od 2005",
+            "Od 753 r. p.n.e.",
+            "Od wczoraj"
+          ],
+          "correct": 0,
+          "hint": "Mieszkańców poproszono wtedy o udekorowanie ulic kwiatami.",
+          "source": "Tradycja jest udokumentowana w archiwum miejskim już w 1831 roku, kiedy mieszkańców poproszono o oczyszczenie ulic i udekorowanie ich kwiatami lub zielenią na trasie procesji."
+        },
+        {
+          "id": "s08q3",
+          "q": "Kto dziś pomaga przygotować Infiorate?",
+          "answers": [
+            "Tysiące mieszkańców, także dzieci",
+            "Tylko jeden ogrodnik",
+            "Roboty",
+            "Nikt"
+          ],
+          "correct": 0,
+          "hint": "Pomagają nawet dzieci i młodzież.",
+          "source": "Współcześnie w przygotowanie wydarzenia angażują się tysiące mieszkańców, w tym dzieci i młodzież."
+        }
+      ]
+    },
+    {
+      "key": "09",
+      "qcKey": "gelateria-la-paola",
+      "name": "Przerwa na lody",
+      "sourceName": "Gelateria La Paola",
+      "category": "icecream",
+      "icon": "icecream",
+      "missions": 1,
+      "photo": false,
+      "powerup": "doublejump",
+      "kids": [
+        "🍦 Wybierz smak, którego normalnie nie zamówiłbyś w domu. Jeśli jest dostępny Sagrantino albo inny nietypowy smak, spróbujcie go i całą rodziną oceńcie go w skali 1–5. Jeśli nie macie ochoty na lody, pomińcie ten punkt i przejdźcie dalej."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "alley",
+        "len": 0.15,
+        "maxGates": 1,
+        "hidden": 1,
+        "connector": true
+      },
+      "quests": []
+    },
+    {
+      "key": "10",
+      "qcKey": "belvedere-panoramico",
+      "name": "Belvedere Panoramico — Punkt Widokowy",
+      "category": "viewpoint",
+      "icon": "viewpoint-nature",
+      "missions": 1,
+      "photo": false,
+      "powerup": "balloon",
+      "kids": [
+        "👁️ Rodzinna lornetka bez lornetki. Każdy wybiera jeden szczegół na panoramie: wzgórze, wieżę, kościół, drogę albo miejscowość. Powiedzcie sobie nawzajem, co wybraliście i dlaczego. Na koniec zróbcie jedno wspólne zdjęcie widoku."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "belvedere",
+        "len": 0.58,
+        "maxGates": 1,
+        "hidden": 2,
+        "chests": 1,
+        "sky": true,
+        "skyHat": "explorer",
+        "mini": "glide",
+        "miniAll": true
+      },
+      "quests": [
+        {
+          "id": "s10q1",
+          "q": "Dlaczego z górnej części Spello widać panoramę Umbrii?",
+          "answers": [
+            "Bo Spello leży na zboczu",
+            "Bo stoi tu wieża z windą",
+            "Bo miasto jest na wyspie",
+            "Bo wszyscy stoją na krzesłach"
+          ],
+          "correct": 0,
+          "hint": "Miasto zbudowano na stoku wzgórza.",
+          "source": "Spello leży na zboczu i właśnie dlatego spacer po jego górnej części daje coś, czego nie da pojedynczy zabytek: panoramę Umbrii."
+        },
+        {
+          "id": "s10q2",
+          "q": "Kiedy warto zostać na punkcie widokowym kilka minut dłużej?",
+          "answers": [
+            "Przy zachodzie słońca",
+            "W środku nocy",
+            "W czasie burzy",
+            "Nigdy"
+          ],
+          "correct": 0,
+          "hint": "Gdy niebo robi się pomarańczowe.",
+          "source": "Jeżeli rodzina trafi tu przy zachodzie słońca, warto zostać kilka minut dłużej."
+        },
+        {
+          "id": "s10q3",
+          "q": "W rejonie jakiego łuku jest belvedere panoramico?",
+          "answers": [
+            "Arco Romano",
+            "Łuku Tęczy",
+            "Bramy Smoka",
+            "Łuku Księżyca"
+          ],
+          "correct": 0,
+          "hint": "Rzymski łuk — po włosku „romano”.",
+          "source": "Oficjalny opis miasta wskazuje belvedere panoramico osiągany w rejonie Arco Romano; trasa prowadzi także przez najwyżej położoną część miasta, nazywaną Belvedere."
+        }
+      ]
+    },
+    {
+      "key": "11",
+      "qcKey": "kolacja",
+      "name": "Kolacja — Finał Dnia",
+      "category": "restaurant",
+      "icon": "restaurant",
+      "missions": 1,
+      "photo": false,
+      "powerup": "magnet",
+      "kids": [
+        "Brak osobnego questu. To punkt dla rodzica i rodzinny finał dnia. Nie tworzymy sztucznego zadania przy kolacji."
+      ],
+      "photoTask": null,
+      "game": {
+        "terrain": "dusk",
+        "len": 0.2,
+        "hidden": 1,
+        "connector": true,
+        "fireflies": true
+      },
+      "quests": []
+    }
+  ],
+  "i18nNote": "Klucze tłumaczeń (page-i18n.js / ui_translations): generuje gra/tools/stage-from-trip.mjs z treści powyżej.",
+  "i18n": {
+    "page.game.spello.s01.name": "Parking Villa dei Mosaici",
+    "page.game.spello.s02.name": "Villa dei Mosaici",
+    "page.game.spello.s03.name": "Porta Consolare",
+    "page.game.spello.s04.name": "Chiesa di Sant'Andrea",
+    "page.game.spello.s05.name": "Santa Maria Maggiore / Cappella Baglioni",
+    "page.game.spello.s06.name": "Via Giulia — Ślad Rzymski",
+    "page.game.spello.s07.name": "Porta Venere + Torri di Properzio",
+    "page.game.spello.s08.name": "Vicoli / Belvedere — Finał Spaceru",
+    "page.game.spello.s09.name": "Przerwa na lody",
+    "page.game.spello.s10.name": "Belvedere Panoramico — Punkt Widokowy",
+    "page.game.spello.s11.name": "Kolacja — Finał Dnia",
+    "page.game.spello.s02q1.q": "Co budowano, gdy w 2005 roku z ziemi wyszła rzymska mozaika?",
+    "page.game.spello.s02q1.hint": "Zostawiliście tam auto — to tam zaczęło się odkrycie!",
+    "page.game.spello.s02q1.a0": "Publiczny parking",
+    "page.game.spello.s02q1.a1": "Basen",
+    "page.game.spello.s02q1.a2": "Szkołę",
+    "page.game.spello.s02q1.a3": "Most na rzece",
+    "page.game.spello.s02q2.q": "Do czego służyło triclinium w rzymskiej willi?",
+    "page.game.spello.s02q2.hint": "To sala bankietowa — było tam dużo jedzenia!",
+    "page.game.spello.s02q2.a0": "Do uczt",
+    "page.game.spello.s02q2.a1": "Do spania",
+    "page.game.spello.s02q2.a2": "Do kąpieli",
+    "page.game.spello.s02q2.a3": "Do trzymania koni",
+    "page.game.spello.s02q3.q": "Jaka jest tradycyjna data założenia Rzymu?",
+    "page.game.spello.s02q3.hint": "Szukaj jej na ekspozycji — to pierwszy „zegar” z misji „Dwa zegary”.",
+    "page.game.spello.s02q3.a0": "753 r. p.n.e.",
+    "page.game.spello.s02q3.a1": "2005 r.",
+    "page.game.spello.s02q3.a2": "1270 r.",
+    "page.game.spello.s02q3.a3": "1501 r.",
+    "page.game.spello.s03q1.q": "Ile marmurowych posągów stoi na Porta Consolare?",
+    "page.game.spello.s03q1.hint": "Policz je na bramie — mniej niż palców jednej ręki.",
+    "page.game.spello.s03q1.a0": "Trzy",
+    "page.game.spello.s03q1.a1": "Jeden",
+    "page.game.spello.s03q1.a2": "Dziesięć",
+    "page.game.spello.s03q1.a3": "Ani jednego",
+    "page.game.spello.s03q2.q": "Jaka data widnieje na fasadzie Palazzo Comunale?",
+    "page.game.spello.s03q2.hint": "To XIII wiek: dwanaście… siedemdziesiąt.",
+    "page.game.spello.s03q2.a0": "1270",
+    "page.game.spello.s03q2.a1": "2005",
+    "page.game.spello.s03q2.a2": "1831",
+    "page.game.spello.s03q2.a3": "1501",
+    "page.game.spello.s03q3.q": "Kiedy przebudowywano Porta Consolare?",
+    "page.game.spello.s03q3.hint": "W tej samej epoce, w której malował Pinturicchio.",
+    "page.game.spello.s03q3.a0": "W renesansie",
+    "page.game.spello.s03q3.a1": "W zeszłym roku",
+    "page.game.spello.s03q3.a2": "W epoce dinozaurów",
+    "page.game.spello.s03q3.a3": "Nigdy",
+    "page.game.spello.s04q1.q": "Z którego roku pochodzi pierwsza wzmianka o kościele Sant'Andrea?",
+    "page.game.spello.s04q1.hint": "To ponad tysiąc lat temu.",
+    "page.game.spello.s04q1.a0": "1025",
+    "page.game.spello.s04q1.a1": "2005",
+    "page.game.spello.s04q1.a2": "1831",
+    "page.game.spello.s04q1.a3": "1501",
+    "page.game.spello.s04q2.q": "Komu biskup Spoleto przekazał kościół w 1253 roku?",
+    "page.game.spello.s04q2.hint": "Zakonnikom, których nazwa pochodzi od świętego Franciszka.",
+    "page.game.spello.s04q2.a0": "Franciszkanom",
+    "page.game.spello.s04q2.a1": "Rycerzom",
+    "page.game.spello.s04q2.a2": "Piratom",
+    "page.game.spello.s04q2.a3": "Rzymskim legionistom",
+    "page.game.spello.s04q3.q": "Do kogo należał kościół w 1025 roku?",
+    "page.game.spello.s04q3.hint": "Do mnichów z San Silvestro na Monte Subasio.",
+    "page.game.spello.s04q3.a0": "Do mnichów kamedulskich",
+    "page.game.spello.s04q3.a1": "Do kupców z Wenecji",
+    "page.game.spello.s04q3.a2": "Do cesarza Augusta",
+    "page.game.spello.s04q3.a3": "Do piekarzy ze Spello",
+    "page.game.spello.s05q1.q": "Kto namalował freski w Cappella Baglioni?",
+    "page.game.spello.s05q1.hint": "Artysta, który zostawił w kaplicy własną twarz.",
+    "page.game.spello.s05q1.a0": "Pinturicchio",
+    "page.game.spello.s05q1.a1": "Rycerz Orlando",
+    "page.game.spello.s05q1.a2": "Biskup Spoleto",
+    "page.game.spello.s05q1.a3": "Cesarz August",
+    "page.game.spello.s05q2.q": "Co Pinturicchio zostawił w kaplicy oprócz fresków?",
+    "page.game.spello.s05q2.hint": "Szukaj postaci, która nie należy do głównej historii — to sam artysta!",
+    "page.game.spello.s05q2.a0": "Własną twarz — autoportret",
+    "page.game.spello.s05q2.a1": "Swój kapelusz",
+    "page.game.spello.s05q2.a2": "Mapę skarbu",
+    "page.game.spello.s05q2.a3": "Złoty klucz",
+    "page.game.spello.s05q3.q": "Ile Sybilli namalowano na sklepieniu kaplicy?",
+    "page.game.spello.s05q3.hint": "Tyle, ile jest pór roku.",
+    "page.game.spello.s05q3.a0": "Cztery",
+    "page.game.spello.s05q3.a1": "Jedną",
+    "page.game.spello.s05q3.a2": "Dwanaście",
+    "page.game.spello.s05q3.a3": "Sto",
+    "page.game.spello.s06q1.q": "Ile miast nałożonych jedno na drugie można odczytać w Spello?",
+    "page.game.spello.s06q1.hint": "Rzymskie, średniowieczne, renesansowe, papieskie i współczesne — policz!",
+    "page.game.spello.s06q1.a0": "Pięć",
+    "page.game.spello.s06q1.a1": "Jedno",
+    "page.game.spello.s06q1.a2": "Dwa",
+    "page.game.spello.s06q1.a3": "Dwadzieścia",
+    "page.game.spello.s06q2.q": "Co zachowało się w rzymskiej warstwie Spello?",
+    "page.game.spello.s06q2.hint": "Wszystko to zbudowali starożytni Rzymianie.",
+    "page.game.spello.s06q2.a0": "Mury, bramy, forum, termy i amfiteatr",
+    "page.game.spello.s06q2.a1": "Wieżowce i windy",
+    "page.game.spello.s06q2.a2": "Lotnisko",
+    "page.game.spello.s06q2.a3": "Stacja metra",
+    "page.game.spello.s06q3.q": "Fragment jakiego łuku zachował się w Via Giulia?",
+    "page.game.spello.s06q3.hint": "Łuk nosi imię rzymskiego cesarza Augusta.",
+    "page.game.spello.s06q3.a0": "Arco di Augusto",
+    "page.game.spello.s06q3.a1": "Łuku Tęczy",
+    "page.game.spello.s06q3.a2": "Łuku Smoka",
+    "page.game.spello.s06q3.a3": "Łuku Księżyca",
+    "page.game.spello.s07q1.q": "Z jakiego kamienia zbudowano Porta Venere?",
+    "page.game.spello.s07q1.hint": "To jasny, biały kamień.",
+    "page.game.spello.s07q1.a0": "Z białego trawertynu",
+    "page.game.spello.s07q1.a1": "Z czerwonej cegły",
+    "page.game.spello.s07q1.a2": "Z drewna",
+    "page.game.spello.s07q1.a3": "Z lodu",
+    "page.game.spello.s07q2.q": "Ile boków mają wieże przy Porta Venere?",
+    "page.game.spello.s07q2.hint": "Tyle, ile miesięcy w roku.",
+    "page.game.spello.s07q2.a0": "Dwanaście",
+    "page.game.spello.s07q2.a1": "Cztery",
+    "page.game.spello.s07q2.a2": "Trzy",
+    "page.game.spello.s07q2.a3": "Sto",
+    "page.game.spello.s07q3.q": "Kogo według legendy więziono w jednej z wież?",
+    "page.game.spello.s07q3.hint": "Legendarnego rycerza Karola Wielkiego.",
+    "page.game.spello.s07q3.a0": "Rycerza Orlando",
+    "page.game.spello.s07q3.a1": "Smoka",
+    "page.game.spello.s07q3.a2": "Pinturicchia",
+    "page.game.spello.s07q3.a3": "Cesarza Augusta",
+    "page.game.spello.s08q1.q": "Z czego układa się wielkie dywany na Infiorate w Spello?",
+    "page.game.spello.s08q1.hint": "Spello jest szczególnie mocno związane z… kwiatami!",
+    "page.game.spello.s08q1.a0": "Z kwiatów",
+    "page.game.spello.s08q1.a1": "Z klocków",
+    "page.game.spello.s08q1.a2": "Ze śniegu",
+    "page.game.spello.s08q1.a3": "Z makaronu",
+    "page.game.spello.s08q2.q": "Od którego roku tradycja Infiorate jest zapisana w archiwum miejskim?",
+    "page.game.spello.s08q2.hint": "Mieszkańców poproszono wtedy o udekorowanie ulic kwiatami.",
+    "page.game.spello.s08q2.a0": "Od 1831",
+    "page.game.spello.s08q2.a1": "Od 2005",
+    "page.game.spello.s08q2.a2": "Od 753 r. p.n.e.",
+    "page.game.spello.s08q2.a3": "Od wczoraj",
+    "page.game.spello.s08q3.q": "Kto dziś pomaga przygotować Infiorate?",
+    "page.game.spello.s08q3.hint": "Pomagają nawet dzieci i młodzież.",
+    "page.game.spello.s08q3.a0": "Tysiące mieszkańców, także dzieci",
+    "page.game.spello.s08q3.a1": "Tylko jeden ogrodnik",
+    "page.game.spello.s08q3.a2": "Roboty",
+    "page.game.spello.s08q3.a3": "Nikt",
+    "page.game.spello.s10q1.q": "Dlaczego z górnej części Spello widać panoramę Umbrii?",
+    "page.game.spello.s10q1.hint": "Miasto zbudowano na stoku wzgórza.",
+    "page.game.spello.s10q1.a0": "Bo Spello leży na zboczu",
+    "page.game.spello.s10q1.a1": "Bo stoi tu wieża z windą",
+    "page.game.spello.s10q1.a2": "Bo miasto jest na wyspie",
+    "page.game.spello.s10q1.a3": "Bo wszyscy stoją na krzesłach",
+    "page.game.spello.s10q2.q": "Kiedy warto zostać na punkcie widokowym kilka minut dłużej?",
+    "page.game.spello.s10q2.hint": "Gdy niebo robi się pomarańczowe.",
+    "page.game.spello.s10q2.a0": "Przy zachodzie słońca",
+    "page.game.spello.s10q2.a1": "W środku nocy",
+    "page.game.spello.s10q2.a2": "W czasie burzy",
+    "page.game.spello.s10q2.a3": "Nigdy",
+    "page.game.spello.s10q3.q": "W rejonie jakiego łuku jest belvedere panoramico?",
+    "page.game.spello.s10q3.hint": "Rzymski łuk — po włosku „romano”.",
+    "page.game.spello.s10q3.a0": "Arco Romano",
+    "page.game.spello.s10q3.a1": "Łuku Tęczy",
+    "page.game.spello.s10q3.a2": "Bramy Smoka",
+    "page.game.spello.s10q3.a3": "Łuku Księżyca"
+  }
+}

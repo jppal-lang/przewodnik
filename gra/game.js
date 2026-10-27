@@ -37,7 +37,8 @@
   };
   var ICONS = '../media/icons/';
   var LS = 'quolino_game_';
-  var DATA_URL = 'frasassi.json';
+  /* Etap (wycieczka): ?trasa=<slug> spośród gra/stages.json, domyślnie frasassi. */
+  var TRIP_SLUG = (/[?&]trasa=([a-z0-9-]+)/.exec(location.search) || [0, ''])[1], STAGES = null, STAGE = null;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var TERRAIN_BY_CATEGORY = {
@@ -47,6 +48,29 @@
     synagogue: 'stone', restaurant: 'stone', icecream: 'stone', sweets: 'stone',
     monument: 'cliff', 'viewpoint-city': 'cliff', viewpoint: 'cliff'
   };
+  /* Tereny miasteczka na wzgórzu (Spello): wybiera je „game.terrain” przystanku w danych etapu (stage-from-trip.mjs).
+     len = długość sekcji (× D.sec), atrakcje opisuje „game” — patrz gra/README.md. Frasassi (bez „game”) jak dawniej. */
+  var SP_WEIGHTS = {
+    easy: {
+      olive: { flat: 3, step: 3, gap: 2, float: 1, ledges: 1.5, roller: 1.5 },
+      villa: { flat: 2, step: 2, gap: 2, float: 1.5, ledges: 1.5, roller: 1.5 },
+      gate: { flat: 2, step: 2, stairs: 2, gap: 1.5, ledges: 1.5, roller: 1.5, bat: 1 },
+      fresco: { flat: 3, step: 1.5, ledges: 2, float: 1, bat: 2 },
+      alley: { flat: 2, stairs: 3, step: 2, gap: 1, ledges: 1.5, bat: 1, roller: 1 },
+      belvedere: { flat: 3, step: 2, gap: 2, float: 1.5, ledges: 1, roller: 1 },
+      dusk: { flat: 3, step: 2, stairs: 1.5, ledges: 1 }
+    },
+    adv: {
+      olive: { flat: 1, step: 2, runGap: 2, crumbleRow: 1, beetleLedge: 2, spiky: 1.5, roller: 1.5 },
+      villa: { step: 1.5, runGap: 2, movingH: 2, crumbleRow: 2, beetleLedge: 1.5, spikes: 1.5, spiky: 1, roller: 1 },
+      gate: { step: 2, stairs: 2, runGap: 1.5, climbWall: 1.5, beetleLedge: 1.5, spiky: 1.5, rockfall: 1, roller: 1.5, bats: 1 },
+      fresco: { step: 1.5, ledges: 1, movingV: 1.5, crumbleRow: 1.5, beetleLedge: 1.5, bats: 2.5, spikes: 1, runGap: 1 },
+      alley: { stairs: 3, step: 2, rockfall: 2.5, climbWall: 1.5, beetleLedge: 1.5, bats: 1.5, spiky: 1, runGap: 1 },
+      belvedere: { step: 2, runGap: 2, wind: 2, movingH: 1.5, crumbleRow: 1, beetleLedge: 1.5, spiky: 1 },
+      dusk: { step: 2, stairs: 2, runGap: 1.5, beetleLedge: 1.5, bats: 1 }
+    }
+  };
+  var SP_MINI_W = { lever: 27, glide: 26, trench: 30, tower: 14, scaffold: 14 };
   var POWER = {
     magnet: { name: 'Magnes na kamyczki', icon: '🧲' },
     lantern: { name: 'Latarka', icon: '🔦' },
@@ -78,7 +102,7 @@
      każda zaliczona misja = +1 serduszko, zadanie foto = moc w sekcji tego przystanku,
      wszystkie zadania przystanku = tajny skrót (trampolina + górna kładka z kryjówką). */
   function readProgress(trip, demo) {
-    var legacy = lsJSON(trip.progress.legacyKey) || {};
+    var legacy = (trip.progress.legacyKey && lsJSON(trip.progress.legacyKey)) || {};
     var P = { missions: 0, missionsTotal: 0, photos: 0, photosTotal: 0, full: 0, stops: [], found: false };
     trip.stops.forEach(function (s) {
       var m = 0, ph = false;
@@ -223,6 +247,17 @@
       c.fillStyle = '#6B4A2E';
       c.beginPath(); c.arc(1, -14, 17.5, Math.PI * .92, Math.PI * 1.9); c.arc(4, -12, 12.5, Math.PI * 1.85, Math.PI * .95, true); c.closePath(); c.fill(); c.stroke();
       c.beginPath(); c.ellipse(-11, -5, 6, 10, .2, 0, Math.PI * 2); c.fill(); c.stroke();
+    } else if (kind === 'crown') { // wianek z kwiatów (Spello, kwiatowy dywan)
+      c.strokeStyle = '#2F6B34'; c.lineWidth = 3.2; c.beginPath(); c.ellipse(2, -24, 15.5, 5, -.06, 0, Math.PI * 2); c.stroke();
+      c.strokeStyle = '#5FA05A'; c.lineWidth = 1.4; c.beginPath(); c.ellipse(2, -24, 15.5, 5, -.06, 0, Math.PI * 2); c.stroke();
+      var FC = ['#E8467C', '#FFC629', '#FFFFFF', '#C81E36', '#B07CE0', '#FF8A3D', '#E8467C'];
+      for (var fi = 0; fi < 7; fi++) {
+        var fa = Math.PI * (-.06 + fi * .185), fx = 2 + Math.cos(fa) * 15.5, fy = -24 + Math.sin(fa) * 5 - (fi % 2 ? 1.5 : 0);
+        c.fillStyle = FC[fi]; c.beginPath();
+        for (var pk = 0; pk < 5; pk++) { var pa = pk / 5 * Math.PI * 2; ell(c, fx + Math.cos(pa) * 2.6, fy + Math.sin(pa) * 2.6, 2.3, 2.3, 0); }
+        c.fill(); c.lineWidth = .8; c.strokeStyle = 'rgba(94,50,20,.55)'; c.stroke();
+        c.fillStyle = '#FFC629'; c.beginPath(); ell(c, fx, fy, 1.5, 1.5, 0); c.fill();
+      }
     } else if (kind === 'explorer') {
       c.fillStyle = '#C9A66B'; c.beginPath(); c.ellipse(2, -24, 20, 4, -.05, 0, Math.PI * 2); c.fill(); c.stroke();
       c.beginPath(); c.moveTo(-8, -24); c.lineTo(-7, -35); c.quadraticCurveTo(2, -39, 11, -35); c.lineTo(12, -24); c.closePath(); c.fill(); c.stroke();
@@ -351,6 +386,7 @@
     BG.stone = { far: ridge(160, 200, 250), mid: ridge(130, 270, 305), cyp: arr(10, function () { return { x: R() * PER, h: 50 + R() * 40 }; }),
       olives: arr(14, function () { return { x: R() * PER, r: 12 + R() * 10 }; }), abbey: [320, 1180] };
     BG.cliff = { far: ridge(38, 20, 170), mid: ridge(70, 250, 300), grotto: [880] };
+    genBackgroundsSp(R, arr, ridge);
   }
   function smoothPath(c, pts, ox, oy, bottom) {
     c.beginPath(); c.moveTo(ox + pts[0][0], bottom); c.lineTo(ox + pts[0][0], oy + pts[0][1]);
@@ -371,6 +407,7 @@
   }
   function drawBackground(c, kind, camX, camY, w, h, t) {
     var T = TER[kind], B = BG[kind];
+    if (T.sp) { drawBgSp(c, kind, camX, camY, w, h, t); return; }
     var sky = c.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, T.skyTop); sky.addColorStop(1, T.skyBot);
     c.fillStyle = sky; c.fillRect(0, 0, w, h);
     var yf = -camY * .45, ym = -camY * .7, bottom = h + 10;
@@ -449,6 +486,296 @@
     c.fillStyle = 'rgba(14,26,43,.25)'; for (var i = -2; i <= 2; i++) c.fillRect(x + i * 13 - 2, y + 26, 4, 34);
   }
 
+  /* ---------- 4b. Miasteczko na wzgórzu (Spello): tereny, tła, kafle ----------
+     Własna grafika rysowana kodem: różowo-biały kamień, strome uliczki ze schodami, rzymskie bramy i mury,
+     kwiaty w donicach i na balkonach, gaje oliwne na zboczu, panorama doliny. Klucze terenów: olive, villa, gate,
+     fresco (wnętrze kościoła z freskami), alley, belvedere, dusk (wieczór). sp: true = rysuje drawBgSp. */
+  var SPT = {
+    olive: { sp: true, fill: '#C9A47E', fillDk: '#A9845F', speck: '#B89069', top: '#6F9A47', topHi: '#A4C96B', plat: '#8E6B47', platDk: '#634A2F', grass: true, pillar: '#EAD9CF' },
+    villa: { sp: true, fill: '#D8B898', fillDk: '#AD8A6B', alt: '#E9D6C0', speck: '#CDB08C', top: '#E8DDC9', topHi: '#F6F0E4', plat: '#8E6B47', platDk: '#634A2F', mosaic: true, ashlar: true, pillar: '#EFE4D6' },
+    gate: { sp: true, fill: '#DDB6A7', fillDk: '#A97F70', alt: '#EBD5C9', speck: '#F8EFE9', top: '#BFA898', topHi: '#E6D8CC', plat: '#8C6A43', platDk: '#5E4529', ashlar: true, cobble: true, pillar: '#F2E4DA' },
+    fresco: { sp: true, fill: '#DCCDB9', fillDk: '#B9A58D', alt: '#ECE2D3', speck: '#F1E8DB', top: '#B98E6E', topHi: '#E0BC97', plat: '#7A5A3A', platDk: '#523B25', ashlar: true, floor: true, pillar: '#ECE2D3', inside: true },
+    alley: { sp: true, fill: '#DDB3A4', fillDk: '#A77C6D', alt: '#EDD6CA', speck: '#F8EEE8', top: '#B39C8C', topHi: '#DCCABD', plat: '#E7DBCF', platDk: '#9A8A7E', ashlar: true, cobble: true, balcony: true, windows: true, pillar: '#F2E4DA' },
+    belvedere: { sp: true, fill: '#E6CDBF', fillDk: '#C5A797', alt: '#F3E7DE', speck: '#F8EEE8', top: '#719C4C', topHi: '#A6CC6F', plat: '#8E6B47', platDk: '#634A2F', grass: true, ashlar: true, pillar: '#F2E4DA' },
+    dusk: { sp: true, fill: '#B39187', fillDk: '#8E6B61', alt: '#C4A49A', speck: '#CDB2A9', top: '#4F7148', topHi: '#6E9563', plat: '#6E5338', platDk: '#4A3622', grass: true, ashlar: true, pillar: '#D9C1B6' }
+  };
+  Object.keys(SPT).forEach(function (k) { TER[k] = SPT[k]; });
+  var ROOF = ['#B5543A', '#C4674A', '#A84B34'], WALL = ['#F2DED4', '#EACBBE', '#F7EDE5', '#E2BFB1', '#F0D6CB'];
+  function genBackgroundsSp(R, arr, ridge) {
+    function houses(n, wMin, wMax, hMin, hMax) { var x = 0, a = []; while (x < PER && a.length < n) { var w = wMin + R() * (wMax - wMin); a.push({ x: x, w: w, h: hMin + R() * (hMax - hMin), tone: Math.floor(R() * WALL.length), roof: Math.floor(R() * 3), win: 1 + Math.floor(R() * 3), flow: R() < .65, arch: R() < .18 }); x += w + (R() < .2 ? 10 + R() * 30 : 0); } return a; }
+    BG.town = arr(64, function (i) { var u = (R() + R() + R()) / 3 * 2 - 1; return { dx: u * 230, dep: R(), w: 16 + R() * 18, h: 12 + R() * 14, tone: Math.floor(R() * WALL.length), roof: Math.floor(R() * 3), tower: i === 7 || i === 30 || i === 51 }; });
+    BG.town.forEach(function (hs) { hs.base = spHill(hs.dx) * (1 - hs.dep * .55) + hs.dep * 6; if (hs.tower) { hs.dep = .05; hs.base = spHill(hs.dx) + 4; } });
+    BG.town.sort(function (a, b) { return a.base - b.base; });
+    BG.grove = arr(60, function (i) { var row = i % 3; return { x: (i / 60) * PER + R() * 30, row: row, s: .5 + row * .22 + R() * .12 }; });
+    BG.olive = { far: ridge(200, 120, 190), mid: ridge(150, 255, 300), trees: arr(13, function () { return { x: R() * PER, s: .7 + R() * .5, y: R() * 30 }; }), town: [820] };
+    BG.villa = { far: ridge(170, 210, 260), mid: ridge(160, 286, 300), walls: arr(7, function (i) { return { x: i * PER / 7 + R() * 80, w: 60 + R() * 120, h: 18 + R() * 40 }; }),
+      cols: arr(6, function () { return { x: R() * PER, h: 50 + R() * 70, broken: R() < .5 }; }), mos: arr(3, function (i) { return { x: 200 + i * 520 + R() * 120, w: 150 + R() * 80, seed: Math.floor(R() * 1000) }; }), town: [1250] };
+    BG.gate = { far: ridge(180, 200, 250), cyp: arr(9, function () { return { x: R() * PER, h: 46 + R() * 40 }; }), gateX: 620, town: [1300] };
+    BG.fresco = { panels: arr(4, function (i) { return { x: i * PER / 4 + 40, w: 230 + R() * 60, figs: 2 + Math.floor(R() * 2), c: Math.floor(R() * 4) }; }), cols: arr(5, function (i) { return { x: i * PER / 5 }; }) };
+    BG.alley = { far: houses(30, 70, 120, 120, 190), mid: houses(14, 120, 200, 70, 130) };
+    BG.belvedere = { hills: [ridge(140, 150, 205), ridge(110, 185, 225)], fields: arr(46, function (i) { return { x: R() * PER, y: R(), w: 40 + R() * 90, c: Math.floor(R() * 5) }; }),
+      vill: arr(7, function () { return { x: R() * PER, y: R() }; }), cyp: arr(10, function () { return { x: R() * PER, h: 40 + R() * 36 }; }), olives: arr(8, function () { return { x: R() * PER, s: .7 + R() * .4, y: R() * 20 }; }) };
+    BG.dusk = { stars: arr(40, function () { return { x: R() * PER, y: R() * 200, p: R() * 6 }; }), lights: arr(30, function () { return { x: R() * PER, y: R(), p: R() * 6 }; }) };
+  }
+  function spSky(c, w, h, top, bot) { var g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, top); g.addColorStop(1, bot); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+  function spOlive(c, x, y, s) { // drzewo oliwne: szary pień, srebrzysta korona
+    c.fillStyle = '#6E5E4E'; c.beginPath(); c.moveTo(x - 3 * s, y); c.quadraticCurveTo(x - 1 * s, y - 14 * s, x - 5 * s, y - 22 * s); c.lineTo(x + 2 * s, y - 22 * s); c.quadraticCurveTo(x + 2 * s, y - 12 * s, x + 4 * s, y); c.fill();
+    c.fillStyle = '#7F9A72'; c.beginPath(); ell(c, x - 8 * s, y - 28 * s, 14 * s, 9 * s, 0); ell(c, x + 7 * s, y - 30 * s, 13 * s, 9 * s, 0); ell(c, x, y - 37 * s, 13 * s, 8 * s, 0); c.fill();
+    c.fillStyle = '#B4C7A6'; c.beginPath(); ell(c, x - 6 * s, y - 32 * s, 6 * s, 3 * s, 0); ell(c, x + 5 * s, y - 37 * s, 5 * s, 2.5 * s, 0); c.fill();
+  }
+  function spCypress(c, x, y, hgt, col) { c.fillStyle = col || '#3F6B4A'; c.beginPath(); c.moveTo(x, y - hgt); c.quadraticCurveTo(x + 9, y - hgt * .45, x + 5, y); c.lineTo(x - 5, y); c.quadraticCurveTo(x - 9, y - hgt * .45, x, y - hgt); c.fill(); }
+  function spHill(dx) { return -128 * Math.exp(-Math.pow(dx / 200, 2)) - 10 * Math.exp(-Math.pow((dx - 120) / 90, 2)); } // profil wzgórza (y w górę ujemne)
+  function spTown(c, x, y, s, lit, t) { // Spello na zboczu: wzgórze z gajami oliwnymi, gęsto ułożone domy z różowo-białego kamienia, dachówki, dzwonnice
+    var d;
+    c.fillStyle = lit ? '#3E4A55' : '#A3B287'; c.beginPath(); c.moveTo(x - 420 * s, y + 30 * s);
+    for (d = -420; d <= 420; d += 20) c.lineTo(x + d * s, y + spHill(d) * s + 10 * s);
+    c.lineTo(x + 420 * s, y + 30 * s); c.closePath(); c.fill();
+    if (!lit) { c.fillStyle = '#8A9D74'; for (var r2 = 0; r2 < 4; r2++) for (d = -400 + r2 * 9; d <= 400; d += 18) { var hy = spHill(d); if (hy > -95 || Math.abs(d) > 230) { var yy = y + (hy + 10) * s + (8 + r2 * 9) * s; if (yy < y + 26 * s) c.fillRect(x + d * s, yy, 5 * s, 3.5 * s); } } }
+    var H = BG.town;
+    for (var i = 0; i < H.length; i++) {
+      var hs = H[i], hx = x + hs.dx * s, base = y + hs.base * s + 12 * s, hw = hs.w * s, hh = hs.h * s;
+      if (hs.tower) {
+        var th = hh + 34 * s;
+        c.fillStyle = lit ? '#6F625E' : '#F1E2D8'; c.fillRect(hx - 6 * s, base - th, 12 * s, th + 4 * s);
+        c.fillStyle = lit ? '#3E3530' : '#A8573C'; c.beginPath(); c.moveTo(hx - 8 * s, base - th); c.lineTo(hx, base - th - 13 * s); c.lineTo(hx + 8 * s, base - th); c.fill();
+        c.fillStyle = lit ? '#FFD27A' : 'rgba(60,40,30,.6)'; c.fillRect(hx - 3 * s, base - th + 4 * s, 6 * s, 7 * s);
+        continue;
+      }
+      c.fillStyle = lit ? '#5F5454' : WALL[hs.tone]; c.fillRect(hx - hw / 2, base - hh, hw, hh + 8 * s);
+      c.fillStyle = lit ? 'rgba(0,0,0,.18)' : 'rgba(150,100,85,.22)'; c.fillRect(hx + hw * .2, base - hh, hw * .3, hh + 8 * s);
+      c.fillStyle = lit ? '#3A302C' : ROOF[hs.roof]; c.beginPath(); c.moveTo(hx - hw / 2 - 2 * s, base - hh + 1); c.lineTo(hx - hw / 2 + 3 * s, base - hh - 5 * s); c.lineTo(hx + hw / 2 + 1 * s, base - hh - 5 * s); c.lineTo(hx + hw / 2 + 2 * s, base - hh + 1); c.fill();
+      if (lit) { if (Math.sin(t * 1.3 + i) > -.4) { c.fillStyle = '#FFCF6E'; c.fillRect(hx - 2 * s, base - hh * .55, 3 * s, 3 * s); } }
+      else if (s > .7 && hw > 18 * s) { c.fillStyle = 'rgba(70,50,40,.45)'; c.fillRect(hx - hw * .3, base - hh * .55, 2.5 * s, 3.5 * s); c.fillRect(hx + hw * .1, base - hh * .55, 2.5 * s, 3.5 * s); }
+    }
+  }
+  function spFacade(c, x, y, hs, sc, lit, t) { // dom w uliczce: kamień, okiennice, skrzynki z kwiatami, czasem łuk
+    var w = hs.w * sc, hgt = hs.h * sc;
+    c.fillStyle = lit ? '#6A5550' : WALL[hs.tone]; c.fillRect(x, y - hgt, w + 1, hgt + 400);
+    c.fillStyle = lit ? 'rgba(0,0,0,.12)' : 'rgba(150,100,80,.13)'; for (var r = 0; r < hgt; r += 14 * sc) c.fillRect(x, y - hgt + r, w, 1.5);
+    c.fillStyle = lit ? '#3A2D28' : ROOF[hs.roof]; c.fillRect(x - 3, y - hgt - 6 * sc, w + 7, 7 * sc);
+    var nw = hs.win, gap = w / (nw + 1);
+    for (var k = 1; k <= nw; k++) for (var fl = 0; fl < 2; fl++) {
+      var wx = x + gap * k - 6 * sc, wy = y - hgt + (20 + fl * 46) * sc;
+      if (wy > y - 30 * sc) continue;
+      if (lit) { c.fillStyle = Math.sin(t * .7 + k * 3 + fl + hs.x) > -.2 ? '#FFC96A' : '#2A2230'; c.fillRect(wx, wy, 12 * sc, 18 * sc); continue; }
+      c.fillStyle = '#4A3A33'; c.fillRect(wx, wy, 12 * sc, 18 * sc);
+      c.fillStyle = '#3F7A55'; c.fillRect(wx - 6 * sc, wy, 5 * sc, 18 * sc); c.fillRect(wx + 13 * sc, wy, 5 * sc, 18 * sc);
+      if (hs.flow) { c.fillStyle = '#9A5A3A'; c.fillRect(wx - 2 * sc, wy + 18 * sc, 16 * sc, 4 * sc); c.fillStyle = (k + fl) % 2 ? '#E8467C' : '#C81E36'; c.beginPath(); ell(c, wx + 2 * sc, wy + 16 * sc, 3 * sc, 3 * sc, 0); ell(c, wx + 7 * sc, wy + 15 * sc, 3 * sc, 3 * sc, 0); ell(c, wx + 12 * sc, wy + 16 * sc, 3 * sc, 3 * sc, 0); c.fill(); c.fillStyle = '#4F8A3F'; c.fillRect(wx - 1 * sc, wy + 17 * sc, 14 * sc, 2 * sc); }
+    }
+    if (hs.arch) { c.fillStyle = lit ? '#1E1820' : '#5E4A42'; c.beginPath(); c.moveTo(x + w * .25, y + 400); c.lineTo(x + w * .25, y - 22 * sc); c.arc(x + w * .5, y - 22 * sc, w * .25, Math.PI, 0); c.lineTo(x + w * .75, y + 400); c.fill(); }
+  }
+  function spMosaic(c, x, y, w, seed, k) { // fragment mozaiki na posadzce (perspektywa: spłaszczony)
+    var cols = ['#E8DDC9', '#B5543A', '#2F5D8C', '#D9A441', '#3E3530', '#7E9F6A'], n = Math.floor(w / 10), rows = 4;
+    c.fillStyle = '#8F7B66'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w - 18, y - rows * 6); c.lineTo(x + 18, y - rows * 6); c.fill();
+    for (var r = 0; r < rows; r++) for (var i = 0; i < n; i++) {
+      var hsh = (seed * 31 + i * 17 + r * 7 + ((i ^ r) & 3)) % 23, ci = (i === 0 || i === n - 1 || r === 0) ? 1 : (hsh % 5 === 0 ? 2 : hsh % 7 === 0 ? 3 : 0);
+      if (k && (i + r) % 4 === 0) ci = 4;
+      var inset = 18 * (r + 1) / rows; c.fillStyle = cols[ci];
+      c.fillRect(x + inset + i * (w - inset * 2) / n, y - (r + 1) * 6 + 1, (w - inset * 2) / n - 1, 5);
+    }
+  }
+  function drawBgSp(c, kind, camX, camY, w, h, t) {
+    var B = BG[kind], yf = -camY * .45, ym = -camY * .7, bottom = h + 10;
+    if (kind === 'olive') {
+      spSky(c, w, h, '#86B8E8', '#F6EAD3');
+      eachRepeat(camX, .08, w, function (ox) { c.fillStyle = '#B6BDD4'; smoothPath(c, B.far, ox, yf + 30, bottom); c.fill(); });
+      eachRepeat(camX, .15, w, function (ox) { B.town.forEach(function (tx) { if (ox + tx > -400 && ox + tx < w + 400) spTown(c, ox + tx, yf + 250, 1, false, t); }); });
+      eachRepeat(camX, .42, w, function (ox) {
+        c.fillStyle = '#A9B888'; smoothPath(c, B.mid, ox, ym, bottom); c.fill();
+        for (var k = 0; k < 3; k++) { // tarasy z murkami i rzędy oliwek
+          var ty = ym + 286 + k * 24;
+          c.fillStyle = k % 2 ? '#B3C190' : '#A3B482'; c.fillRect(ox, ty, PER, 30);
+          c.fillStyle = 'rgba(214,196,168,.95)'; c.fillRect(ox, ty + 22, PER, 4); c.fillStyle = 'rgba(150,130,100,.35)'; c.fillRect(ox, ty + 26, PER, 2);
+          BG.grove.forEach(function (tr) { if (tr.row !== k) return; var tx = ox + tr.x; if (tx > -40 && tx < w + 40) spOlive(c, tx, ty + 20, tr.s); });
+        }
+      });
+    } else if (kind === 'villa') {
+      spSky(c, w, h, '#98C1EC', '#F5EEE2');
+      eachRepeat(camX, .1, w, function (ox) { c.fillStyle = '#C3CFB8'; smoothPath(c, B.far, ox, yf, bottom); c.fill(); });
+      eachRepeat(camX, .15, w, function (ox) { B.town.forEach(function (tx) { if (ox + tx > -300 && ox + tx < w + 300) spTown(c, ox + tx, yf + 238, .62, false, t); }); });
+      eachRepeat(camX, .4, w, function (ox) {
+        c.fillStyle = '#C7AC8A'; smoothPath(c, B.mid, ox, ym, bottom); c.fill();
+        c.fillStyle = 'rgba(149,114,82,.45)'; c.fillRect(ox, ym + 318, PER, 3); c.fillRect(ox, ym + 340, PER, 2);
+        B.mos.forEach(function (m) { if (ox + m.x > -260 && ox + m.x < w + 60) spMosaic(c, ox + m.x, ym + 312, m.w, m.seed, false); });
+        B.walls.forEach(function (wl) { var x = ox + wl.x; if (x > w + 20 || x + wl.w < -20) return; c.fillStyle = '#EFE2D2'; c.fillRect(x, ym + 300 - wl.h, wl.w, wl.h + 10); c.fillStyle = '#C9B39C'; c.fillRect(x, ym + 300 - wl.h, wl.w, 4); c.fillStyle = 'rgba(160,120,100,.3)'; for (var j = 8; j < wl.h; j += 9) c.fillRect(x, ym + 300 - wl.h + j, wl.w, 1.5); });
+        B.cols.forEach(function (cl) { var x = ox + cl.x; if (x < -30 || x > w + 30) return; c.fillStyle = '#F4ECE0'; c.fillRect(x - 7, ym + 300 - cl.h, 14, cl.h); c.fillStyle = 'rgba(160,130,110,.35)'; c.fillRect(x - 3, ym + 300 - cl.h, 2, cl.h); c.fillRect(x + 2, ym + 300 - cl.h, 2, cl.h);
+          if (!cl.broken) { c.fillStyle = '#E6DACB'; c.fillRect(x - 11, ym + 300 - cl.h - 6, 22, 7); } else { c.fillStyle = '#C7AC8A'; c.beginPath(); c.moveTo(x - 8, ym + 300 - cl.h); c.lineTo(x + 8, ym + 300 - cl.h + 9); c.lineTo(x + 8, ym + 300 - cl.h - 2); c.fill(); } });
+      });
+    } else if (kind === 'gate') {
+      spSky(c, w, h, '#8FBDEB', '#FBF1E4');
+      eachRepeat(camX, .1, w, function (ox) { c.fillStyle = '#C7D3C2'; smoothPath(c, B.far, ox, yf, bottom); c.fill(); });
+      eachRepeat(camX, .14, w, function (ox) { B.town.forEach(function (tx) { if (ox + tx > -300 && ox + tx < w + 300) spTown(c, ox + tx, yf + 226, .55, false, t); }); });
+      eachRepeat(camX, .38, w, function (ox) {
+        var top = ym + 168, x0 = Math.max(ox, -60), x1 = Math.min(ox + PER, w + 60);
+        if (x1 > x0) {
+          c.fillStyle = '#E9CFC3'; c.fillRect(x0, top, x1 - x0, bottom - top);
+          for (var r = 0, yy = top; yy < Math.min(bottom, top + 240); r++, yy += 22) {
+            var off = r % 2 ? 23 : 0;
+            for (var xx = Math.floor((x0 - ox - off) / 46) * 46 + off; ox + xx < x1; xx += 46) { var hsh = hashXY(Math.floor(xx / 46), r); c.fillStyle = hsh % 3 === 0 ? '#F6ECE4' : hsh % 3 === 1 ? '#E3C2B4' : '#EDD8CD'; c.fillRect(ox + xx + 1, yy + 1, 44, 20); }
+          }
+          c.fillStyle = 'rgba(120,80,70,.25)'; c.fillRect(x0, top, x1 - x0, 4);
+        }
+        var gx = ox + B.gateX;
+        if (gx > -260 && gx < w + 260) { // brama z trzema łukami i dwiema wieżami
+          [-150, 150].forEach(function (d) {
+            var tx = gx + d; c.fillStyle = '#EAD3C8'; c.fillRect(tx - 34, top - 120, 68, bottom - top + 120);
+            c.fillStyle = 'rgba(120,80,70,.18)'; for (var f = -34; f < 34; f += 11) c.fillRect(tx + f, top - 120, 2, bottom - top + 120);
+            c.fillStyle = '#D9BDB0'; c.fillRect(tx - 38, top - 126, 76, 8);
+            c.fillStyle = '#5B4840'; c.fillRect(tx - 5, top - 92, 10, 16); c.fillRect(tx - 5, top - 40, 10, 16);
+          });
+          c.fillStyle = '#F4E8DE'; c.fillRect(gx - 116, top - 30, 232, 30);
+          c.fillStyle = '#4E3D36'; [-70, 0, 70].forEach(function (d) { var aw = d ? 22 : 30; c.beginPath(); c.moveTo(gx + d - aw, bottom); c.lineTo(gx + d - aw, top + 46); c.arc(gx + d, top + 46, aw, Math.PI, 0); c.lineTo(gx + d + aw, bottom); c.fill(); });
+          c.fillStyle = '#E3CABE'; [-35, 35].forEach(function (d) { c.fillRect(gx + d - 4, top + 6, 8, bottom - top); });
+        }
+        B.cyp.forEach(function (k) { var x = ox + k.x; if (x > -20 && x < w + 20 && Math.abs(k.x - B.gateX) > 220) spCypress(c, x, top + 70, k.h + 50); });
+      });
+      c.fillStyle = 'rgba(255,248,240,.3)'; c.fillRect(0, 0, w, h);
+    } else if (kind === 'fresco') { // wnętrze kościoła: sklepienia, kolumny, freski na ścianach, smugi światła
+      spSky(c, w, h, '#5A3E30', '#D2B08C');
+      eachRepeat(camX, .2, w, function (ox) {
+        c.fillStyle = '#E6D5BC'; c.fillRect(ox, yf + 40, PER, bottom);
+        B.panels.forEach(function (p, i) {
+          var x = ox + p.x, y = yf + 92, pw = p.w, ph = 150; if (x > w + 20 || x + pw < -20) return;
+          c.fillStyle = '#B8923F'; c.fillRect(x - 6, y - 6, pw + 12, ph + 12);
+          var g = c.createLinearGradient(0, y, 0, y + ph); g.addColorStop(0, '#6F98C4'); g.addColorStop(.55, '#C9D6DA'); g.addColorStop(.56, '#B9A274'); g.addColorStop(1, '#9C8058'); c.fillStyle = g; c.fillRect(x, y, pw, ph);
+          c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); ell(c, x + pw * .25, y + 30, 26, 8, 0); c.fill();
+          c.fillStyle = '#EDE3D0'; c.fillRect(x + pw * .62, y + 40, 50, 46); c.fillStyle = '#B5543A'; c.beginPath(); c.moveTo(x + pw * .62 - 4, y + 40); c.lineTo(x + pw * .62 + 25, y + 26); c.lineTo(x + pw * .62 + 54, y + 40); c.fill();
+          var RB = ['#B03A2E', '#2F5D8C', '#D9A441', '#6B8E4E'];
+          for (var f = 0; f < p.figs; f++) {
+            var fx = x + 40 + f * (pw - 70) / Math.max(1, p.figs - 1) * .9, fy = y + ph - 8;
+            c.fillStyle = RB[(f + p.c) % 4]; c.beginPath(); c.moveTo(fx - 16, fy); c.lineTo(fx - 7, fy - 52); c.lineTo(fx + 7, fy - 52); c.lineTo(fx + 16, fy); c.fill();
+            c.fillStyle = '#F2D27A'; c.beginPath(); ell(c, fx, fy - 62, 11, 11, 0); c.fill();
+            c.fillStyle = '#F1C9A5'; c.beginPath(); ell(c, fx, fy - 61, 7, 8, 0); c.fill();
+            c.fillStyle = '#5A3A26'; c.fillRect(fx - 7, fy - 69, 14, 4);
+          }
+        });
+      });
+      eachRepeat(camX, .45, w, function (ox) {
+        B.cols.forEach(function (k) {
+          var x = ox + k.x; if (x < -200 || x > w + 200) return;
+          c.fillStyle = 'rgba(70,45,30,.85)'; c.beginPath(); c.moveTo(x - 20, ym - 400); c.lineTo(x - 20, ym + 70); c.arc(x + PER / 10, ym + 70, PER / 10 - 20, Math.PI, 0, false); c.lineTo(x + PER / 5 - 20, ym - 400); c.fill();
+          c.fillStyle = '#EFE4D3'; c.fillRect(x - 16, ym + 40, 32, bottom - ym); c.fillStyle = 'rgba(150,120,95,.35)'; c.fillRect(x - 8, ym + 40, 3, bottom - ym); c.fillRect(x + 6, ym + 40, 3, bottom - ym);
+          c.fillStyle = '#D8C6AC'; c.fillRect(x - 22, ym + 32, 44, 12); c.fillRect(x - 22, ym + 312, 44, 12);
+        });
+        { c.fillStyle = 'rgba(255,240,200,.16)'; B.cols.forEach(function (k, i) { if (i % 2) return; var x = ox + k.x + 60; if (x < -200 || x > w + 200) return; c.beginPath(); c.moveTo(x, ym + 80); c.lineTo(x + 40, ym + 80); c.lineTo(x + 160, bottom); c.lineTo(x + 70, bottom); c.fill(); }); }
+      });
+    } else if (kind === 'alley') { // strome uliczki: domy z kamienia, okiennice, kwiaty, łuki
+      spSky(c, w, h, '#9CC8F0', '#FBF1E6');
+      eachRepeat(camX, .2, w, function (ox) { B.far.forEach(function (hs) { var x = ox + hs.x; if (x > w + 10 || x + hs.w < -10) return; spFacade(c, x, yf + 250, hs, 1, false, t); }); });
+      c.fillStyle = 'rgba(251,241,230,.25)'; c.fillRect(0, 0, w, h);
+      eachRepeat(camX, .45, w, function (ox) { B.mid.forEach(function (hs) { var x = ox + hs.x * 1.1; if (x > w + 10 || x + hs.w * 1.4 < -10) return; spFacade(c, x, ym + 300, hs, 1.4, false, t); }); });
+      c.fillStyle = 'rgba(255,246,236,.32)'; c.fillRect(0, 0, w, h);
+    } else { // belvedere / dusk: panorama doliny ze wzgórza
+      var dusk = kind === 'dusk', BB = BG.belvedere;
+      if (dusk) spSky(c, w, h, '#26305C', '#EE9A72'); else spSky(c, w, h, '#78A6DD', '#FFDDB0');
+      if (dusk) { c.fillStyle = '#FFF4CF'; eachRepeat(camX, .02, w, function (ox) { B.stars.forEach(function (st) { var a = reduceMotion ? .7 : .45 + .4 * Math.sin(t * 2 + st.p); c.globalAlpha = a; c.fillRect(ox + st.x, yf * .2 + st.y - 40, 2, 2); }); }); c.globalAlpha = 1; }
+      var sx = w * .72, sy = yf * .3 + (dusk ? 236 : 150), sg = c.createRadialGradient(sx, sy, 4, sx, sy, dusk ? 90 : 120);
+      sg.addColorStop(0, dusk ? 'rgba(255,170,110,.9)' : 'rgba(255,244,207,1)'); sg.addColorStop(.25, dusk ? 'rgba(255,150,100,.5)' : 'rgba(255,214,140,.6)'); sg.addColorStop(1, 'rgba(255,200,140,0)');
+      c.fillStyle = sg; c.fillRect(sx - 130, sy - 130, 260, 260);
+      c.fillStyle = dusk ? '#FFB27A' : '#FFF4CF'; c.beginPath(); ell(c, sx, sy, dusk ? 20 : 24, dusk ? 20 : 24, 0); c.fill();
+      eachRepeat(camX, .04, w, function (ox) { c.fillStyle = dusk ? '#6E5E86' : '#B7B5D6'; smoothPath(c, BB.hills[0], ox, yf + 40, bottom); c.fill(); });
+      eachRepeat(camX, .07, w, function (ox) { c.fillStyle = dusk ? '#5B5779' : '#A3AECD'; smoothPath(c, BB.hills[1], ox, yf + 46, bottom); c.fill(); });
+      var vy = yf + 262;
+      eachRepeat(camX, .1, w, function (ox) { // dolina: pola w kratkę, drogi, wioski
+        c.fillStyle = dusk ? '#4E5B47' : '#BCC88F'; c.fillRect(ox, vy, PER, bottom - vy);
+        var FC = dusk ? ['#56634A', '#4A573F', '#5F6A48', '#4F5E52', '#625F45'] : ['#A9BD72', '#C9C27A', '#8FAE66', '#D6B871', '#B4C98A'];
+        BB.fields.forEach(function (f) { var x = ox + f.x, y = vy + 4 + f.y * 70, fw = f.w * (.6 + f.y * .6); if (x > w || x + fw < 0) return; c.fillStyle = FC[f.c]; c.beginPath(); c.moveTo(x, y); c.lineTo(x + fw, y); c.lineTo(x + fw + 6, y + 8 + f.y * 8); c.lineTo(x - 6, y + 8 + f.y * 8); c.fill(); });
+        c.fillStyle = dusk ? 'rgba(255,214,120,.9)' : 'rgba(250,246,238,.95)';
+        BB.vill.forEach(function (v) { var x = ox + v.x, y = vy + 6 + v.y * 60; if (x < -20 || x > w + 20) return; for (var k = 0; k < 4; k++) c.fillRect(x + k * 5, y - (k % 2) * 3, 4, 4); });
+        if (dusk) { c.fillStyle = 'rgba(255,214,120,.85)'; B.lights.forEach(function (l) { var x = ox + l.x; if (x < 0 || x > w) return; if (reduceMotion || Math.sin(t * 1.7 + l.p) > -.6) c.fillRect(x, vy + 6 + l.y * 70, 2.5, 2.5); }); }
+        c.strokeStyle = dusk ? 'rgba(180,160,140,.4)' : 'rgba(245,235,215,.8)'; c.lineWidth = 2; c.beginPath(); c.moveTo(ox, vy + 30); c.bezierCurveTo(ox + 500, vy + 10, ox + 900, vy + 60, ox + PER, vy + 30); c.stroke();
+      });
+      var hz = c.createLinearGradient(0, vy - 20, 0, vy + 20); hz.addColorStop(0, dusk ? 'rgba(238,154,114,0)' : 'rgba(255,221,176,0)'); hz.addColorStop(.5, dusk ? 'rgba(238,154,114,.35)' : 'rgba(255,240,215,.55)'); hz.addColorStop(1, 'rgba(255,240,215,0)');
+      c.fillStyle = hz; c.fillRect(0, vy - 20, w, 40);
+      eachRepeat(camX, .42, w, function (ox) {
+        BB.cyp.forEach(function (k) { var x = ox + k.x; if (x > -20 && x < w + 20) spCypress(c, x, ym + 330, k.h, dusk ? '#22382C' : '#3F6B4A'); });
+        BB.olives.forEach(function (o) { var x = ox + o.x; if (x > -60 && x < w + 60) spOlive(c, x, ym + 330 + o.y, o.s); });
+      });
+    }
+  }
+  function drawSolidSp(T, tk, x, y, top, h) { // kafel kamienny/ziemny (Spello); krawędzie i góra rysuje drawSolid
+    if (T.ashlar) { // bloki różowego i białego kamienia z Subasio
+      var r0 = ((Math.floor(y / TILE) % 2) + 2) % 2;
+      ctx.fillStyle = T.alt;
+      for (var r2 = 0; r2 < 2; r2++) {
+        var oy = y + r2 * 16, jx = (r0 + r2) % 2 ? 16 : 0;
+        if (jx) { if ((h >> r2) & 1) ctx.fillRect(x, oy, jx, 16); if ((h >> (r2 + 3)) & 1) ctx.fillRect(x + jx, oy, TILE - jx, 16); }
+        else if ((h >> (r2 + 5)) & 1) ctx.fillRect(x, oy, TILE, 16);
+      }
+      ctx.fillStyle = T.fillDk; ctx.fillRect(x, y + 15, TILE, 2); ctx.fillRect(x, y + 31, TILE, 1);
+      ctx.fillRect(x + (r0 ? 15 : 0), y, r0 ? 2 : 1, 15); ctx.fillRect(x + (r0 ? 0 : 15), y + 17, r0 ? 1 : 2, 14);
+      if (T.windows && !top && y <= 9 * TILE && y >= 0 && h % 5 === 0) { // okno z okiennicami w ścianie domu
+        ctx.fillStyle = '#4A3A33'; ctx.fillRect(x + 10, y + 6, 12, 18); ctx.fillStyle = '#3F7A55'; ctx.fillRect(x + 4, y + 6, 5, 18); ctx.fillRect(x + 23, y + 6, 5, 18);
+        ctx.fillStyle = '#9A5A3A'; ctx.fillRect(x + 7, y + 24, 18, 4); ctx.fillStyle = h % 2 ? '#E8467C' : '#C81E36'; ctx.beginPath(); ell(ctx, x + 11, y + 22, 3, 3, 0); ell(ctx, x + 16, y + 21, 3, 3, 0); ell(ctx, x + 21, y + 22, 3, 3, 0); ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = T.speck;
+      ctx.fillRect(x + (h % 24) + 2, y + ((h >> 5) % 22) + 4, 5, 4);
+      ctx.fillRect(x + ((h >> 9) % 22) + 3, y + ((h >> 13) % 20) + 6, 3, 3);
+      if (T.strata) { ctx.fillStyle = T.fillDk; ctx.fillRect(x, y + 10 + (h % 3), TILE, 2); ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(x, y + 24, TILE, 2); }
+    }
+  }
+  function drawTopSp(T, x, y, h) { // wierzch kafla: trawa, mozaika, bruk, posadzka
+    if (T.grass) return false;
+    if (T.mosaic) {
+      ctx.fillStyle = '#3E3530'; ctx.fillRect(x, y, TILE, 10);
+      var MC = ['#E8DDC9', '#B5543A', '#2F5D8C', '#D9A441', '#E8DDC9', '#7E9F6A'];
+      for (var i = 0; i < 8; i++) { ctx.fillStyle = MC[(Math.floor(x / 4) + i + ((h >> i) & 1)) % 6]; ctx.fillRect(x + i * 4, y + 1, 3.5, 4); ctx.fillStyle = MC[(Math.floor(x / 4) + i + 3) % 6]; ctx.fillRect(x + i * 4, y + 5.5, 3.5, 4); }
+    } else if (T.floor) {
+      ctx.fillStyle = T.top; ctx.fillRect(x, y, TILE, 8); ctx.fillStyle = T.topHi; ctx.fillRect(x + ((x / TILE) % 2 ? 0 : 16), y, 16, 8); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x, y, TILE, 1.5);
+    } else { // bruk
+      ctx.fillStyle = T.top; ctx.fillRect(x, y, TILE, 8);
+      ctx.fillStyle = T.topHi; for (var k = 0; k < 4; k++) { ctx.beginPath(); ell(ctx, x + 4 + k * 8, y + 3 + ((h >> k) & 1), 3.4, 2.3, 0); ctx.fill(); }
+    }
+    ctx.fillStyle = 'rgba(14,26,43,.45)'; ctx.fillRect(x, y - 1, TILE, 1.5);
+    return true;
+  }
+  function drawPlatformSp(T, x, y, l, r) {
+    if (T.balcony) { // balkon: kamienna płyta, wsporniki, donice z kwiatami na brzegach
+      ctx.fillStyle = '#6E5F55'; ctx.fillRect(x, y + 9, TILE, 3);
+      ctx.fillStyle = T.plat; ctx.fillRect(x, y, TILE, 9); ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x, y, TILE, 2);
+      ctx.fillStyle = '#4A3E38'; ctx.fillRect(x + 6, y + 12, 4, 8); ctx.fillRect(x + 22, y + 12, 4, 8);
+      ctx.strokeStyle = '#2E2A2C'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, y + 26); ctx.lineTo(x + TILE, y + 26); for (var i = 2; i < TILE; i += 6) { ctx.moveTo(x + i, y + 12); ctx.lineTo(x + i, y + 26); } ctx.stroke();
+      [[!l, x + 3], [!r, x + 19]].forEach(function (p) {
+        if (!p[0]) return; var px = p[1];
+        ctx.fillStyle = '#A4502F'; ctx.beginPath(); ctx.moveTo(px, y - 9); ctx.lineTo(px + 10, y - 9); ctx.lineTo(px + 8, y); ctx.lineTo(px + 2, y); ctx.fill();
+        ctx.fillStyle = '#4F8A3F'; ctx.fillRect(px + 1, y - 12, 8, 3);
+        ctx.fillStyle = px === x + 3 ? '#E8467C' : '#FFC629'; ctx.beginPath(); ell(ctx, px + 2, y - 13, 2.6, 2.6, 0); ell(ctx, px + 6, y - 15, 2.6, 2.6, 0); ell(ctx, px + 9, y - 12, 2.4, 2.4, 0); ctx.fill();
+      });
+      ctx.fillStyle = 'rgba(14,26,43,.4)'; if (!l) ctx.fillRect(x, y, 2, 9); if (!r) ctx.fillRect(x + TILE - 2, y, 2, 9);
+      return;
+    }
+    ctx.fillStyle = T.plat; ctx.fillRect(x, y, TILE, 11);
+    ctx.fillStyle = T.platDk; ctx.fillRect(x, y + 8, TILE, 3);
+    ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x, y, TILE, 2);
+    ctx.fillStyle = T.platDk; ctx.fillRect(x + 10, y + 2, 1.5, 6); ctx.fillRect(x + 21, y + 2, 1.5, 6);
+    ctx.fillStyle = 'rgba(14,26,43,.4)'; if (!l) ctx.fillRect(x, y, 2, 11); if (!r) ctx.fillRect(x + TILE - 2, y, 2, 11);
+  }
+  function drawPigeon(e) { // gołąb (w Spello zamiast nietoperza): szary, macha skrzydłami
+    var flap = reduceMotion ? .5 : (Math.sin(e.t * (e.st === 1 ? 30 : 14)) * .5 + .5), f = (e.st === 2 ? (e.tx < e.x ? -1 : 1) : Math.cos(e.t * 1.3) >= 0 ? 1 : -1);
+    ctx.save(); ctx.translate(e.x, e.y); ctx.scale(f, 1);
+    ctx.fillStyle = '#7D8696'; ctx.beginPath(); ctx.moveTo(-2, -3); ctx.lineTo(-16, -6 - flap * 14); ctx.lineTo(-6, 1); ctx.fill();
+    ctx.fillStyle = '#9AA3B2'; ctx.beginPath(); ell(ctx, 0, 0, 10, 7, 0); ctx.fill();
+    ctx.fillStyle = '#6B7484'; ctx.beginPath(); ctx.moveTo(-9, -1); ctx.lineTo(-17, 4); ctx.lineTo(-8, 4); ctx.fill();
+    ctx.fillStyle = '#5F8F87'; ctx.beginPath(); ell(ctx, 7, -3, 4.5, 4.5, 0); ctx.fill();
+    ctx.fillStyle = '#9AA3B2'; ctx.beginPath(); ell(ctx, 9, -7, 4.5, 4, 0); ctx.fill();
+    ctx.fillStyle = '#E8A04B'; ctx.beginPath(); ctx.moveTo(13, -7); ctx.lineTo(17, -6); ctx.lineTo(13, -5); ctx.fill();
+    ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, 10.5, -8, 1.3, 1.3, 0); ctx.fill();
+    ctx.fillStyle = '#7D8696'; ctx.beginPath(); ctx.moveTo(2, -3); ctx.lineTo(10 - flap * 4, -8 - flap * 12); ctx.lineTo(8, 0); ctx.fill();
+    if (e.st === 1) { ctx.scale(f, 1); ctx.fillStyle = '#FFC629'; ctx.font = font(18); ctx.textAlign = 'center'; ctx.fillText('!', 0, -16); }
+    ctx.restore();
+  }
+  function drawPot(r, ry, sh) { // spadająca donica z kwiatkiem (uliczki)
+    ctx.save(); ctx.translate(r.x + sh, ry);
+    ctx.fillStyle = '#5A2E1C'; ctx.beginPath(); ctx.moveTo(-12, -6); ctx.lineTo(12, -6); ctx.lineTo(9, 12); ctx.lineTo(-9, 12); ctx.fill();
+    ctx.fillStyle = '#B9603A'; ctx.beginPath(); ctx.moveTo(-10, -4); ctx.lineTo(10, -4); ctx.lineTo(7.5, 10); ctx.lineTo(-7.5, 10); ctx.fill();
+    ctx.fillStyle = '#C9744A'; ctx.fillRect(-12, -9, 24, 5);
+    ctx.fillStyle = '#4F8A3F'; ctx.fillRect(-1, -18, 2, 9);
+    ctx.fillStyle = '#E8467C'; ctx.beginPath(); for (var k = 0; k < 5; k++) { var a = k / 5 * Math.PI * 2; ell(ctx, Math.cos(a) * 3.4, -20 + Math.sin(a) * 3.4, 2.6, 2.6, 0); } ctx.fill();
+    ctx.fillStyle = '#FFC629'; ctx.beginPath(); ell(ctx, 0, -20, 1.8, 1.8, 0); ctx.fill();
+    ctx.restore();
+  }
+
   /* ---------- 5. Budowa poziomu z danych wycieczki ----------
      Typy kafli: 0 pusto, 1 skała, 2 kładka (wchodzi się od dołu), 3 woda,
      4 krucha półka (spada chwilę po wejściu), 5 mokra skała (ślisko),
@@ -467,15 +794,24 @@
     return today >= TREASURE_FROM || /[?&]skarb=1(&|$)/.test(location.search);
   }
 
+  /* Najkrótsza sekcja, w której zmieszczą się wszystkie atrakcje przystanku (Spello; na Łatwym D.sec × len bywa za mało). */
+  function spNeed(s, D) {
+    var G = s.game, ng = Math.min(G.maxGates != null ? G.maxGates : 2, Math.floor(s.quests.length / D.qPerGate)), mk = G.mini && (D.adv || G.miniAll) ? G.mini : null;
+    return 26 + ng * 11 + (G.hidden != null ? G.hidden : 3) * 14 + (G.chests || 0) * 10 + (G.sky ? 18 : 0) + (G.mosaic ? 12 : 0) + (G.complex ? 18 : 0)
+      + (G.carpet ? 12 : 0) + (G.climb ? 18 : 0) + (G.cart ? 11 : 0) + (mk ? SP_MINI_W[mk] : 0);
+  }
   function buildLevel(trip, prog, playNo, D) {
-    var n = trip.stops.length, SL = D.sec, W = SL * n + 18;
+    // długość sekcji: Frasassi — D.sec dla każdego przystanku; etapy z „game.len” — ułamek D.sec (krótkie łączniki)
+    var n = trip.stops.length, SL = D.sec, SLs = trip.stops.map(function (s) { return s.game ? Math.max(Math.round(D.sec * (s.game.len || 1)), spNeed(s, D)) : SL; });
+    var W = SLs.reduce(function (a, b) { return a + b; }, 0) + 18;
     var L = { W: W, SL: SL, grid: new Uint8Array(W * ROWS), sec: new Uint8Array(W), crumbleAt: new Int16Array(W * ROWS).fill(-1),
       sections: [], coins: [], enemies: [], drippers: [], gates: [], springs: [], chests: [], landmarks: [], movers: [], crumbles: [],
       winds: [], rocks: [], hidden: [], minis: [], zips: [], carts: [], items: [], chestList: [], chestAt: new Int16Array(W * ROWS).fill(-1),
-      plaques: [], raftRocks: [], treasure: null, cx: [], cxDoors: [] };
+      plaques: [], raftRocks: [], treasure: null, cx: [], cxDoors: [], stands: [], cxSet: trip.stops.some(function (s) { return s.game; }) ? CXS : CX };
     // Skarb Quo: pierwszy przystanek w wąwozie (inaczej pierwszy poza jaskinią)
     var tSec = -1;
-    if (D.key === 'hard' && treasureOn()) {
+    if (D.key === 'hard' && treasureOn() && trip.treasureStop) trip.stops.forEach(function (s, i) { if (s.qcKey === trip.treasureStop) tSec = i; });
+    else if (D.key === 'hard' && treasureOn()) {
       trip.stops.forEach(function (s, i) { if (tSec < 0 && TERRAIN_BY_CATEGORY[s.category] === 'valley') tSec = i; });
       if (tSec < 0) trip.stops.forEach(function (s, i) { if (tSec < 0 && TERRAIN_BY_CATEGORY[s.category] !== 'cave') tSec = i; });
     }
@@ -487,33 +823,49 @@
     function crumble(x, y, fast) { set(x, y, 4); L.crumbleAt[y * W + x] = L.crumbles.length; L.crumbles.push({ x: x, y: y, s: 0, t: 0, fast: !!fast, keep: !!fast }); }
     function water(x) { set(x, 12, 3); set(x, 13, 3); }
 
+    var xAcc = 0;
     trip.stops.forEach(function (stop, si) {
-      var x0 = si * SL, terr = TERRAIN_BY_CATEGORY[stop.category] || 'valley', R = rng(hash(trip.trip + ':' + stop.key + ':' + D.key));
+      var SL = SLs[si], x0 = xAcc; xAcc += SL;
+      var GM = stop.game || null; // atrakcje etapu z danych (Spello); Frasassi: null
+      var terr = GM ? GM.terrain : TERRAIN_BY_CATEGORY[stop.category] || 'valley', R = rng(hash(trip.trip + ':' + stop.key + ':' + D.key));
       var pr = prog.stops[si] || {};
       var S = { i: si, x0: x0, x1: x0 + SL, terrain: terr, power: pr.photo ? stop.powerup : null, shortcut: !!pr.all, gates: [],
-        time: 0, par: 0, hidden: 0, done: false, stars: 0 };
+        time: 0, par: 0, hidden: 0, done: false, stars: 0, hidN: GM && GM.hidden != null ? GM.hidden : 3 };
       L.sections.push(S);
       for (var c = x0; c < x0 + SL; c++) L.sec[c] = si;
       var cave = terr === 'cave', spd = D.spd, ceilRow = cave ? 2 : 0;
       if (cave) for (c = x0; c < x0 + SL; c++) { set(c, 0, 1); set(c, 1, 1); }
       // pytania: rotacja po liście, na Trudnym 2 pytania na bramę
-      var nq = stop.quests.length, ng = Math.min(2, Math.floor(nq / D.qPerGate)), rot = (playNo * ng * D.qPerGate) % nq;
-      var gf = cave ? [.18, .8] : [.3, .6];
-      var gateCols = ng === 2 ? [x0 + Math.round(SL * gf[0]), x0 + Math.round(SL * gf[1])] : ng === 1 ? [x0 + Math.round(SL * .5)] : [];
+      var nq = stop.quests.length, ng = Math.min(GM && GM.maxGates != null ? GM.maxGates : 2, Math.floor(nq / D.qPerGate)), rot = nq ? (playNo * ng * D.qPerGate) % nq : 0;
+      var gf = cave ? [.18, .8] : GM && GM.gateAt ? GM.gateAt : [.3, .6];
+      var gateCols = ng === 2 ? [x0 + Math.round(SL * gf[0]), x0 + Math.round(SL * gf[1])] : ng === 1 ? [x0 + Math.round(SL * (GM && GM.gateAt ? GM.gateAt[0] : .5))] : [];
       var gateDefs = gateCols.map(function (c) { return { col: c, kind: 'quiz' }; });
       if (cave) { gateDefs.push({ col: x0 + Math.round(SL * (D.adv ? .45 : .5)), kind: 'organ' }); gateDefs.push({ col: x0 + Math.round(SL * (D.adv ? .68 : .64)), kind: 'rope' }); }
       if (terr === 'valley' || terr === 'cliff') gateDefs.push({ col: x0 + Math.round(SL * .45), kind: 'push' });
+      if (GM && GM.cart) gateDefs.push({ col: x0 + Math.round(SL * (GM.cartAt || .5)), kind: 'cart' }); // wózek pod górę (szybkie ◀ ▶)
       gateDefs.sort(function (a, b) { return a.col - b.col; });
       var landX = x0 + SL - 9;
       var MINI_W = { valley: 38, cave: 32, stone: 32, cliff: 14 };
-      var miniX = D.adv ? landX - MINI_W[terr] : landX - 3;
-      var cxHere = terr === 'stone' && !L.cx.length && !L.cxPlanned, nIn = cxHere ? CX[D.key].stickers : 0; // komnaty: pierwszy przystanek przy opactwie
+      var miniK = GM && GM.mini && (D.adv || GM.miniAll) ? GM.mini : null;
+      var miniX = GM ? (miniK ? landX - SP_MINI_W[miniK] : landX - 3) : D.adv ? landX - MINI_W[terr] : landX - 3;
+      var cxHere = (GM ? !!GM.complex : terr === 'stone') && !L.cx.length && !L.cxPlanned, nIn = cxHere ? L.cxSet[D.key].stickers : 0; // komnaty: pierwszy przystanek przy opactwie (Spello: przy willi)
       if (cxHere) L.cxPlanned = true;
-      var hpos = [.14, .44, .76].slice(0, 3 - nIn).map(function (f) { return x0 + Math.round(f * (miniX - x0)); });
+      var hidOut = Math.max(0, S.hidN - nIn), HP = { 0: [], 1: [.06], 2: [.12, .56], 3: [.14, .44, .76] };
+      var hpos = (GM ? HP[Math.min(3, hidOut)] : [.14, .44, .76].slice(0, 3 - nIn)).map(function (f) { return x0 + Math.round(f * (miniX - x0)); });
       var htypes = ['secret', 'tower', 'skygap']; for (var hi = 2; hi > 0; hi--) { var hj = Math.floor(R() * (hi + 1)); var tt = htypes[hi]; htypes[hi] = htypes[hj]; htypes[hj] = tt; }
       var g = GROUND, x = x0, gi = 0, hk = 0, fk = 0;
       var span = miniX - x0, forced = [];
       hpos.forEach(function (p, i) { forced.push({ at: p, name: htypes[i], hid: true }); });
+      if (GM) { // Spello: atrakcje z „game” (łączniki: tylko naklejka do znalezienia)
+        if (GM.chests) forced.push({ at: x0 + Math.round(.06 * span), name: 'chestPU' });
+        if (si === tSec) forced.push({ at: x0 + Math.round(.18 * span), name: 'treasureIsland', pri: 1 });
+        else if (GM.sky) forced.push({ at: x0 + Math.round(.18 * span), name: 'skyIsland', pri: 1 });
+        if (GM.mosaic) forced.push({ at: x0 + Math.round(.2 * span), name: 'mosaic', pri: 1 });
+        if (cxHere) forced.push({ at: x0 + Math.round(.4 * span), name: 'complex', pri: 1 });
+        if (GM.carpet) forced.push({ at: x0 + Math.round(.08 * span), name: 'carpet', pri: 1 });
+        if (GM.climb) forced.push({ at: x0 + Math.round(.3 * span), name: 'climbAlley', pri: 1 });
+        if (GM.chests > 1) forced.push({ at: x0 + Math.round(.62 * span), name: 'chestPU' });
+      } else {
       forced.push({ at: x0 + Math.round(.06 * span), name: 'chestPU' });
       forced.push(si === tSec ? { at: x0 + Math.round(.18 * span), name: 'treasureIsland', pri: 1 } : { at: x0 + Math.round(.18 * span), name: 'skyIsland' });
       if (terr === 'valley' || terr === 'cliff') forced.push({ at: x0 + Math.round(.5 * span), name: 'zipline' });
@@ -522,6 +874,7 @@
       if (cave && D.adv) { forced.push({ at: x0 + Math.round(SL * .19), name: 'raft', pri: 1 }); forced.push({ at: x0 + Math.round(SL * .46), name: 'mine', pri: 1 }); }
       if (!cave) forced.push({ at: x0 + Math.round(.62 * span), name: 'chestPU' });
       forced.forEach(function (f) { if (f.name === 'zipline' || f.name === 'mosaic') f.pri = 1; });
+      }
       forced.sort(function (a, b) { return a.at - b.at; });
       for (; x < x0 + 8; x++) ground(x, g);
       if (si === 0) { coin(x0 + 5, g - 2); coin(x0 + 6, g - 2); coin(x0 + 7, g - 2); }
@@ -537,10 +890,10 @@
         L.movers.push({ x: px, y: py, w: w, ax: axis, bx: px, by: py, range: range, w2: Math.PI * 2 / (period / Math.sqrt(spd)), ph: R() * 6, dx: 0, dy: 0, log: false, sec: si });
         return L.movers[L.movers.length - 1];
       }
-      var pit = function (tx) { if (terr === 'stone' || (cave && R() < .5)) water(tx); };
+      var pit = function (tx) { if (terr === 'stone' || (cave && R() < .5) || (GM && GM.water)) water(tx); };
       function chest(cx, cy, content, locked) { set(cx, cy, 8); L.chestAt[cy * W + cx] = L.chestList.length; L.chestList.push({ x: cx, y: cy, content: content, open: false, locked: !!locked, sec: si }); return L.chestList.length - 1; }
       function puFor() { return cave ? pick(R, ['lantern', 'balloon', 'doublejump']) : pick(R, PU_KINDS); }
-      var hatHere = terr === 'valley' ? 'explorer' : (cave && !D.adv) ? 'helmet' : null;
+      var hatHere = GM ? GM.skyHat || null : terr === 'valley' ? 'explorer' : (cave && !D.adv) ? 'helmet' : null;
 
       /* --- klocki poziomu --- */
       var CH = {
@@ -696,9 +1049,32 @@
         }],
         mosaic: [11, function () { // mozaika przy opactwie odblokowuje skrzynię
           var w = 10; flat(w);
-          var ci = chest(x + 7, g - 3, 'hat:hood', true);
+          var ci = chest(x + 7, g - 3, GM ? 'pu:doublejump' : 'hat:hood', true);
           L.plaques.push({ x: (x + 3) * TILE + 16, y: g * TILE, sec: si, solved: false, closes: 0, chest: ci });
           return w;
+        }],
+        carpet: [11, function () { // Spello: kwiatowy dywan (układanka z płatków) odblokowuje skrzynię z wiankiem
+          var w = 10; flat(w);
+          var ci = chest(x + 7, g - 3, 'hat:crown', true); L.chestList[ci].lock = 'carpet';
+          L.plaques.push({ kind: 'carpet', x: (x + 3) * TILE + 16, y: g * TILE, sec: si, solved: false, closes: 0, chest: ci });
+          return w;
+        }],
+        stairs: [9, function () { // schodki stromej uliczki: 3 stopnie w górę albo w dół
+          var lo = D.adv ? 7 : 8, dir = g >= 11 ? -1 : g <= lo ? 1 : (R() < .6 ? -1 : 1);
+          for (var i = 0; i < 3; i++) { g = clamp(g + dir, lo, 12); flat(2); if (i === 1) coin(x + 1, g - 2); x += 2; }
+          flat(3); return 3;
+        }],
+        climbAlley: [17, function () { // Spello: pionowa wspinaczka po balkonach z donicami na wysoki zaułek, potem zeskok
+          g = GROUND; flat(3); x += 3;
+          var top = D.adv ? 3 : 6, rows = [], r;
+          for (r = g - 3; r > top + 1; r -= 3) rows.push(r);
+          // balkony pod samą ścianą domu: pierwszy tuż przy ścianie, wyższy nad nim (szerszy, w lewo) — wspinaczka prosto w górę
+          rows.forEach(function (rr, i) { var c0 = i ? x + 1 : x + 2, c1 = x + 3; for (var k = c0; k <= c1; k++) set(k, rr, 2); coin(i ? x + 1 : x + 2, rr - 1); });
+          flat(4); x += 4;                                          // pod balkonami: uliczka
+          var hb = 7;
+          for (var i = 0; i < hb; i++) { ground(x + i, top); if (i % 2) coin(x + i, top - 1); }
+          if (D.adv) rock(x + 4);                                   // donica spada z parapetu
+          x += hb; g = GROUND; flat(3); return 3;
         }],
         raft: [41, function () { // spływ tratwą podziemną rzeką
           g = GROUND; flat(3); x += 3; var rx = x, n = 32;
@@ -744,7 +1120,7 @@
           hide(x + w / 2, g - 4.25); x += w; flat(3); return 3;
         }]
       };
-      var weights = D.adv ? {
+      var weights = GM ? (function (o) { var c = {}; for (var k in o) c[k] = o[k]; return c; })(SP_WEIGHTS[D.adv ? 'adv' : 'easy'][terr] || SP_WEIGHTS.easy.alley) : D.adv ? {
         valley: { flat: 1, step: 2, runGap: 2, movingH: 1.5, crumbleRow: 1.5, climbWall: 1, beetleLedge: 2, spikes: 1.5, spiky: 1.5, rockfall: 1.5, roller: 1.5 },
         cave: { step: 1.5, runGap: 1, movingV: 1, crumbleRow: 1.5, beetleLedge: 1.5, spikes: 1.5, bats: 2, drips: 2.5, lowCeil: 2, wet: 2, river: 2, mite: 1 },
         stone: { step: 1.5, runGap: 2, movingH: 2, crumbleRow: 1.5, beetleLedge: 1.5, spiky: 1.5, bats: 1, river: 2.5, roller: 1, climbWall: 1, spikes: 1 },
@@ -791,12 +1167,13 @@
       if (window.__genLog) forced.forEach(function (f) { if (!f.used) window.__genLog.push(si + ':MISSING ' + f.name); });
       for (; x < miniX; x++) ground(x, g);
       g = GROUND;
-      if (cave) for (var ff = 0; ff < 10; ff++) { // świetliki
+      if (cave || (GM && GM.fireflies)) for (var ff = 0; ff < 10; ff++) { // świetliki (jaskinia; Spello: wieczór)
         var fcx = x0 + 12 + Math.floor(ff * (SL - 30) / 10), fr = 2;
         while (fr < ROWS - 1 && !SOLID[get(fcx, fr)] && !ONEWAY[get(fcx, fr)]) fr++;
         if (fr > 4 && fr < ROWS - 1) L.items.push({ type: 'firefly', x: fcx * TILE + 16, y: (fr - 2) * TILE + 8, ph: ff, alive: true });
       }
-      if (D.adv) { x = buildMini(L, D, terr, si, miniX, landX, R, set, ground, coin, crumble, water, clearCol, dripper, rock); g = L.minis[L.minis.length - 1].endG || GROUND; }
+      if (GM) { if (miniK) { x = buildMiniSp(L, D, miniK, si, miniX, landX, R, set, ground, coin, crumble, water, clearCol, dripper, rock, beetle); g = L.minis[L.minis.length - 1].endG || GROUND; } }
+      else if (D.adv) { x = buildMini(L, D, terr, si, miniX, landX, R, set, ground, coin, crumble, water, clearCol, dripper, rock); g = L.minis[L.minis.length - 1].endG || GROUND; }
       for (; x < x0 + SL; x++) ground(x, g);
       L.landmarks.push({ x: (landX + 2) * TILE + 16, y: g * TILE, sec: si, done: false });
 
@@ -809,7 +1186,7 @@
       S.checkpoint = { x: (x0 + 2) * TILE + 16, y: GROUND * TILE };
       S.par += Math.round(SL * TILE / RUN * D.parMul + 4); // + czas na komnaty (complex)
     });
-    for (var x = SL * n; x < W; x++) { ground(x, GROUND); L.sec[x] = n - 1; }
+    for (var x = xAcc; x < W; x++) { ground(x, GROUND); L.sec[x] = n - 1; }
     for (var y = 0; y < ROWS; y++) set(W - 1, y, 1);
     return L;
   }
@@ -873,6 +1250,78 @@
     return x;
   }
 
+  /* Mini-wyzwania Spello (przed naklejką przystanku). Zwraca kolumnę, od której dalej jest ziemia.
+     lever    — rzymska brama: dźwignia otwiera ją na kilka sekund (wszystkie poziomy; to ten sam mechanizm co płyta w jaskini)
+     glide    — balonik nad doliną: stojak z balonikami, szeroka przepaść, na Średnim/Trudnym podmuchy
+     trench   — kładka nad wykopem przy willi (wali się falą, jak most nad Sentino)
+     tower / scaffold — windy przy wieżach / rusztowanie w kaplicy na wysoką półkę z naklejką */
+  function buildMiniSp(L, D, kind, si, x, landX, R, set, ground, coin, crumble, water, clearCol, dripper, rock, beetle) {
+    var g = GROUND, i, y;
+    if (kind === 'lever') {
+      for (i = 0; i < 5; i++) ground(x + i, g);
+      var px = x + 2; x += 5;
+      ground(x, g - 1); ground(x + 1, g - 1); x += 2;
+      for (i = 0; i < 4; i++) ground(x + i, g - 2); coin(x + 1, g - 4); coin(x + 2, g - 4);
+      if (D.adv) beetle(x, x + 3, g - 2, D.key === 'hard');
+      x += 4;
+      var pw = D.adv ? 3 : 2;
+      for (i = 0; i < pw; i++) clearCol(x + i, 0, 13);
+      if (D.key === 'hard') crumble(x + 1, g - 2);
+      x += pw;
+      for (i = 0; i < 3; i++) ground(x + i, g - 1); x += 3;
+      for (i = 0; i < 3; i++) ground(x + i, g); x += 3;
+      var dc = x; ground(x, g); x++;
+      for (; x < landX; x++) ground(x, g);
+      L.minis.push({ type: 'door', lever: true, sec: si, plateX: px * TILE + 16, col: dc, x: dc * TILE, g: g, open: false, t: 0, T: D.doorT ? D.doorT + 1 : 13, lift: 0, done: false, on: false });
+      return x;
+    }
+    if (kind === 'glide') {
+      for (i = 0; i < 6; i++) ground(x + i, g);
+      L.stands.push({ x: (x + 3) * TILE + 16, y: g * TILE, sec: si, told: false });
+      x += 6;
+      var gw = D.key === 'easy' ? 9 : D.key === 'medium' ? 12 : 14, gx0 = x;
+      for (i = 0; i < gw; i++) clearCol(x + i, 0, 13);
+      if (D.key === 'easy') { set(x + 4, g - 1, 2); set(x + 5, g - 1, 2); } // chmurka-półka do odpoczynku
+      for (i = 1; i < gw; i += 2) coin(x + i, g - 3 - Math.sin(i / gw * Math.PI) * 2.5);
+      if (D.wind) L.winds.push({ x0: gx0 * TILE, x1: (gx0 + gw) * TILE, f: D.wind * .55, per: 3.4, on: 1.5, ph: 0 });
+      x += gw;
+      for (; x < landX; x++) ground(x, g);
+      L.minis.push({ type: 'glide', sec: si, x0: gx0 * TILE, x1: (gx0 + gw) * TILE });
+      return x;
+    }
+    if (kind === 'trench') { // kładka nad wykopem (bez wody — upadek = serduszko)
+      for (i = 0; i < 4; i++) ground(x + i, g); x += 4;
+      var bx0 = x, bridge = [];
+      for (i = 0; i < 22; i++) {
+        clearCol(x + i, 0, 13);
+        if (i === 7 || i === 8 || i === 15 || i === 16) continue;
+        bridge.push(L.crumbles.length); crumble(x + i, g, true);
+        if (i % 3 === 0) coin(x + i, g - 2);
+      }
+      x += 22;
+      for (; x < landX; x++) ground(x, g);
+      L.minis.push({ type: 'bridge', sec: si, x0: bx0 * TILE, x1: (bx0 + 22) * TILE, wave: -1, v: D.bridgeV, idx: bridge });
+      return x;
+    }
+    // tower / scaffold: dwie windy na wysoką półkę (bez wiatru)
+    for (i = 0; i < 6; i++) ground(x + i, g); x += 6;
+    var hi = g - 7, wood = kind === 'scaffold';
+    ground(x, g); ground(x + 1, g);
+    var m1 = { x: x * TILE, y: 0, w: 64, ax: 'y', bx: x * TILE, by: 0, range: 0, w2: Math.PI * 2 / (3.0 / Math.sqrt(D.spd)), ph: 0, dx: 0, dy: 0, log: false, wood: wood, sec: si };
+    m1.y0 = g * TILE - 12; m1.y1 = (g - 4) * TILE; m1.by = (m1.y0 + m1.y1) / 2; m1.range = (m1.y0 - m1.y1) / 2; m1.y = m1.by; L.movers.push(m1);
+    x += 2; ground(x, g - 4); ground(x + 1, g - 4); x += 2;
+    ground(x, g); ground(x + 1, g);
+    var m2 = { x: x * TILE, y: 0, w: 64, ax: 'y', bx: x * TILE, by: 0, range: 0, w2: Math.PI * 2 / (3.4 / Math.sqrt(D.spd)), ph: 2, dx: 0, dy: 0, log: false, wood: wood, sec: si };
+    m2.y0 = (g - 4) * TILE - 12; m2.y1 = hi * TILE; m2.by = (m2.y0 + m2.y1) / 2; m2.range = (m2.y0 - m2.y1) / 2; m2.y = m2.by; L.movers.push(m2);
+    x += 2;
+    var ps = x;
+    for (; x < landX + 5; x++) ground(x, hi);
+    if (!wood) { rock(ps + 4); }
+    coin(ps + 1, hi - 2); coin(ps + 2, hi - 2);
+    L.minis.push({ type: 'climb', sec: si, endG: hi });
+    return x;
+  }
+
   /* ---------- 5b. Komnaty pod opactwem (pokoje „flip-screen”, JP 2026-10-26) ----------
      Własny projekt w duchu klasycznych gier z pokojami: kompleks 3 (Łatwy), 7 (Średni) albo 9 (Trudny) komnat 16×11 kafli,
      połączonych w lewo/prawo i drabinami w górę/w dół. Wejście drzwiami w murze opactwa na trasie przystanku „stone”,
@@ -884,7 +1333,8 @@
      Zasady uczciwości: klucze i przedmioty nie giną (upadek = powrót na wejście do komnaty z całym plecakiem), plecak mieści 4 rzeczy
      i układ nigdy nie wymaga więcej, krata nikogo nie rani (tylko odpycha), drzwi zostają otwarte, zrobiony kompleks na Trudnym
      po „drzemce” przepuszcza od razu do wyjścia. route = punkty dla bota testowego (dzieci go nie widzą). */
-  var RW = 16, RH = 11, ITEM_NAME = {}, CX_NAME = {};
+  var RW = 16, RH = 11, ITEM_NAME = {}, CX_NAME = {}, CX_NAME_SP = {};
+  function cxName(Z) { return (Z.sp ? CX_NAME_SP : CX_NAME)[Z.key]; }
   var CX_TILE = { '#': 1, '.': 0, '-': 2, '~': 3, '^': 7, 'H': 10, '|': 11, '<': 12, '>': 13, '=': 14, '%': 15, 'X': 16, 'I': 17, 'R': 20, 'U': 21, 'N': 22 };
   var KEY_COL = { r: 'red', u: 'blue', n: 'green' }, DOOR_COL = { 20: 'red', 21: 'blue', 22: 'green' };
   var COL_RGB = { red: '#C81E36', blue: '#0B4EA2', green: '#1F7A48' };
@@ -1127,9 +1577,22 @@
         '################',
         '################'] }] }
   };
+  /* Spello: „Wykopaliska pod willą” — te same sprawdzone układy komnat w lustrzanym odbiciu (lewo ↔ prawo, posadzki
+     ruchome w drugą stronę), inne motywy: dig (rzymskie mury opus reticulatum, mozaiki) i cistern (ciemna cysterna). */
+  function mirrorCX(C, themes) {
+    var o = {}; for (var k in C) o[k] = C[k];
+    o.route = C.route.map(function (p) { return [C.gw - 1 - p[0], p[1], RW - 1 - p[2], p[3]]; });
+    o.rooms = C.rooms.map(function (r) {
+      return { at: [C.gw - 1 - r.at[0], r.at[1]], theme: themes[r.theme] || r.theme, dark: r.dark, chest: r.chest,
+        map: r.map.map(function (line) { return line.split('').reverse().map(function (ch) { return ch === '<' ? '>' : ch === '>' ? '<' : ch; }).join(''); }) };
+    });
+    o.sp = true;
+    return o;
+  }
+  var CXS = { easy: mirrorCX(CX.easy, { crypt: 'dig', cave: 'cistern' }), medium: mirrorCX(CX.medium, { crypt: 'dig', cave: 'cistern' }), hard: mirrorCX(CX.hard, { crypt: 'dig', cave: 'cistern' }) };
   function buildComplex(D, si, zi, LV) {
-    var C = CX[D.key], W = C.gw * RW, H = C.gh * RH;
-    var Z = { key: D.key, si: si, zi: zi, W: W, H: H, GW: C.gw, GH: C.gh, grid: new Uint8Array(W * H).fill(1), barAt: new Int16Array(W * H).fill(-1),
+    var C = LV.cxSet[D.key], W = C.gw * RW, H = C.gh * RH;
+    var Z = { key: D.key, sp: !!C.sp, si: si, zi: zi, W: W, H: H, GW: C.gw, GH: C.gh, grid: new Uint8Array(W * H).fill(1), barAt: new Int16Array(W * H).fill(-1),
       bars: [], rooms: [], roomAt: [], items: [], coins: [], enemies: [], exit: null, start: null, back: null, done: false,
       bper: C.bper, bon: C.bon, conv: C.conv, route: [] };
     for (var i = 0; i < C.gw * C.gh; i++) Z.roomAt.push(-1);
@@ -1255,7 +1718,7 @@
     P.roomEntry = { x: Z.start.x, y: Z.start.y }; P.safe = { x: Z.start.x, y: Z.start.y };
     if (D.cpGates) P.checkpoint = { x: Z.start.x, y: Z.start.y, zone: zi };
     ev('zone'); sfx('gate');
-    toast(CX_NAME[Z.key] + ' · ' + PT('page.game.cx.enter', 'znajdź klucze i wyjście!'), 3600);
+    toast(cxName(Z) + ' · ' + PT('page.game.cx.enter', 'znajdź klucze i wyjście!'), 3600);
     cam.room = -1; updateCamera(1);
   }
   function leaveZone() {
@@ -1304,7 +1767,7 @@
       var dx = P.x - h.x, dy = (P.y - 24) - h.y;
       if (dx * dx + dy * dy < 30 * 30) {
         h.taken = true; L.sections[h.sec].hidden++; stats.hiddenTotal++; ev('hidden'); updateHUD(); sfx('fanfare'); sparkle(h.x, h.y);
-        toast(fill(PT('page.game.t.hidden', 'Zagubiona naklejka! {n} z 3'), { n: L.sections[h.sec].hidden }));
+        hiddenToast(L.sections[h.sec]);
       }
     });
     for (var i = 0; i < Z.items.length; i++) {
@@ -1369,7 +1832,7 @@
   }
   function zoneHUD() {
     var Z = curZone(); if (!Z) return;
-    $('hudStop').textContent = CX_NAME[Z.key] + ' · ' + fill(PT('page.game.cx.room', 'komnata {n} z {m}'), { n: P.room + 1, m: Z.rooms.length });
+    $('hudStop').textContent = cxName(Z) + ' · ' + fill(PT('page.game.cx.room', 'komnata {n} z {m}'), { n: P.room + 1, m: Z.rooms.length });
   }
 
   /* ---------- 6. Fizyka, gracz, przeciwnicy ---------- */
@@ -1449,7 +1912,7 @@
     var inZ = P.zone >= 0;
     for (var pi = 0; pi < (inZ ? 0 : L.plaques.length); pi++) {
       var pq = L.plaques[pi];
-      if (!pq.solved && Math.abs(P.x - pq.x) < 26 && Math.abs(P.y - pq.y) < 10 && input.jumpPressed && !SIM && state === 'play') { input.jumpPressed = false; openMosaic(pq); return; }
+      if (!pq.solved && Math.abs(P.x - pq.x) < 26 && Math.abs(P.y - pq.y) < 10 && input.jumpPressed && !SIM && state === 'play') { input.jumpPressed = false; if (pq.kind === 'carpet') openCarpet(pq); else openMosaic(pq); return; }
     }
     var power = curPower();
     var ax = (input.right ? 1 : 0) - (input.left ? 1 : 0);
@@ -1609,7 +2072,7 @@
   function openChest(cx, cy) {
     var ci = L.chestAt[cy * L.W + cx]; if (ci < 0) return;
     var c = L.chestList[ci]; if (c.open) return;
-    if (c.locked) { toast(PT('page.game.t.chest_locked', 'Zamknięta. Ułóż mozaikę na tablicy obok!')); return; }
+    if (c.locked) { toast(c.lock === 'carpet' ? PT('page.game.t.chest_carpet', 'Zamknięta. Ułóż kwiatowy dywan obok!') : PT('page.game.t.chest_locked', 'Zamknięta. Ułóż mozaikę na tablicy obok!')); return; }
     c.open = true; L.grid[cy * L.W + cx] = 9; ev('chest'); sfx('fanfare');
     var parts = c.content.split(':');
     if (parts[0] === 'coins') addCoins(6, cx * TILE + 16, cy * TILE);
@@ -1687,6 +2150,10 @@
     if (x != null && !SIM) for (var i = 0; i < Math.min(n, 8); i++) particles.push({ x: x, y: y, vx: (Math.random() - .5) * 220, vy: -150 - Math.random() * 200, life: .7, max: .7, col: '#FFC629', size: 4, g: 900 });
   }
 
+  function hiddenToast(S) {
+    if (S.hidN === 3) toast(fill(PT('page.game.t.hidden', 'Zagubiona naklejka! {n} z 3'), { n: S.hidden }));
+    else toast(fill(PT('page.game.t.hidden_n', 'Zagubiona naklejka! {n} z {m}'), { n: S.hidden, m: S.hidN }));
+  }
   function updateEntities(dt) {
     var left = cam.x - 300, right = cam.x + view.w + 300;
     if (SIM) { left = P.x - 900; right = P.x + 900; }
@@ -1705,7 +2172,7 @@
       var dx = P.x - h.x, dy = (P.y - 24) - h.y;
       if (dx * dx + dy * dy < 30 * 30) {
         h.taken = true; L.sections[h.sec].hidden++; stats.hiddenTotal++; ev('hidden'); updateHUD(); sfx('fanfare'); sparkle(h.x, h.y); sparkle(h.x, h.y);
-        toast(fill(PT('page.game.t.hidden', 'Zagubiona naklejka! {n} z 3'), { n: L.sections[h.sec].hidden }));
+        hiddenToast(L.sections[h.sec]);
       }
     });
     L.items.forEach(function (it) {
@@ -1724,7 +2191,7 @@
       if (dx * dx + dy * dy < 28 * 28) {
         it.alive = false; ev('item');
         if (it.type === 'pu') { setPower(it.kind, it.fly); sfx('fanfare'); toast(fill(PT('page.game.t.power', 'Moc: {name}'), { name: POWER[it.kind].name })); }
-        else if (it.type === 'firefly') { P.glow = Math.min(P.glow + 70, 210); sfx('coin'); sparkle(it.x, it.y); }
+        else if (it.type === 'firefly') { P.glow = Math.min(P.glow + 70, 210); if (TER[secAt(it.x).terrain].sp) stats.coins++, updateHUD(); sfx('coin'); sparkle(it.x, it.y); }
         else if (it.type === 'hat') { collectHat(it.kind); }
       }
     });
@@ -1734,6 +2201,12 @@
       else if (!TR.seen && !SIM) { TR.seen = true; toast(PT('page.game.t.treasure_again', 'Skarb Quo już jest w albumie!')); }
     }
     if (P.glow > 0) P.glow = Math.max(0, P.glow - 5 * dt);
+    L.stands.forEach(function (st) { // stojak z balonikami (Spello, belvedere): balonik dla każdego, kto stanie obok
+      if (P.nap <= 0 && P.onGround && Math.abs(P.x - st.x) < 40 && Math.abs(P.y - st.y) < 8 && (P.power !== 'balloon' || P.fly < 6)) {
+        setPower('balloon'); ev('stand'); sfx('fanfare');
+        if (!st.told) { st.told = true; toast(PT('page.game.t.stand', 'Balonik! Trzymaj skok i leć nad doliną.'), 3400); }
+      }
+    });
     L.carts.forEach(function (c) { if (c.done && !c.active && P.onGround && Math.abs(P.x - c.sx) < 60 && P.cart < 0) { c.done = false; c.s = 0; c.branch = 0; c.x = c.sx; c.y = c.main[0][1]; } });
     L.chests.forEach(function (ch) {
       if (!ch.open && Math.abs(P.x - ch.x) < 24 && Math.abs(P.y - ch.y) < 30) { ch.open = true; addCoins(10, ch.x, ch.y - 16); sfx('fanfare'); toast(PT('page.game.t.stash', 'Tajna kryjówka! +10 kamyczków')); }
@@ -1904,7 +2377,7 @@
   function padWanted() { return ('ontouchstart' in window) || (window.matchMedia && matchMedia('(pointer: coarse)').matches) || window.innerWidth < 900; }
 
   function sectionBlend(px) {
-    var secPx = L.SL * TILE, i = clamp(Math.floor(px / secPx), 0, L.sections.length - 1), d = px - i * secPx, BL = 160;
+    var i = L.sec[clamp(Math.floor(px / TILE), 0, L.W - 1)], S0 = L.sections[i], secPx = (S0.x1 - S0.x0) * TILE, d = px - S0.x0 * TILE, BL = 160;
     if (d < BL && i > 0) { var m = (d + BL) / (2 * BL); return { a: L.sections[i - 1].terrain, b: L.sections[i].terrain, m: m }; }
     if (d > secPx - BL && i < L.sections.length - 1) { m = (d - (secPx - BL)) / (2 * BL); return { a: L.sections[i].terrain, b: L.sections[i + 1].terrain, m: m }; }
     return { a: L.sections[i].terrain, b: null, m: 0 };
@@ -1931,6 +2404,7 @@
     drawCxDoors();
     drawGates();
     drawMinis();
+    drawStands();
     drawPlaques();
     drawSprings();
     drawCoins();
@@ -2092,7 +2566,13 @@
   }
   function drawSolid(T, tk, x, y, top, bottom, left, right, h) {
     ctx.fillStyle = T.fill; ctx.fillRect(x, y, TILE, TILE);
-    if (tk === 'stone' || tk === 'crypt') {
+    if (T.sp) {
+      drawSolidSp(T, tk, x, y, top, h);
+    } else if (T.reti) { // opus reticulatum: kamyczki ułożone w ukośną siateczkę
+      ctx.fillStyle = T.speck;
+      for (var dy = 0; dy < 2; dy++) for (var dx = 0; dx < 2; dx++) { var cx2 = x + 8 + dx * 16, cy2 = y + 8 + dy * 16; ctx.beginPath(); ctx.moveTo(cx2, cy2 - 7); ctx.lineTo(cx2 + 7, cy2); ctx.lineTo(cx2, cy2 + 7); ctx.lineTo(cx2 - 7, cy2); ctx.fill(); }
+      ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + 6, y + 3, 4, 2); ctx.fillRect(x + 22, y + 19, 4, 2);
+    } else if (tk === 'stone' || tk === 'crypt') {
       ctx.fillStyle = T.fillDk; var off = (y / TILE) % 2 ? 0 : 16;
       ctx.fillRect(x, y + 15, TILE, 2); ctx.fillRect(x + off, y, 2, 15); ctx.fillRect(x + (off + 16) % 32, y + 17, 2, 15);
       ctx.fillStyle = T.speck; ctx.fillRect(x + 4, y + 3, 6, 2);
@@ -2108,8 +2588,9 @@
     var ink = 'rgba(14,26,43,.35)';
     if (left) { ctx.fillStyle = ink; ctx.fillRect(x, y, 2, TILE); }
     if (right) { ctx.fillStyle = ink; ctx.fillRect(x + TILE - 2, y, 2, TILE); }
-    if (top) {
-      if (tk === 'valley' || tk === 'stone') {
+    if (top && T.sp && drawTopSp(T, x, y, h)) { /* wierzch Spello narysowany */ }
+    else if (top) {
+      if (tk === 'valley' || tk === 'stone' || T.grass) {
         ctx.fillStyle = T.top; ctx.fillRect(x, y, TILE, 9);
         ctx.fillStyle = T.topHi; ctx.fillRect(x, y, TILE, 3);
         ctx.fillStyle = T.top; ctx.beginPath();
@@ -2128,6 +2609,7 @@
     }
   }
   function drawPlatform(T, tk, x, y, l, r) {
+    if (T.sp) { drawPlatformSp(T, x, y, l, r); return; }
     ctx.fillStyle = T.plat; ctx.fillRect(x, y, TILE, 11);
     ctx.fillStyle = T.platDk; ctx.fillRect(x, y + 8, TILE, 3);
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x, y, TILE, 2);
@@ -2149,6 +2631,10 @@
         ctx.fillStyle = '#9A6A35'; roundRect(ctx, m.x, m.y, m.w, 14, 7); ctx.fill();
         ctx.fillStyle = '#C99A60'; ctx.beginPath(); ell(ctx, m.x + m.w - 6, m.y + 7, 4, 5, 0); ctx.fill();
         ctx.strokeStyle = '#6B4522'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(m.x + 8, m.y + 5); ctx.lineTo(m.x + m.w - 18, m.y + 5); ctx.stroke();
+      } else if (m.wood) { // rusztowanie: drewniany pomost na linach
+        ctx.strokeStyle = 'rgba(94,69,41,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(m.x + 6, m.y); ctx.lineTo(m.x + 6, m.y - 500); ctx.moveTo(m.x + m.w - 6, m.y); ctx.lineTo(m.x + m.w - 6, m.y - 500); ctx.stroke();
+        ctx.fillStyle = '#4A2F17'; ctx.fillRect(m.x - 1, m.y - 1, m.w + 2, 13);
+        ctx.fillStyle = '#B98A55'; ctx.fillRect(m.x, m.y, m.w, 9); ctx.fillStyle = '#8C5E2E'; for (var wi = 15; wi < m.w; wi += 16) ctx.fillRect(m.x + wi, m.y, 2, 9);
       } else {
         if (m.ax === 'y') { ctx.strokeStyle = 'rgba(14,26,43,.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(m.x + 6, m.y); ctx.lineTo(m.x + 6, m.y - 500); ctx.moveTo(m.x + m.w - 6, m.y); ctx.lineTo(m.x + m.w - 6, m.y - 500); ctx.stroke(); }
         ctx.fillStyle = '#062A58'; ctx.fillRect(m.x - 1, m.y - 1, m.w + 2, 14);
@@ -2280,6 +2766,15 @@
   function drawPlaques() {
     L.plaques.forEach(function (q) {
       if (q.x < cam.x - 60 || q.x > cam.x + view.w + 60) return;
+      if (q.kind === 'carpet') { // tablica z kwiatowym wzorem (Infiorate)
+        ctx.fillStyle = '#6E614D'; ctx.fillRect(q.x - 3, q.y - 30, 6, 30);
+        ctx.fillStyle = '#0E1A2B'; ctx.fillRect(q.x - 24, q.y - 72, 48, 44);
+        ctx.fillStyle = '#5C8A45'; ctx.fillRect(q.x - 22, q.y - 70, 44, 40);
+        var PC = ['#E8467C', '#FFC629', '#FFFFFF', '#C81E36'];
+        for (var j = 0; j < 16; j++) { if (!q.solved && (j === 5 || j === 10 || j === 15)) continue; var cx = j % 4, cy = Math.floor(j / 4); ctx.fillStyle = PC[(Math.min(cx, 3 - cx) + Math.min(cy, 3 - cy)) % 4]; ctx.beginPath(); ell(ctx, q.x - 15 + cx * 10, q.y - 63 + cy * 9.5, 4.2, 4.2, 0); ctx.fill(); }
+        if (!q.solved && Math.abs(P.x - q.x) < 160) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.carpet', 'Skok przy tablicy = kwiatowy dywan'), q.x, q.y - 86, 320); }
+        return;
+      }
       ctx.fillStyle = '#6E614D'; ctx.fillRect(q.x - 3, q.y - 30, 6, 30);
       ctx.fillStyle = '#0E1A2B'; ctx.fillRect(q.x - 22, q.y - 70, 44, 42);
       ctx.fillStyle = '#E8DEC8'; ctx.fillRect(q.x - 20, q.y - 68, 40, 38);
@@ -2358,6 +2853,7 @@
         ctx.fillStyle = '#fff'; ctx.beginPath(); ell(ctx, -3.5, -2, 2.6, 3, 0); ell(ctx, 3.5, -2, 2.6, 3, 0); ctx.fill();
         ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, -3, -1.5, 1.3, 1.6, 0); ell(ctx, 4, -1.5, 1.3, 1.6, 0); ctx.fill();
         ctx.restore();
+      } else if (TER[L.sections[e.sec].terrain].sp) { drawPigeon(e);
       } else {
         var flap = reduceMotion ? .5 : (Math.sin(e.t * (e.st === 1 ? 40 : 18)) * .5 + .5);
         ctx.save(); ctx.translate(e.x, e.y);
@@ -2388,6 +2884,7 @@
       ctx.fillStyle = 'rgba(14,26,43,' + (.15 + .25 * k).toFixed(2) + ')'; ctx.beginPath(); ell(ctx, r.x, gy - 2, 8 + 10 * k, 3 + 2 * k, 0); ctx.fill();
       var ry = r.s === 1 ? Math.max(r.y0, cam.y + 6) : r.y, sh = r.s === 1 ? Math.sin(gameT * 50) * 2 : 0;
       if (r.s === 1 && !reduceMotion && Math.random() < .3) particles.push({ x: r.x + (Math.random() - .5) * 20, y: ry + 10, vx: 0, vy: 60, life: .4, max: .4, col: '#B9AC94', size: 3, g: 500 });
+      if (TER[L.sections[r.sec].terrain].balcony) { drawPot(r, ry, sh); return; }
       ctx.save(); ctx.translate(r.x + sh, ry);
       ctx.fillStyle = '#3F3529'; ctx.beginPath(); ctx.moveTo(-14, 2); ctx.lineTo(-10, -11); ctx.lineTo(4, -14); ctx.lineTo(14, -4); ctx.lineTo(11, 11); ctx.lineTo(-6, 13); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#9C8E77'; ctx.beginPath(); ctx.moveTo(-11, 1); ctx.lineTo(-8, -9); ctx.lineTo(3, -11); ctx.lineTo(11, -3); ctx.lineTo(9, 9); ctx.lineTo(-5, 10); ctx.closePath(); ctx.fill();
@@ -2404,6 +2901,7 @@
         ctx.fillStyle = '#9AA3AF'; ctx.beginPath(); ell(ctx, 0, 0, m.r, m.r, 0); ctx.fill();
         ctx.fillStyle = '#7D8796'; ctx.beginPath(); ell(ctx, -12, -10, 9, 6, 0); ell(ctx, 14, 12, 7, 5, 0); ell(ctx, 10, -18, 5, 4, 0); ctx.fill();
         ctx.restore();
+      } else if (m.type === 'door' && m.lever) { drawLeverGate(m);
       } else if (m.type === 'door') {
         if (m.x < cam.x - 300 || m.plateX > cam.x + view.w + 300) return;
         // płyta
@@ -2424,6 +2922,43 @@
           label(PT('page.game.c.plate', 'stań na płycie'), m.plateX, m.g * TILE - 60, 220);
         }
       }
+    });
+  }
+  function drawLeverGate(m) { // Spello: rzymska brama z kratą i dźwignia, która otwiera ją na kilka sekund
+    if (m.x < cam.x - 300 || m.plateX > cam.x + view.w + 300) return;
+    var base = m.g * TILE, lx = m.plateX, on = m.open && !m.done;
+    ctx.fillStyle = '#3B2A00'; ctx.fillRect(lx - 14, base - 8, 28, 8); ctx.fillStyle = '#6E5F55'; ctx.fillRect(lx - 12, base - 7, 24, 6);
+    ctx.save(); ctx.translate(lx, base - 6); ctx.rotate(on || m.done ? .7 : -.7);
+    ctx.fillStyle = '#2E2A2C'; ctx.fillRect(-2.5, -40, 5, 40);
+    ctx.fillStyle = on || m.done ? '#1F7A48' : '#C81E36'; ctx.beginPath(); ell(ctx, 0, -42, 7, 7, 0); ctx.fill();
+    ctx.restore();
+    var H = 5 * TILE, x = m.x, lift = ease(m.lift) * (H - 22);
+    ctx.fillStyle = '#E9D2C7'; ctx.fillRect(x - 26, base - H - 30, 84, 30);                     // nadproże z łukiem
+    ctx.fillStyle = 'rgba(120,80,70,.25)'; ctx.fillRect(x - 26, base - H - 30, 84, 3);
+    [x - 26, x + 34].forEach(function (px) { ctx.fillStyle = '#ECD4C9'; ctx.fillRect(px, base - H, 24, H); ctx.fillStyle = 'rgba(120,80,70,.18)'; for (var j = 1; j < 6; j++) ctx.fillRect(px, base - j * TILE, 24, 2); });
+    ctx.fillStyle = '#4E3D36'; ctx.beginPath(); ctx.moveTo(x - 2, base); ctx.lineTo(x - 2, base - H + 18); ctx.arc(x + 16, base - H + 18, 18, Math.PI, 0); ctx.lineTo(x + 34, base); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.rect(x - 2, base - H, 36, H); ctx.clip();
+    for (var i = 0; i < 4; i++) { ctx.fillStyle = '#1B140E'; ctx.fillRect(x + 1 + i * 8, base - H - lift, 6, H); ctx.fillStyle = '#7D8796'; ctx.fillRect(x + 2 + i * 8, base - H - lift, 4, H); }
+    ctx.fillStyle = '#1B140E'; ctx.fillRect(x - 2, base - H * .45 - lift, 36, 4); ctx.fillRect(x - 2, base - 12 - lift, 36, 4);
+    ctx.restore();
+    ctx.fillStyle = '#FFC629';
+    if (on) { var sl = fill(PT('page.game.c.seconds', '{n} s'), { n: Math.ceil(m.t) }); label(sl, x + 16, base - H - 40, 120, 26); label(sl, lx, base - 64, 120, 26); }
+    else if (!m.done && Math.abs(P.x - lx) < 420) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.lever', 'dźwignia otwiera bramę'), lx, base - 70, 240); }
+  }
+  function drawStands() { // stojak z balonikami nad doliną (belvedere)
+    L.stands.forEach(function (st) {
+      if (st.x < cam.x - 80 || st.x > cam.x + view.w + 80) return;
+      var x = st.x, y = st.y, bob = reduceMotion ? 0 : Math.sin(gameT * 2) * 3;
+      ctx.fillStyle = '#3B2A00'; ctx.fillRect(x - 3, y - 60, 6, 60); ctx.fillRect(x - 16, y - 4, 32, 4);
+      var BC = ['#C81E36', '#0B4EA2', '#FFC629', '#1F7A48', '#E8467C'];
+      ctx.strokeStyle = '#3B2A00'; ctx.lineWidth = 1.3;
+      for (var i = 0; i < 5; i++) {
+        var bx = x + (i - 2) * 13, by = y - 92 - (i % 2) * 14 + bob * (i % 2 ? 1 : -1);
+        ctx.beginPath(); ctx.moveTo(x, y - 58); ctx.lineTo(bx, by + 14); ctx.stroke();
+        ctx.fillStyle = BC[i]; ctx.beginPath(); ell(ctx, bx, by, 10, 12, 0); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ell(ctx, bx - 3, by - 4, 2.5, 4, 0); ctx.fill();
+      }
+      if (P.power !== 'balloon' && Math.abs(P.x - x) < 300) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.stand', 'weź balonik'), x, y - 130, 200); }
     });
   }
   function drawDrop(x, y, s) {
@@ -2455,6 +2990,7 @@
     L.gates.forEach(function (gt) {
       if (gt.x < cam.x - 80 || gt.x > cam.x + view.w + 80) return;
       var base = gt.g * TILE, H = 5.5 * TILE, x = gt.x, T = TER[L.sections[gt.sec].terrain];
+      if (gt.kind === 'cart') { drawCartGate(gt, x, base); return; }
       var lift = ease(gt.lift) * (H - 26);
       ctx.save(); ctx.beginPath(); ctx.rect(x - 4, base - H, 40, H); ctx.clip();
       for (var i = 0; i < 4; i++) {
@@ -2465,7 +3001,7 @@
       ctx.restore();
       [x - 12, x + 32].forEach(function (px) {
         ctx.fillStyle = 'rgba(14,26,43,.45)'; ctx.fillRect(px - 1, base - H - 1, 14, H + 1);
-        ctx.fillStyle = T.top === '#3E9A5C' || T.top === '#3F9358' ? '#D9CDB4' : T.topHi; ctx.fillRect(px, base - H, 12, H);
+        ctx.fillStyle = T.pillar || (T.top === '#3E9A5C' || T.top === '#3F9358' ? '#D9CDB4' : T.topHi); ctx.fillRect(px, base - H, 12, H);
         ctx.fillStyle = 'rgba(14,26,43,.12)'; for (var j = 1; j < 6; j++) ctx.fillRect(px, base - j * TILE, 12, 2);
       });
       ctx.fillStyle = 'rgba(14,26,43,.45)'; ctx.fillRect(x - 15, base - H - 14, 62, 16);
@@ -2502,6 +3038,20 @@
       ctx.fillText(ok ? '✓' : gt.kind === 'organ' ? '♪' : '?', x + 16, my + 1);
       ctx.textBaseline = 'alphabetic';
     });
+  }
+  function drawCartGate(gt, x, base) { // wózek z kwiatami w poprzek stromej uliczki — po wepchnięciu odjeżdża w górę
+    var cx = x + 16 + ease(gt.lift) * 160, cy = base - ease(gt.lift) * 40;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-ease(gt.lift) * .2);
+    ctx.fillStyle = '#3B2A00'; ctx.fillRect(-40, -54, 80, 40);
+    ctx.fillStyle = '#9A6A35'; ctx.fillRect(-38, -52, 76, 36); ctx.fillStyle = '#7A4E25'; ctx.fillRect(-38, -38, 76, 3); ctx.fillRect(-38, -26, 76, 3);
+    var FL = ['#E8467C', '#FFC629', '#C81E36', '#FFFFFF', '#B07CE0', '#FF8A3D'];
+    for (var fi = 0; fi < 9; fi++) { ctx.fillStyle = FL[fi % 6]; ctx.beginPath(); ell(ctx, -32 + fi * 8, -58 - (fi % 3) * 4, 6, 6, 0); ctx.fill(); }
+    ctx.fillStyle = '#4F8A3F'; ctx.fillRect(-36, -56, 72, 4);
+    ctx.fillStyle = '#0E1A2B'; ctx.beginPath(); ell(ctx, -24, -12, 12, 12, 0); ell(ctx, 24, -12, 12, 12, 0); ctx.fill();
+    ctx.fillStyle = '#C99A60'; ctx.beginPath(); ell(ctx, -24, -12, 8, 8, 0); ell(ctx, 24, -12, 8, 8, 0); ctx.fill();
+    ctx.fillStyle = '#3B2A00'; ctx.beginPath(); ell(ctx, -24, -12, 3, 3, 0); ell(ctx, 24, -12, 3, 3, 0); ctx.fill();
+    ctx.restore();
+    if (!gt.open) { ctx.fillStyle = '#062A58'; label(PT('page.game.c.cart_push', 'pchnij wózek!'), x + 16, base - 110, 220); }
   }
   function drawLandmarks() {
     L.landmarks.forEach(function (lm) {
@@ -2577,6 +3127,9 @@
   /* --- Rysowanie komnat --- */
   TER.crypt = { fill: '#8A7B66', fillDk: '#6E614D', speck: '#9C8E77', top: '#A39377', topHi: '#CDBFA2', plat: '#7A6A52', platDk: '#54473A', back: '#2E261F', backLn: '#3B3128' };
   TER.cave.back = '#0F1B30'; TER.cave.backLn = '#16263F';
+  // Spello: wykopaliska pod willą (rzymski mur w siateczkę — opus reticulatum) i ciemna cysterna
+  TER.dig = { fill: '#C49A74', fillDk: '#8E6A4F', speck: '#D8B48F', top: '#D8C2A2', topHi: '#EFE2CC', plat: '#7A5A3A', platDk: '#523B25', back: '#3A2A22', backLn: '#47352B', reti: true };
+  TER.cistern = { fill: '#6F7C86', fillDk: '#525D66', speck: '#87949E', top: '#8E9BA4', topHi: '#B9C4CC', plat: '#5C4A3A', platDk: '#3E3126', back: '#121A22', backLn: '#1A2530' };
   function renderZone() {
     var Z = curZone(), k = view.s * view.dpr, ri = P.room >= 0 ? P.room : roomOf(Z, P.x, P.y - 24), rm = Z.rooms[ri], T = TER[rm.theme];
     ctx.setTransform(k, 0, 0, k, 0, 0);
@@ -2586,6 +3139,11 @@
     ctx.fillStyle = T.back; ctx.fillRect(rm.x0, rm.y0, rm.x1 - rm.x0, rm.y1 - rm.y0);
     ctx.fillStyle = T.backLn;
     for (var y = rm.y0; y < rm.y1; y += 24) { ctx.fillRect(rm.x0, y, rm.x1 - rm.x0, 2); for (var x = rm.x0 + ((y / 24) % 2 ? 0 : 24); x < rm.x1; x += 48) ctx.fillRect(x, y, 2, 24); }
+    if (rm.theme === 'dig') { // fragment rzymskiej mozaiki na ścianie wykopu
+      var mx = rm.x0 + TILE * (4 + (ri * 5) % 6), my = rm.y0 + TILE * 2.2, MC = ['#E8DDC9', '#B5543A', '#2F5D8C', '#D9A441', '#3E3530'];
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(mx - 4, my - 4, 5 * TILE + 8, 2 * TILE + 8);
+      for (var mr = 0; mr < 8; mr++) for (var mc = 0; mc < 20; mc++) { var e2 = mr === 0 || mr === 7 || mc === 0 || mc === 19; ctx.fillStyle = e2 ? MC[1] : MC[((mc * 3 + mr * 5 + ri) % 11 === 0) ? 2 : ((mc + mr) % 7 === 0 ? 3 : 0)]; ctx.fillRect(mx + mc * 8, my + mr * 8, 7, 7); }
+    }
     var c0 = rm.x0 / TILE, r0 = rm.y0 / TILE;
     for (var r = r0; r < r0 + RH; r++) for (var c = c0; c < c0 + RW; c++) drawZoneTile(Z, T, rm.theme, c, r);
     drawZoneBars(Z, ri);
@@ -2617,7 +3175,7 @@
     if (!v) return;
     function sol(x, y) { if (x < 0 || y < 0 || x >= Z.W || y >= Z.H) return true; var w = Z.grid[y * Z.W + x]; return w === 1 || w === 16; }
     if (v === 1 || v === 16) {
-      drawSolid(T, theme === 'cave' ? 'cave' : 'crypt', px, py, !sol(c, r - 1), !sol(c, r + 1), !sol(c - 1, r), !sol(c + 1, r), hashXY(c, r));
+      drawSolid(T, theme === 'cave' || theme === 'crypt' ? theme : theme === 'dig' || theme === 'cistern' ? theme : 'crypt', px, py, !sol(c, r - 1), !sol(c, r + 1), !sol(c - 1, r), !sol(c + 1, r), hashXY(c, r));
       if (v === 16) { // pęknięta ściana
         ctx.fillStyle = 'rgba(201,166,107,.45)'; ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
         ctx.strokeStyle = '#1B140E'; ctx.lineWidth = 2.5; ctx.beginPath();
@@ -2800,7 +3358,7 @@
       ctx.fillStyle = '#A48B67'; ctx.fillRect(x - 27, y - 89, 54, 89);
       ctx.fillStyle = Z.done ? '#2B3D5A' : '#0E1A2B'; ctx.beginPath(); ctx.moveTo(x - 18, y); ctx.lineTo(x - 18, y - 52); ctx.arc(x, y - 52, 18, Math.PI, 0); ctx.lineTo(x + 18, y); ctx.fill();
       ctx.fillStyle = '#FFC629'; ctx.beginPath(); ell(ctx, x - 9, y - 40, 2.5, 2.5, 0); ell(ctx, x + 9, y - 40, 2.5, 2.5, 0); ctx.fill(); // oczy w ciemności :)
-      if (Math.abs(P.x - x) < 260) { ctx.fillStyle = '#062A58'; label(CX_NAME[Z.key], x, y - 104, 260); }
+      if (Math.abs(P.x - x) < 260) { ctx.fillStyle = '#062A58'; label(cxName(Z), x, y - 104, 260); }
       drawExitDoor(Z.back.x, Z.back.y, Z.done);
     });
   }
@@ -2810,7 +3368,7 @@
   function startCelebration(lm) {
     var S = L.sections[lm.sec];
     S.done = true;
-    S.stars = 1 + (S.hidden >= 3 ? 1 : 0) + (S.time <= S.par ? 1 : 0);
+    S.stars = 1 + (S.hidden >= S.hidN ? 1 : 0) + (S.time <= S.par ? 1 : 0);
     if (D.cpCeleb) P.checkpoint = { x: lm.x + 40, y: lm.y };
     if (SIM) { ev('landmark'); simStop = true; return; }
     state = 'celebrate';
@@ -2949,6 +3507,12 @@
     HATS.helmet = PT('page.game.hat.helmet', 'Kask z lampką');
     HATS.hood = PT('page.game.hat.hood', 'Kaptur mnicha');
     HATS.explorer = PT('page.game.hat.explorer', 'Kapelusz odkrywcy');
+    HATS.crown = PT('page.game.hat.crown', 'Wianek z kwiatów');
+    PETAL_NAME.pink = PT('page.game.carpet.pink', 'różowy płatek'); PETAL_NAME.yellow = PT('page.game.carpet.yellow', 'żółty płatek');
+    PETAL_NAME.white = PT('page.game.carpet.white', 'biały płatek'); PETAL_NAME.red = PT('page.game.carpet.red', 'czerwony płatek');
+    CX_NAME_SP.easy = PT('page.game.cx.sp_easy', 'Wykop pod willą');
+    CX_NAME_SP.medium = PT('page.game.cx.sp_medium', 'Labirynt wykopalisk');
+    CX_NAME_SP.hard = PT('page.game.cx.sp_hard', 'Komnaty pod willą');
     ITEM_NAME.torch = PT('page.game.item.torch', 'pochodnia');
     ITEM_NAME.pickaxe = PT('page.game.item.pickaxe', 'kilof');
     ITEM_NAME['key:red'] = PT('page.game.item.key_red', 'czerwony klucz');
@@ -2970,7 +3534,7 @@
     $('hudCoins').textContent = stats.coins;
     $('hudStickers').textContent = stats.stickers.length + '/' + L.sections.length;
     var S = L.sections[Math.max(0, curSec)];
-    $('hudHidden').textContent = (S ? S.hidden : 0) + '/3';
+    $('hudHidden').textContent = (S ? S.hidden : 0) + '/' + (S ? S.hidN : 3);
   }
   function enterSection(si) {
     curSec = si;
@@ -3052,17 +3616,20 @@
      (JP 2026-10-26: wcześniej było za trudno). Głaz bez zmian: ~1,9 / ~4 / ~6,8 na s. */
   var MASH = { rope: { easy: { n: 11, T: 10, dec: .04 }, medium: { n: 17, T: 9.5, dec: .04 }, hard: { n: 23, T: 9, dec: .04 } },
                push: { easy: { n: 12, T: 8, dec: .03 }, medium: { n: 22, T: 6.5, dec: .03 }, hard: { n: 32, T: 5.5, dec: .03 } } };
+  MASH.cart = MASH.push; // Spello: wózek z kwiatami pod górę — tempo jak przy głazie
   var mash = null;
   function openMash(gate) {
     state = 'mash'; input.left = input.right = input.jump = false; P.vx = 0;
     var c = MASH[gate.kind][D.key], rope = gate.kind === 'rope';
     mash = { gate: gate, kind: gate.kind, n: c.n, T: c.T, dec: c.dec, p: 0, t: 0, last: '', running: false, done: false };
-    $('mashTitle').textContent = rope ? PT('page.game.mash.rope', 'Wspinaczka po linie') : PT('page.game.mash.push', 'Głaz w poprzek ścieżki');
+    var cart = gate.kind === 'cart';
+    $('mashTitle').textContent = rope ? PT('page.game.mash.rope', 'Wspinaczka po linie') : cart ? PT('page.game.mash.cart', 'Wózek pod górę') : PT('page.game.mash.push', 'Głaz w poprzek ścieżki');
     $('mashStage').className = 'mash-stage ' + gate.kind;
     $('mashTap').hidden = !rope; $('mashL').hidden = rope; $('mashR').hidden = rope;
-    $('mashThreatIcon').textContent = rope ? '' : '🦇';
+    $('mashThreatIcon').textContent = rope ? '' : cart ? '⏳' : '🦇';
     $('mashSkip').hidden = gate.fails < 2; $('mashRetry').hidden = true;
     $('mashStatus').textContent = rope ? PT('page.game.mash.rope_help', 'Stukaj w TAP! (albo spację), zanim woda w szybie podejdzie wyżej. Pierwsze stuknięcie startuje.')
+      : cart ? PT('page.game.mash.cart_help', 'Na zmianę ◀ i ▶ (albo strzałki ← →) — wepchnij wózek z kwiatami pod górę, zanim skończy się czas. Pierwsze stuknięcie startuje.')
       : PT('page.game.mash.push_help', 'Na zmianę ◀ i ▶ (albo strzałki ← →) — zepchnij głaz, zanim przyleci nietoperz. Pierwsze stuknięcie startuje.');
     drawMash();
     $('mashScreen').hidden = false; setPad(false);
@@ -3070,7 +3637,7 @@
   }
   function mashPress(side) {
     if (!mash || mash.done) return;
-    if (mash.kind === 'push') { if (side === mash.last) return; mash.last = side; }
+    if (mash.kind !== 'rope') { if (side === mash.last) return; mash.last = side; }
     if (!mash.running) { mash.running = true; mash.t = 0; }
     mash.p = Math.min(1, mash.p + 1 / mash.n);
     sfx('pop');
@@ -3085,7 +3652,7 @@
     var lost = mash.kind === 'rope' ? (mash.t > .8 && waterLevel() >= mash.p) : mash.t >= mash.T;
     if (lost) {
       mash.done = true; mash.gate.fails++; sfx('no');
-      $('mashStatus').textContent = mash.kind === 'rope' ? PT('page.game.mash.rope_lost', 'Quo zjechał powoli w dół. Spróbuj jeszcze raz — szybciej!') : PT('page.game.mash.push_lost', 'Nietoperz przeleciał i głaz wrócił. Spróbuj jeszcze raz!');
+      $('mashStatus').textContent = mash.kind === 'rope' ? PT('page.game.mash.rope_lost', 'Quo zjechał powoli w dół. Spróbuj jeszcze raz — szybciej!') : mash.kind === 'cart' ? PT('page.game.mash.cart_lost', 'Wózek zjechał w dół. Spróbuj jeszcze raz!') : PT('page.game.mash.push_lost', 'Nietoperz przeleciał i głaz wrócił. Spróbuj jeszcze raz!');
       $('mashRetry').hidden = false; if (mash.gate.fails >= 2) $('mashSkip').hidden = false;
       setTimeout(function () { $('mashRetry').focus({ preventScroll: true }); }, 30);
     }
@@ -3125,6 +3692,9 @@
       var k = nb[Math.floor(Math.random() * nb.length)]; t[e] = t[k]; t[k] = 8; last = e; e = k;
     }
     mosaic = { pq: pq, t: t };
+    var mk = $('mosaicScreen').querySelector('.kicker'); // Spello: mozaika jest w rzymskiej willi, nie w opactwie
+    if (L.sections[pq.sec].terrain === 'villa') mk.textContent = PT('page.game.mosaic.kicker_villa', 'Mozaika w rzymskiej willi');
+    else mk.textContent = PT('page.game.html.mosaic_kicker', 'Mozaika w opactwie');
     $('mosaicSkip').hidden = pq.closes < 2;
     $('mosaicStatus').textContent = PT('page.game.mosaic.help', 'Dotknij kafelka obok pustego pola.');
     renderMosaic();
@@ -3158,23 +3728,88 @@
     input.jumpPressed = false; state = 'play';
   }
 
+  /* --- Kwiatowy dywan (Spello, uliczki): dokończ symetryczny wzór z płatków. Infiorate wspominają teksty trasy.
+     Łatwy 4×4 i 2 kolory z podglądem, Średni 4×4 i 3 kolory z podglądem, Trudny 5×5 i 4 kolory bez podglądu (wzór jest
+     symetryczny — brakujące pola odczytasz z lustrzanych). Zamknięcie bez ułożenia: po 2 razach „Pomiń”. --- */
+  var PETALS = [{ c: '#E8467C', k: 'pink' }, { c: '#FFC629', k: 'yellow' }, { c: '#FFFFFF', k: 'white' }, { c: '#C81E36', k: 'red' }], carpet = null, PETAL_NAME = {};
+  function openCarpet(pq) {
+    state = 'carpet'; input.left = input.right = input.jump = false; P.vx = 0;
+    var N = D.key === 'hard' ? 5 : 4, K = D.key === 'easy' ? 2 : D.key === 'medium' ? 3 : 4, miss = D.key === 'easy' ? 4 : D.key === 'medium' ? 6 : 8;
+    var tgt = [], i, j, h = Math.floor(Math.random() * 1e6);
+    for (i = 0; i < N; i++) for (j = 0; j < N; j++) { var a = Math.min(i, N - 1 - i), b = Math.min(j, N - 1 - j), q = Math.min(a, b) * 7 + Math.max(a, b) * 3; tgt.push((q + h) % K); }
+    var cur = tgt.slice(), idx = []; for (i = 0; i < N * N; i++) idx.push(i);
+    for (i = idx.length - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    // brakujące pola: tylko takie, których lustrzane pole zostaje (na Trudnym da się je odczytać z symetrii)
+    var gone = [];
+    idx.forEach(function (k) { if (gone.length >= miss) return; var r = Math.floor(k / N), c = k % N, m = r * N + (N - 1 - c); if (m !== k && gone.indexOf(m) < 0) gone.push(k); });
+    gone.forEach(function (k) { cur[k] = -1; });
+    carpet = { pq: pq, N: N, K: K, tgt: tgt, cur: cur, sel: 0, preview: D.key !== 'hard' };
+    $('carpetSkip').hidden = pq.closes < 2;
+    $('carpetStatus').textContent = carpet.preview ? PT('page.game.carpet.help', 'Jak na Infiorate w Spello: wybierz płatek i dotknij pustego pola. Wzór jest obok.')
+      : PT('page.game.carpet.help_hard', 'Jak na Infiorate w Spello: dywan jest symetryczny — lewa strona jak prawa. Uzupełnij puste pola.');
+    renderCarpet();
+    $('carpetScreen').hidden = false; setPad(false);
+    setTimeout(function () { var b = $('carpetPetals').querySelector('button'); if (b) b.focus({ preventScroll: true }); }, 30);
+  }
+  function renderCarpet() {
+    var C = carpet, g = $('carpetGrid'), tg = $('carpetTarget'), pe = $('carpetPetals');
+    g.style.setProperty('--n', C.N); tg.style.setProperty('--n', C.N);
+    g.innerHTML = ''; tg.innerHTML = ''; tg.hidden = !C.preview;
+    C.cur.forEach(function (v, i) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'cell' + (v < 0 ? ' empty' : '') + (v >= 0 && v !== C.tgt[i] ? ' wrong' : '');
+      if (v >= 0) b.style.setProperty('--c', PETALS[v].c);
+      b.setAttribute('aria-label', v < 0 ? PT('page.game.carpet.empty', 'puste pole') : PETAL_NAME[PETALS[v].k]);
+      b.addEventListener('click', function () { placePetal(i); });
+      g.appendChild(b);
+      if (C.preview) { var d = document.createElement('i'); d.style.setProperty('--c', PETALS[C.tgt[i]].c); tg.appendChild(d); }
+    });
+    pe.innerHTML = '';
+    for (var k = 0; k < C.K; k++) (function (k) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'petal'; b.style.setProperty('--c', PETALS[k].c);
+      b.setAttribute('aria-pressed', C.sel === k ? 'true' : 'false'); b.setAttribute('aria-label', PETAL_NAME[PETALS[k].k]);
+      b.addEventListener('click', function () { C.sel = k; renderCarpet(); });
+      pe.appendChild(b);
+    })(k);
+  }
+  function placePetal(i) {
+    if (!carpet || carpet.done) return;
+    var C = carpet, isEmpty = C.cur[i] < 0, wrong = C.cur[i] >= 0 && C.cur[i] !== C.tgt[i];
+    if (!isEmpty && !wrong) return; // dobre pola zostają
+    C.cur[i] = C.sel; sfx(C.sel === C.tgt[i] ? 'pop' : 'no');
+    renderCarpet();
+    var left = C.cur.filter(function (v, k) { return v !== C.tgt[k]; }).length;
+    if (!left) { C.done = true; $('carpetStatus').textContent = PT('page.game.carpet.ok', 'Piękny dywan! Skrzynia otwarta.'); sfx('ok'); setTimeout(function () { closeCarpet(true); }, 900); }
+    else if (C.sel !== C.tgt[i]) $('carpetStatus').textContent = PT('page.game.carpet.wrong', 'Ten płatek nie pasuje do wzoru — spróbuj innego koloru.');
+  }
+  function closeCarpet(solved) {
+    if (!carpet) return;
+    var pq = carpet.pq; carpet = null;
+    $('carpetScreen').hidden = true; setPad(true);
+    if (solved) { pq.solved = true; var c = L.chestList[pq.chest]; c.locked = false; openChest(c.x, c.y); }
+    else pq.closes++;
+    input.jumpPressed = false; state = 'play';
+  }
+
   /* --- Przebrania Quo (tylko wygląd, zapis lokalny) --- */
-  var HATS = { helmet: 'Kask z lampką', hood: 'Kaptur mnicha', explorer: 'Kapelusz odkrywcy' }; // nazwy z PT w i18nTables()
-  function ownedHats() { return lsJSON(LS + 'hats') || []; }
+  var HATS = { helmet: 'Kask z lampką', hood: 'Kaptur mnicha', explorer: 'Kapelusz odkrywcy', crown: 'Wianek z kwiatów' }; // nazwy z PT w i18nTables()
+  /* Przebrania są osobne dla każdej wycieczki: Frasassi — stare klucze quolino_game_hats / _hat, inne — quolino_game_hats_<slug> / _hat_<slug>. */
+  function hatSuffix() { return trip && trip.trip !== 'frasassi' ? '_' + trip.trip : ''; }
+  function tripHats() { return (trip && trip.hats) || ['helmet', 'hood', 'explorer']; }
+  function ownedHats() { return lsJSON(LS + 'hats' + hatSuffix()) || []; }
   function collectHat(kind) {
     if (SIM) return;
-    var h = ownedHats(); if (h.indexOf(kind) < 0) { h.push(kind); lsSet(LS + 'hats', JSON.stringify(h)); }
-    curHat = kind; lsSet(LS + 'hat', kind);
+    var h = ownedHats(); if (h.indexOf(kind) < 0) { h.push(kind); lsSet(LS + 'hats' + hatSuffix(), JSON.stringify(h)); }
+    curHat = kind; lsSet(LS + 'hat' + hatSuffix(), kind);
     sfx('fanfare'); toast(fill(PT('page.game.t.hat', 'Nowe przebranie: {name}!'), { name: HATS[kind] }), 3200);
   }
   function renderHats() {
     var own = ownedHats(), el = $('hatPicker'), html = '<button type="button" class="hat-btn" data-hat="" aria-pressed="' + (!curHat) + '">' + esc(PT('page.game.hat.none', 'Bez przebrania')) + '</button>';
-    Object.keys(HATS).forEach(function (k) {
+    tripHats().forEach(function (k) {
       var has = own.indexOf(k) >= 0;
       html += '<button type="button" class="hat-btn" data-hat="' + k + '" aria-pressed="' + (curHat === k) + '"' + (has ? '' : ' disabled') + '>' + esc(has ? HATS[k] : '🔒 ' + PT('page.game.hat.locked', 'ukryte')) + '</button>';
     });
     el.innerHTML = html;
-    Array.prototype.forEach.call(el.children, function (b) { b.addEventListener('click', function () { curHat = b.dataset.hat || null; lsSet(LS + 'hat', curHat || ''); renderHats(); }); });
+    Array.prototype.forEach.call(el.children, function (b) { b.addEventListener('click', function () { curHat = b.dataset.hat || null; lsSet(LS + 'hat' + hatSuffix(), curHat || ''); renderHats(); }); });
   }
 
   /* --- Tryb foto: ramka z Quo i naklejką przystanku, zapis lokalny --- */
@@ -3208,7 +3843,7 @@
   function openQuiz(gate) {
     if (SIM) { ev(gate.kind === 'organ' ? 'organ' : 'gate'); simStop = true; P.vx = 0; return; }
     if (gate.kind === 'organ') { openOrgan(gate); sfx('gate'); return; }
-    if (gate.kind === 'rope' || gate.kind === 'push') { openMash(gate); sfx('gate'); return; }
+    if (gate.kind === 'rope' || gate.kind === 'push' || gate.kind === 'cart') { openMash(gate); sfx('gate'); return; }
     state = 'quiz'; quizGate = gate;
     input.left = input.right = input.jump = false; P.vx = 0;
     showQuestion();
@@ -3282,7 +3917,8 @@
       var s = trip.stops[i];
       return '<div class="sticker"><img src="' + ICONS + 'icon-' + esc(s.icon) + '-128.webp" alt="" width="120" height="120"><p>' + esc(stopName(i)) + '</p>' +
         '<p class="stars" aria-label="' + esc(fill(PT('page.game.end.stars_aria', '{n} z 3 gwiazdek'), { n: S.stars })) + '">' + '★★★'.slice(0, S.stars) + '<span class="dim">' + '★★★'.slice(S.stars) + '</span></p>' +
-        '<p class="meta">' + esc(fill(PT('page.game.end.meta', 'Ukryte: {h}/3 · czas {t} (cel {p})'), { h: S.hidden, t: fmtT(S.time), p: fmtT(S.par) })) + '</p></div>';
+        '<p class="meta">' + esc(S.hidN === 3 ? fill(PT('page.game.end.meta', 'Ukryte: {h}/3 · czas {t} (cel {p})'), { h: S.hidden, t: fmtT(S.time), p: fmtT(S.par) })
+          : fill(PT('page.game.end.meta_n', 'Ukryte: {h}/{m} · czas {t} (cel {p})'), { h: S.hidden, m: S.hidN, t: fmtT(S.time), p: fmtT(S.par) })) + '</p></div>';
     }).join('') + ((stats.treasure || (window.QuoTreasure && QuoTreasure.found(trip.trip))) ?
       '<div class="sticker sticker-gold"><svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#FFD95A" stroke="#0E1A2B" stroke-width="5"/>' +
       '<rect x="32" y="58" width="56" height="34" fill="#E8A912" stroke="#3B2A00" stroke-width="4"/><path d="M32 58 Q60 30 88 58 Z" fill="#FFC629" stroke="#3B2A00" stroke-width="4"/>' +
@@ -3311,7 +3947,7 @@
     if (!p.found && !demo) html += '<p>' + esc(PT('page.game.bonus.none', 'Na tym telefonie nie ma jeszcze punktów z wycieczki. Gra działa i bez nich — jest tylko trochę trudniej.')) + '</p>';
     else html += '<p>' + esc(PT('page.game.bonus.head', 'Punkty z waszej wycieczki:')) + '</p>';
     html += '<div class="row' + (p.missions ? '' : ' off') + '"><i>❤️</i>' + esc(fill(PT('page.game.bonus.missions', 'Misje: {m} z {t} → +{e} serduszek (start: {s})'), { m: p.missions, t: p.missionsTotal, e: extra, s: Dd.hearts + extra })) + '</div>';
-    html += '<div class="row' + (p.photos ? '' : ' off') + '"><i>📷</i>' + esc(fill(PT('page.game.bonus.photos', 'Zadania foto: {p} z {t}'), { p: p.photos, t: p.photosTotal }) + (powers.length ? ' → ' + powers.join(', ') : ' → ' + PT('page.game.bonus.nopower', 'brak mocy'))) + '</div>';
+    if (p.photosTotal) html += '<div class="row' + (p.photos ? '' : ' off') + '"><i>📷</i>' + esc(fill(PT('page.game.bonus.photos', 'Zadania foto: {p} z {t}'), { p: p.photos, t: p.photosTotal }) + (powers.length ? ' → ' + powers.join(', ') : ' → ' + PT('page.game.bonus.nopower', 'brak mocy'))) + '</div>';
     html += '<div class="row' + (p.full ? '' : ' off') + '"><i>⭐</i>' + esc(fill(PT('page.game.bonus.full', 'Całe przystanki: {f} z {n} → tajne skróty'), { f: p.full, n: trip.stops.length })) + '</div>';
     var rec = loadRecord(), b = rec.best[diffKey];
     if (b && b.stars) html += '<div class="row"><i>🏆</i>' + esc(fill(PT('page.game.bonus.record', 'Rekord na tym poziomie: {s} / {n} ★'), { s: b.stars.reduce(function (a, s) { return a + s; }, 0), n: trip.stops.length * 3 })) + '</div>';
@@ -3329,8 +3965,8 @@
     stats = { coins: 0, stickers: [], gates: 0, firstTry: 0, questions: 0, hiddenTotal: 0, treasure: false };
     particles = []; celebration = null; curSec = -1; gameT = 0;
     cam.x = 0; cam.y = 0; updateCamera(1);
-    ['startScreen', 'endScreen', 'pauseScreen', 'quizScreen', 'organScreen', 'mosaicScreen', 'mashScreen'].forEach(function (id) { $(id).hidden = true; });
-    organ = null; mosaic = null; mash = null;
+    ['startScreen', 'endScreen', 'pauseScreen', 'quizScreen', 'organScreen', 'mosaicScreen', 'mashScreen', 'carpetScreen'].forEach(function (id) { $(id).hidden = true; });
+    organ = null; mosaic = null; mash = null; carpet = null;
     $('celebrateText').hidden = true;
     $('hud').hidden = false; setPad(true);
     updateHUD();
@@ -3351,8 +3987,8 @@
   window.addEventListener('keydown', function (e) {
     if (state === 'mash' && mash) {
       if (mash.kind === 'rope' && (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !e.repeat) { e.preventDefault(); mashPress('t'); return; }
-      if (mash.kind === 'push' && (e.code === 'ArrowLeft' || e.code === 'KeyA') && !e.repeat) { e.preventDefault(); mashPress('l'); return; }
-      if (mash.kind === 'push' && (e.code === 'ArrowRight' || e.code === 'KeyD') && !e.repeat) { e.preventDefault(); mashPress('r'); return; }
+      if (mash.kind !== 'rope' && (e.code === 'ArrowLeft' || e.code === 'KeyA') && !e.repeat) { e.preventDefault(); mashPress('l'); return; }
+      if (mash.kind !== 'rope' && (e.code === 'ArrowRight' || e.code === 'KeyD') && !e.repeat) { e.preventDefault(); mashPress('r'); return; }
     }
     if (state === 'celebrate' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape')) { e.preventDefault(); endCelebration(true); return; }
     if (e.code === 'KeyP' || e.code === 'Escape') { if (state === 'pause') resume(); else pause(); return; }
@@ -3451,16 +4087,19 @@
     $('mashSkip').addEventListener('click', function () { if (mash) closeMash(false); });
     $('mosaicClose').addEventListener('click', function () { if (mosaic) closeMosaic(false); });
     $('mosaicSkip').addEventListener('click', function () { if (mosaic) closeMosaic(true); });
-    curHat = lsGet(LS + 'hat') || null; if (curHat && ownedHats().indexOf(curHat) < 0) curHat = null;
-    renderHats();
+    $('carpetClose').addEventListener('click', function () { if (carpet) closeCarpet(false); });
+    $('carpetSkip').addEventListener('click', function () { if (carpet) closeCarpet(true); });
     $('quizHintBtn').addEventListener('click', function () {
       if (!quizGate) return; var q = trip.stops[quizGate.sec].quests[quizGate.qs[quizGate.qn]];
       $('quizHint').textContent = fill(PT('page.game.quiz.hint', 'Podpowiedź: {hint}'), { hint: qText(trip.stops[quizGate.sec], q, 'hint') }); $('quizHintBtn').hidden = true;
     });
     window.addEventListener('resize', resize);
     resize();
-    fetch(DATA_URL).then(function (r) { return r.json(); }).then(function (data) {
+    loadStage().then(function (data) {
       trip = data;
+      stageTexts();
+      curHat = lsGet(LS + 'hat' + hatSuffix()) || null; if (curHat && ownedHats().indexOf(curHat) < 0) curHat = null;
+      renderHats();
       renderBonus();
       buildRig(function () {
         D = DIFF[diffKey];
@@ -3473,12 +4112,43 @@
     requestAnimationFrame(frame);
   }
 
+  /* Etapy: gra/stages.json → plik etapu (?trasa=<slug>). Bez indeksu albo przy nieznanym slugu: Frasassi. */
+  function loadStage() {
+    function get(u) { return fetch(u).then(function (r) { if (!r.ok) throw new Error(u); return r.json(); }); }
+    return get('stages.json').then(function (idx) {
+      STAGES = idx;
+      STAGE = idx.stages.filter(function (st) { return st.slug === TRIP_SLUG; })[0] || idx.stages.filter(function (st) { return st.slug === idx.default; })[0] || idx.stages[0];
+      return get(STAGE.file);
+    }, function () { STAGES = null; STAGE = null; return get('frasassi.json'); });
+  }
+  function stText(k) { return STAGE && STAGE[k] ? PT(STAGE[k][0], STAGE[k][1]) : null; }
+  function stageTexts() { // napisy zależne od etapu + wybór wyprawy na ekranie startowym
+    var lead = stText('lead'), album = stText('album'), canvas = stText('canvas'), name = stText('name');
+    if (lead) $('stageLead').textContent = lead;
+    if (album) $('stageAlbum').textContent = album;
+    if (canvas) cv.setAttribute('aria-label', canvas);
+    if (name) document.title = PT('page.game.title', 'Quo: Wyprawa') + ' — ' + name;
+    var el = $('tripPicker'); if (!el) return;
+    if (!STAGES || STAGES.stages.length < 2) { el.hidden = true; $('tripLabel').hidden = true; return; }
+    el.innerHTML = STAGES.stages.map(function (st) {
+      var on = STAGE && st.slug === STAGE.slug;
+      return '<button type="button" class="trip-btn" data-trasa="' + esc(st.slug) + '" aria-pressed="' + on + '"><img src="' + ICONS + 'icon-' + esc(st.icon) + '-128.webp" alt="" width="44" height="44"><span>' + esc(PT(st.name[0], st.name[1])) + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(el.children, function (b) {
+      b.addEventListener('click', function () {
+        if (STAGE && b.dataset.trasa === STAGE.slug) return;
+        var q = new URLSearchParams(location.search); q.set('trasa', b.dataset.trasa);
+        location.search = q.toString();
+      });
+    });
+  }
+
   /* Dostęp dla testów automatycznych: podgląd stanu i symulacja (bot planujący ruchy).
      Nie zmienia zachowania gry dla dzieci. */
   function setIn(b, prev) { input.left = !!(b & 1); input.right = !!(b & 2); input.jump = !!(b & 4); input.jumpPressed = !!(b & 4) && !(prev & 4); }
   window.__quoGame = {
     get state() { return state; }, get player() { return P; }, get level() { return L; }, get stats() { return stats; }, get diff() { return D; },
-    get cam() { return cam; }, get view() { return view; },
+    get cam() { return cam; }, get view() { return view; }, get trip() { return trip && trip.trip; },
     set botMode(v) { botMode = !!v; }, get botMode() { return botMode; },
     skipCelebration: function () { if (state === 'celebrate') endCelebration(); },
     tileAt: function (x, y) { return tileAt(x, y); },
@@ -3490,7 +4160,7 @@
         if (tg && P.zone === z0) { var dx = Math.abs(P.x - tg.x), dy = Math.abs(P.y - tg.y), dd = dx + 1.4 * dy; if (dd < minD) minD = dd; if (hitAt < 0 && dx < 18 && dy < 26 && (P.onGround || P.climb)) hitAt = i; }
         if (simStop || P.nap > 0) break; } }
       finally { SIM = false; }
-      return { x: P.x, y: P.y, hearts: P.hearts, nap: P.nap > 0, ev: simEv.slice(), onGround: P.onGround, n: n, sec: curSec, zone: P.zone, climb: P.climb, bag: P.bag.length, minD: minD, hitAt: hitAt };
+      return { x: P.x, y: P.y, hearts: P.hearts, nap: P.nap > 0, ev: simEv.slice(), onGround: P.onGround, ride: P.cart >= 0 || P.zip >= 0 || P.onRaft >= 0, n: n, sec: curSec, zone: P.zone, climb: P.climb, bag: P.bag.length, minD: minD, hitAt: hitAt };
     },
     advance: function (prog, prev) {
       var p = prev || 0;
@@ -3498,6 +4168,7 @@
       return p;
     },
     get mash() { return mash ? { kind: mash.kind, p: mash.p, done: mash.done, running: mash.running, fails: mash.gate.fails } : null; },
+    get carpet() { return carpet ? { N: carpet.N, K: carpet.K, tgt: carpet.tgt.slice(), cur: carpet.cur.slice(), sel: carpet.sel, preview: carpet.preview } : null; },
     get organ() { return organ ? { seq: organ.seq.slice(), ready: organ.ready, fails: organ.gate.fails } : null; },
     teleport: function (x, y) { P.x = x; P.y = y; P.vx = P.vy = 0; cam.x = clamp(P.x - view.w * .38, 0, L.W * TILE - view.w); },
     get zone() { // komnaty: dla bota testowego (punkty trasy) i zrzutów

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#062A58">
-<title>Quo: Wyprawa — Frasassi (demo)</title>
+<title>Quo: Wyprawa (demo)</title>
 <link rel="icon" href="../quolino.ico">
 <meta name="pt-title" content="page.game.title">
 <link rel="stylesheet" href="game.css">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <div id="app" class="app">
-  <canvas id="game" data-t-aria="page.game.html.canvas" aria-label="Gra: Quo idzie przez Jaskinie Frasassi"></canvas>
+  <canvas id="game" aria-label="Gra: Quo: Wyprawa"></canvas>
 
   <!-- Pasek gry -->
   <header class="hud" id="hud" hidden>
@@ -49,7 +49,9 @@
       <img class="card-quo" src="../media/icons/pose-13-celebration-jump-256.webp" alt="" width="150" height="150">
       <p class="kicker" data-t="page.game.html.kicker">Nagroda za wycieczkę</p>
       <h1 data-t="page.game.title">Quo: Wyprawa</h1>
-      <p class="lead" data-t="page.game.html.lead">Jaskinie Frasassi · Marche</p>
+      <p class="lead" id="stageLead">&nbsp;</p>
+      <p class="sub-label" id="tripLabel" data-t="page.game.html.trips">Wybierz wyprawę</p>
+      <div class="trips" id="tripPicker" role="group" data-t-aria="page.game.html.trips" aria-label="Wybierz wyprawę"></div>
       <div class="diff" role="group" data-t-aria="page.game.html.diff" aria-label="Poziom trudności">
         <button type="button" class="diff-btn" data-diff="easy" aria-pressed="false"><b data-t="page.game.diff.easy">Łatwy</b><span data-t="page.game.diff.easy_age">5–7 lat</span></button>
         <button type="button" class="diff-btn" data-diff="medium" aria-pressed="true"><b data-t="page.game.diff.medium">Średni</b><span data-t="page.game.diff.medium_age">8–10 lat</span></button>
@@ -124,6 +126,22 @@
     </div>
   </section>
 
+  <!-- Kwiatowy dywan (Spello) -->
+  <section class="screen" id="carpetScreen" hidden role="dialog" aria-modal="true" aria-labelledby="carpetTitle">
+    <div class="card card-carpet">
+      <p class="kicker" data-t="page.game.html.carpet_kicker">Kwiatowy dywan</p>
+      <h2 id="carpetTitle" data-t="page.game.html.carpet_title">Dokończ wzór z płatków</h2>
+      <p class="organ-status" id="carpetStatus" aria-live="polite"></p>
+      <div class="carpet-wrap">
+        <div class="carpet" id="carpetGrid"></div>
+        <div class="carpet-target" id="carpetTarget" aria-hidden="true"></div>
+      </div>
+      <div class="petals" id="carpetPetals" role="group" data-t-aria="page.game.html.petals" aria-label="Kolor płatka"></div>
+      <button class="btn btn-ghost" id="carpetClose" type="button" data-t="page.game.html.mosaic_close">Zamknij (wrócę później)</button>
+      <button class="btn btn-ghost" id="carpetSkip" type="button" hidden data-t="page.game.html.skip_chest">Pomiń i otwórz skrzynię</button>
+    </div>
+  </section>
+
   <!-- Szybkie stukanie -->
   <section class="screen" id="mashScreen" hidden role="dialog" aria-modal="true" aria-labelledby="mashTitle">
     <div class="card card-mash">
@@ -156,7 +174,7 @@
     <div class="card card-end">
       <img class="card-quo" src="../media/icons/pose-15-gold-medal-256.webp" alt="" width="150" height="150">
       <h2 data-t="page.game.html.done">Wyprawa ukończona!</h2>
-      <p class="lead" data-t="page.game.html.album">Twój album z Frasassi</p>
+      <p class="lead" id="stageAlbum">&nbsp;</p>
       <p class="help" id="endDiff"></p>
       <div class="album" id="albumGrid"></div>
       <div class="totals" id="totals"></div>
