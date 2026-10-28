@@ -87,6 +87,7 @@ MEAL_NAME = re.compile(r"^\s*(kolacja|obiad|lunch|śniadanie|przerwa|finał)\b",
 SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+")
 STOPWORDS = set("które który która których tylko także przez jednak bardzo można miasta miasto jeszcze kiedy gdzie wtedy dzisiaj potem właśnie".split())
 
+VAGUE = re.compile(r"\b(kilk\w*|parę|paru|chwil\w*)\b(?!.*\d)", re.I)
 errors, warnings = [], []
 def err(c, m):  errors.append(f"  [BŁĄD] {c}: {m}")
 def warn(c, m): warnings.append(f"  [uwaga] {c}: {m}")
@@ -119,9 +120,12 @@ def check_banned(city, where, text):
     if not isinstance(text, str):
         return
     for rx, label in BANNED:
-        m = rx.search(text)
-        if m:
+        for m in rx.finditer(text):
+            # JP 2026-10-28: przybliżenie bez liczby jest OK („kilka minut autem”, „kilka do kilkunastu minut autem”)
+            if "dojazdu" in label and VAGUE.search(text[max(0, m.start() - 30):m.end()]):
+                continue
             err(city, f"{where}: {label} — „{m.group(0)}”")
+            break
 
 
 
