@@ -86,6 +86,7 @@
         <button class="btn btn-primary" id="btnStart" type="button">Graj</button>
       </div>
       <button class="btn btn-ghost" id="btnSound" type="button" aria-pressed="false" data-t="page.game.sound.off">Dźwięk: wyłączony</button>
+      <button class="btn btn-ghost" id="btnVibe" type="button" aria-pressed="true" hidden>Wibracje: włączone</button>
       <p class="help"><span class="help-keys" data-t-html="page.game.html.help_keys"><b>Klawiatura:</b> ← → (lub A D) idź · spacja / ↑ / W skok · P pauza.<br></span><span data-t-html="page.game.html.help_touch"><b>Telefon:</b> przyciski na dole ekranu.</span></p>
     </div>
   </section>
@@ -96,6 +97,7 @@
       <h2 data-t="page.game.html.pause">Pauza</h2>
       <button class="btn btn-primary" id="btnResume" type="button" data-t="page.game.html.resume">Graj dalej</button>
       <button class="btn btn-ghost" id="btnSound2" type="button" aria-pressed="false" data-t="page.game.sound.off">Dźwięk: wyłączony</button>
+      <button class="btn btn-ghost" id="btnVibe2" type="button" aria-pressed="true" hidden>Wibracje: włączone</button>
       <button class="btn btn-ghost" id="btnRestart" type="button" data-t="page.game.html.restart">Zacznij od nowa</button>
     </div>
   </section>
@@ -206,6 +208,7 @@
 
   <noscript><p class="noscript" data-t="page.game.html.noscript">Ta gra potrzebuje włączonego JavaScriptu.</p></noscript>
 </div>
+<script src="../haptic.js?v=1"></script>
 <script src="treasure.js?v=20261029"></script>
 <script src="game.js?v=20261029"></script>
 </body>

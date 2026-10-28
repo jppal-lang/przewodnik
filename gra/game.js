@@ -2096,7 +2096,9 @@
   }
   function inSkyCols(px) { var c = Math.floor(px / TILE); return !!L.sky && c >= L.skyX0 && c <= L.skyX1; }
   function solidAt(px, py) { return SOLID[tileAt(Math.floor(px / TILE), Math.floor(py / TILE))] === 1; }
-  function ev(name) { if (SIM) simEv.push(name); }
+  // P-7: zdarzenia gry → haptyka (QHaptic milknie bez API, przy reduced-motion i po wyłączeniu „Wibracji”)
+  var HAPTIC_EV = { hurt: 'hit', fall: 'hit', bump: 'hit', hidden: 'gameSticker' };
+  function ev(name) { if (SIM) { simEv.push(name); return; } if (HAPTIC_EV[name] && window.QHaptic) QHaptic.pulse(HAPTIC_EV[name]); }
 
   function newPlayer() {
     var hearts = clamp(D.hearts + prog.missions, D.hearts, D.cap);
@@ -4025,6 +4027,7 @@
   function countSticker() {
     var C = celebration; if (C.counted) return; C.counted = true;
     if (!C.treasure) stats.stickers.push(C.lm.sec);
+    if (window.QHaptic) QHaptic.pulse('gameSticker');
     updateHUD();
     var a = $('hudAlbum'); a.classList.remove('pulse'); void a.offsetWidth; a.classList.add('pulse');
     sfx('coin');
@@ -4776,6 +4779,15 @@
     $('btnContinue').addEventListener('click', function () { if (soundOn) setSound(true); newGame(getSave(diffKey)); });
     $('btnSound').addEventListener('click', function () { setSound(!soundOn); });
     $('btnSound2').addEventListener('click', function () { setSound(!soundOn); });
+    // P-7: przełącznik „Wibracje” tylko tam, gdzie telefon je obsługuje (Android); domyślnie włączone
+    if (window.QHaptic && QHaptic.supported() && !QHaptic.reduced()) {
+      var paintVibe = function () {
+        var on = QHaptic.pref();
+        ['btnVibe', 'btnVibe2'].forEach(function (id) { var b = $(id); if (!b) return; b.hidden = false; b.textContent = on ? PT('page.game.vibe.on', 'Wibracje: włączone') : PT('page.game.vibe.off', 'Wibracje: wyłączone'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      };
+      ['btnVibe', 'btnVibe2'].forEach(function (id) { var b = $(id); if (b) b.addEventListener('click', function () { QHaptic.set(!QHaptic.pref()); paintVibe(); QHaptic.pulse('mission'); }); });
+      paintVibe();
+    }
     $('btnPause').addEventListener('click', pause);
     $('btnResume').addEventListener('click', resume);
     $('btnRestart').addEventListener('click', function () { newGame(); });
