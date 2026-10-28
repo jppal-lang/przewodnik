@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rawenna — przewodnik rodzinny</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../legacy.css">
 </head>
 <body>
@@ -20,7 +18,7 @@
       <div class="nav-desktop" style="display:flex;align-items:center;gap:12px">
         <a href="../../#regiony" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1.5px solid var(--line);border-radius:999px;font-size:15px;font-weight:700;color:var(--ink)">Wybierz region</a>
         <button class="nav-lang-btn" onclick="document.getElementById('langPopup').classList.add('open')" aria-label="Zmień język">
-          <img src="https://flagcdn.com/w40/pl.png" alt="" id="activeFlagImg">
+          <img src="/media/flags/pl.png" alt="" id="activeFlagImg">
           <span id="activeLangCode">PL</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
@@ -44,7 +42,7 @@
     <a href="../../#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:rgba(180,80,46,.06);border:2px solid var(--terra);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px">Wybierz region</a>
     <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
-      <img src="https://flagcdn.com/w40/pl.png" alt="" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> Zmień język
+      <img src="/media/flags/pl.png" alt="" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> Zmień język
     </button>
   </div>
 </div>
