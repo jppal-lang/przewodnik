@@ -435,6 +435,12 @@ html .qc-btn.is-pressed,html .btn.is-pressed,html .cta-btn.is-pressed,html .qc-b
 .qc-crumbs a:hover{background:rgba(255,255,255,.16)}
 .qc-crumbs [aria-current]{font-weight:800}
 .qc-intro{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;align-items:end;padding-top:clamp(16px,3vw,32px)}
+/* P-13: poniżej 720 px okruszki = jeden link wstecz „← Umbria” (wzorzec iOS); pełne od 720 px */
+@media(max-width:719px){
+  .qc-crumbs > :not(.qc-crumbs__up){display:none}
+  .qc-crumbs > .qc-crumbs__up{margin-left:-6px;font-weight:700}
+  .qc-crumbs > .qc-crumbs__up::before{content:"←";font-weight:900}
+}
 .qc-title{font-size:clamp(64px,12vw,152px);line-height:.86}
 .qc-lede{margin-top:18px;max-width:58ch;font-size:clamp(19px,1.8vw,22px);line-height:1.5}
 .qc-langnote{margin-top:14px;max-width:58ch;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.16);border:1px solid currentColor;font-size:18px;line-height:1.45}
