@@ -1446,6 +1446,13 @@ html.qk-lock{overflow:hidden}
 @media(max-width:520px){.qc-access .qc-section__title{font-size:clamp(28px,7.6vw,40px)}}
 /* ALTCHA (kontakt, logowanie): cel dotykowy to cała etykieta „Nie jestem robotem” */
 altcha-widget .altcha-checkbox-wrap label{display:inline-flex;align-items:center;min-height:var(--tap);font-size:var(--fs-min)}
+/* P-14: cały wiersz widżetu (min. 56 px) jest polem trafienia — warstwa ::after etykiety przykrywa
+   checkbox i tekst, tapnięcie w nią przełącza checkbox; checkbox powiększony do 28 px;
+   logo Altchy ukryte, gdy widżet ma atrybut hidelogo (22x20 px, link zewnętrzny poza tabulacją) */
+altcha-widget .altcha-checkbox-wrap{position:relative;display:flex;align-items:center;gap:12px;min-height:56px}
+altcha-widget .altcha-checkbox-wrap label::after{content:"";position:absolute;inset:0;cursor:pointer}
+altcha-widget .altcha-checkbox,altcha-widget .altcha-checkbox input{width:28px;height:28px}
+altcha-widget[hidelogo] .altcha-logo{display:none}
 /* widżet ocen (opinion.js wstrzykuje własne style — tu podnosimy je do minimum 18 px / 44 px) */
 section.qo-box p,section.qo-box .qo-msg,section.qo-box .qo-lbl{font-size:var(--fs-min)}
 section.qo-box .qo-stars{gap:6px;flex-wrap:wrap}
