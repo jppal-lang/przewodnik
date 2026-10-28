@@ -8,6 +8,10 @@
    3. Telefon (≤767 px): jeden przystanek na ekran, pasek „← Poprzedni · 3 / 8 · Następny →”,
       przesunięcie palcem, adres #pN, ostatni przystanek w localStorage (qc.pager.<slug>).
       Widok dziecka: po wklejeniu naklejki duży przycisk „Idziemy dalej →” (bez auto-przeskoku).
+   3a. Widok rodzica (JP 2026-10-28, A2): zamiast pagera przyklejony pasek u dołu „.qc-dock” — bieżący przystanek,
+      godziny otwarcia (gdy są w danych), „Prowadź w Mapach” i „Następny”; na komputerze pasek śledzi przewijanie.
+      Gość na ostatnim przystanku: „Załóż darmowe konto” zamiast wyszarzonego „Następny” (B2).
+      Dotarcie do ostatniego przystanku ustawia #city[data-trip-end] — dopiero wtedy widać ocenę „Jak wam poszło?” (B3).
    4. Komputer: klik naklejki / pozycji listy rozwija przystanek i przewija do niego.
    Wywołanie: QTrip.init({...}) po każdym render() w city.html. Zero zależności.
    ===================================================================== */
@@ -49,7 +53,7 @@
   });
 
   var PIN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
-  var S = { opts: null, root: null, cur: null, bound: false, mapW: 0, bar: null, live: null };
+  var S = { opts: null, root: null, cur: null, bound: false, mapW: 0, bar: null, live: null, dock: null, dockCur: null };
 
   function t(key, fb, vars) {
     var MISS = '\u0000', v = MISS;
@@ -60,6 +64,11 @@
     }
     if (vars) Object.keys(vars).forEach(function (k) { v = v.replace('{' + k + '}', vars[k]); });
     return v;
+  }
+  // nowe napisy (page.*): słownik strony (ui_translations przez city.html) > polski z kodu; ui-translate dotłumaczy
+  function PT(key, pl) {
+    var MISS = '\u0000', v = S.opts && S.opts.ui ? S.opts.ui(key, MISS) : MISS;
+    return v && v !== MISS && v !== key ? v : pl;
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -138,8 +147,9 @@
       drawMap();
       if (el) {
         el.open = true;
-        if (how !== 'init' || st.stop) setTimeout(function () { scrollToEl(el); }, 30);
+        if (how !== 'init' || st.stop) setTimeout(function () { scrollToEl(el); updateDock(el); }, 30);
       } else if (how !== 'init') scrollToEl($('#trasa'));
+      setTimeout(trackDock, 400);
     }
   }
 
@@ -150,6 +160,7 @@
     $$('#trasa > .qc-stop.is-current').forEach(function (el) { el.classList.remove('is-current'); });
     if (S.bar) S.bar.hidden = true;
     document.body.classList.remove('qc-has-pager');
+    hideDock();
     refreshResume();
   }
 
@@ -162,8 +173,15 @@
     el.classList.add('is-current');
     el.open = true;
     store(keyPager(), S.cur);
-    updateBar(list, i);
-    document.body.classList.add('qc-has-pager');
+    if (isKid()) {
+      updateBar(list, i);
+      document.body.classList.add('qc-has-pager');
+      if (i === list.length - 1) markEnd();
+    } else {
+      if (S.bar) S.bar.hidden = true;
+      document.body.classList.remove('qc-has-pager');
+      updateDock(el);
+    }
     if (how !== 'init' || location.hash) {
       scrollToEl($('#trasa'));
       var name = $('.qc-stop__name', el);
@@ -216,6 +234,95 @@
     $('.qc-pager__count', S.bar).textContent = (i + 1) + ' / ' + list.length;
     $('[data-pg="prev"]', S.bar).disabled = i <= 0;
     $('[data-pg="next"]', S.bar).disabled = i >= list.length - 1;
+  }
+
+  // ══════════ PASEK RODZICA (A2) ══════════
+  function markEnd() { if (S.root) S.root.setAttribute('data-trip-end', ''); }
+  function stopData(n) { return (S.opts.stops || []).filter(function (s) { return String(s.num) === String(n); })[0] || null; }
+  // jak przycisk „Nawiguj” przy przystanku: zapytanie z bazy > współrzędne > nazwa + miasto (gość nie ma zapytań z bazy)
+  function navUrl(s) {
+    if (!s) return '';
+    var q = s.query || (s.lat != null && s.lon != null && isFinite(s.lat) && isFinite(s.lon) ? s.lat + ',' + s.lon : '') ||
+            (s.name ? s.name + (S.opts.cityName ? ', ' + S.opts.cityName : '') : '');
+    return q ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) : '';
+  }
+  function buildDock() {
+    if (S.dock && S.dock.parentNode) S.dock.parentNode.removeChild(S.dock);
+    var d = document.createElement('nav');
+    d.className = 'qc-dock';
+    d.hidden = true;
+    d.setAttribute('aria-label', PT('page.trip.dock_label', 'Bieżący przystanek'));
+    d.innerHTML =
+      '<button type="button" class="qc-dock__info" data-dk="all"><span class="qc-dock__no"></span>' +
+      '<span class="qc-dock__txt"><span class="qc-dock__name"></span><span class="qc-dock__hours"></span></span></button>' +
+      '<div class="qc-dock__acts">' +
+      '<button type="button" class="qc-dock__btn qc-dock__btn--prev" data-dk="prev" aria-label="' + esc(t('btn.prev_stop', 'Poprzedni')) + '" title="' + esc(t('btn.prev_stop', 'Poprzedni')) + '"><span aria-hidden="true">←</span></button>' +
+      '<a class="qc-dock__btn qc-dock__btn--nav" data-dk="nav" target="_blank" rel="noopener">' + PIN + ' <span>' + esc(PT('page.trip.dock_nav', 'Prowadź w Mapach')) + '</span></a>' +
+      '<button type="button" class="qc-dock__btn qc-dock__btn--next" data-dk="next"></button>' +
+      '<a class="qc-dock__btn qc-dock__btn--signup" data-dk="signup" hidden href="' + esc(S.opts.signupUrl || '/zaloguj.html#rejestracja') + '">' + esc(t('access.signup', 'Załóż konto')) + '</a>' +
+      '</div>';
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-dk]');
+      if (!b || b.disabled) return;
+      var a = b.getAttribute('data-dk');
+      if (a === 'prev') dockStep(-1);
+      else if (a === 'next') { if (b.getAttribute('data-last')) go('#trasa'); else dockStep(1); }
+      else if (a === 'all') go('#trasa');
+    });
+    document.body.appendChild(d);
+    S.dock = d;
+  }
+  function dockStep(dir) {
+    var list = stopEls(), i = list.indexOf(stopEl(S.dockCur)), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    go('#p' + list[j].getAttribute('data-stop-num'));
+  }
+  function hideDock() {
+    S.dockCur = null;
+    if (S.dock) S.dock.hidden = true;
+    document.body.classList.remove('qc-has-dock');
+  }
+  function updateDock(el) {
+    if (!S.dock || !el || isKid()) { hideDock(); return; }
+    var list = stopEls(), i = list.indexOf(el);
+    if (i < 0) { hideDock(); return; }
+    var n = el.getAttribute('data-stop-num'), s = stopData(n) || {}, last = i === list.length - 1;
+    var nameEl = $('.qc-stop__name', el), name = s.name || (nameEl ? nameEl.textContent : '');
+    if (S.dockCur === n && !S.dock.hidden) return;
+    S.dockCur = n;
+    $('.qc-dock__no', S.dock).textContent = pad(n);
+    $('.qc-dock__name', S.dock).textContent = name;
+    $('[data-dk="all"]', S.dock).setAttribute('aria-label', pad(n) + ' ' + name + ' — ' + t('btn.whole_route', 'Cała trasa'));
+    var hrs = $('.qc-dock__hours', S.dock);
+    hrs.textContent = s.hours ? t('label.hours', 'Godziny') + ': ' + s.hours + (s.hoursUnverified ? ' · ' + t('label.unverified', 'do sprawdzenia') : '') : '';
+    hrs.hidden = !s.hours;
+    var nav = $('[data-dk="nav"]', S.dock), url = navUrl(s);
+    nav.hidden = !url;
+    if (url) nav.href = url; else nav.removeAttribute('href');
+    $('[data-dk="prev"]', S.dock).disabled = i <= 0;
+    var next = $('[data-dk="next"]', S.dock), signup = $('[data-dk="signup"]', S.dock);
+    var guestEnd = last && S.opts.locked;
+    next.hidden = guestEnd;
+    signup.hidden = !guestEnd;
+    if (last) {
+      next.setAttribute('data-last', '1');
+      next.innerHTML = '<span>' + esc(t('btn.whole_route', 'Cała trasa')) + '</span>';
+      markEnd();
+    } else {
+      next.removeAttribute('data-last');
+      next.innerHTML = '<span>' + esc(t('btn.next_stop', 'Następny')) + '</span> <span aria-hidden="true">→</span>';
+    }
+    S.dock.hidden = false;
+    document.body.classList.add('qc-has-dock');
+    document.body.style.setProperty('--qc-dock-h', S.dock.offsetHeight + 'px');
+  }
+  // komputer: pasek pokazuje przystanek, który czytasz (górna część okna); poza trasą — chowa się
+  function trackDock() {
+    if (!S.root || !S.dock || isMobile()) return;
+    if (isKid() || (S.root.dataset.tab && S.root.dataset.tab !== 'trasa')) { hideDock(); return; }
+    var list = stopEls(), mid = window.innerHeight * 0.33, top = topOffset(), cur = null;
+    list.forEach(function (el) { var r = el.getBoundingClientRect(); if (r.top <= mid && r.bottom > top) cur = el; });
+    if (cur) updateDock(cur); else hideDock();
   }
 
   // przycisk „Idziemy dalej →” (widok dziecka, po wklejeniu naklejki)
@@ -629,6 +736,7 @@
       el.setAttribute('data-rv', ''); el.classList.add('is-in', 'qc-no-rv');
     });
     buildBar();
+    buildDock();
     addGoNext();
     bindSwipe();
     bindSummaries();
@@ -642,6 +750,11 @@
       }
       var rt = null;
       window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawMap, 150); });
+      var raf = 0;
+      window.addEventListener('scroll', function () {
+        if (raf) return;
+        raf = requestAnimationFrame(function () { raf = 0; trackDock(); });
+      }, { passive: true });
       // naklejka wklejona / przystanek wyłączony przez rodzica → odśwież listę, mapę i przyciski
       document.addEventListener('change', function (e) {
         if (!e.target.matches || !e.target.matches('[data-qc-task],[data-toggle-stop]')) return;
