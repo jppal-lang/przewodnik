@@ -45,7 +45,7 @@ typography:
     fontVariation: "'wdth' 62"
   number:
     fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "17px"
+    fontSize: "18px"
     fontWeight: 900
     letterSpacing: "-0.02em"
     fontFeature: "'tnum' 1"
@@ -64,7 +64,7 @@ typography:
     letterSpacing: "-0.01em"
   label:
     fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "14px"
+    fontSize: "18px"
     fontWeight: 700
     letterSpacing: "0.07em"
     fontVariation: "'wdth' 75"
@@ -214,12 +214,12 @@ Chłodna, nasycona paleta z jednym dominującym granatem-azzurro, słonecznym ż
 - **Number** (900, 125%, cyfry tabelaryczne, 14–32px): numery w kapslach, godziny przystanków, statystyki „odwrotu naklejki”, numery telefonów; pusta naklejka ma numer clamp(40px, 5vw, 64px).
 - **Subhead** (800, 100%, 21–26px, 1.2): nagłówki h3 w treści, tytuły kart.
 - **Body** (400, 19px, 1.55; proza przystanku 1.65 i max 66ch; lede clamp(19px, 2vw, 22px) i max 60ch): cały tekst czytany.
-- **Label** (700, 75%, kapitaliki, 14–15px, rozstrzał 0.06–0.07em, `muted`): metadane naklejek, nagłówki pigułek, etykiety pól. Tylko krótkie metadane, nigdy treść.
+- **Label** (700, 75%, kapitaliki, 18px, rozstrzał 0.06–0.07em, `muted`): metadane naklejek, nagłówki pigułek, etykiety pól. Tylko krótkie metadane, nigdy treść.
 
 ### Named Rules
 **The Three Widths Rule.** Nazwy są wąskie (62%), cyfry szerokie (125%), tekst normalny. Nie mieszamy: liczba w nazwie dostaje szerokość cyfr, a akapit nigdy nie jest wąski.
 
-**The 18px Floor Rule.** Tekst treści ma min 18px (body 19px). Poniżej 18px wolno zejść tylko z krótką etykietą lub metadaną.
+**The 18px Floor Rule.** Każdy tekst ma min 18px (body 19px), także etykiety, metadane, numery naklejek i stopka. W CSS minimum to token `--fs-min` (18px), a cel dotykowy `--tap` (44px) w `:root` w `styles.css`. Wyjątków brak (poprawki a11y z testów 2026-10-28).
 
 ## Layout
 
