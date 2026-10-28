@@ -35,6 +35,28 @@
   }
   document.querySelectorAll('[data-video-toggle]').forEach(initVideo);
 
+  // ── P-3: stan wciśnięcia pod palcem (is-pressed) ──
+  // :active bywa gubione przy szybkim tapnięciu (iOS), więc klasę dokładamy z pointerdown
+  // i trzymamy ją min. 90 ms; przewinięcie (pointercancel / scroll) zdejmuje ją od razu.
+  var PRESS = 'a.sticker,.region-tile,.city-card,.other-region-tile,.qc-strip__stk,a.atlas-region,.qc-btn,.btn,.cta-btn';
+  var pressed = null, pressT = 0;
+  function release(now) {
+    if (!pressed) return;
+    var el = pressed; pressed = null;
+    setTimeout(function () { el.classList.remove('is-pressed'); }, now ? 0 : Math.max(0, 90 - (Date.now() - pressT)));
+  }
+  document.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' || !e.target.closest) return;
+    var el = e.target.closest(PRESS);
+    if (!el) return;
+    release(true);
+    pressed = el; pressT = Date.now();
+    el.classList.add('is-pressed');
+  }, { passive: true });
+  document.addEventListener('pointerup', function () { release(false); }, { passive: true });
+  document.addEventListener('pointercancel', function () { release(true); }, { passive: true });
+  window.addEventListener('scroll', function () { release(true); }, { passive: true });
+
   if (!('IntersectionObserver' in window)) return;
   document.documentElement.classList.add('motion');
   if (reduce) document.documentElement.classList.add('motion-soft');

@@ -152,6 +152,20 @@ h3{font-size:24px;font-weight:800;line-height:1.2;letter-spacing:-.01em}
   transform:rotate(var(--tilt,0deg));transition:transform .35s var(--ease),box-shadow .35s var(--ease);
 }
 a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var(--lift-3)}
+/* P-3: dotyk bez niebieskiego błysku; kafle „dociskają karton”, naklejki unoszą się pod palcem.
+   .is-pressed dokłada motion.js (pointerdown), żeby stan był widoczny także przy szybkim tapnięciu. */
+html{-webkit-tap-highlight-color:transparent}
+/* przedrostek html: wygrywa z późniejszymi regułami :hover kafli (na dotyku :hover „przykleja się” po tapnięciu) */
+@media (hover:none){
+  html .city-card:hover,html .region-tile:hover,html a.sticker:hover{transform:rotate(var(--tilt,0deg));box-shadow:var(--lift-2)}
+  html .other-region-tile:hover,html .qc-strip__stk:hover{transform:none}
+  html a.sticker:active,html a.sticker.is-pressed,html a.sticker:focus-visible{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var(--lift-3);transition-duration:80ms}
+  html .city-card:focus-visible,html .region-tile:focus-visible{transform:rotate(0) translateY(-6px);box-shadow:var(--lift-3)}
+}
+html .city-card:active,html .city-card.is-pressed,html .region-tile:active,html .region-tile.is-pressed,
+html .other-region-tile:active,html .other-region-tile.is-pressed,html .qc-strip__stk:active,html .qc-strip__stk.is-pressed,
+html a.atlas-region:active,html a.atlas-region.is-pressed{transform:rotate(0) translateY(1px) scale(.98);box-shadow:var(--lift-1);transition-duration:80ms}
+html .qc-btn.is-pressed,html .btn.is-pressed,html .cta-btn.is-pressed,html .qc-btn:active,html .btn:active,html .cta-btn:active{transform:translateY(1px) scale(.98);transition-duration:80ms}
 .sticker-art{position:relative;display:block;aspect-ratio:1;border-radius:7px;overflow:hidden;background:var(--team)}
 .sticker-art img{width:100%;height:100%;object-fit:cover}
 .sticker-art::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.22),transparent 40%);pointer-events:none}
