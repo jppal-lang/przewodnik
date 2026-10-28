@@ -81,7 +81,7 @@
     <div class="logo">
       <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
     </div>
-    <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center">Prywatność</a></nav>
+    <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.privacy">Prywatność</a></nav>
     <span data-ui="home.footer">&copy; 2026 &middot; Rodzinne przewodniki wypadowe</span>
   </div>
 
@@ -188,6 +188,7 @@ function loadPage(lang) {
 
     uiStrings = {};
     uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });
+    document.querySelectorAll("[data-t]").forEach(function(el) { var v = uiStrings[el.getAttribute("data-t")]; if (v) el.textContent = v; });   // stopka (R-3)
 
     buildLangPopup();
     updateActiveLang();
@@ -268,7 +269,7 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
   // ── Hero ──
   html += '<div class="region-hero band page-band">';
   html += '<h1 class="region-name">' + esc(countryName) + '</h1>';
-  html += '<div class="region-meta"><span>' + (country.flag_code ? '<img src="https://flagcdn.com/w40/' + country.flag_code + '.png" alt="">' : '') + esc(ui('continent.' + (country.continent || 'europe'), 'Europa')) + '</span><span>' + cityTotal + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
+  html += '<div class="region-meta"><span>' + (country.flag_code ? '<img src="https://flagcdn.com/w40/' + country.flag_code + '.png" alt="">' : '') + esc(ui('continent.' + (country.continent || 'europe'), 'Europa')) + '</span><span>' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + cityTotal + '</span></div>';
   html += '</div>';
 
   if (!regions.length) {
@@ -297,7 +298,7 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
                             .reduce(function(n, r) { return n + ((byRegion[r.slug] || []).length); }, 0);
       html += '<a class="other-region-tile" href="/country.html?k=' + encodeURIComponent(oc.slug) + '">';
       html += '<div class="ort-body"><div class="ort-name">' + esc(oName) + '</div>';
-      html += '<div class="ort-meta">' + oCnt + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
+      html += '<div class="ort-meta">' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + oCnt + '</div></div>';
       html += '<div class="ort-go" aria-hidden="true">&rarr;</div></a>';
     });
     html += '</div></div>';

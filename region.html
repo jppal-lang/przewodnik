@@ -81,7 +81,7 @@
     <div class="logo">
       <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
     </div>
-    <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center">Prywatność</a></nav>
+    <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.privacy">Prywatność</a></nav>
     <span data-ui="home.footer">&copy; 2026 &middot; Rodzinne przewodniki wypadowe</span>
   </div>
 
@@ -221,6 +221,7 @@ function loadPage(lang) {
 
     uiStrings = {};
     uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });
+    document.querySelectorAll("[data-t]").forEach(function(el) { var v = uiStrings[el.getAttribute("data-t")]; if (v) el.textContent = v; });   // stopka (R-3)
 
     buildLangPopup();
     updateActiveLang();
@@ -301,7 +302,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
   html += '<div class="region-hero band page-band">';
   html += '<h1 class="region-name">' + esc(regionName) + '</h1>';
   if (rTr && rTr.description) html += '<p class="region-desc">' + esc(rTr.description) + '</p>';
-  html += '<div class="region-meta"><span>' + (flagCode ? '<img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="">' : '') + esc(countryName) + '</span><span>' + cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span></div>';
+  html += '<div class="region-meta"><span>' + (flagCode ? '<img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="">' : '') + esc(countryName) + '</span><span>' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + cities.length + '</span></div>';
   html += '</div>';
 
   // ── City tiles ──
@@ -325,7 +326,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
       html += '<a class="other-region-tile" href="/region.html?r=' + encodeURIComponent(reg.slug) + '">';
       html += '<div class="ort-body"><div class="ort-country">' + (oFlag ? '<img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="">' : '') + esc(oCoun) + '</div>';
       html += '<div class="ort-name">' + esc(oName) + '</div>';
-      html += '<div class="ort-meta">' + published[reg.slug] + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</div></div>';
+      html += '<div class="ort-meta">' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + published[reg.slug] + '</div></div>';
       html += '<div class="ort-go" aria-hidden="true">&rarr;</div></a>';
     });
     html += '</div></div>';

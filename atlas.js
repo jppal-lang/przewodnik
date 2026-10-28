@@ -216,7 +216,7 @@
         a.innerHTML = '<span class="atlas-region__no">' + pad(r.no) + '</span>' +
           '<span class="atlas-region__art" data-l="' + esc(r.name.charAt(0)) + '">' + (base ? '<img src="' + base + '-tile-384.webp" alt="" width="384" height="384" loading="lazy" decoding="async">' : '') + '</span>' +
           '<span class="atlas-region__txt"><span class="atlas-region__name">' + esc(r.name) + '</span>' +
-          '<span class="atlas-region__meta">' + r.cities.length + ' ' + esc(ui('home.region_ready', 'gotowe plany')) + '</span>' +
+          '<span class="atlas-region__meta">' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + r.cities.length + '</span>' +
           (solo && r.desc ? '<span class="atlas-region__desc">' + esc(r.desc) + '</span>' : '') + '</span>' +
           '<svg class="atlas-region__go" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
         var img = a.querySelector('img');
@@ -316,7 +316,7 @@
       stops = [];
       live.forEach(function (c) {
         var co = countries[c];
-        stops.push({ pt: co.pt, live: true, label: co.name, meta: co.plans + ' ' + ui('home.region_ready', 'gotowe plany'), country: c,
+        stops.push({ pt: co.pt, live: true, label: co.name, meta: ui('home.region_ready', 'gotowe plany') + ': ' + co.plans, country: c,
           action: function (e) { e.preventDefault(); zoomTo(c); } });
       });
       soon.forEach(function (c) { stops.push({ pt: countries[c].pt, live: false, label: countries[c].name, meta: ui('chip.soon', 'Wkrótce'), country: c }); });
@@ -334,7 +334,7 @@
       pins.innerHTML = ''; gDots.innerHTML = ''; clearTrail();
       stops = [];
       co.regions.forEach(function (r) {
-        stops.push({ pt: r.pt, live: true, cap: true, no: r.no, label: r.name, meta: r.cities.length + ' ' + ui('home.region_ready', 'gotowe plany'),
+        stops.push({ pt: r.pt, live: true, cap: true, no: r.no, label: r.name, meta: ui('home.region_ready', 'gotowe plany') + ': ' + r.cities.length,
           href: '/region.html?r=' + encodeURIComponent(r.slug), region: r.slug, team: r.team });
         r.cities.forEach(function (c) {
           var p = proj(+c.lon, +c.lat);
