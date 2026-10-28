@@ -567,11 +567,14 @@ function render(d) {
     { label: d.regionName,  href: window.QSSR ? ssrPaths(currentLang).region : (city.region_slug ? '/region.html?r=' + encodeURIComponent(city.region_slug) : null) },
     { label: tr.title || city.slug, href: null }
   ];
-  levels.forEach(function(l) {
+  // P-13: na telefonie z okruszków zostaje jeden link „← rodzic” (ostatni poziom z adresem)
+  var upIdx = -1;
+  levels.forEach(function(l, i) { if (l.label && l.href) upIdx = i; });
+  levels.forEach(function(l, i) {
     if (!l.label) return;
     html += '<span aria-hidden="true">/</span>';
     html += l.href
-      ? '<a href="' + l.href + '">' + esc(l.label) + '</a>'
+      ? '<a href="' + l.href + '"' + (i === upIdx ? ' class="qc-crumbs__up"' : '') + '>' + esc(l.label) + '</a>'
       : '<span aria-current="page">' + esc(l.label) + '</span>';
   });
   html += '</nav>';
