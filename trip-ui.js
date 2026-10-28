@@ -325,6 +325,20 @@
     if (cur) updateDock(cur); else hideDock();
   }
 
+  // P-4 (telefon): przewijanie w dół chowa menu i zakładki, w górę je przywraca.
+  // Próg 8 px, żeby nie migało; przy górze strony i z fokusem w pasku zawsze widoczne.
+  var barsY = window.pageYOffset, barsHidden = false;
+  function trackBars() {
+    var y = window.pageYOffset, dy = y - barsY;
+    if (Math.abs(dy) < 8 && y > 0) return;
+    barsY = y;
+    var a = document.activeElement, inBar = a && a.closest && a.closest('.sticky-nav,.qc-tabs');
+    var hide = isMobile() && dy > 0 && y > 160 && !inBar;
+    if (hide === barsHidden) return;
+    barsHidden = hide;
+    document.documentElement.classList.toggle('qc-bars-hidden', hide);
+  }
+
   // przycisk „Idziemy dalej →” (widok dziecka, po wklejeniu naklejki)
   function addGoNext() {
     var list = $$('#trasa > .qc-stop');
@@ -753,7 +767,7 @@
       var raf = 0;
       window.addEventListener('scroll', function () {
         if (raf) return;
-        raf = requestAnimationFrame(function () { raf = 0; trackDock(); });
+        raf = requestAnimationFrame(function () { raf = 0; trackDock(); trackBars(); });
       }, { passive: true });
       // naklejka wklejona / przystanek wyłączony przez rodzica → odśwież listę, mapę i przyciski
       document.addEventListener('change', function (e) {

@@ -638,7 +638,8 @@ function render(d) {
   html += '</nav>';
 
   // ── Zakładki: jeden panel naraz (trip-ui.js) ──
-  html += '<nav class="qc-tabs" aria-label="' + esc(ui('nav.sections', 'Sekcje')) + '">';
+  // P-4: gość ma tylko zakładkę „Trasa” — pasek z jednym przyciskiem nic nie przełącza, więc go nie pokazujemy
+  html += '<nav class="qc-tabs' + (d.locked ? ' qc-tabs--single' : '') + '" aria-label="' + esc(ui('nav.sections', 'Sekcje')) + '">';
   html += '<div class="qc-tabs__list" role="tablist">';
   html += '<a class="qc-tab" role="tab" id="tab-trasa" data-tab="trasa" aria-controls="trasa" aria-selected="true" href="#trasa">' + ui('tab.route', 'Trasa') + '</a>';
   if (!d.locked) {
