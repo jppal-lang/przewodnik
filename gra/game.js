@@ -26,13 +26,15 @@
   var G = 1900, JUMP_V = 660, RUN = 200, MAX_FALL = 900, SPRING_V = 1010;
   /* Poziomy trudności. sec = długość przystanku w kaflach; hearts/cap = serduszka na start / limit z misjami;
      spd = szybkość przeciwników; dens > 1 = więcej przeszkód; adv = zaawansowane klocki + mini-wyzwania;
-     opts = liczba odpowiedzi; qPerGate = pytania na bramę; cpGates = punkt kontrolny za bramą. */
+     opts = liczba odpowiedzi; qPerGate = pytania na bramę; cpGates = punkt kontrolny za bramą;
+     noTimer = bez celu czasu (Łatwy: bez stresu, trzecia gwiazdka za samo przejście — decyzja JP 2026-10-29).
+     Poziomy nie mają wieku (bez profilowania dziecka). */
   var DIFF = {
-    easy:   { key: 'easy', label: 'Łatwy', ages: '5–7 lat', sec: 170, hearts: 5, cap: 12, spd: 1, dens: 0, adv: false, opts: 3, qPerGate: 1, freeHint: true,
+    easy:   { key: 'easy', label: 'Łatwy', noTimer: true, sec: 170, hearts: 5, cap: 12, spd: 1, dens: 0, adv: false, opts: 3, qPerGate: 1, freeHint: true,
       cpGates: true, cpCeleb: true, crumbleT: .6, parMul: 1.9, wind: 0, organN: 3 },
-    medium: { key: 'medium', label: 'Średni', ages: '8–10 lat', sec: 250, hearts: 3, cap: 8, spd: 1.25, dens: 1, adv: true, opts: 4, qPerGate: 1, freeHint: false,
+    medium: { key: 'medium', label: 'Średni', sec: 250, hearts: 3, cap: 8, spd: 1.25, dens: 1, adv: true, opts: 4, qPerGate: 1, freeHint: false,
       cpGates: true, cpCeleb: true, crumbleT: .45, parMul: 1.45, wind: 80, doorT: 9, bridgeV: 135, boulderV: 160, organN: 4 },
-    hard:   { key: 'hard', label: 'Trudny', ages: '11+', sec: 290, hearts: 2, cap: 5, spd: 1.55, dens: 1.5, adv: true, opts: 4, qPerGate: 2, freeHint: false,
+    hard:   { key: 'hard', label: 'Trudny', sec: 290, hearts: 2, cap: 5, spd: 1.55, dens: 1.5, adv: true, opts: 4, qPerGate: 2, freeHint: false,
       cpGates: false, cpCeleb: false, crumbleT: .3, parMul: 1.35, wind: 100, doorT: 7, bridgeV: 160, boulderV: 178, organN: 5 }
   };
   var ICONS = '../media/icons/';
@@ -98,6 +100,7 @@
   /* ---------- 2. Pamięć i postęp ---------- */
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* prywatne okno */ } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* prywatne okno */ } }
   function lsJSON(k) { try { return JSON.parse(lsGet(k) || 'null'); } catch (e) { return null; } }
 
   /* Mapowanie punktów z wycieczki na grę:
@@ -1359,6 +1362,7 @@
         skygap: [11, function () { // naklejka w powietrzu nad przepaścią — trzeba skoczyć z rozbiegu
           flat(4); x += 4; var w = D.adv ? 4 : 3;
           for (var i = 0; i < w; i++) { clearCol(x + i, cave ? 2 : 0, 13); pit(x + i); }
+          if (!D.adv) set(x + 1, g, 2); // Łatwy: kładka w środku (dwa małe skoki zamiast jednego długiego; JP 2026-10-29)
           hide(x + w / 2, g - 4.25); x += w; flat(3); return 3;
         }]
       };
@@ -2610,11 +2614,13 @@
     var w = window.innerWidth, h = window.innerHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     shade.width = Math.round(w / 3); shade.height = Math.round(h / 3);
-    var s = Math.min(h / ((w > h ? 13 : 12) * TILE), w / (10 * TILE));
+    var padOn = !$('pad').hidden || padWanted();
+    // Poziomo z przyciskami: dół ekranu (pod lewymi przyciskami) zostaje na sam grunt — ścieżka Quo jest nad padem.
+    var padL = padOn && w > h && h < 560 ? Math.round(h * .17) : 0;
+    var s = padL ? Math.min((h - padL) / (12.5 * TILE), w / (10 * TILE)) : Math.min(h / ((w > h ? 13 : 12) * TILE), w / (10 * TILE));
     view.s = s; view.dpr = dpr; view.cssW = w; view.cssH = h;
     view.w = w / s; view.h = h / s; LC.k = s * dpr;
-    var padOn = !$('pad').hidden || padWanted();
-    view.reserve = (h > w && padOn) ? 150 / s : 0;
+    view.reserve = (h > w && padOn) ? 150 / s : padL / s;
     LC.vh = Math.round(view.h * 10 + view.reserve * 1000);
     if (L && P) updateCamera(1);
   }
@@ -3980,7 +3986,7 @@
   function startCelebration(lm) {
     var S = L.sections[lm.sec];
     S.done = true;
-    S.stars = 1 + (S.hidden >= S.hidN ? 1 : 0) + (S.time <= S.par ? 1 : 0);
+    S.stars = 1 + (S.hidden >= S.hidN ? 1 : 0) + (D.noTimer || S.time <= S.par ? 1 : 0);
     if (D.cpCeleb) P.checkpoint = { x: lm.x + 40, y: lm.y };
     if (SIM) { ev('landmark'); simStop = true; return; }
     state = 'celebrate';
@@ -4032,6 +4038,7 @@
     if (tr) { state = 'play'; return; }
     addCoins(5);
     if (lm.sec >= L.sections.length - 1) { endGame(); return; }
+    writeSave(lm.sec);
     state = 'play';
   }
   function makeConf(n, cols) {
@@ -4141,9 +4148,9 @@
   }
   // Tabele z napisami wypełniane po wczytaniu tłumaczeń (PT.ready)
   function i18nTables() {
-    DIFF.easy.label = PT('page.game.diff.easy', 'Łatwy'); DIFF.easy.ages = PT('page.game.diff.easy_age', '5–7 lat');
-    DIFF.medium.label = PT('page.game.diff.medium', 'Średni'); DIFF.medium.ages = PT('page.game.diff.medium_age', '8–10 lat');
-    DIFF.hard.label = PT('page.game.diff.hard', 'Trudny'); DIFF.hard.ages = PT('page.game.diff.hard_age', '11+');
+    DIFF.easy.label = PT('page.game.diff.easy', 'Łatwy');
+    DIFF.medium.label = PT('page.game.diff.medium', 'Średni');
+    DIFF.hard.label = PT('page.game.diff.hard', 'Trudny');
     POWER.magnet.name = PT('page.game.pw.magnet', 'Magnes na kamyczki');
     POWER.lantern.name = PT('page.game.pw.lantern', 'Latarka');
     POWER.doublejump.name = PT('page.game.pw.doublejump', 'Podwójny skok');
@@ -4194,7 +4201,7 @@
     var stop = trip.stops[si];
     $('hudStop').textContent = fill(PT('page.game.hud.stop', 'Przystanek {n} z {m}'), { n: si + 1, m: L.sections.length }) + ' · ' + stopName(si);
     powerHUD();
-    var msg = stopName(si) + ' · ' + fill(PT('page.game.hud.par', 'cel czasu {t}'), { t: fmtT(S.par) });
+    var msg = stopName(si) + (D.noTimer ? '' : ' · ' + fill(PT('page.game.hud.par', 'cel czasu {t}'), { t: fmtT(S.par) }));
     if (S.power) msg += ' · ' + fill(PT('page.game.hud.photo_power', 'moc z zadania foto: {name}'), { name: POWER[S.power].name });
     else if (S.terrain === 'cave') msg += ' · ' + PT('page.game.hud.dark', 'ciemno! Zadanie foto dałoby latarkę');
     if (S.shortcut) msg += ' · ' + PT('page.game.hud.shortcut', 'szukaj trampoliny „skrót”!');
@@ -4549,6 +4556,45 @@
     }
   }
 
+  /* --- Zapis w trakcie wyprawy (decyzja JP 2026-10-29): po każdej naklejce przystanku, osobno dla trasy i poziomu.
+     quolino_game_save_<slug> = { <poziom>: { v, n, sec, playNo, gameT, hearts, power, stats, secs: [[gwiazdki, czas, ukryte]…], hid } }.
+     Poziom odbudowuje się z tego samego ziarna (playNo), Quo staje tuż za naklejką ostatniego przystanku. Koniec wyprawy kasuje zapis. --- */
+  function saveKey() { return LS + 'save_' + trip.trip; }
+  function loadSaves() { var o = lsJSON(saveKey()); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; }
+  function getSave(dk) {
+    var s = loadSaves()[dk];
+    return s && s.v === 1 && s.n === trip.stops.length && s.sec >= 0 && s.sec < trip.stops.length - 1 && DIFF[dk] ? s : null;
+  }
+  function clearSave(dk) { var o = loadSaves(); if (!o[dk]) return; delete o[dk]; if (Object.keys(o).length) lsSet(saveKey(), JSON.stringify(o)); else lsDel(saveKey()); }
+  function writeSave(sec) {
+    if (SIM) return;
+    var o = loadSaves();
+    o[D.key] = { v: 1, n: trip.stops.length, sec: sec, playNo: playNo, gameT: Math.round(gameT), hearts: P.hearts, power: P.power || null,
+      stats: { coins: stats.coins, stickers: stats.stickers.slice(), gates: stats.gates, firstTry: stats.firstTry, questions: stats.questions, hiddenTotal: stats.hiddenTotal, treasure: !!stats.treasure },
+      secs: L.sections.slice(0, sec + 1).map(function (S) { return [S.stars, Math.round(S.time), S.hidden]; }),
+      hid: L.hidden.map(function (h) { return h.taken ? '1' : '0'; }).join('') };
+    lsSet(saveKey(), JSON.stringify(o));
+  }
+  function applySave(sv) {
+    var lm = L.landmarks[sv.sec], i;
+    for (i = 0; i <= sv.sec; i++) {
+      var S = L.sections[i], a = sv.secs[i] || [1, 0, 0];
+      S.done = true; S.given = true; S.stars = a[0] | 0; S.time = +a[1] || 0; S.hidden = a[2] | 0;
+      L.landmarks[i].done = true;
+      S.gates.forEach(function (k) { L.gates[k].open = true; L.gates[k].lift = 1; });
+    }
+    L.hidden.forEach(function (h, k) { if (sv.hid && sv.hid.charAt(k) === '1') h.taken = true; });
+    L.coins.forEach(function (c) { if (c.x < lm.x) c.taken = true; }); // kamyczki za plecami już policzone w zapisie
+    L.cxDoors.forEach(function (dd) { if (dd.x < lm.x) L.cx[dd.zi].done = true; });
+    var st = sv.stats || {};
+    stats = { coins: st.coins | 0, stickers: (st.stickers || []).slice(), gates: st.gates | 0, firstTry: st.firstTry | 0, questions: st.questions | 0, hiddenTotal: st.hiddenTotal | 0, treasure: !!st.treasure };
+    gameT = +sv.gameT || 0;
+    P.x = lm.x + 40; P.y = lm.y;
+    P.checkpoint = { x: P.x, y: P.y }; P.safe = { x: P.x, y: P.y };
+    P.hearts = clamp(sv.hearts | 0, 1, D.cap);
+    if (sv.power && POWER[sv.power]) setPower(sv.power);
+  }
+
   function loadRecord() { var r = lsJSON(LS + trip.trip); if (!r || typeof r.best !== 'object') r = { plays: (r && r.plays) || 0, best: {} }; return r; }
   function endGame() {
     state = 'end';
@@ -4561,12 +4607,12 @@
     b.stars = L.sections.map(function (S, i) { return Math.max(S.stars, (b.stars || [])[i] || 0); });
     rec.best[D.key] = b;
     lsSet(LS + trip.trip, JSON.stringify(rec));
-    $('endDiff').textContent = fill(PT('page.game.end.level', 'Poziom: {label} ({ages})'), { label: D.label, ages: D.ages });
+    $('endDiff').textContent = fill(PT('page.game.end.level_name', 'Poziom: {label}'), { label: D.label });
     $('albumGrid').innerHTML = L.sections.map(function (S, i) {
       var s = trip.stops[i];
       return '<div class="sticker"><img src="' + ICONS + 'icon-' + esc(s.icon) + '-128.webp" alt="" width="120" height="120"><p>' + esc(stopName(i)) + '</p>' +
         '<p class="stars" aria-label="' + esc(fill(PT('page.game.end.stars_aria', '{n} z 3 gwiazdek'), { n: S.stars })) + '">' + '★★★'.slice(0, S.stars) + '<span class="dim">' + '★★★'.slice(S.stars) + '</span></p>' +
-        '<p class="meta">' + esc(S.hidN === 3 ? fill(PT('page.game.end.meta', 'Ukryte: {h}/3 · czas {t} (cel {p})'), { h: S.hidden, t: fmtT(S.time), p: fmtT(S.par) })
+        '<p class="meta">' + esc(D.noTimer ? fill(PT('page.game.end.meta_hidden', 'Ukryte: {h}/{m}'), { h: S.hidden, m: S.hidN }) : S.hidN === 3 ? fill(PT('page.game.end.meta', 'Ukryte: {h}/3 · czas {t} (cel {p})'), { h: S.hidden, t: fmtT(S.time), p: fmtT(S.par) })
           : fill(PT('page.game.end.meta_n', 'Ukryte: {h}/{m} · czas {t} (cel {p})'), { h: S.hidden, m: S.hidN, t: fmtT(S.time), p: fmtT(S.par) })) + '</p></div>';
     }).join('') + ((stats.treasure || (window.QuoTreasure && QuoTreasure.found(trip.trip))) ?
       '<div class="sticker sticker-gold"><svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#FFD95A" stroke="#0E1A2B" stroke-width="5"/>' +
@@ -4578,11 +4624,12 @@
       '<div><span>' + esc(PT('page.game.end.coins', 'Kamyczki')) + '</span><b>' + stats.coins + '</b></div>' +
       '<div><span>' + esc(PT('page.game.end.hidden', 'Zagubione naklejki')) + '</span><b>' + stats.hiddenTotal + ' / ' + L.hidden.length + '</b></div>' +
       '<div><span>' + esc(PT('page.game.end.first', 'Pytania za pierwszym razem')) + '</span><b>' + stats.firstTry + ' / ' + stats.questions + '</b></div>' +
-      '<div><span>' + esc(PT('page.game.end.time', 'Czas wyprawy')) + '</span><b>' + fmtT(gameT) + '</b></div>' +
+      (D.noTimer ? '' : '<div><span>' + esc(PT('page.game.end.time', 'Czas wyprawy')) + '</span><b>' + fmtT(gameT) + '</b></div>') +
       '<div><span>' + esc(fill(PT('page.game.end.record', 'Rekord ({label})'), { label: D.label })) + '</span><b>' + esc(fill(PT('page.game.end.record_val', '{s} ★ · {c} kamyczków'), { s: b.stars.reduce(function (a, s) { return a + s; }, 0), c: b.coins })) + '</b></div>' +
       (total > prevTotal && prevTotal ? '<div class="new"><span>' + esc(PT('page.game.end.new', 'Nowy rekord gwiazdek!')) + '</span></div>' : '');
     var photos = ((lsJSON(LS + 'photos') || {})[trip.trip]) || [];
     $('photoGallery').innerHTML = photos.length ? '<p class="kicker">' + esc(PT('page.game.end.photos', 'Zdjęcia z wyprawy')) + '</p><div class="photos">' + photos.map(function (p) { return '<img src="' + p.data + '" alt="' + esc(fill(PT('page.game.end.photo_alt', 'Zdjęcie: Quo przy przystanku {n}'), { n: p.sec + 1 })) + '" width="240" height="180">'; }).join('') + '</div>' : '<p class="help">' + esc(PT('page.game.end.photo_help', 'Przy naklejce przystanku dotknij 📸, żeby zrobić zdjęcie do albumu.')) + '</p>';
+    clearSave(D.key);
     $('endScreen').hidden = false;
     sfx('fanfare');
     setTimeout(function () { $('btnAgain').focus({ preventScroll: true }); }, 50);
@@ -4602,17 +4649,27 @@
     if (b && b.stars) html += '<div class="row"><i>🏆</i>' + esc(fill(PT('page.game.bonus.record', 'Rekord na tym poziomie: {s} / {n} ★'), { s: b.stars.reduce(function (a, s) { return a + s; }, 0), n: trip.stops.length * 3 })) + '</div>';
     el.innerHTML = html;
     document.querySelectorAll('.diff-btn').forEach(function (bt) { bt.setAttribute('aria-pressed', bt.dataset.diff === diffKey ? 'true' : 'false'); });
+    renderStartButtons();
+  }
+  function renderStartButtons() { // „Graj dalej” (zapis tej trasy i poziomu) + „Zacznij od nowa”, inaczej samo „Graj”
+    var sv = getSave(diffKey), bc = $('btnContinue'), bs = $('btnStart');
+    bc.hidden = !sv;
+    if (sv) bc.innerHTML = esc(PT('page.game.html.resume', 'Graj dalej')) + '<small class="btn-sub">' + esc(fill(PT('page.game.html.resume_stop', 'przystanek {n} z {m}'), { n: Math.min(sv.sec + 2, sv.n), m: sv.n })) + '</small>';
+    bs.textContent = sv ? PT('page.game.html.restart', 'Zacznij od nowa') : PT('page.game.html.play', 'Graj');
+    bs.className = 'btn ' + (sv ? 'btn-ghost' : 'btn-primary');
   }
 
-  function newGame() {
+  function newGame(sv) { // sv = zapis z getSave() → „Graj dalej”; bez niego nowa wyprawa (stary zapis tego poziomu znika)
     D = DIFF[diffKey];
+    if (!sv) clearSave(D.key);
     prog = readProgress(trip, demo);
     var rec = loadRecord();
-    playNo = rec.plays || 0;
+    playNo = sv ? sv.playNo | 0 : rec.plays || 0;
     L = buildLevel(trip, prog, playNo, D);
     P = newPlayer();
     stats = { coins: 0, stickers: [], gates: 0, firstTry: 0, questions: 0, hiddenTotal: 0, treasure: false };
     particles = []; celebration = null; curSec = -1; gameT = 0;
+    if (sv) applySave(sv);
     cam.x = 0; cam.y = 0; updateCamera(1); startWipe(P.x, P.y - 24); pops = []; chestFx = {};
     ['startScreen', 'endScreen', 'pauseScreen', 'quizScreen', 'organScreen', 'mosaicScreen', 'mashScreen', 'carpetScreen'].forEach(function (id) { $(id).hidden = true; });
     organ = null; mosaic = null; mash = null; carpet = null;
@@ -4707,7 +4764,8 @@
     i18nTables();
     genBackgrounds();
     genArt();
-    demo = lsGet(LS + 'demo') === '1';
+    demo = TEST && lsGet(LS + 'demo') === '1'; // „Tryb demo” tylko dla testów (?test=1) — dziecko go nie widzi
+    $('demoToggle').parentNode.hidden = !TEST;
     var sd = lsGet(LS + 'diff'); if (DIFF[sd]) diffKey = sd;
     $('demoToggle').checked = demo;
     $('demoToggle').addEventListener('change', function (e) { demo = e.target.checked; lsSet(LS + 'demo', demo ? '1' : '0'); renderBonus(); });
@@ -4715,6 +4773,7 @@
       bt.addEventListener('click', function () { diffKey = bt.dataset.diff; lsSet(LS + 'diff', diffKey); renderBonus(); });
     });
     $('btnStart').addEventListener('click', function () { if (soundOn) setSound(true); newGame(); });
+    $('btnContinue').addEventListener('click', function () { if (soundOn) setSound(true); newGame(getSave(diffKey)); });
     $('btnSound').addEventListener('click', function () { setSound(!soundOn); });
     $('btnSound2').addEventListener('click', function () { setSound(!soundOn); });
     $('btnPause').addEventListener('click', pause);

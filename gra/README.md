@@ -45,7 +45,10 @@ Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Z
 
 ## Poziomy trudności (wybór na ekranie startowym, zapamiętany lokalnie)
 
-| | Łatwy (5–7 lat) | Średni (8–10) | Trudny (11+) |
+Przyciski poziomów nie pokazują wieku (bez profilowania dziecka, JP 2026-10-29) — tylko nazwę i krótki opis
+(`page.game.diff.<poziom>_desc`: „Bez pośpiechu” / „Więcej przeszkód” / „Najwięcej wyzwań”).
+
+| | Łatwy | Średni | Trudny |
 |---|---|---|---|
 | Długość przystanku | 150 kafli | 230 kafli | 270 kafli |
 | Serduszka na start / limit z misjami | 5 / 12 | 3 / 8 | 2 / 5 |
@@ -63,7 +66,8 @@ Quo „odpoczywa” i wraca na punkt kontrolny — bez ekranu przegranej.
 ## Gwiazdki i powtórki
 
 Za każdy przystanek do 3 ★: ukończony / wszystkie 3 zagubione naklejki / czas poniżej celu. Cel czasu
-widać na początku przystanku. Czasu pytań i mini-gier nie liczymy. Zagubione naklejki leżą w sekretach:
+widać na początku przystanku. **Łatwy nie ma celu czasu** (`noTimer`): bez „cel czasu” w dymku, bez czasu na ekranie końcowym,
+trzecia gwiazdka za samo przejście przystanku. Na Łatwym przepaść z naklejką w powietrzu (`skygap`) ma kładkę w środku. Czasu pytań i mini-gier nie liczymy. Zagubione naklejki leżą w sekretach:
 szopka z fałszywą ścianą, wysoka półka po małych kładkach, naklejka w powietrzu nad przepaścią
 (skok z rozbiegu). Najlepszy wynik na poziom zapisuje się lokalnie. Pytania przy bramach zmieniają się
 przy kolejnych grach.
@@ -255,11 +259,21 @@ Spello: `qcKey` = `stop_key`, np. `qc.task.villa-dei-mosaici-mission` — tak za
 | zadanie foto przystanku | moc na start tego przystanku (można ją stracić) |
 | wszystkie zadania przystanku | trampolina „skrót” → kładka wysoko z kryjówką |
 
-Przełącznik „Tryb demo: symuluj punkty z trasy” na ekranie startowym.
+Przełącznik „Tryb demo: symuluj punkty z trasy” na ekranie startowym — **tylko z `?test=1`** (bez niego ukryty i wyłączony).
+
+## Zapis w trakcie wyprawy („Graj dalej”)
+
+Po każdej naklejce przystanku gra zapisuje postęp w `quolino_game_save_<slug>` (obiekt `{ <poziom>: {...} }`, osobno dla trasy
+i poziomu): numer przystanku, ziarno pytań (`playNo`), kamyczki, naklejki, gwiazdki/czasy/ukryte naklejki przystanków, serduszka, moc.
+Ekran startowy pokazuje wtedy „Graj dalej · przystanek N z M” i „Zacznij od nowa” (kasuje zapis tego poziomu). Poziom odbudowuje się
+z tego samego ziarna, Quo staje tuż za ostatnią zdobytą naklejką. Ukończenie wyprawy kasuje zapis.
+
+Poziomo (telefon) z przyciskami dół ekranu jest zarezerwowany na grunt (`view.reserve`) — ścieżka Quo leży nad lewymi przyciskami.
 
 Klucze gry (tylko `localStorage`, prefiks `quolino_game_`): `demo`, `diff`, `<slug>` (rekordy per poziom: `frasassi`,
 `spello`), przebrania per wycieczka — `hats`/`hat` (Frasassi) i `hats_<slug>`/`hat_<slug>` (np. `hats_spello`, `hat_spello`),
-`photos` (obiekt `{<slug>: [...]}`, zdjęcia JPEG ok. 30 KB każde, po jednym na przystanek), `treasure` (`{<slug>: …}`), `treasure_pending`.
+`photos` (obiekt `{<slug>: [...]}`, zdjęcia JPEG ok. 30 KB każde, po jednym na przystanek), `treasure` (`{<slug>: …}`), `treasure_pending`,
+`save_<slug>` (zapis „Graj dalej”, np. `quolino_game_save_spello`).
 Przed publikacją: dopisać je w `docs/BACKEND.md` §6 i w `cookie-policy.html`.
 
 ## Quo — szkielet cut-out

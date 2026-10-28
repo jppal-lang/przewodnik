@@ -308,3 +308,12 @@ button,.btn,.answer,.diff-btn,.hat-btn,.kicker,.toast,.celebrate-text,.organ-sta
 .btn-link{display:flex;align-items:center;justify-content:center;text-decoration:none}
 
 @media (prefers-reduced-motion:reduce){.hud-pill.bump,.hud-album.pulse,.celebrate-text{animation:none}.toast{transition:opacity .2s}}
+/* Poziomy bez wieku (JP 2026-10-29): krótki opis; na wąskim ekranie przyciski w wierszach, żeby słowa się nie łamały */
+.diff-btn span{overflow-wrap:normal}
+@media (max-width:560px){
+  .diff{grid-template-columns:1fr}
+  .diff-btn{min-height:56px;flex-direction:row;justify-content:flex-start;gap:10px;padding:6px 16px;text-align:left}
+  .diff-btn b{min-width:5.2em}
+}
+.btn-sub{display:block;font-size:18px;font-weight:700;line-height:1.2;opacity:.9}
+#btnContinue{padding-top:8px;padding-bottom:8px}
