@@ -9,10 +9,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<script src="/lang-pick.js?v=1"></script>
+<script src="/page-i18n.js?v=4" data-keys="page.404,page.footer"></script>
 <link rel="stylesheet" href="/styles.css?v=35">
 </head>
 <body>
-<!-- Strona 404 (ikona Quo z mapą do góry nogami, #quo-ikony JP 2026-10-25). Ścieżki od „/”, bo serwer pokazuje ją pod dowolnym adresem. -->
+<!-- Strona 404 (ikona Quo z mapą do góry nogami, #quo-ikony JP 2026-10-25). Ścieżki od „/”, bo serwer pokazuje ją pod dowolnym adresem.
+     Podaje ją nginx (error_page 404) i SSR (_content/claude-skills/ssr/server.mjs): SSR podmienia nagłówek i akapit na wariant z szablonu nfTrip (na dole strony),
+     tłumaczy [data-t] w języku adresu i dopisuje ?lang= do linków (JP 2026-10-29). Język po stronie przeglądarki: page-i18n.js. -->
 <nav class="sticky-nav">
   <div class="sticky-nav-inner">
     <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
@@ -21,18 +25,20 @@
 </nav>
 
 <main class="nf" id="mainContent">
-  <div class="page-head"><h1>Nie ma takiej strony</h1>
+  <div class="page-head"><h1 data-t="page.404.title">Nie ma takiej strony</h1>
     <img class="page-quo" src="/media/icons/quo-404-256.webp" srcset="/media/icons/quo-404-256.webp 1x, /media/icons/quo-404-512.webp 2x" width="140" height="140" alt="" decoding="async"></div>
-  <p class="lead">Quo obraca mapę na wszystkie strony i nie może znaleźć tego adresu. Może link jest stary albo ma literówkę.</p>
-  <p class="nf__acts"><a class="qc-btn qc-btn--primary" href="/#regiony">Wybierz region</a> <a class="qc-btn" href="/">Strona główna</a></p>
+  <p class="lead" data-t="page.404.lead">Quo obraca mapę na wszystkie strony i nie może znaleźć tego adresu. Może link jest stary albo ma literówkę.</p>
+  <p class="nf__acts"><a class="qc-btn qc-btn--primary" href="/#regiony" data-t="page.404.regions">Wybierz region</a><a class="qc-btn" href="/" data-t="page.404.home">Strona główna</a></p>
+<template id="nfTrip"><h1 data-t="page.404.trip_title">Nie ma takiej wycieczki</h1><p class="lead" data-t="page.404.trip_lead">Quo szukał tej trasy na mapie, ale jej tu nie ma. Może zmieniła adres albo jeszcze jej nie przygotowaliśmy.</p></template>
 </main>
 
 <footer class="footer">
   <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
   <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-  <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.privacy">Prywatność</a></nav>
-  <span>© 2026 · Rodzinne przewodniki wypadowe</span>
+  <nav class="footer__links" data-t-aria="page.footer.nav" aria-label="Na skróty"><a href="/#jak" data-t="page.footer.how">Jak to działa</a><a href="/#dostep" data-t="page.footer.access">Co dostajesz</a><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/wspolpraca.html" data-t="page.footer.partners">Współpraca</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
+  <span class="footer__copy">© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki na jednodniowe wypady</span></span>
 </footer>
+<script src="/site-nav.js?v=1" defer></script>
 <script src="/auth.js?v=2" defer></script>
 </body>
 </html>

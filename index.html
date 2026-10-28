@@ -32,7 +32,7 @@
 <script src="/lang-pick.js?v=1"></script>
 <script src="i18n-ui.js?v=8"></script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://quolino.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://quolino.com/","logo":{"@type":"ImageObject","url":"https://quolino.com/quolino-logo.svg"}}}
+{"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki na jednodniowe wypady","url":"https://quolino.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://quolino.com/","logo":{"@type":"ImageObject","url":"https://quolino.com/quolino-logo.svg"}}}
 </script>
 </head>
 <body>
@@ -288,13 +288,13 @@
 
 <footer class="footer">
   <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
-  <a href="./" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-  <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center">Prywatność</a></nav>
-  <span data-ui="home.footer">© 2026 · Rodzinne przewodniki wypadowe</span>
+  <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+  <nav class="footer__links" data-t-aria="page.footer.nav" aria-label="Na skróty"><a href="/#jak" data-t="page.footer.how">Jak to działa</a><a href="/#dostep" data-t="page.footer.access">Co dostajesz</a><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/wspolpraca.html" data-t="page.footer.partners">Współpraca</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
+  <span class="footer__copy">© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki na jednodniowe wypady</span></span>
 </footer>
 
 <script src="media/map/europe.js?v=3"></script>
-<script src="atlas.js?v=8"></script>
+<script src="atlas.js?v=9"></script>
 <script>
 // ══════ CONFIG ══════
 var SB_URL = 'https://api.quolino.com/rest/v1';
@@ -355,9 +355,13 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 function ui(key, fallback) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fallback || key; }
 
 // Teksty data-t="page.home.*" (sekcja „Co dostajesz”): polski w HTML, tłumaczenia z ui_translations
+// Liczebniki: po polsku odmiana (1 plan / 2–4 plany / 5+ planów), w innych językach „etykieta: N” (JP 2026-10-29)
+function plForm(n, f) { var m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
+function countLabel(n, key, fb, forms) { return String(currentLang).toLowerCase() === 'pl' ? n + ' ' + plForm(n, forms) : ui(key, fb) + ': ' + n; }
+var PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
 // (uzupełnia je serwer, ui-translate.mjs). Brak w języku → angielski → polski.
 function applyPageT(lang) {
-  var els = document.querySelectorAll('[data-t]');
+  var els = document.querySelectorAll('[data-t^="page.home."]');   // stopkę (page.footer.*) tłumaczy site-nav.js
   els.forEach(function (el) { if (el.dataset.pl == null) el.dataset.pl = el.textContent; });
   if (lang === 'pl') { els.forEach(function (el) { el.textContent = el.dataset.pl; }); return; }
   sb('ui_translations', 'select=key,lang,value&key=like.page.home.*&lang=in.(' + encodeURIComponent(lang) + ',en)').then(function (rows) {
@@ -478,7 +482,7 @@ function updateCounts(cities, regionTrs) {
     var t = regionTrs.filter(function(x) { return x.region_slug === slug; })[0];
     return t && t.name ? t.name : slug;
   });
-  var label = ui('home.badge_cities', 'Miasta') + ': ' + cities.length;
+  var label = countLabel(cities.length, 'home.badge_cities', 'Miasta', ['miasto', 'miasta', 'miast']);
   var badge = document.querySelector('[data-ui="home.hero_badge"]');
   if (badge) badge.textContent = label + ' · ' + names.slice(0, 3).join(' · ') + (names.length > 3 ? ' +' + (names.length - 3) : '');
   var p5 = document.querySelector('[data-ui="home.about_p5"]');
@@ -574,3 +578,4 @@ loadPage(currentLang);
 <script src="/auth.js?v=2" defer></script>
 </body>
 </html>
+<script src="/site-nav.js?v=1" defer></script>

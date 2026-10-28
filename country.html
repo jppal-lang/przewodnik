@@ -45,7 +45,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
-    <a href="./" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
+    <a href="/#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
     <div style="font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
       <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
@@ -78,11 +78,9 @@
 
   <div class="footer">
     <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
-    <div class="logo">
-      <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
-    </div>
-    <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.privacy">Prywatność</a></nav>
-    <span data-ui="home.footer">&copy; 2026 &middot; Rodzinne przewodniki wypadowe</span>
+    <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+    <nav class="footer__links" data-t-aria="page.footer.nav" aria-label="Na skróty"><a href="/#jak" data-t="page.footer.how">Jak to działa</a><a href="/#dostep" data-t="page.footer.access">Co dostajesz</a><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/wspolpraca.html" data-t="page.footer.partners">Współpraca</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
+    <span class="footer__copy">© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki na jednodniowe wypady</span></span>
   </div>
 
 </div>
@@ -119,6 +117,10 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 function ui(key, fb) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fb || key; }
 
 // ══════ GRAFIKI TRAS ══════
+// Liczebniki: po polsku odmiana (1 plan / 2–4 plany / 5+ planów), w innych językach „etykieta: N” (JP 2026-10-29)
+function plForm(n, f) { var m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
+function countLabel(n, key, fb, forms) { return String(currentLang).toLowerCase() === 'pl' ? n + ' ' + plForm(n, forms) : ui(key, fb) + ': ' + n; }
+var PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
 // Jedna grafika z Que na wycieczke, robiona lokalnie skryptem img/!build-img.py.
 // Nazwa wynika ze slugow: media/tours/<kraj>-<miasto>-tile-384.webp itd.
 // Zadnych zapytan do Wikipedii i zadnego cache w localStorage — pliki sa nasze,
@@ -298,7 +300,7 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
                             .reduce(function(n, r) { return n + ((byRegion[r.slug] || []).length); }, 0);
       html += '<a class="other-region-tile" href="/country.html?k=' + encodeURIComponent(oc.slug) + '">';
       html += '<div class="ort-body"><div class="ort-name">' + esc(oName) + '</div>';
-      html += '<div class="ort-meta">' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + oCnt + '</div></div>';
+      html += '<div class="ort-meta">' + esc(countLabel(oCnt, 'home.region_ready', 'gotowe plany', PLANS)) + '</div></div>';
       html += '<div class="ort-go" aria-hidden="true">&rarr;</div></a>';
     });
     html += '</div></div>';
@@ -350,9 +352,10 @@ document.addEventListener('keydown', function(e) {
 loadPage(currentLang);
 </script>
 <script src="media/map/europe.js?v=3"></script>
-<script src="atlas.js?v=7"></script>
+<script src="atlas.js?v=9"></script>
 <script src="motion.js?v=4" defer></script>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>
 </body>
 </html>
+<script src="/site-nav.js?v=1" defer></script>

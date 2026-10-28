@@ -1508,3 +1508,91 @@ section.qo-box .qo-row button{min-height:var(--tap);font-size:var(--fs-min)}
 .acc-trs-flash{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 16px;padding-top:12px;padding-bottom:12px;background:var(--verde-50);color:var(--verde);font-size:18px;font-weight:800;text-align:center}
 .acc-trs-flash[hidden],.acc-trs[hidden],.acc-trs__msg[hidden]{display:none}
 @media(max-width:480px){.acc-trs{padding:16px}.acc-trs__head{grid-template-columns:64px minmax(0,1fr)}.acc-trs__head img{width:64px;height:64px}}
+
+/* nawigacja, stopka, 404 (2026-10-29) */
+/* menu (site-nav.js): przycisk widoczny na każdej szerokości; szuflada na komputerze jako panel z prawej */
+.nav-mobile{color:var(--ink)}
+@media(min-width:800px){
+  .sticky-nav .nav-mobile.qnav-all{display:grid!important}
+  #mobileDrawer>div{left:auto!important;width:min(440px,100%);border-radius:0 0 0 20px!important}
+}
+.qnav-btn{width:48px;height:48px;border:0;border-radius:12px;background:transparent;cursor:pointer;display:grid;place-items:center}
+.qnav-btn:focus-visible,.qnav-x:focus-visible,.qnav-link:focus-visible,.qnav-main:focus-visible,.qnav-langbtn:focus-visible{outline:3px solid var(--azzurro);outline-offset:2px}
+.qnav-drawer{position:fixed;inset:0;z-index:200;background:rgba(6,42,88,.45)}
+.qnav-panel{position:absolute;top:0;left:0;right:0;max-height:100vh;overflow-y:auto;background:var(--card);border-radius:0 0 20px 20px;box-shadow:var(--lift-3);padding:0 20px 28px}
+.qnav-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;margin-bottom:8px}
+.qnav-x{width:48px;height:48px;border:0;border-radius:12px;background:transparent;cursor:pointer;display:grid;place-items:center;color:var(--ink)}
+.qnav-main{display:flex;align-items:center;justify-content:center;min-height:52px;padding:0 16px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--azzurro);margin-bottom:8px}
+.qnav-list{list-style:none;margin:0 0 16px;padding:0}
+.qnav-list li+li{border-top:1px solid var(--rule)}
+.qnav-link{display:flex;align-items:center;min-height:52px;padding:4px 8px;font-size:19px;font-weight:700;color:var(--ink);text-decoration:none;border-radius:10px}
+.qnav-link:hover{background:var(--azzurro-50);color:var(--azzurro-ink)}
+.qnav-link--acc{color:var(--azzurro)}
+.qnav-langbtn{width:100%;min-height:52px;border-radius:14px;border:2px solid var(--rule);background:var(--card);cursor:pointer;font:inherit;font-size:18px;font-weight:700;color:var(--ink)}
+.qnav-langtitle{font-size:22px;font-weight:800;letter-spacing:-.015em}
+/* stopka: pięć linków zawija się na telefonie, bez poziomego przewijania przy 320 px */
+.footer{padding-left:16px;padding-right:16px}
+.footer__links{flex-wrap:wrap;gap:0 20px;max-width:640px}
+.footer__links a{font-size:var(--fs-min);color:var(--azzurro-ink);padding:0 2px}
+.footer__copy{max-width:36ch}
+/* 404: przyciski na pełną szerokość na telefonie */
+.nf .page-quo{align-self:flex-start}
+@media(max-width:480px){.nf__acts .qc-btn{flex:1 1 100%}}
+/* region bez tras: ekran „Wkrótce” z Quo (region.html) */
+.soon-screen{max-width:640px;margin:clamp(28px,5vw,56px) auto 0;padding:0 20px;text-align:center;font-size:19px;line-height:1.55;color:var(--ink2)}
+.soon-screen__quo{width:clamp(140px,40vw,200px);height:auto;margin:0 auto 8px}
+.soon-screen h2{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:clamp(34px,7vw,52px);line-height:.95;color:var(--ink);margin-bottom:14px}
+.soon-screen p{margin-bottom:20px}
+.soon-screen .nf__acts{justify-content:center}
+/* zapowiedzi („Toskania · Wkrótce”, kraje wkrótce) nie wyglądają jak link: bez ramki-przycisku, kursor zwykły */
+.slot,.atlas-region--soon,.atlas-soon li{cursor:default}
+.atlas-region--soon{outline:0;background:transparent;box-shadow:none;padding-top:4px;padding-bottom:4px}
+.atlas-region--soon .atlas-region__name{font-size:clamp(24px,5vw,30px)}
+.atlas-region--soon .atlas-region__meta{font-style:italic}
+.atlas-soon ul{gap:4px 0}
+.atlas-soon li{min-height:0;padding:0;outline:0;background:none;font-size:22px;color:var(--muted)}
+.atlas-soon li:not(:last-child)::after{content:"·";margin:0 12px;color:var(--slot)}
+
+/* trasa: pasek, offline, próbka (2026-10-29) */
+/* A2 — pasek rodzica u dołu (trip-ui.js .qc-dock); widok dziecka ma swój pager, gość bez godzin */
+.qc-dock{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;flex-direction:column;gap:8px;max-width:960px;margin:0 auto;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 -6px 18px rgba(14,26,43,.14);border-radius:16px 16px 0 0}
+.qc-dock[hidden]{display:none}
+body.qc-has-dock{padding-bottom:calc(var(--qc-dock-h,128px) + 12px)}
+.qc-dock__info{display:flex;align-items:center;gap:10px;min-height:44px;width:100%;padding:0;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.qc-dock__no{flex:none;min-width:44px;height:36px;display:grid;place-items:center;border-radius:var(--r-btn);background:var(--azzurro);color:#fff;font-weight:900;font-size:18px;font-variant-numeric:tabular-nums}
+.qc-dock__txt{display:flex;flex-direction:column;min-width:0}
+.qc-dock__name{font-size:18px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qc-dock__hours{font-size:18px;line-height:1.25;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qc-dock__hours[hidden]{display:none}
+.qc-dock__acts{display:flex;gap:8px;align-items:stretch}
+.qc-dock__btn{min-height:48px;min-width:48px;padding:0 12px;border:0;border-radius:var(--r-btn);background:var(--card);color:var(--azzurro-ink);font:inherit;font-size:18px;font-weight:800;line-height:1.1;text-align:center;text-decoration:none;box-shadow:inset 0 0 0 2px var(--rule);display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.qc-dock__btn[hidden]{display:none}
+.qc-dock__btn:disabled{opacity:.35;cursor:default}
+.qc-dock__btn--prev{flex:none}
+.qc-dock__btn--nav,.qc-dock__btn--next,.qc-dock__btn--signup{flex:1 1 0;min-width:0}
+.qc-dock__btn--signup{flex-grow:1.3}
+.qc-dock__btn--next{background:var(--azzurro);color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)}
+.qc-dock__btn--signup{background:var(--sun);color:var(--sun-ink,#0E1A2B);box-shadow:inset 0 -4px 0 rgba(0,0,0,.14)}
+.qc-dock__btn svg{flex:none}
+.qc-dock__btn:focus-visible,.qc-dock__info:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+body:has(.qc[data-view="kid"]) .qc-dock{display:none!important}
+@media print{.qc-dock{display:none!important}}
+
+/* A1 — dyskretna informacja o zapisanej wersji */
+.qc-offline{margin:12px 0;padding:10px 14px;border-radius:var(--r-btn);background:var(--azzurro-50);color:var(--azzurro-deep);font-size:18px;line-height:1.35}
+
+/* B1 — próbka przystanku dla gościa */
+.qc-sample-tag{display:inline-block;margin:0 0 14px;padding:6px 12px;border-radius:999px;background:var(--sun);color:var(--sun-ink,#0E1A2B);font-size:18px;font-weight:800;line-height:1.3}
+/* B2 — koniec trasy gościa */
+.qc-endcard{margin:24px 0 4px;padding:18px;border-radius:16px;background:var(--azzurro-50);box-shadow:inset 0 0 0 2px var(--azzurro);display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.qc-endcard__title{margin:0;font-size:20px;font-weight:800;line-height:1.3;color:var(--ink)}
+.qc-endcard .qc-btn{min-height:48px}
+.qc[data-view="kid"] .qc-sample-tag,.qc[data-view="kid"] .qc-endcard{display:none!important}
+/* B3 — pusty album bez licznika; ocena dopiero po ostatnim przystanku */
+.qc-album-count[hidden]{display:none!important}
+.qc:not([data-trip-end]) .qo-box{display:none!important}
+/* B4 — widok dziecka: bez stopki, w menu tylko język */
+body:has(.qc[data-view="kid"]) .qc-footer,
+body:has(.qc[data-view="kid"]) .nav-pill,
+body:has(.qc[data-view="kid"]) .qc-drawer-region{display:none!important}
+#mobileDrawer [data-ui="nav.lang_label"]{font-size:var(--fs-min)!important}

@@ -119,8 +119,8 @@
 <div class="footer">
   <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
   <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
-  <nav class="footer__links"><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
-  <span>© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki wypadowe</span></span>
+  <nav class="footer__links" data-t-aria="page.footer.nav" aria-label="Na skróty"><a href="/#jak" data-t="page.footer.how">Jak to działa</a><a href="/#dostep" data-t="page.footer.access">Co dostajesz</a><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/wspolpraca.html" data-t="page.footer.partners">Współpraca</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
+  <span class="footer__copy">© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki na jednodniowe wypady</span></span>
 </div>
 <script src="/auth.js?v=2"></script>
 <script src="/vendor/altcha/altcha.min.js?v=3.4.0"></script>
@@ -341,6 +341,7 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     if (!$('vMe').hidden && QAuth.current()) meText(QAuth.current());
     if (!$('vSent').hidden) sentText();
   });
+<script src="/site-nav.js?v=1" defer></script>
 })();
 </script>
 </body>

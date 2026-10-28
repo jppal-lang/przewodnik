@@ -30,6 +30,12 @@
   function svg(tag, attrs) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function pad(n) { return n < 10 ? '0' + n : String(n); }
+  // „gotowe plany”: po polsku odmiana (1 gotowy plan / 2–4 gotowe plany / 5+ gotowych planów), inne języki „etykieta: N” (JP 2026-10-29)
+  function plansLabel(n, ui, lang) {
+    if (String(lang).toLowerCase() !== 'pl') return ui('home.region_ready', 'gotowe plany') + ': ' + n;
+    var m = n % 10, h = n % 100;
+    return n + ' ' + (n === 1 ? 'gotowy plan' : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? 'gotowe plany' : 'gotowych planów');
+  }
   function easeOut(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
   function easeInOut(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 
@@ -216,7 +222,7 @@
         a.innerHTML = '<span class="atlas-region__no">' + pad(r.no) + '</span>' +
           '<span class="atlas-region__art" data-l="' + esc(r.name.charAt(0)) + '">' + (base ? '<img src="' + base + '-tile-384.webp" alt="" width="384" height="384" loading="lazy" decoding="async">' : '') + '</span>' +
           '<span class="atlas-region__txt"><span class="atlas-region__name">' + esc(r.name) + '</span>' +
-          '<span class="atlas-region__meta">' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + r.cities.length + '</span>' +
+          '<span class="atlas-region__meta">' + esc(plansLabel(r.cities.length, ui, lang)) + '</span>' +
           (solo && r.desc ? '<span class="atlas-region__desc">' + esc(r.desc) + '</span>' : '') + '</span>' +
           '<svg class="atlas-region__go" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
         var img = a.querySelector('img');
@@ -316,7 +322,7 @@
       stops = [];
       live.forEach(function (c) {
         var co = countries[c];
-        stops.push({ pt: co.pt, live: true, label: co.name, meta: ui('home.region_ready', 'gotowe plany') + ': ' + co.plans, country: c,
+        stops.push({ pt: co.pt, live: true, label: co.name, meta: plansLabel(co.plans, ui, lang), country: c,
           action: function (e) { e.preventDefault(); zoomTo(c); } });
       });
       soon.forEach(function (c) { stops.push({ pt: countries[c].pt, live: false, label: countries[c].name, meta: ui('chip.soon', 'Wkrótce'), country: c }); });
@@ -334,7 +340,7 @@
       pins.innerHTML = ''; gDots.innerHTML = ''; clearTrail();
       stops = [];
       co.regions.forEach(function (r) {
-        stops.push({ pt: r.pt, live: true, cap: true, no: r.no, label: r.name, meta: ui('home.region_ready', 'gotowe plany') + ': ' + r.cities.length,
+        stops.push({ pt: r.pt, live: true, cap: true, no: r.no, label: r.name, meta: plansLabel(r.cities.length, ui, lang),
           href: '/region.html?r=' + encodeURIComponent(r.slug), region: r.slug, team: r.team });
         r.cities.forEach(function (c) {
           var p = proj(+c.lon, +c.lat);

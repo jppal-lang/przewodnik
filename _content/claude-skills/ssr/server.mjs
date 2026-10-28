@@ -327,6 +327,7 @@ async function renderPlace(kind, place, lang, langs) {
   for (const l of langs) h += `<link rel="alternate" hreflang="${esc(l)}" href="${esc(url(l))}">\n`;
   h += `<link rel="alternate" hreflang="x-default" href="${esc(url(FALLBACK))}">\n`;
   if (desc) h += `<meta name="description" content="${esc(desc)}">\n<meta property="og:description" content="${esc(desc)}">\n`;
+  if (!place.live) h += '<meta name="robots" content="noindex, follow">\n';   // region/kraj bez tras: ekran „Wkrótce”, poza indeksem (JP 2026-10-29)
   h += `<meta property="og:type" content="website">\n<meta property="og:title" content="${esc(name + ' — Quolino')}">\n<meta property="og:url" content="${esc(url(lang))}">\n`;
   const paths = Object.fromEntries(langs.map(l => [l, placePath[kind](place, l)]));
   h += `<script>window.QPAGE=${JSON.stringify({ kind, id: kind === 'region' ? place.slug : place.code, lang, paths }).replace(/</g, '\\u003c')};</script>\n`;
@@ -388,6 +389,51 @@ async function sitemap() {
   });
 }
 
+// ── 404 w wyglądzie serwisu (JP 2026-10-29) ───────────────────────────────────────────────
+// 404.html z repo (ten sam plik podaje nginx dla nieznanych adresów), w języku z adresu (/de/… → de), status 404.
+// kind 'trip' → nagłówek i akapit z <template id="nfTrip"> („Nie ma takiej wycieczki”). Teksty [data-t] z ui_translations
+// (klucze page.404.*, page.footer.*, uzupełnia je ui-translate.mjs); po polsku zostaje tekst z HTML. Linki do strony głównej z ?lang=.
+let nfTpl = { mtime: 0, html: '' };
+function nfTemplate() {
+  const file = `${SITE_DIR}/404.html`;
+  const m = statSync(file).mtimeMs;
+  if (m !== nfTpl.mtime) nfTpl = { mtime: m, html: readFileSync(file, 'utf8') };
+  return nfTpl.html;
+}
+// własny mały słownik (uiDict pomija page.*): klucze 404, stopki i menu; język strony > angielski > tekst polski z HTML
+const nfDict = (lang) => cached(`nf:${lang}`, async () => {
+  const rows = await api(`ui_translations?select=key,value,lang&or=(key.like.page.404.*,key.like.page.footer.*,key.like.page.nav.*)&lang=in.(${lang},en)`);
+  const d = {};
+  for (const r of rows) if (r.lang !== lang) d[r.key] = r.value;
+  for (const r of rows) if (r.lang === lang) d[r.key] = r.value;
+  return d;
+}).catch(() => ({}));
+async function notFound(res, pathname, kind = 'page') {
+  let html;
+  try { html = nfTemplate(); } catch {
+    return send(res, 404, '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 — Quolino</title><p style="font:20px/1.5 system-ui;padding:24px">Nie ma takiej strony. <a href="/">Quolino</a></p>');
+  }
+  const m = /^\/([a-z]{2})(?:-[a-z]{2})?\//.exec(pathname);
+  let lang = FALLBACK;
+  if (m) { try { if ((await enabledLangs()).includes(m[1])) lang = m[1]; } catch { /* baza niedostępna: polski */ } }
+  if (kind === 'trip') {
+    const t = /<template id="nfTrip">([\s\S]*?)<\/template>/.exec(html);
+    const h1 = t && /<h1\b[\s\S]*?<\/h1>/.exec(t[1]), p = t && /<p\b[\s\S]*?<\/p>/.exec(t[1]);
+    if (h1) html = html.replace(/<h1 data-t="page\.404\.title">[\s\S]*?<\/h1>/, () => h1[0]);
+    if (p) html = html.replace(/<p class="lead" data-t="page\.404\.lead">[\s\S]*?<\/p>/, () => p[0]);
+    html = html.replace('content="page.404.title"', 'content="page.404.trip_title"');   // tytuł karty z page-i18n.js
+  }
+  const ui = lang === FALLBACK ? {} : await nfDict(lang);
+  const title = ui[kind === 'trip' ? 'page.404.trip_title' : 'page.404.title'] || (kind === 'trip' ? 'Nie ma takiej wycieczki' : 'Nie ma takiej strony');
+  html = html
+    .replace(/(<[^>]*\bdata-t="([^"]+)"[^>]*>)([^<]*)(?=<)/g, (x, tag, key) => (ui[key] ? tag + esc(ui[key]) : x))
+    .replace(/(<[^>]*\bdata-t-aria="([^"]+)"[^>]*?aria-label=")[^"]*"/g, (x, a, key) => (ui[key] ? a + esc(ui[key]) + '"' : x))
+    .replace(/<html lang="[^"]*">/, `<html lang="${esc(lang)}">`)
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)} — Quolino</title>`)
+    .replace(/href="\/(#[a-z]+)?"/g, (x, hash) => `href="/?lang=${esc(lang)}${hash || ''}"`);
+  return send(res, 404, html);
+}
+
 // ── serwer ──────────────────────────────────────────────────────────────────────────────────
 const send = (res, status, body, type = 'text/html; charset=utf-8', extra = {}) => {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': status === 200 ? `public, max-age=${CACHE_SECONDS}` : 'no-store', ...extra });
@@ -418,7 +464,7 @@ http.createServer(async (req, res) => {
     const w = url.pathname.match(RE_WLOCHY);
     if (w) {
       const to = await legacyTarget(w[1], FALLBACK);
-      return to ? redirect(res, to, url.search) : send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiej wycieczki. <a href="/">Quolino</a></p>');
+      return to ? redirect(res, to, url.search) : notFound(res, url.pathname, 'trip');
     }
     // Kraj i region (JP 2026-10-18): /{lang}/{kraj}/ i /{lang}/{kraj}/{region}/ → strona z serwera pod tym adresem.
     // Segment w innym języku, kod ISO albo dawny url_slug → 301 na adres w języku z adresu. Trzy segmenty z krajem
@@ -438,7 +484,7 @@ http.createServer(async (req, res) => {
     if (rc) {
       const pr = Object.values(P.region).find(p => p.country === rc.code &&
         (p.slug === mr[3] || p.url === mr[3] || Object.values(p.seg).some(s => s.region === mr[3])));
-      if (!pr) return send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiego regionu. <a href="/">Quolino</a></p>');
+      if (!pr) return notFound(res, url.pathname);
       const l = placeLang(mr[1]), want = placePath.region(pr, l);
       if (url.pathname !== want) return redirect(res, want, url.search);
       return send(res, 200, await renderPlace('region', pr, l, P.langs));
@@ -449,11 +495,11 @@ http.createServer(async (req, res) => {
       const [lang, country, region, slug, slash] = n ? [n[1], n[2], n[3], n[4], n[5]] : [o[1], null, o[2], o[3], o[4]];
       const r = await renderCity(lang, country, region, slug, !!o);
       if (r.location) return send(res, r.status, '', 'text/plain', { Location: r.location + url.search });
-      if (r.status !== 200) return send(res, 404, '<!doctype html><title>404</title><p>Nie ma takiej wycieczki. <a href="/">Quolino</a></p>');
+      if (r.status !== 200) return notFound(res, url.pathname, 'trip');
       if (!slash) return redirect(res, url.pathname + '/', url.search);                 // bez końcowego „/” — tylko dla istniejącej strony
       return send(res, 200, r.html);
     }
-    send(res, 404, 'not found', 'text/plain');
+    return notFound(res, url.pathname);
   } catch (e) {
     console.error(new Date().toISOString(), req.url, e.message);
     send(res, 503, '<!doctype html><title>Quolino</title><p>Chwilowy problem — spróbuj za moment.</p>', 'text/html; charset=utf-8', { 'Retry-After': '30' });

@@ -45,7 +45,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
       </button>
     </div>
-    <a href="./" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
+    <a href="/#regiony" onclick="document.getElementById('mobileDrawer').style.display='none'" style="display:flex;align-items:center;justify-content:center;height:52px;background:var(--azzurro-50);border:2px solid var(--azzurro);border-radius:14px;font-size:18px;font-weight:700;color:var(--terra);margin-bottom:16px" data-ui="nav.select_region">Wybierz region</a>
     <div style="font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px" data-ui="nav.lang_label">Język</div>
     <button onclick="document.getElementById('langPopup').classList.add('open');document.getElementById('mobileDrawer').style.display='none'" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;border:2px solid var(--line);background:var(--parchment);cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:16px">
       <img src="https://flagcdn.com/w40/pl.png" alt="" id="drawerFlagImg" style="width:22px;height:16px;border-radius:3px;border:1px solid rgba(56,48,38,.12);object-fit:cover"> <span data-ui="nav.change_lang">Zmień język</span>
@@ -78,11 +78,9 @@
 
   <div class="footer">
     <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
-    <div class="logo">
-      <span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span>
-    </div>
-    <nav class="footer__links" style="display:flex;gap:16px;justify-content:center"><a href="/kontakt.html" style="min-height:44px;display:inline-flex;align-items:center">Kontakt</a><a href="/cookie-policy.html" style="min-height:44px;display:inline-flex;align-items:center" data-t="page.footer.privacy">Prywatność</a></nav>
-    <span data-ui="home.footer">&copy; 2026 &middot; Rodzinne przewodniki wypadowe</span>
+    <a href="/" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">com</span></a>
+    <nav class="footer__links" data-t-aria="page.footer.nav" aria-label="Na skróty"><a href="/#jak" data-t="page.footer.how">Jak to działa</a><a href="/#dostep" data-t="page.footer.access">Co dostajesz</a><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/wspolpraca.html" data-t="page.footer.partners">Współpraca</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
+    <span class="footer__copy">© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki na jednodniowe wypady</span></span>
   </div>
 
 </div>
@@ -134,12 +132,19 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 function ui(key, fb) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fb || key; }
 
 // "~{n}h" → "~4h"
+// Liczebniki: po polsku odmiana (1 plan / 2–4 plany / 5+ planów), w innych językach „etykieta: N” (JP 2026-10-29)
+function plForm(n, f) { var m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
+function countLabel(n, key, fb, forms) { return String(currentLang).toLowerCase() === 'pl' ? n + ' ' + plForm(n, forms) : ui(key, fb) + ': ' + n; }
+var PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
+// teksty page.* (ekran „Wkrótce”): PT('klucz', 'polski') — skaner ui-translate.mjs czyta je z tego pliku, tłumaczenia w uiStrings
+function PT(key, pl) { return ui(key, pl); }
 function durationLabel(h) { return ui('label.duration_h', '~{n}h').replace('{n}', h); }
 
 // Slavic plural handling for the stop counter
 function stopsLabel(n) {
   var slavic = { pl:1, cs:1, sk:1, uk:1, hr:1 };
   var key = 'label.stops_count';
+  if (String(currentLang).toLowerCase() === 'pl') return n + ' ' + plForm(n, ['przystanek', 'przystanki', 'przystanków']);
   if (slavic[currentLang]) {
     var m = n % 10, h = n % 100;
     if (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) key = 'label.stops_count_few';
@@ -305,8 +310,14 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
   html += '<div class="region-meta"><span>' + (flagCode ? '<img src="https://flagcdn.com/w40/' + flagCode + '.png" alt="">' : '') + esc(countryName) + '</span><span>' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + cities.length + '</span></div>';
   html += '</div>';
 
-  // ── City tiles ──
-  html += '<div class="city-grid" id="cityGrid"></div>';
+  // ── City tiles ── (region bez tras w tym języku: ekran „Wkrótce” z Quo zamiast „0 gotowych planów”, JP 2026-10-29)
+  if (cities.length) html += '<div class="city-grid" id="cityGrid"></div>';
+  else html += '<section class="soon-screen" aria-labelledby="soonTitle">' +
+    '<img class="soon-screen__quo" src="/media/icons/quo-wkrotce-256.webp" srcset="/media/icons/quo-wkrotce-256.webp 1x, /media/icons/quo-wkrotce-512.webp 2x" width="180" height="180" alt="" decoding="async">' +
+    '<h2 id="soonTitle">' + '<span data-k="page.region.soon_title">' + esc(PT('page.region.soon_title', 'Trasy w drodze')) + '</span>' + '</h2>' +
+    '<p>' + '<span data-k="page.region.soon_lead">' + esc(PT('page.region.soon_lead', 'Quo dopiero pakuje plecak na ten region. Gotowe plany wycieczek pojawią się tu wkrótce, a do tego czasu zajrzyjcie do regionów, które już czekają.')) + '</span>' + '</p>' +
+    '<p class="nf__acts"><a class="qc-btn qc-btn--primary" href="/?lang=' + esc(currentLang) + '#regiony">' + '<span data-k="page.region.soon_regions">' + esc(PT('page.region.soon_regions', 'Wybierz region')) + '</span>' + '</a>' +
+    '<a class="qc-btn" href="/?lang=' + esc(currentLang) + '">' + '<span data-k="page.region.soon_home">' + esc(PT('page.region.soon_home', 'Strona główna')) + '</span>' + '</a></p></section>';
 
   // ── Other regions ──
   var published = {};
@@ -326,7 +337,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
       html += '<a class="other-region-tile" href="/region.html?r=' + encodeURIComponent(reg.slug) + '">';
       html += '<div class="ort-body"><div class="ort-country">' + (oFlag ? '<img src="https://flagcdn.com/w40/' + oFlag + '.png" alt="">' : '') + esc(oCoun) + '</div>';
       html += '<div class="ort-name">' + esc(oName) + '</div>';
-      html += '<div class="ort-meta">' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + published[reg.slug] + '</div></div>';
+      html += '<div class="ort-meta">' + esc(countLabel(published[reg.slug], 'home.region_ready', 'gotowe plany', PLANS)) + '</div></div>';
       html += '<div class="ort-go" aria-hidden="true">&rarr;</div></a>';
     });
     html += '</div></div>';
@@ -336,7 +347,16 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
 
   // Build tiles as nodes so we can attach lazy photo loading per card
   var grid = document.getElementById('cityGrid');
-  if (!cities.length) grid.innerHTML = '<div class="state-msg">' + esc(ui('chip.soon', 'Wkrótce')) + '</div>';   // K7: brak miast w tym języku
+  // ekran „Wkrótce”: teksty page.region.* nie przychodzą w uiStrings (zapytanie bez page.*) — jedno małe zapytanie tylko tutaj
+  if (!cities.length && currentLang !== 'pl') {
+    var soonLang = currentLang;
+    sb('ui_translations', 'select=key,lang,value&key=like.page.region.soon*&lang=in.(' + encodeURIComponent(soonLang) + ',en)').then(function (rows) {
+      if (soonLang !== currentLang) return;
+      var d = {}, en = {};
+      (rows || []).forEach(function (r) { (r.lang === soonLang ? d : en)[r.key] = r.value; });
+      document.querySelectorAll('.soon-screen [data-k]').forEach(function (n) { var v = d[n.getAttribute('data-k')] || en[n.getAttribute('data-k')]; if (v) n.textContent = v; });
+    }).catch(function () { /* zostaje tekst z uiStrings / polski */ });
+  }
   cities.forEach(function(city) {
     var tr    = cityTrs.filter(function(t) { return t.city_slug === city.slug; })[0];
     var title = tr ? tr.title : city.slug;
@@ -431,3 +451,4 @@ loadPage(currentLang);
 <script src="/auth.js?v=2" defer></script>
 </body>
 </html>
+<script src="/site-nav.js?v=1" defer></script>
