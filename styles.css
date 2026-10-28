@@ -445,6 +445,17 @@ html .qc-btn.is-pressed,html .btn.is-pressed,html .cta-btn.is-pressed,html .qc-b
 .qc-album-count strong{color:var(--azzurro)}
 .qc-intro__actions{display:flex;flex-direction:column;gap:12px}
 @media(min-width:900px){.qc-intro{grid-template-columns:minmax(0,1fr) 300px}}
+/* P-6: fakty pasa to informacja, nie przyciski — jeden wiersz tekstu z kropkami, bez teł i zaokrągleń */
+/* kropka-separator siedzi w lewym marginesie faktu; na początku wiersza wypada poza ucięty brzeg */
+.qc-band .qc-facts{align-items:center;gap:8px 0;margin-left:-22px;clip-path:inset(-8px -8px -8px 22px)}
+.qc-band .qc-facts > *{margin-left:22px}
+.qc-band .qc-facts > .qc-fact,.qc-band .qc-facts > .qc-album-goal{min-height:0;padding:0;border-radius:0;background:none}
+.qc-band .qc-facts > .qc-fact{position:relative;white-space:nowrap}
+.qc-band .qc-facts > .qc-fact::before{content:"·";position:absolute;left:-15px;font-weight:900}
+.qc-album-goal{flex-basis:100%;display:flex;flex-direction:column;gap:8px;margin-bottom:6px;font-size:var(--fs-min)}
+.qc-album-goal strong{font-stretch:125%;font-weight:900}
+.qc-microslots{display:flex;flex-wrap:wrap;gap:6px}
+.qc-microslots i{width:16px;height:16px;border-radius:50%;border:2px dashed currentColor;opacity:.8}
 
 .qc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:10px 20px;border-radius:var(--r-btn);border:0;background:var(--card);color:var(--azzurro-ink);font:inherit;font-size:18px;font-weight:800;line-height:1.15;text-align:center;box-shadow:inset 0 0 0 2px var(--rule);transition:transform .25s var(--ease),box-shadow .25s,background .15s}
 .qc-btn:hover{box-shadow:inset 0 0 0 2px var(--azzurro);background:var(--azzurro-50)}

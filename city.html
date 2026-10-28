@@ -581,15 +581,25 @@ function render(d) {
   html += '<h1 class="qc-title">' + esc(tr.title || city.slug) + '</h1>';
   if (tr.subtitle) html += '<p class="qc-lede">' + esc(tr.subtitle) + '</p>';
   html += '<p class="qc-facts">';
-  html += '<span class="qc-album-count"><strong data-collected>0</strong>/<strong data-collect-total>0</strong> ' + esc(ui('label.stickers', 'naklejek')) + '</span>';
-  html += '<span>' + (d.regionName ? esc(d.regionName) + ' · ' : '') + esc(durationLabel(city)) + '</span>';
+  // P-6: gość nie widzi licznika „0 / 1” — zamiast niego cel albumu i rząd pustych mikro-slotów
+  if (d.locked && stops.length) {
+    var nS = stops.length, m10 = nS % 10, m100 = nS % 100;
+    var goalWord = String(currentLang).toLowerCase() === 'pl'
+      ? (nS === 1 ? 'naklejka' : (m10 >= 2 && m10 <= 4 && !(m100 >= 12 && m100 <= 14)) ? 'naklejki' : 'naklejek') + ' do zebrania'
+      : ui('label.stickers_to_collect', 'naklejek do zebrania');
+    html += '<span class="qc-album-goal"><span class="qc-album-goal__txt"><strong>' + nS + '</strong> ' + esc(goalWord) + '</span>' +
+            '<span class="qc-microslots" aria-hidden="true">' + new Array(nS + 1).join('<i></i>') + '</span></span>';
+  } else {
+    html += '<span class="qc-album-count"><strong data-collected>0</strong>/<strong data-collect-total>0</strong> ' + esc(ui('label.stickers', 'naklejek')) + '</span>';
+  }
+  html += '<span class="qc-fact">' + (d.regionName ? esc(d.regionName) + ' · ' : '') + esc(durationLabel(city)) + '</span>';
   // liczebnik po polsku 1 / 2–4 / 5+; w innych językach „etykieta: N” (jak na stronach regionu i kraju)
-  html += '<span>' + (String(currentLang).toLowerCase() === 'pl'
+  html += '<span class="qc-fact">' + (String(currentLang).toLowerCase() === 'pl'
     ? '<strong data-stop-count>' + stops.length + '</strong> <span data-stop-word>' + plStops(stops.length) + '</span>'
     : esc(ui('label.stops_label', 'Przystanki')) + ': <strong data-stop-count>' + stops.length + '</strong>') + '</span>';
-  if (city.duration_hours) html += '<span><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
-  if (city.start_time && city.end_time) html += '<span><strong>' + esc(city.start_time) + ' → ' + esc(city.end_time) + '</strong></span>';
-  if (city.walk_km) html += '<span><strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong> ' + ui('label.on_foot', 'pieszo') + (city.climb_m ? ' · ' + city.climb_m + ' m ' + ui('label.uphill', 'w górę') : '') + '</span>';
+  if (city.duration_hours) html += '<span class="qc-fact"><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
+  if (city.start_time && city.end_time) html += '<span class="qc-fact"><strong>' + esc(city.start_time) + ' → ' + esc(city.end_time) + '</strong></span>';
+  if (city.walk_km) html += '<span class="qc-fact"><strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong> ' + ui('label.on_foot', 'pieszo') + (city.climb_m ? ' · ' + city.climb_m + ' m ' + ui('label.uphill', 'w górę') : '') + '</span>';
   html += '</p>';
   // trasa jeszcze nieprzetłumaczona — interfejs jest w języku strony, opis w innym (JP 2026-10-18)
   if (tr.lang && tr.lang !== currentLang) {
