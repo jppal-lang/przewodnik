@@ -132,21 +132,21 @@ function readPref()  { try { return localStorage.getItem('quolino_lang'); } catc
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ui(key, fb) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fb || key; }
-
-// "~{n}h" → "~4h"
 // Liczebniki: po polsku odmiana (1 plan / 2–4 plany / 5+ planów), w innych językach „etykieta: N” (JP 2026-10-29)
 function plForm(n, f) { var m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
 function countLabel(n, key, fb, forms) { return String(currentLang).toLowerCase() === 'pl' ? n + ' ' + plForm(n, forms) : ui(key, fb) + ': ' + n; }
 var PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
 // teksty page.* (ekran „Wkrótce”): PT('klucz', 'polski') — skaner ui-translate.mjs czyta je z tego pliku, tłumaczenia w uiStrings
 function PT(key, pl) { return ui(key, pl); }
+
+// "~{n}h" → "~4h"
 function durationLabel(h) { return ui('label.duration_h', '~{n}h').replace('{n}', h); }
 
 // Slavic plural handling for the stop counter
 function stopsLabel(n) {
+  if (String(currentLang).toLowerCase() === 'pl') return n + ' ' + plForm(n, ['przystanek', 'przystanki', 'przystanków']);
   var slavic = { pl:1, cs:1, sk:1, uk:1, hr:1 };
   var key = 'label.stops_count';
-  if (String(currentLang).toLowerCase() === 'pl') return n + ' ' + plForm(n, ['przystanek', 'przystanki', 'przystanków']);
   if (slavic[currentLang]) {
     var m = n % 10, h = n % 100;
     if (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) key = 'label.stops_count_few';
@@ -309,7 +309,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
   html += '<div class="region-hero band page-band">';
   html += '<h1 class="region-name">' + esc(regionName) + '</h1>';
   if (rTr && rTr.description) html += '<p class="region-desc">' + esc(rTr.description) + '</p>';
-  html += '<div class="region-meta"><span>' + (flagCode ? '<img src="/media/flags/' + flagCode + '.png" alt="">' : '') + esc(countryName) + '</span><span>' + esc(ui('home.region_ready', 'gotowe plany')) + ': ' + cities.length + '</span></div>';
+  html += '<div class="region-meta"><span>' + (flagCode ? '<img src="/media/flags/' + flagCode + '.png" alt="">' : '') + esc(countryName) + '</span><span>' + esc(cities.length ? countLabel(cities.length, 'home.region_ready', 'gotowe plany', PLANS) : ui('chip.soon', 'Wkrótce')) + '</span></div>';
   html += '</div>';
 
   // ── City tiles ── (region bez tras w tym języku: ekran „Wkrótce” z Quo zamiast „0 gotowych planów”, JP 2026-10-29)
@@ -451,6 +451,6 @@ loadPage(currentLang);
 <script src="motion.js?v=4" defer></script>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>
+<script src="/site-nav.js?v=1" defer></script>
 </body>
 </html>
-<script src="/site-nav.js?v=1" defer></script>

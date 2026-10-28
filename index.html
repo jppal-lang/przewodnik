@@ -355,12 +355,12 @@ function readPref()  { try { return localStorage.getItem('quolino_lang'); } catc
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ui(key, fallback) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fallback || key; }
-
-// Teksty data-t="page.home.*" (sekcja „Co dostajesz”): polski w HTML, tłumaczenia z ui_translations
 // Liczebniki: po polsku odmiana (1 plan / 2–4 plany / 5+ planów), w innych językach „etykieta: N” (JP 2026-10-29)
 function plForm(n, f) { var m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
 function countLabel(n, key, fb, forms) { return String(currentLang).toLowerCase() === 'pl' ? n + ' ' + plForm(n, forms) : ui(key, fb) + ': ' + n; }
 var PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
+
+// Teksty data-t="page.home.*" (sekcja „Co dostajesz”): polski w HTML, tłumaczenia z ui_translations
 // (uzupełnia je serwer, ui-translate.mjs). Brak w języku → angielski → polski.
 function applyPageT(lang) {
   var els = document.querySelectorAll('[data-t^="page.home."]');   // stopkę (page.footer.*) tłumaczy site-nav.js
@@ -578,6 +578,6 @@ loadPage(currentLang);
 <script src="motion.js?v=4" defer></script>
 <script src="/stats.js?v=2" defer></script>
 <script src="/auth.js?v=2" defer></script>
+<script src="/site-nav.js?v=1" defer></script>
 </body>
 </html>
-<script src="/site-nav.js?v=1" defer></script>
