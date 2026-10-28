@@ -385,6 +385,21 @@ a.sticker:hover{transform:rotate(0) translateY(-6px) scale(1.015);box-shadow:var
 .ort-name{font-stretch:62%;font-weight:900;text-transform:uppercase;font-size:30px;line-height:1}
 .ort-meta{color:var(--muted);font-size:var(--fs-min)}
 .ort-go{flex:none;width:44px;height:44px;border-radius:var(--r-btn);display:grid;place-items:center;background:var(--azzurro);color:#fff;font-weight:900}
+/* P-2: szkielet regionu — puste miejsca na naklejki miast, zanim przyjdą dane (bez skoku stopki) */
+.crumbs:empty{min-height:62px}
+.region-meta--skel > span{min-width:120px}
+.city-grid--skel .city-slot{aspect-ratio:36/49;transform:rotate(var(--tilt,0deg))}
+.city-grid--skel .city-slot:nth-child(3n+1){--tilt:-1.4deg}
+.city-grid--skel .city-slot:nth-child(3n+2){--tilt:1deg}
+.city-grid--skel .city-slot:nth-child(3n){--tilt:-.5deg}
+.city-grid--skel .slot-no{font-size:clamp(64px,9vw,96px)}
+#regionContent[aria-busy="true"] + .footer{visibility:hidden}
+@media (prefers-reduced-motion:no-preference){
+  .city-grid--skel .city-slot{animation:slotBreath 1.6s ease-in-out infinite alternate}
+  .city-grid--skel .city-slot:nth-child(2){animation-delay:.2s}
+  .city-grid--skel .city-slot:nth-child(3){animation-delay:.4s}
+}
+@keyframes slotBreath{from{background:rgba(255,255,255,.3)}to{background:rgba(255,255,255,.7)}}
 .state-msg{text-align:center;padding:80px 20px;font-size:20px;color:var(--ink2)}
 .state-msg a{color:var(--azzurro);font-weight:800;text-decoration:underline}
 .duration-filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
