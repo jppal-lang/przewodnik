@@ -66,3 +66,5 @@ if ! cmp -s "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs; then
   docker ps --format '{{.Names}}' | grep -q '^quolino-auth-auth-gate-1$' && docker restart quolino-auth-auth-gate-1 >/dev/null && echo "bramka rejestracji: zrestartowana"
 fi
 echo "ops i SSR: OK"
+# kompresja (API, SSR) i Cache-Control w Traefiku — osobny kontener z etykietami (D1, JP 2026-10-29); cofnięcie: ops/perf-traefik.sh down
+sh /root/quolino-web/ops/perf-traefik.sh apply || echo "kompresja/cache: NIE wdrożone (szczegóły wyżej) — reszta instalacji bez zmian"
