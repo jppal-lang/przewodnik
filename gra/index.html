@@ -80,8 +80,11 @@
         <input type="checkbox" id="demoToggle">
         <span data-t="page.game.html.demo">Tryb demo: symuluj punkty z trasy</span>
       </label>
-      <button class="btn btn-primary" id="btnContinue" type="button" hidden>Graj dalej</button>
-      <button class="btn btn-primary" id="btnStart" type="button">Graj</button>
+      <!-- P-5: „Graj” przyklejony do dołu karty, w strefie kciuka -->
+      <div class="play-dock">
+        <button class="btn btn-primary" id="btnContinue" type="button" hidden>Graj dalej</button>
+        <button class="btn btn-primary" id="btnStart" type="button">Graj</button>
+      </div>
       <button class="btn btn-ghost" id="btnSound" type="button" aria-pressed="false" data-t="page.game.sound.off">Dźwięk: wyłączony</button>
       <p class="help"><span class="help-keys" data-t-html="page.game.html.help_keys"><b>Klawiatura:</b> ← → (lub A D) idź · spacja / ↑ / W skok · P pauza.<br></span><span data-t-html="page.game.html.help_touch"><b>Telefon:</b> przyciski na dole ekranu.</span></p>
     </div>

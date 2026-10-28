@@ -80,6 +80,12 @@ h2{font-size:30px}
 .btn-primary{background:var(--azzurro);color:#fff;border:0;box-shadow:inset 0 -5px 0 rgba(0,0,0,.22)}
 .btn-primary:hover{background:var(--azzurro-ink)}
 .btn-ghost{background:#fff;color:var(--azzurro-deep);border:2px solid var(--rule)}
+/* P-5: „Graj” w strefie kciuka — przyklejony do dołu ekranu, dopóki karta się przewija; w słońcu sun/sun-ink */
+.play-dock{position:sticky;bottom:-6px;z-index:2;display:grid;gap:10px;margin:0 -16px;padding:14px 16px calc(14px + var(--safe-b));
+  background:linear-gradient(to top,var(--card) 78%,rgba(255,255,255,0));border-radius:0 0 20px 20px}
+.play-dock #btnStart{background:var(--sun);color:var(--sun-ink);box-shadow:inset 0 -5px 0 rgba(0,0,0,.16)}
+.play-dock #btnStart:hover{background:#FFD45A}
+.play-dock #btnContinue:not([hidden]) + #btnStart{background:#fff;color:var(--azzurro-deep);box-shadow:inset 0 0 0 2px var(--rule)}
 .btn:focus-visible,.answer:focus-visible,.hud-btn:focus-visible,.demo-toggle input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 
 .bonus{display:grid;gap:8px;text-align:left;background:var(--page);border-radius:14px;padding:12px 14px}
