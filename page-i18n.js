@@ -32,11 +32,34 @@
   document.documentElement.lang = LANG;
   PT.lang = LANG;
   PT.apply = apply;
-  PT.ready = LANG === 'pl' ? Promise.resolve() : fetch(API + '/ui_translations?select=key,lang,value&key=like.page.*&lang=in.(' + LANG + ',en)',
-    { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
-    .then(function (r) { return r.ok ? r.json() : []; })
-    .then(function (rows) { (rows || []).forEach(function (r) { (r.lang === LANG ? DICT : EN)[r.key] = r.value; }); })
-    .catch(function () { /* bez sieci: zostaje polski */ })
+  // Tylko klucze tej strony (D2 2026-10-29): prefiksy z <script src="/page-i18n.js" data-keys="page.contact,page.footer">
+  // plus prefiksy znalezione w HTML (data-t*) po wczytaniu dokumentu — brakujące dociągamy drugim, małym zapytaniem.
+  var me = document.currentScript, asked = {};
+  var declared = String((me && me.getAttribute('data-keys')) || '').split(/[\s,]+/).filter(function (p) { return /^page\.[a-z0-9_]+$/.test(p); });
+  if (declared.length) declared = declared.concat(['page.nav', 'page.footer', 'page.common']);   // menu i stopka (site-nav.js) są na każdej stronie
+  function load(prefixes) {
+    prefixes = prefixes.filter(function (p) { return !asked[p]; });
+    if (!prefixes.length) return Promise.resolve();
+    prefixes.forEach(function (p) { asked[p] = 1; });
+    var f = prefixes.length === 1 ? 'key=like.' + prefixes[0] + '.*' : 'or=(' + prefixes.map(function (p) { return 'key.like.' + p + '.*'; }).join(',') + ')';
+    return fetch(API + '/ui_translations?select=key,lang,value&' + f + '&lang=in.(' + LANG + ',en)', { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) { (rows || []).forEach(function (r) { (r.lang === LANG ? DICT : EN)[r.key] = r.value; }); })
+      .catch(function () { /* bez sieci: zostaje polski */ });
+  }
+  function domPrefixes() {
+    var out = {};
+    document.querySelectorAll('[data-t],[data-t-ph],[data-t-aria],[data-t-html],meta[name="pt-title"]').forEach(function (el) {
+      ['data-t', 'data-t-ph', 'data-t-aria', 'data-t-html', 'content'].forEach(function (a) {
+        var m = /^(page\.[a-z0-9_]+)\./.exec(el.getAttribute(a) || ''); if (m) out[m[1]] = 1;
+      });
+    });
+    return Object.keys(out);
+  }
+  function domReady() { return new Promise(function (res) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', res); else res(); }); }
+  PT.ready = LANG === 'pl' ? Promise.resolve() : Promise.all([load(declared), domReady().then(function () {
+    var p = domPrefixes(); return load(p.length || declared.length ? p.concat(['page.nav', 'page.footer', 'page.common']) : ['page']);   // nic nie wiadomo → dawne zachowanie (page.*)
+  })])
     .then(function () {
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { apply(); });
       else apply();

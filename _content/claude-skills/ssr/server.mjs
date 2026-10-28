@@ -121,7 +121,7 @@ const cityLangs = () => cached('city_langs', async () => {
   return m;
 });
 const uiDict = (lang) => cached(`ui:${lang}`, async () => {
-  const rows = await api(`ui_translations?select=key,value,lang&lang=in.(${lang},${FALLBACK})`);
+  const rows = await api(`ui_translations?select=key,value,lang&or=(key.not.like.page.*,key.like.page.footer.*)&lang=in.(${lang},${FALLBACK})`)   // bez page.* poza stopką (D2 2026-10-29): szablony miasta, regionu i kraju ich nie używają;
   const d = {};
   for (const r of rows.filter(r => r.lang !== lang)) d[r.key] = r.value;   // najpierw polski
   for (const r of rows) if (r.lang === lang) d[r.key] = r.value;            // nadpisany językiem strony
@@ -316,7 +316,7 @@ async function renderPlace(kind, place, lang, langs) {
   const u = (k, f) => ui[k] ?? f;
   const table = kind === 'region' ? `region_translations?region_slug=eq.${encodeURIComponent(place.slug)}`
                                   : `country_translations?country_slug=eq.${encodeURIComponent(place.code)}`;
-  const rows = await cached(`place:${kind}:${place.slug ?? place.code}:${lang}`, () => api(`${table}&lang=in.(${lang},${FALLBACK})&select=*`).catch(() => []));
+  const rows = await cached(`place:${kind}:${place.slug ?? place.code}:${lang}`, () => api(`${table}&lang=in.(${lang},${FALLBACK})&select=${kind === 'region' ? 'lang,name,description' : 'lang,name'}`).catch(() => []));
   const tr = rows.find(r => r.lang === lang) ?? rows.find(r => r.lang === FALLBACK) ?? {};
   const name = tr.name || place.slug || place.code.toUpperCase();
   const title = `${name} ${u('seo.with_kids', 'z dziećmi')} — ${u('seo.trip_plans', 'gotowe plany wycieczek')} | Quolino`;

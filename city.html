@@ -397,12 +397,12 @@ function loadPage(lang) {
       })
     : (KID_TOKEN ? kidData(lang) : fallbackData(lang));
   var liveP = Promise.all([dataP].concat([
-    sb('languages', 'enabled=eq.true&order=priority'),
-    sb('ui_translations', 'lang=eq.' + lang),
+    sb('languages', 'select=code,name_native,flag_code&enabled=eq.true&order=priority'),
+    sb('ui_translations', 'select=key,lang,value&or=(and(key.not.like.page.*,key.not.like.home.*),key.like.page.footer.*,key.like.page.trip.*,key.like.home.footer*)&lang=eq.' + lang),   // bez page.* (poza stopką) — D2 2026-10-29
     sb('regions', 'select=slug,country_slug'),
-    sb('region_translations', 'lang=eq.' + lang),
-    sb('country_translations', 'lang=eq.' + lang),
-    sb('countries', 'select=*'),
+    sb('region_translations', 'select=region_slug,lang,name,description&lang=eq.' + lang),
+    sb('country_translations', 'select=country_slug,lang,name&lang=eq.' + lang),
+    sb('countries', 'select=slug,flag_code,sort_order,continent'),
   ]));
   (QD ? liveP : withOffline(liveP, lang)).then(function(results) {
     offlineShown = results.offlineAt || 0;

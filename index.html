@@ -381,12 +381,12 @@ function loadPage(lang) {
   savePref(lang);
 
   Promise.all([
-    sb('languages', 'enabled=eq.true&order=priority'),
-    sb('ui_translations', 'lang=eq.' + lang),
-    sb('regions', 'select=*&order=sort_order'),
-    sb('region_translations', 'lang=eq.' + lang),
-    sb('countries', 'select=*'),
-    sb('country_translations', 'lang=eq.' + lang),
+    sb('languages', 'select=code,name_native,flag_code&enabled=eq.true&order=priority'),
+    sb('ui_translations', 'select=key,lang,value&or=(key.not.like.page.*,key.like.page.footer.*)&lang=eq.' + lang),   // bez page.* (poza stopką) — D2 2026-10-29
+    sb('regions', 'select=slug,url_slug,country_slug,hero_image,sort_order&order=sort_order'),
+    sb('region_translations', 'select=region_slug,lang,name,description&lang=eq.' + lang),
+    sb('countries', 'select=slug,flag_code,sort_order,continent'),
+    sb('country_translations', 'select=country_slug,lang,name&lang=eq.' + lang),
     sb('cities', 'status=eq.published&select=slug,url_slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order'),
     sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,lang,title'),
     PATHS_READY,
