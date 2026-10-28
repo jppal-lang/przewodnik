@@ -24,7 +24,7 @@
   function withLang(href) {
     var l = lang(); if (!l || /^https?:/.test(href)) return href;
     var hash = '', i = href.indexOf('#'); if (i >= 0) { hash = href.slice(i); href = href.slice(0, i); }
-    if (href === location.pathname && hash) return href + location.search + hash;   // ta sama strona: tylko przewinięcie
+    if (window.QLang && window.QLang.link) return window.QLang.link(href + hash, l);
     return href + (href.indexOf('?') >= 0 ? '&' : '?') + 'lang=' + l + hash;
   }
   function signedIn() { try { return !!(window.QAuth && window.QAuth.current && window.QAuth.current()); } catch (e) { return false; } }
