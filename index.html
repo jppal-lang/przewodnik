@@ -29,7 +29,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=34">
-<script src="i18n-ui.js?v=7"></script>
+<script src="/lang-pick.js?v=1"></script>
+<script src="i18n-ui.js?v=8"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Quolino","alternateName":"Quolino.com — rodzinne przewodniki wypadowe","url":"https://quolino.com/","description":"Gotowe plany wycieczek jednodniowych z dziećmi po miastach Europy. Parking, trasa z godzinami, misje dla dzieci.","inLanguage":["pl","en","it","de"],"publisher":{"@type":"Organization","name":"Quolino","url":"https://quolino.com/","logo":{"@type":"ImageObject","url":"https://quolino.com/quolino-logo.svg"}}}
 </script>
@@ -207,7 +208,7 @@
         <li data-t="page.home.tiers.acc_li2">Plan dnia od parkingu po kolację: kolejność przystanków, godziny otwarcia, parking, lokale, punkty awaryjne.</li>
         <li data-t="page.home.tiers.acc_li3">Widok dziecka przez kod QR: misje, zagadki, zadania foto i obrazek-nagroda do pobrania jako kolorowanka.</li>
         <li data-t="page.home.tiers.acc_li4">Panel rodzica: album naklejek z odwiedzonych miejsc, wyzwania i kody.</li>
-        <li data-t="page.home.tiers.acc_li5">Jedna wycieczka do wyboru, darmowa na zawsze.</li>
+        <li data-t="page.home.tiers.acc_li5">Jedna trasa do wyboru, za darmo na zawsze.</li>
         <li class="tier-li--now" data-t="page.home.tiers.acc_li6">Do 1 czerwca 2027 wszystkie wycieczki są otwarte za darmo.</li>
       </ul>
       <div class="tier-foot">
@@ -301,7 +302,7 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var FALLBACK = 'pl';
 
 // ══════ STATE ══════
-var currentLang = new URLSearchParams(location.search).get('lang') || readPref() || FALLBACK;
+var currentLang = window.QLang ? QLang.pick() : (new URLSearchParams(location.search).get('lang') || readPref() || 'en');   // K5: lang-pick.js
 var langList = [];
 var uiStrings = {};
 
@@ -319,13 +320,31 @@ function sb(table, params) {
 // Adres strony miasta renderowanej z bazy (SSR): /{lang}/{kraj}/{region}/{miasto}/
 var REGION_URL = {};   // regions.slug → regions.url_slug (adres regionu); brak → wewnętrzny slug
 var PATHS = {};        // /paths.json z SSR: { miasto: { lang: adres w języku strony } } (JP 2026-10-17, SEO)
-fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
-  PATHS = j || {};
-  document.querySelectorAll('a[data-city]').forEach(function (a) { var p = PATHS[a.getAttribute('data-city')]; if (p) a.href = p[String(currentLang || FALLBACK).toLowerCase()] || p[FALLBACK] || a.href; });
+var PATHS_OK = false;  // mapa wczytana — wtedy to ona mówi, w jakich językach miasto ma gotową stronę
+var PATHS_READY = fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+  PATHS = j || {}; PATHS_OK = Object.keys(PATHS).some(function (k) { return k.charAt(0) !== '_'; });
+  applyPaths();
 }).catch(function () {});
+// Linki kafli miast (a[data-city]) w bieżącym języku. Bez spadania na /pl/: miasto bez wersji w języku jest ukryte (K7).
+function applyPaths() {
+  var L = String(currentLang || FALLBACK).toLowerCase();
+  document.querySelectorAll('a[data-city]').forEach(function (a) { var p = PATHS[a.getAttribute('data-city')]; if (p && p[L]) a.href = p[L]; });
+}
+// K7 (JP 2026-10-28): w języku innym niż polski pokazujemy tylko miasta z tłumaczeniem (city_translations w tym języku)
+// i gotową stroną w tym języku (mapa adresów z serwera). Licznik miast liczy tylko te.
+function availableCities(cities, cityTrs, lang) {
+  if (lang === 'pl') return cities;
+  var has = {};
+  (cityTrs || []).forEach(function (t) { if (t.lang === lang) has[t.city_slug] = 1; });
+  return cities.filter(function (c) { return has[c.slug] && (!PATHS_OK || (PATHS[c.slug] && PATHS[c.slug][lang])); });
+}
+// K6: po zmianie języka adres pokazuje wybór (?lang=xx), żeby przeładowanie i udostępniony link go zachowały
+function setLangInUrl(lang) {
+  try { var u = new URL(location.href); u.searchParams.set('lang', lang); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) {}
+}
 function cityHref(c) {
   var P = PATHS[c.slug], L = String(currentLang || FALLBACK).toLowerCase();
-  if (P && (P[L] || P[FALLBACK])) return P[L] || P[FALLBACK];
+  if (P && P[L]) return P[L];
   if (!c.region_slug) return 'city.html?c=' + encodeURIComponent(c.slug);
   return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(String(c.country || 'it').toLowerCase()) + '/' +
     encodeURIComponent(REGION_URL[c.region_slug] || c.region_slug) + '/' + encodeURIComponent(c.url_slug || c.slug) + '/';
@@ -361,8 +380,10 @@ function loadPage(lang) {
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
     sb('cities', 'status=eq.published&select=slug,url_slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order'),
-    sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,title'),
+    sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,lang,title'),
+    PATHS_READY,
   ]).then(function(results) {
+    if (lang !== currentLang) return;   // w międzyczasie wybrano inny język
     langList        = results[0];
     var uiRows      = results[1];
     var regions     = results[2];
@@ -370,8 +391,8 @@ function loadPage(lang) {
     var regionTrs   = results[3];
     var countries   = results[4];
     var countryTrs  = results[5];
-    var cities      = results[6];
     var cityTrs     = results[7] || [];
+    var cities      = availableCities(results[6] || [], cityTrs, lang);
 
     // Build UI strings map
     uiStrings = {};
@@ -394,6 +415,7 @@ function loadPage(lang) {
       regions: regions, regionTrs: regionTrs, countries: countries, countryTrs: countryTrs, cities: cities });
     buildHeroSheet(cities, cityTrs, regionTrs);
     updateCounts(cities, regionTrs);
+    applyPaths();
 
     // Build language popup
     buildLangPopup();
@@ -466,6 +488,14 @@ function updateCounts(cities, regionTrs) {
 function buildHeroSheet(cities, cityTrs, regionTrs) {
   var sheet = document.getElementById('heroSheet');
   if (!sheet) return;
+  // po zmianie języka arkusz układamy od nowa (inny zestaw dostępnych miast)
+  sheet.querySelectorAll('a.sticker[data-city], .slot').forEach(function (n) { n.remove(); });
+  var cap = sheet.querySelector('.sheet-caption');
+  for (var n = 1; n <= 4; n++) {
+    var sl = document.createElement('span'); sl.className = 'slot';
+    sl.innerHTML = '<span class="slot-no">' + String(n).padStart(2, '0') + '</span>';
+    sheet.insertBefore(sl, cap);
+  }
   var slots = sheet.querySelectorAll('.slot');
   var picked = cities.filter(function(c) { return imgBase(c); })
     .sort(function(a, b) { return (b.hero_image ? 1 : 0) - (a.hero_image ? 1 : 0); })
@@ -509,6 +539,7 @@ function buildLangPopup() {
     btn.addEventListener('click', function() {
       document.getElementById('langPopup').classList.remove('open');
       if (l.code === currentLang) return;
+      setLangInUrl(l.code);
       loadPage(l.code);
     });
     grid.appendChild(btn);

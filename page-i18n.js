@@ -10,6 +10,7 @@
   var API = 'https://api.quolino.com/rest/v1';
   var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
   function pick() {
+    if (window.QLang) return window.QLang.pick();   // lang-pick.js (K5): ?lang → zapis → przeglądarka → en
     var q = new URLSearchParams(location.search).get('lang'), p = null;
     try { p = localStorage.getItem('quolino_lang'); } catch (e) { /* prywatne okno */ }
     return String(q || p || 'pl').toLowerCase().replace(/[^a-z-]/g, '').slice(0, 8) || 'pl';

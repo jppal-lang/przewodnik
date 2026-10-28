@@ -109,7 +109,12 @@ bez nowych kluczy). Strona kraju używa tego samego atlasu (`QuoAtlas.render({st
 
 ## 5. i18n (warstwa UI)
 
-- Język: `?lang=xx` > `localStorage('quolino_lang')` > `pl`. Napisy z `ui_translations`
+- Język (`lang-pick.js`, `QLang.pick()`, od 2026-10-28): `?lang=xx` > język z adresu `/xx/…` > `localStorage('quolino_lang')` >
+  `navigator.languages` dopasowane do 17 języków > `en`. Bez przekierowań (robot dostaje `/`). Przełącznik na stronie głównej
+  zapisuje `?lang=xx` w adresie (`setLangInUrl`) i przepisuje kafle `a[data-city]` (`applyPaths`).
+- Miasta bez wersji w języku strony (poza `pl`) są ukryte na stronie głównej, w atlasie, na stronach kraju i regionu
+  (`availableCities`: wiersz `city_translations` w tym języku + adres w `/pl/paths/`); SSR zamiast `/pl/` daje 302 na region.
+- Napisy z `ui_translations`
   (`data-ui` w HTML, `ui('klucz','fallback')` w JS).
 - `i18n-ui.js` (w `<head>`, przed skryptami stron):
   1. słownik 60 napisów interfejsu × 17 języków — gdy klucza brak w bazie;

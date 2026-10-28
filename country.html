@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=34">
-<script src="i18n-ui.js?v=7"></script>
+<script src="/lang-pick.js?v=1"></script>
+<script src="i18n-ui.js?v=8"></script>
 </head>
 <body>
 
@@ -94,7 +95,7 @@ var FALLBACK = 'pl';
 
 // ══════════════ STATE ══════════════
 var countrySlug = (window.QPAGE && QPAGE.kind === 'country' && QPAGE.id) || new URLSearchParams(location.search).get('k');   // ładny adres z serwera (JP 2026-10-18)
-var currentLang = new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || FALLBACK;
+var currentLang = window.QLang ? QLang.pick() : (new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || 'en');   // K5: lang-pick.js
 var langList = [];
 var uiStrings = {};
 
@@ -105,6 +106,14 @@ function sb(table, params) {
     .then(function(r) { if (!r.ok) throw new Error(r.status + ' ' + table); return r.json(); });
 }
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
+// K7 (JP 2026-10-28): poza polskim tylko miasta z tłumaczeniem w tym języku i gotową stroną (mapa adresów z serwera)
+var PATHS_READY = fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
+function availableCities(cities, cityTrs, paths, lang) {
+  if (lang === 'pl') return cities;
+  var has = {}, ok = Object.keys(paths || {}).some(function (k) { return k.charAt(0) !== '_'; });
+  (cityTrs || []).forEach(function (t) { if (t.lang === lang) has[t.city_slug] = 1; });
+  return cities.filter(function (c) { return has[c.slug] && (!ok || (paths[c.slug] && paths[c.slug][lang])); });
+}
 function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e) {} }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ui(key, fb) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fb || key; }
@@ -164,15 +173,18 @@ function loadPage(lang) {
     sb('region_translations', 'lang=eq.' + lang),
     sb('countries', 'select=*&order=sort_order'),
     sb('country_translations', 'lang=eq.' + lang),
-    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order')
+    sb('cities', 'status=eq.published&select=slug,country,region_slug,bandana_color,hero_image,sort_order,lat,lon&order=sort_order'),
+    sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,lang'),
+    PATHS_READY
   ]).then(function(res) {
+    if (lang !== currentLang) return;   // w międzyczasie wybrano inny język
     langList        = res[0];
     var uiRows      = res[1];
     var allRegions  = res[2];
     var regionTrs   = res[3];
     var countries   = res[4];
     var countryTrs  = res[5];
-    var allCities   = res[6];
+    var allCities   = availableCities(res[6] || [], res[7], res[8], lang);
 
     uiStrings = {};
     uiRows.forEach(function(r) { uiStrings[r.key] = r.value; });

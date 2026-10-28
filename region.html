@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=34">
-<script src="i18n-ui.js?v=7"></script>
+<script src="/lang-pick.js?v=1"></script>
+<script src="i18n-ui.js?v=8"></script>
 </head>
 <body>
 
@@ -94,7 +95,7 @@ var FALLBACK = 'pl';
 
 // ══════════════ STATE ══════════════
 var regionSlug  = (window.QPAGE && QPAGE.kind === 'region' && QPAGE.id) || new URLSearchParams(location.search).get('r');   // ładny adres z serwera (JP 2026-10-18)
-var currentLang = new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || FALLBACK;
+var currentLang = window.QLang ? QLang.pick() : (new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || 'en');   // K5: lang-pick.js (?lang → adres /xx/ → zapis → przeglądarka → en)
 var langList = [];
 var uiStrings = {};
 
@@ -107,13 +108,22 @@ function sb(table, params) {
 // Adres strony miasta renderowanej z bazy (SSR): /{lang}/{kraj}/{region}/{miasto}/
 var REGION_URL = {};   // regions.slug → regions.url_slug (adres regionu); brak → wewnętrzny slug
 var PATHS = {};        // /paths.json z SSR: { miasto: { lang: adres w języku strony } } (JP 2026-10-17, SEO)
-fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
-  PATHS = j || {};
-  document.querySelectorAll('a[data-city]').forEach(function (a) { var p = PATHS[a.getAttribute('data-city')]; if (p) a.href = p[String(currentLang || FALLBACK).toLowerCase()] || p[FALLBACK] || a.href; });
+var PATHS_OK = false;
+var PATHS_READY = fetch('/pl/paths/').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+  PATHS = j || {}; PATHS_OK = Object.keys(PATHS).some(function (k) { return k.charAt(0) !== '_'; });
+  var L = String(currentLang || FALLBACK).toLowerCase();
+  document.querySelectorAll('a[data-city]').forEach(function (a) { var p = PATHS[a.getAttribute('data-city')]; if (p && p[L]) a.href = p[L]; });
 }).catch(function () {});
+// K7 (JP 2026-10-28): poza polskim tylko miasta z tłumaczeniem w tym języku i gotową stroną (bez linków na /pl/)
+function availableCities(cities, cityTrs, lang) {
+  if (lang === 'pl') return cities;
+  var has = {};
+  (cityTrs || []).forEach(function (t) { if (t.lang === lang) has[t.city_slug] = 1; });
+  return cities.filter(function (c) { return has[c.slug] && (!PATHS_OK || (PATHS[c.slug] && PATHS[c.slug][lang])); });
+}
 function cityHref(c) {
   var P = PATHS[c.slug], L = String(currentLang || FALLBACK).toLowerCase();
-  if (P && (P[L] || P[FALLBACK])) return P[L] || P[FALLBACK];
+  if (P && P[L]) return P[L];
   if (!c.region_slug) return '/city.html?c=' + encodeURIComponent(c.slug);
   return '/' + String(currentLang || FALLBACK).toLowerCase() + '/' + encodeURIComponent(String(c.country || 'it').toLowerCase()) + '/' +
     encodeURIComponent(REGION_URL[c.region_slug] || c.region_slug) + '/' + encodeURIComponent(c.url_slug || c.slug) + '/';
@@ -193,9 +203,11 @@ function loadPage(lang) {
     sb('countries', 'select=*'),
     sb('country_translations', 'lang=eq.' + lang),
     sb('cities', 'status=eq.published&select=slug,url_slug,country,region_slug,bandana_color,duration_type,duration_hours,hero_image,sort_order&order=sort_order'),
-    sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,title,subtitle'),
-    sb('public_cities', 'select=slug,stops_count')   // Etap A: gość nie czyta tabeli stops
+    sb('city_translations', 'lang=eq.' + lang + '&select=city_slug,lang,title,subtitle'),
+    sb('public_cities', 'select=slug,stops_count'),   // Etap A: gość nie czyta tabeli stops
+    PATHS_READY
   ]).then(function(res) {
+    if (lang !== currentLang) return;   // w międzyczasie wybrano inny język
     langList        = res[0];
     var uiRows      = res[1];
     var allRegions  = res[2];
@@ -203,8 +215,8 @@ function loadPage(lang) {
     var regionTrs   = res[3];
     var countries   = res[4];
     var countryTrs  = res[5];
-    var allCities   = res[6];
-    var cityTrs     = res[7];
+    var cityTrs     = res[7] || [];
+    var allCities   = availableCities(res[6] || [], cityTrs, lang);
     var allStops    = res[8];
 
     uiStrings = {};
@@ -323,10 +335,15 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
 
   // Build tiles as nodes so we can attach lazy photo loading per card
   var grid = document.getElementById('cityGrid');
+  if (!cities.length) grid.innerHTML = '<div class="state-msg">' + esc(ui('chip.soon', 'Wkrótce')) + '</div>';   // K7: brak miast w tym języku
   cities.forEach(function(city) {
     var tr    = cityTrs.filter(function(t) { return t.city_slug === city.slug; })[0];
     var title = tr ? tr.title : city.slug;
-    var sub   = tr ? tr.subtitle : '';
+    // K4: opis = to samo pole co na stronie miasta (city_translations.subtitle), tylko w języku strony — bez spadania na en/pl;
+    // pusty albo powtarzający tytuł („Asyż z dziećmi — plan wycieczki”) → bez opisu
+    var sub   = tr && tr.lang === currentLang ? String(tr.subtitle || '').trim() : '';
+    if (sub && (sub.toLowerCase() === String(title).toLowerCase() ||
+        sub.toLowerCase().indexOf((title + ' ' + ui('seo.with_kids', 'z dziećmi')).toLowerCase()) === 0)) sub = '';
 
     var card = document.createElement('a');
     card.className = 'city-card';

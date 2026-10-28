@@ -290,8 +290,11 @@ async function renderCity(lang, country, region, slug, oldSchema) {
   if (!meta) return { status: 404 };
   const langs = await langsFor(meta);
   const canonical = (l) => cityPath(l, meta);
-  if (!found) return { status: 301, location: canonical(targetLang(lang, langs)) };              // dawny adres → nowy, jeden skok
-  if (!langs.includes(lang)) return { status: 302, location: canonical(FALLBACK) };
+  // K7 (JP 2026-10-28): miasta bez wersji w danym języku nie odsyłamy na /pl/ — strona regionu w tym języku (miasta tam nie ma)
+  const missing = async () => { const P = await placeSegs(); const pr = P.region[meta.region_slug];
+    return { status: 302, location: pr ? placePath.region(pr, P.langs.includes(lang) ? lang : FALLBACK) : '/' }; };
+  if (!found) return langs.includes(lang) || lang === FALLBACK ? { status: 301, location: canonical(targetLang(lang, langs)) } : missing();   // dawny adres → nowy, jeden skok
+  if (!langs.includes(lang)) return missing();
   if (!found.exact) return { status: 301, location: canonical(lang) };                           // segmenty z innego języka
   const d = await cityData(meta.slug, lang);
   if (!d) return { status: 404 };

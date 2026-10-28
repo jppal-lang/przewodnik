@@ -53,6 +53,7 @@
   });
 
   function pageLang() {
+    if (window.QLang) return window.QLang.pick();   // lang-pick.js: ?lang → adres → zapis → przeglądarka → en (K5)
     var q = new URLSearchParams(location.search).get('lang');
     var p = null;
     try { p = localStorage.getItem('quolino_lang'); } catch (e) {}
@@ -99,6 +100,8 @@
     if (isUi) { lang = L; applyStatic(L); }
     var chain = [L, 'en', 'pl'].filter(function (x, i, a) { return a.indexOf(x) === i; });
     var newUrl = url.replace('lang=eq.' + L, 'lang=in.(' + chain.join(',') + ')');
+    // bez kolumny lang w select ranking nie działa (wygrywał przypadkowy wiersz, np. en na polskiej stronie) — dopisz ją
+    if (CHAIN_TABLES[table]) newUrl = newUrl.replace(/([?&]select=)([^&]*)/, function (m, a, sel) { return /(^|,)(lang|\*)(,|$)/.test(decodeURIComponent(sel)) ? m : a + sel + ',lang'; });
     var rank = function (r) { var i = chain.indexOf(r.lang); return i < 0 ? 99 : i; };
 
     return origFetch.call(this, newUrl, init).then(function (res) {
