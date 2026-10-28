@@ -74,9 +74,19 @@
   <nav class="crumbs band" id="crumbs" aria-label="Breadcrumb" data-ui-aria="nav.breadcrumb"></nav>
 
   <!-- Region content -->
-  <div id="regionContent">
-    <div class="state-msg">&#8230;</div>
+  <!-- P-2: szkielet „puste miejsca na naklejki” — od razu pas regionu i 3 sloty; dane podmieniają go w buildRegion -->
+  <div id="regionContent" aria-busy="true">
+    <div class="region-hero band page-band">
+      <h1 class="region-name" id="skelName">&nbsp;</h1>
+      <div class="region-meta region-meta--skel" aria-hidden="true"><span>&nbsp;</span><span>&nbsp;</span></div>
+    </div>
+    <div class="city-grid city-grid--skel" aria-hidden="true">
+      <div class="slot city-slot"><span class="slot-no">01</span></div>
+      <div class="slot city-slot"><span class="slot-no">02</span></div>
+      <div class="slot city-slot"><span class="slot-no">03</span></div>
+    </div>
   </div>
+  <script>(function () { var q = (window.QPAGE && QPAGE.kind === 'region' && (QPAGE.name || QPAGE.id)) || new URLSearchParams(location.search).get('r') || ''; var n = document.getElementById('skelName'); if (n && q) n.textContent = String(q).replace(/-/g, ' '); })();</script>
 
   <div class="footer">
     <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
@@ -264,6 +274,7 @@ function loadPage(lang) {
 }
 
 function fail(msg) {
+  document.getElementById('regionContent').removeAttribute('aria-busy');
   document.getElementById('regionContent').innerHTML =
     '<div class="state-msg">' + esc(msg) + '<br><br><a href="/">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
 }
@@ -345,6 +356,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
     html += '</div></div>';
   }
 
+  el.removeAttribute('aria-busy');
   el.innerHTML = html;
 
   // Build tiles as nodes so we can attach lazy photo loading per card
