@@ -522,6 +522,25 @@ function loadPage(lang) {
   });
 }
 
+// ── Atrament pasa z kontrastu WCAG (P-1) ──────────────
+// Biel, gdy daje ≥ 4,5:1. Bardzo jasny kolor (≥ 7:1 dla atramentu, np. żółte Urbino) → ciemny tekst.
+// W pozostałych przypadkach pas (tylko pas, nie paski naklejek) przyciemniamy krokami po 4%,
+// aż biel osiągnie 4,5:1 — kolor drużyny zostaje rozpoznawalny.
+function teamInk(hex) {
+  function rgb(h) { var n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+  function lumi(c) { return c.reduce(function(s, v, i) { v /= 255; v = v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); return s + v * [0.2126, 0.7152, 0.0722][i]; }, 0); }
+  function ratio(a, b) { var x = lumi(a), y = lumi(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  function hx(c) { return '#' + c.map(function(v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); }
+  var t = rgb(hex), W = [255, 255, 255], K = [14, 26, 43];
+  if (ratio(W, t) >= 4.5) return { light: false, band: hex };
+  if (ratio(K, t) >= 7) return { light: true, band: hex };
+  for (var k = 0.04; k <= 0.401; k += 0.04) {
+    var m = t.map(function(v) { return v * (1 - k); });
+    if (ratio(W, m) >= 4.5) return { light: false, band: hx(m) };
+  }
+  return { light: ratio(K, t) > ratio(W, t), band: hex };
+}
+
 // ── Render ─────────────────────────────────────────────
 function render(d) {
   var city = d.city, tr = d.cityTr, stops = d.stops;
@@ -530,10 +549,9 @@ function render(d) {
 
   // ── Pas strony albumu w kolorze „drużyny” miasta ──
   var team = /^#[0-9a-f]{6}$/i.test(city.bandana_color || '') ? city.bandana_color : '#0B4EA2';
-  var tr6 = parseInt(team.slice(1), 16);
-  var lum = (0.299 * (tr6 >> 16) + 0.587 * ((tr6 >> 8) & 255) + 0.114 * (tr6 & 255)) / 255;
-  var light = lum > 0.62;
-  html += '<header class="band qc-band' + (light ? ' qc-band--light' : '') + '" style="--team:' + team + ';--team-ink:' + (light ? '#0E1A2B' : '#FFFFFF') + '">';
+  var ink = teamInk(team), light = ink.light;
+  html += '<header class="band qc-band' + (light ? ' qc-band--light' : '') + '" style="--team:' + team + ';--team-ink:' + (light ? '#0E1A2B' : '#FFFFFF') +
+          (ink.band !== team ? ';--team-band:' + ink.band : '') + '">';
 
   // ── Breadcrumb ──
   var homeLabel = ui('nav.home', 'Strona główna');
