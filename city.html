@@ -107,6 +107,7 @@ var currentLang = new URLSearchParams(location.search).get('lang') || (window.QS
 var cityData = null;
 var langList = [];
 var uiStrings = {};
+var isMember = false;   // treść z trip_member (zalogowany rodzic) → QR dla dziecka niesie token dziecka (kt=)
 
 // ── Que icons per stop category ───────────────────────
 var QUE_IKONY = {
@@ -237,6 +238,42 @@ function memberData(lang) {
   }).catch(function() { return guestData(lang).then(function(d) { d.keyError = 'network'; return d; }); });
 }
 function accessKey() { return window.QAccess ? window.QAccess.get() : ''; }
+function fallbackData(lang) { var key = accessKey(); return key ? fullData(lang, key) : (hasSession() ? memberData(lang) : guestData(lang)); }
+
+// Link dziecka z QR zalogowanego rodzica (K2, JP 2026-10-28): ?view=kid&kt=… — jednodniowy token tej trasy, treść z trip_kid.
+// Token znika z paska adresu (żeby nie trafił do statystyk ani dalej w udostępnionym linku) i zostaje w sessionStorage
+// tej karty (qc.kt), więc odświeżenie strony dalej działa.
+var KID_LINK = new URLSearchParams(location.search).get('view') === 'kid';
+var KID_TOKEN = (function() {
+  var q = new URLSearchParams(location.search), t = q.get('kt') || '', ok = /^[A-Za-z0-9_-]{32,64}$/;
+  if (t && ok.test(t)) {
+    try {
+      sessionStorage.setItem('qc.kt', JSON.stringify({ slug: citySlug, t: t }));
+      q.delete('kt');
+      if (history.replaceState) history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+    } catch (e) {}
+    return t;
+  }
+  if (!KID_LINK) return '';
+  try { var s = JSON.parse(sessionStorage.getItem('qc.kt') || 'null'); if (s && s.slug === citySlug && ok.test(s.t || '')) return s.t; } catch (e) {}
+  return '';
+})();
+function kidData(lang) {
+  return rpc('trip_kid', { p_slug: citySlug, p_lang: lang, p_kid: KID_TOKEN }).then(function(j) {
+    if (j && !j.error) return shapeFull(j, lang);
+    return fallbackData(lang).then(function(d) { d.kidError = (j && j.error) || 'error'; return d; });
+  }, function() {
+    return fallbackData(lang).then(function(d) { d.kidError = 'network'; return d; });
+  });
+}
+// Ekran dla dziecka, gdy link nie daje dostępu (token wygasł/zły, trasa zablokowana): bez konta, bez klucza, bez list.
+function kidAskHtml() {
+  var en = 'Ask your parent to open Quolino and show you the QR code.';
+  var pl = 'Poproś rodzica, żeby otworzył Quolino i pokazał Ci kod QR.';
+  return '<section class="qc-kidask" role="status">' +
+    '<img src="/media/icons/quo-qr-256.webp" srcset="/media/icons/quo-qr-256.webp 1x, /media/icons/quo-qr-512.webp 2x" width="160" height="160" alt="" decoding="async">' +
+    '<h1 class="qc-kidask__text">' + esc(ui('kid.ask_parent', currentLang === 'pl' ? pl : en)) + '</h1></section>';
+}
 
 // ── Language prefs ─────────────────────────────────────
 function readPref()  { try { return localStorage.getItem('quolino_lang'); } catch(e) { return null; } }
@@ -264,12 +301,11 @@ function loadPage(lang) {
     history.replaceState(null, '', ssrPath(lang) + location.search + location.hash);
 
   var QD = window.QDraft;
-  var key = QD ? '' : accessKey();
   var dataP = QD
     ? Promise.all(QD.core(lang, SB_URL, SB_KEY, FALLBACK)).then(function(r) {
         return { city: r[0][0], cityTrRows: r[1], stops: r[2], emergency: QD.asGuest ? [] : r[3], locked: !!QD.asGuest };
       })
-    : (key ? fullData(lang, key) : (hasSession() ? memberData(lang) : guestData(lang)));
+    : (KID_TOKEN ? kidData(lang) : fallbackData(lang));
   Promise.all([dataP].concat([
     sb('languages', 'enabled=eq.true&order=priority'),
     sb('ui_translations', 'lang=eq.' + lang),
@@ -337,6 +373,17 @@ function loadPage(lang) {
     document.title = seoTitle;
     ustawMeta(city, cityTr, processedStops);
     document.documentElement.lang = lang;
+
+    // link dziecka bez dostępu: jeden prosty ekran zamiast listy pustych przystanków i ściany logowania (K2c)
+    if (KID_LINK && D.locked && !QD) {
+      var kroot = document.getElementById('city');
+      if (kroot) kroot.dataset.view = 'kid';
+      document.getElementById('mainContent').innerHTML = kidAskHtml();
+      buildLangPopup();
+      updateActiveLang();
+      return;
+    }
+    isMember = !!D.member;
 
     render({
       city: city, cityTr: cityTr, stops: processedStops,
@@ -1033,6 +1080,28 @@ function addLogoToQR(canvas) {
   ctx.restore();
 }
 
+// Token dziecka (K2): jeden na wejście rodzica na stronę trasy, ważny do końca dnia (Europe/Rome), tylko ta trasa.
+// Przełączanie przystanków i zmiana języka nie tworzą nowego tokenu. Bez wdrożonego RPC albo bez sesji → QR jak dawniej.
+var kidTok = null, qrSeq = 0;
+function kidToken() {
+  if (kidTok && kidTok.slug === citySlug && (!kidTok.exp || kidTok.exp > Date.now() + 5 * 60 * 1000)) return kidTok.p;
+  var rec = { slug: citySlug, exp: 0 };
+  rec.p = whenAuth().then(function(A) { return A ? A.session() : null; }).then(function(sess) {
+    if (!sess || !sess.at) throw new Error('brak sesji');
+    return rpc('kid_token_create', { p_slug: rec.slug, p_token: sess.at });
+  }).then(function(j) {
+    if (!j || !j.token) throw new Error((j && j.error) || 'brak tokenu');
+    rec.exp = Date.parse(j.expires_at) || 0;
+    return j.token;
+  }).catch(function(e) {
+    console.warn('[city.html] token dziecka:', e && e.message);
+    if (kidTok === rec) kidTok = null;
+    return '';
+  });
+  kidTok = rec;
+  return rec.p;
+}
+
 function generateKidQR() {
   var el = document.getElementById('qrCode');
   if (!el || typeof QRCode === 'undefined') return;
@@ -1042,7 +1111,23 @@ function generateKidQR() {
   params.set('view', 'kid');
   var hidden = getHiddenStops();
   if (hidden.length) params.set('hide', hidden.join(','));
-  if (accessKey()) params.set('k', accessKey());   // telefon dziecka zapisze klucz i usunie go z adresu
+  var seq = ++qrSeq;
+  if (accessKey()) params.set('k', accessKey());   // klucz testera: telefon dziecka zapisze klucz i usunie go z adresu
+  else if (KID_TOKEN) params.set('kt', KID_TOKEN);  // telefon dziecka przekazuje dalej ten sam token
+  else if (isMember) {
+    kidToken().then(function(t) {
+      if (seq !== qrSeq) return;   // w międzyczasie rodzic przełączył przystanek — rysuje nowsze wywołanie
+      if (t) params.set('kt', t);
+      drawKidQR(params);
+    });
+    return;
+  }
+  drawKidQR(params);
+}
+
+function drawKidQR(params) {
+  var el = document.getElementById('qrCode');
+  if (!el) return;
   var kidUrl = location.origin + location.pathname + '?' + params.toString();
   el.innerHTML = '';
   new QRCode(el, {
