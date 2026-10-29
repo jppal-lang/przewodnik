@@ -15,6 +15,8 @@
 // Warstwa publiczna: opis miasta, przystanki (nazwa, opis dla rodzica, informacje praktyczne),
 // plan dnia (godzina + przystanek), punkty awaryjne. GRA (questy, wskazówki, zadania foto, album)
 // NIE trafia do HTML — doczytuje ją skrypt strony (później: za dostępem).
+// 2026-10-29: og:image = media/og/<slug>-<lang>.jpg (bin/og-images.mjs, I-4); region z treścią, okruszkami i ItemList w HTML (I-18);
+// speed.js w <head> (prerender + przejścia, I-9); „Pełny dzień” bez godzin dla tras > 9 h (D-3).
 // Bez zależności: Node 20+ (fetch, http). Dane przez publiczne PostgREST (te same uprawnienia co strona).
 import http from 'node:http';
 import { readFileSync, statSync } from 'node:fs';
@@ -176,6 +178,24 @@ function template() {
   return tpl.html;
 }
 
+// ── D-3 (JP 2026-10-29): trasa dłuższa niż 9 h to „Pełny dzień” bez liczby godzin (jak QTrip.isFullDay w trip-ui.js) ──
+const isFullDay = (h) => Number.isFinite(+h) && +h > 9;
+const dayLabel = (city, u) => (isFullDay(city.duration_hours) || city.duration_type !== 'half_day')
+  ? u('filter.full_day', 'Pełny dzień') : u('filter.half_day', 'Pół dnia');
+// ── I-4: grafika podglądu linku media/og/<slug>-<lang>.jpg (skrypt bin/og-images.mjs); brak pliku → polska, potem kadr hero ──
+const OG_W = 1200, OG_H = 630;
+const ogFile = (name) => { try { return statSync(`${SITE_DIR}/media/og/${name}`).isFile(); } catch { return false; } };
+function ogImageTags(img, alt, size = true) {
+  return `<meta property="og:image" content="${esc(img)}">\n` +
+    (size ? `<meta property="og:image:width" content="${OG_W}">\n<meta property="og:image:height" content="${OG_H}">\n` : '') +
+    (/\.jpe?g$/.test(img) ? '<meta property="og:image:type" content="image/jpeg">\n' : '') +
+    `<meta property="og:image:alt" content="${esc(alt)}">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="${esc(img)}">\n`;
+}
+// ── I-9: prerender linków wewnętrznych i przejścia między stronami (speed.js); city.html nie jest w zakresie tej roli → dokładamy z serwera ──
+const SPEED_TAG = '<script src="/speed.js?v=1"></script>\n';
+// stats.js od v=3 liczy odsłonę dopiero po pokazaniu strony przygotowanej w tle; starszy adres w szablonie → v=3 (tylko podbicie w górę)
+const statsUp = (html) => html.replace(/\/stats\.js\?v=[0-2]"/, '/stats.js?v=3"');
+
 function publicLayer(d, lang, ui) {
   const u = (k, f) => ui[k] ?? f;
   const { tr, stops, city } = d;
@@ -184,7 +204,7 @@ function publicLayer(d, lang, ui) {
   h += `<header><h1>${esc(tr.title ?? city.slug)}</h1>`;
   if (tr.region_label) h += `<p class="ssr-region">${esc(tr.region_label)}</p>`;
   if (tr.subtitle) h += `<p class="ssr-sub">${esc(tr.subtitle)}</p>`;
-  h += `<p>${esc(city.duration_type === 'half_day' ? u('label.half_day', 'pół dnia') : u('label.full_day', 'cały dzień'))} · ` +
+  h += `<p>${esc(dayLabel(city, u))} · ` +
        `${esc(u('label.stops_count', '{n} przystanków').replace('{n}', stops.length))}</p></header>`;
   if (tr.lead) h += paras(tr.lead);
   h += `<section><h2>${esc(u('label.route_stops', 'Trasa punkt po punkcie'))}</h2><ol class="ssr-stops">`;
@@ -228,8 +248,11 @@ function headExtra(d, lang, langs, ui, loc, names) {
   h += `<link rel="alternate" hreflang="x-default" href="${esc(cityUrl(FALLBACK, loc))}">\n`;
   h += `<meta name="description" content="${esc(desc)}">\n<meta property="og:type" content="article">\n` +
        `<meta property="og:title" content="${esc((tr.title ?? city.slug) + ' — Quolino')}">\n<meta property="og:description" content="${esc(desc)}">\n` +
-       `<meta property="og:url" content="${esc(url)}">\n<meta property="og:image" content="${esc(img)}">\n<meta property="og:locale" content="${esc(lang)}">\n` +
-       `<meta name="twitter:card" content="summary_large_image">\n`;
+       `<meta property="og:url" content="${esc(url)}">\n<meta property="og:locale" content="${esc(lang)}">\n`;
+  // podgląd linku (WhatsApp, Messenger): JPG z Quo i nazwą miasta w języku strony; WebP hero tylko gdy grafiki jeszcze nie ma
+  const og = [`${city.slug}-${lang}.jpg`, `${city.slug}-${FALLBACK}.jpg`].find(ogFile);
+  h += ogImageTags(og ? `${SITE}/media/og/${og}` : img, `${tr.title ?? city.slug} ${u('seo.with_kids', 'z dziećmi')} — Quolino`, !!og);
+  h += SPEED_TAG;
   h += `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n` +
        `<script type="application/ld+json">${JSON.stringify(bc).replace(/</g, '\\u003c')}</script>\n`;
   const paths = Object.fromEntries(langs.map(l => [l, { city: cityPath(l, loc), region: regionPath(l, loc), country: countryPath(l, loc) }]));
@@ -300,7 +323,7 @@ async function renderCity(lang, country, region, slug, oldSchema) {
   if (!d) return { status: 404 };
   const [ui, names] = await Promise.all([uiDict(lang), crumbNames(meta, lang)]);
   const { title, head } = headExtra(d, lang, langs, ui, meta, names);
-  let html = localizeUi(absolutize(template()), ui)
+  let html = localizeUi(statsUp(absolutize(template())), ui)
     .replace(/<html lang="[^"]*">/, `<html lang="${esc(lang)}">`)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
     .replace('</head>', head + '</head>');
@@ -310,7 +333,8 @@ async function renderCity(lang, country, region, slug, oldSchema) {
   return { status: 200, html };
 }
 
-// strona kraju / regionu pod ładnym adresem: statyczny szablon + parametry w window.QPAGE (zamiast ?k= / ?r=)
+// strona kraju / regionu pod ładnym adresem: statyczny szablon + parametry w window.QPAGE (zamiast ?k= / ?r=);
+// od 2026-10-29 region z treścią i danymi strukturalnymi z serwera (regionView), kraj z okruszkami w danych
 async function renderPlace(kind, place, lang, langs) {
   const ui = await uiDict(lang);
   const u = (k, f) => ui[k] ?? f;
@@ -331,12 +355,116 @@ async function renderPlace(kind, place, lang, langs) {
   h += `<meta property="og:type" content="website">\n<meta property="og:title" content="${esc(name + ' — Quolino')}">\n<meta property="og:url" content="${esc(url(lang))}">\n`;
   const paths = Object.fromEntries(langs.map(l => [l, placePath[kind](place, l)]));
   h += `<script>window.QPAGE=${JSON.stringify({ kind, id: kind === 'region' ? place.slug : place.code, lang, paths }).replace(/</g, '\\u003c')};</script>\n`;
+  // I-18 (JP 2026-10-29): region z treścią w HTML (nagłówek, opis, kafle tras jako zwykłe linki) + okruszki i ItemList w danych;
+  // kraj: okruszki w danych. Region bez tras (ekran „Wkrótce”, noindex) zostaje szablonem — dopisze go skrypt strony.
+  let body = null;
+  const ctry = await countryInfo(kind === 'region' ? place.country : place.code, lang, ui);
+  const crumbs = [['Quolino', `${SITE}/`], [ctry.name, ctry.place ? SITE + placePath.country(ctry.place, lang) : `${SITE}/#regiony`]];
+  if (kind === 'region') {
+    crumbs.push([name, url(lang)]);
+    const R = await regionView(place, lang, ui, name, tr, ctry);
+    if (R) { body = R.html; h += ldTag(R.ld); }
+  }
+  h += ldTag({ '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: crumbs.filter(c => c[0]).map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c[0], item: c[1] })) });
+  h += SPEED_TAG;   // og:image (ogólna grafika) jest już w statycznym szablonie region.html / country.html
   const file = `${SITE_DIR}/${kind}.html`;
-  const html = localizeUi(absolutize(readFileSync(file, 'utf8')), ui)
+  let html = localizeUi(statsUp(absolutize(readFileSync(file, 'utf8'))), ui)
     .replace(/<html lang="[^"]*">/, `<html lang="${esc(lang)}">`)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
     .replace('</head>', h + '</head>');
+  if (body) {
+    html = html.replace(/<nav class="crumbs band" id="crumbs"([^>]*)><\/nav>/, (m, a) => `<nav class="crumbs band" id="crumbs"${a} data-ssr="${esc(lang)}">${body.crumbs}</nav>`)
+      .replace(/<div id="regionContent" aria-busy="true">[\s\S]*?<!-- \/regionContent -->/, () => `<div id="regionContent" data-ssr="${esc(lang)}">${body.content}</div><!-- /regionContent -->`);
+  }
   return html;
+}
+const ldTag = (o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, '\\u003c')}</script>\n`;
+
+// kraj regionu: nazwa w języku strony, flaga, kontynent i ładny adres (do okruszków)
+const countryMeta = () => cached('country_meta', () => api('countries?select=slug,flag_code,continent'));
+async function countryInfo(code, lang, ui) {
+  const [rows, meta, P] = await Promise.all([
+    cached(`ctr:${code}:${lang}`, () => api(`country_translations?country_slug=eq.${encodeURIComponent(code)}&lang=in.(${lang},${FALLBACK})&select=lang,name`).catch(() => [])),
+    countryMeta().catch(() => []), placeSegs()]);
+  const m = meta.find(c => String(c.slug).toLowerCase() === code) ?? {};
+  return { code, name: nameOf(rows, lang) || code.toUpperCase(), flag: m.flag_code || code, continent: ui[`continent.${m.continent || 'europe'}`] || 'Europa', place: P.country[code] };
+}
+// tabela miast z polami kafla (kolor drużyny, czas, grafika) i liczba przystanków — jak na stronie regionu (region.html)
+const cityTiles = () => cached('city_tiles', async () => {
+  const [cs, pc] = await Promise.all([api('cities?select=slug,bandana_color,duration_type,duration_hours,hero_image,country&status=eq.published&order=sort_order'),
+    api('public_cities?select=slug,stops_count')]);
+  const n = Object.fromEntries(pc.map(c => [c.slug, c.stops_count || 0]));
+  return Object.fromEntries(cs.map(c => [c.slug, { ...c, stops: n[c.slug] ?? 0 }]));
+});
+function plForm(n, f) { const m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
+const PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
+const countLabel = (n, lang, u) => (lang === FALLBACK ? `${n} ${plForm(n, PLANS)}` : `${u('home.region_ready', 'gotowe plany')}: ${n}`);
+function stopsLabel(n, lang, u) {
+  if (lang === FALLBACK) return `${n} ${plForm(n, ['przystanek', 'przystanki', 'przystanków'])}`;
+  const m = n % 10, h = n % 100;
+  const few = ['cs', 'sk', 'uk', 'hr'].includes(lang) && m >= 2 && m <= 4 && !(h >= 12 && h <= 14);
+  return u(few ? 'label.stops_count_few' : 'label.stops_count', '{n} stops').replace('{n}', n);
+}
+// Treść strony regionu: ten sam układ co buildRegion() w region.html, więc skrypt strony nie musi jej przebudowywać
+// (zostawia ją przy pierwszym wczytaniu w tym samym języku — bez skoku układu, CLS z P-2).
+async function regionView(place, lang, ui, name, tr, ctry) {
+  const u = (k, f) => ui[k] ?? f;
+  const [cities, tiles, P] = await Promise.all([publishedCities(), cityTiles(), placeSegs()]);
+  const inLang = [];
+  for (const c of cities) if (lang === FALLBACK || (await langsFor(c)).includes(lang)) inLang.push(c);   // K7: tylko miasta z gotową stroną w tym języku
+  const mine = inLang.filter(c => c.region_slug === place.slug);
+  if (!mine.length) return null;
+  const ctr = await cached(`region_cities_tr:${place.slug}:${lang}`, () => api(`city_translations?city_slug=in.(${mine.map(c => encodeURIComponent(c.slug)).join(',')})&lang=in.(${lang},${FALLBACK})&select=city_slug,lang,title,subtitle`));
+  const withKids = u('seo.with_kids', 'z dziećmi');
+  const img = (t) => `/media/tours/${t.hero_image || `quolino-${t.country}-${t.slug}`}`;
+  const home = u('nav.home', 'Strona główna');
+  const crumbs = `<a class="crumb-home" href="/" title="${esc(home)}" aria-label="${esc(home)}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg></a>` +
+    `<span class="crumb-sep" aria-hidden="true">&rsaquo;</span><a href="/#regiony">${esc(ctry.continent)}</a>` +
+    `<span class="crumb-sep" aria-hidden="true">&rsaquo;</span><a href="${esc(ctry.place ? placePath.country(ctry.place, lang) : '/#regiony')}">${esc(ctry.name)}</a>` +
+    `<span class="crumb-sep" aria-hidden="true">&rsaquo;</span><span class="crumb-current" aria-current="page">${esc(name)}</span>`;
+  let c = '<div class="region-hero band page-band">' + `<h1 class="region-name">${esc(name)}</h1>`;
+  if (tr.description) c += `<p class="region-desc">${esc(tr.description)}</p>`;
+  c += `<div class="region-meta"><span><img src="/media/flags/${esc(ctry.flag)}.png" alt="">${esc(ctry.name)}</span><span>${esc(countLabel(mine.length, lang, u))}</span></div></div>`;
+  c += '<div class="city-grid" id="cityGrid">';
+  const items = [];
+  mine.forEach((m, i) => {
+    const t = tiles[m.slug] ?? { slug: m.slug, country: m.country };
+    const ct = ctr.find(x => x.city_slug === m.slug && x.lang === lang) ?? ctr.find(x => x.city_slug === m.slug && x.lang === FALLBACK) ?? {};
+    const title = ct.title || m.slug;
+    let sub = ct.lang === lang ? String(ct.subtitle || '').trim() : '';
+    if (sub && (sub.toLowerCase() === title.toLowerCase() || sub.toLowerCase().startsWith(`${title} ${withKids}`.toLowerCase()))) sub = '';
+    const full = isFullDay(t.duration_hours);
+    const badge = full || t.duration_type === 'full_day' ? u('filter.full_day', '') : t.duration_type ? u('filter.half_day', '') : '';
+    const href = cityPath(lang, m), base = img(t);
+    c += `<a class="city-card" href="${esc(href)}" data-city="${esc(m.slug)}"${t.bandana_color ? ` style="--team:${esc(t.bandana_color)}"` : ''}>` +
+      `<span class="sticker-no">${String(i + 1).padStart(2, '0')}</span><div class="city-img-wrap">` + (badge ? `<div class="city-badge">${esc(badge)}</div>` : '') +
+      `<img class="city-img loaded" alt="" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" width="768" height="768" src="${esc(base)}-tile-384.webp" srcset="${esc(base)}-tile-384.webp 384w, ${esc(base)}-tile-768.webp 768w" sizes="(max-width:560px) 92vw, 300px"></div>` +
+      '<div class="city-body"><div class="city-head">' + `<div class="city-name">${esc(title)}</div>` +
+      (t.duration_hours && !full ? `<div class="city-dur">${esc(u('label.duration_h', '~{n}h').replace('{n}', t.duration_hours))}</div>` : '') + '</div>' +
+      (sub ? `<div class="city-sub">${esc(sub)}</div>` : '') +
+      (t.stops ? `<div class="city-foot"><span class="city-accent" style="background:${esc(t.bandana_color || 'var(--terra)')}"></span><span>${esc(stopsLabel(t.stops, lang, u))}</span></div>` : '') +
+      `<div class="city-go"><span>${esc(u('home.cta_open', 'Zaczynamy!'))}</span><span class="arrow" aria-hidden="true">&rarr;</span></div></div></a>`;
+    items.push({ '@type': 'ListItem', position: i + 1, item: { '@type': 'TouristTrip', name: `${title} ${withKids}`, url: SITE + href, inLanguage: lang, touristType: 'Family',
+      image: `${SITE}${base}-hero-1200.webp`, ...(sub ? { description: sub } : {}) } });
+  });
+  c += '</div>';
+  // inne regiony tego kraju z trasami w tym języku (jak w region.html, ale od razu ładne adresy)
+  const count = {}; for (const m of inLang) count[m.region_slug] = (count[m.region_slug] ?? 0) + 1;
+  const others = Object.values(P.region).filter(r => r.slug !== place.slug && r.country === place.country && count[r.slug]);
+  if (others.length) {
+    const rt = await cached(`region_names:${lang}`, () => api(`region_translations?select=region_slug,lang,name&lang=in.(${lang},${FALLBACK})`).catch(() => []));
+    c += `<div class="other-regions"><p class="caps">${esc(u('label.other_regions_italy', 'Inne regiony'))}</p><div class="other-region-grid">`;
+    for (const r of others) {
+      const rn = nameOf(rt.filter(x => x.region_slug === r.slug), lang) || r.slug;
+      c += `<a class="other-region-tile" href="${esc(placePath.region(r, lang))}"><div class="ort-body"><div class="ort-country"><img src="/media/flags/${esc(ctry.flag)}.png" alt="">${esc(ctry.name)}</div>` +
+        `<div class="ort-name">${esc(rn)}</div><div class="ort-meta">${esc(countLabel(count[r.slug], lang, u))}</div></div><div class="ort-go" aria-hidden="true">&rarr;</div></a>`;
+    }
+    c += '</div></div>';
+  }
+  const ld = { '@context': 'https://schema.org', '@type': 'ItemList', name: `${name} ${withKids}`, url: SITE + placePath.region(place, lang),
+    numberOfItems: items.length, itemListElement: items };
+  return { html: { crumbs, content: c }, ld };
 }
 
 // 301 ze starych adresów jednym skokiem: ?c=<slug> (lub dawny url) → /{lang}/{kraj}/{region}/{miasto}/

@@ -33,18 +33,24 @@
   window.QStats = { track: track, enabled: enabled };
   if (!enabled) return;
 
-  // skrypt Umami: z naszej domeny, bez hasha w adresie (pager używa #pN), z szacunkiem dla „Do Not Track”
-  var s = document.createElement('script');
-  s.src = '/m.js'; s.defer = true;
-  s.setAttribute('data-website-id', WEBSITE_ID);
-  s.setAttribute('data-exclude-hash', 'true');
-  s.setAttribute('data-do-not-track', 'true');
-  s.setAttribute('data-domains', location.hostname);
-  s.setAttribute('data-tag', lang());                               // język strony (wybrany w Quolino), osobno od języka przeglądarki
-  s.onload = function () { loaded = true; flush(); };
-  s.onerror = function () { enabled = false; q.length = 0; };
-  document.head.appendChild(s);
-  var tries = 0, iv = setInterval(function () { if (flush() || ++tries > 40) clearInterval(iv); }, 250);
+  // skrypt Umami: z naszej domeny, bez hasha w adresie (pager używa #pN), z szacunkiem dla „Do Not Track”.
+  // I-9 (2026-10-29): strona przygotowana w tle (prerender, speed.js) liczy się dopiero, gdy rodzic ją naprawdę otworzy
+  // (document.prerendering → „prerenderingchange”); niepokazana nie wysyła nic. Zdarzenia z tego czasu czekają w kolejce.
+  function start() {
+    var s = document.createElement('script');
+    s.src = '/m.js'; s.defer = true;
+    s.setAttribute('data-website-id', WEBSITE_ID);
+    s.setAttribute('data-exclude-hash', 'true');
+    s.setAttribute('data-do-not-track', 'true');
+    s.setAttribute('data-domains', location.hostname);
+    s.setAttribute('data-tag', lang());                               // język strony (wybrany w Quolino), osobno od języka przeglądarki
+    s.onload = function () { loaded = true; flush(); };
+    s.onerror = function () { enabled = false; q.length = 0; };
+    document.head.appendChild(s);
+    var tries = 0, iv = setInterval(function () { if (flush() || ++tries > 40) clearInterval(iv); }, 250);
+  }
+  if (document.prerendering) document.addEventListener('prerenderingchange', start, { once: true });
+  else start();
 
   // ── kontekst strony ────────────────────────────────────────────────────────────────────
   var city = function () { var S = window.QSSR; return (S && (S.uslug || S.slug)) || qs.get('c') || ''; };

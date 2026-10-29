@@ -9,10 +9,21 @@
 <script src="/offline.js?v=1" defer></script>
 <title>Quolino — region</title>
 <meta name="robots" content="index, follow">
+<!-- I-4: podgląd linku — ogólna grafika Quolino (miasta mają własne JPG z serwera SSR) -->
+<meta property="og:site_name" content="Quolino">
+<meta property="og:image" content="https://quolino.com/media/og/quolino.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="Quo, maskotka Quolino, i naklejki miast z trasami dla rodzin">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://quolino.com/media/og/quolino.jpg">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css?v=37">
 <script src="/lang-pick.js?v=2"></script>
 <script src="i18n-ui.js?v=8"></script>
+<script src="/speed.js?v=1"></script>
+<link rel="expect" href="#cityGrid" blocking="render">
 </head>
 <body>
 
@@ -85,7 +96,7 @@
       <div class="slot city-slot"><span class="slot-no">02</span></div>
       <div class="slot city-slot"><span class="slot-no">03</span></div>
     </div>
-  </div>
+  </div><!-- /regionContent -->
   <script>(function () { var q = (window.QPAGE && QPAGE.kind === 'region' && (QPAGE.name || QPAGE.id)) || new URLSearchParams(location.search).get('r') || ''; var n = document.getElementById('skelName'); if (n && q) n.textContent = String(q).replace(/-/g, ' '); })();</script>
 
   <div class="footer">
@@ -108,6 +119,7 @@ var regionSlug  = (window.QPAGE && QPAGE.kind === 'region' && QPAGE.id) || new U
 var currentLang = window.QLang ? QLang.pick() : (new URLSearchParams(location.search).get('lang') || (window.QPAGE && QPAGE.lang) || readPref() || 'en');   // K5: lang-pick.js (?lang → adres /xx/ → zapis → przeglądarka → en)
 var langList = [];
 var uiStrings = {};
+var ssrUsed = false;   // treść z serwera (data-ssr) wykorzystana — kolejne wczytania (zmiana języka) budują stronę skryptem
 
 // ══════════════ HELPERS ══════════════
 function sb(table, params) {
@@ -151,6 +163,8 @@ function PT(key, pl) { return ui(key, pl); }
 
 // "~{n}h" → "~4h"
 function durationLabel(h) { return ui('label.duration_h', '~{n}h').replace('{n}', h); }
+// D-3 (JP 2026-10-29): trasa dłuższa niż 9 h to „Pełny dzień” bez liczby godzin (to samo co QTrip.isFullDay w trip-ui.js i SSR)
+function isFullDay(h) { h = parseFloat(h); return isFinite(h) && h > 9; }
 
 // Slavic plural handling for the stop counter
 function stopsLabel(n) {
@@ -225,6 +239,11 @@ function loadPage(lang) {
     PATHS_READY
   ]).then(function(res) {
     if (lang !== currentLang) return;   // w międzyczasie wybrano inny język
+    // I-18: treść regionu przyszła już z serwera w tym języku (te same kafle co buildRegion) — nie przebudowujemy jej przy pierwszym wczytaniu
+    var rc = document.getElementById('regionContent');
+    var fromServer = !ssrUsed && rc && rc.getAttribute('data-ssr') === lang;
+    ssrUsed = true;
+    if (rc && !fromServer) rc.removeAttribute('data-ssr');
     langList        = res[0];
     var uiRows      = res[1];
     var allRegions  = res[2];
@@ -264,6 +283,7 @@ function loadPage(lang) {
     var cities = allCities.filter(function(c) { return c.region_slug === regionSlug; });
 
     document.title = regionName + ' ' + ui('seo.with_kids', 'z dziećmi') + ' — ' + ui('seo.trip_plans', 'gotowe plany wycieczek') + ' | Quolino';
+    if (fromServer) return;
     buildCrumbs(continent, countryName, regionName, region.country_slug);
     buildRegion(region, regionName, countryName, country, rTr, cities, cityTrs, stopCount,
                 allRegions, regionTrs, allCities, countries, countryTrs);
@@ -387,8 +407,8 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
 
     var wrap = document.createElement('div');
     wrap.className = 'city-img-wrap loading';
-    if (city.duration_type) {
-      var badgeKey = city.duration_type === 'full_day' ? 'filter.full_day' : 'filter.half_day';
+    if (city.duration_type || isFullDay(city.duration_hours)) {
+      var badgeKey = city.duration_type === 'full_day' || isFullDay(city.duration_hours) ? 'filter.full_day' : 'filter.half_day';
       var badgeTxt = ui(badgeKey, '');
       if (badgeTxt) {
         var b = document.createElement('div');
@@ -409,7 +429,7 @@ function buildRegion(region, regionName, countryName, country, rTr, cities, city
     body.innerHTML =
       '<div class="city-head">' +
         '<div class="city-name">' + esc(title) + '</div>' +
-        (city.duration_hours ? '<div class="city-dur">' + esc(durationLabel(city.duration_hours)) + '</div>' : '') +
+        (city.duration_hours && !isFullDay(city.duration_hours) ? '<div class="city-dur">' + esc(durationLabel(city.duration_hours)) + '</div>' : '') +
       '</div>' +
       (sub ? '<div class="city-sub">' + esc(sub) + '</div>' : '') +
       (stops ? '<div class="city-foot"><span class="city-accent" style="background:' + (city.bandana_color || 'var(--terra)') + '"></span><span>' + esc(stopsLabel(stops)) + '</span></div>' : '') +
@@ -461,7 +481,7 @@ document.addEventListener('keydown', function(e) {
 loadPage(currentLang);
 </script>
 <script src="motion.js?v=5" defer></script>
-<script src="/stats.js?v=2" defer></script>
+<script src="/stats.js?v=3" defer></script>
 <script src="/auth.js?v=2" defer></script>
 <script src="/site-nav.js?v=2" defer></script>
 </body>

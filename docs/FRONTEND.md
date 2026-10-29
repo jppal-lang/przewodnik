@@ -151,6 +151,18 @@ bez okienek przeglądarki). Tylko PL, `noindex`.
 - API (`/api/admin_queue`, `/api/admin_versions`, `/api/rpc/admin_approve|admin_reject`)
   i kontenery to zakres Backendu — kontrakt i szkic SQL w `_admin/README.md`.
 
+## 6b. PODGLĄD LINKU, PRZEJŚCIA, SSR REGIONU (od 2026-10-29)
+
+- **og:image** miasta: `media/og/<slug>-<lang>.jpg` (1200×630, < 300 KB, tytuł i licznik przystanków w języku strony), ogólna
+  `media/og/quolino.jpg` (główna, kraj, region). Generator poza stroną: `node _content/claude-skills/bin/og-images.mjs [slug|--home]`
+  (Playwright, dane z API, kadr hero z Quo bez zmian). Uruchomić po publikacji miasta lub nowego języka; SSR bez pliku → `-pl.jpg` → hero WebP.
+- **speed.js** (w `<head>`, bez defer; SSR dokłada na stronach miast): Speculation Rules (prerender „moderate” dla głównej, kraju,
+  regionu, miasta; bez `nostats`, `draft=`, `view=kid`, logowania, konta, gry) + wspólna nazwa `qc-hero` kafel ↔ zdjęcie miasta.
+  `stats.js` (v3) liczy odsłonę dopiero po aktywacji (`document.prerendering`). CSS: blok „SEO, przejścia 2026-10-29” w styles.css.
+- **Region z serwera:** SSR wstawia nagłówek, kafle tras, inne regiony, okruszki oraz `ItemList` (TouristTrip) i `BreadcrumbList`;
+  `#regionContent[data-ssr=<lang>]` → region.html nie przebudowuje treści przy pierwszym wczytaniu (bez skoku układu).
+- **Czas trasy (D-3):** `duration_hours > 9` → „Pełny dzień” (`filter.full_day`) bez liczby godzin.
+
 ## 7. CHECKLIST PRZED ODDANIEM
 
 - [ ] Min 18px tekst treści, min 44×44px dotyk

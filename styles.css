@@ -1768,3 +1768,196 @@ body:has(.qc[data-view="kid"]) .qc-drawer-region{display:none!important}
   #qcPrintPlan .qp-foot{margin:2mm 0 0;font-style:italic}
   #qcPrintPlan .qp-kid__head{padding-bottom:4mm;border-bottom:2pt solid #000;margin-bottom:4mm}
 }
+
+/* SEO, przejścia 2026-10-29 — I-9: przejścia między stronami (View Transitions, bez frameworka).
+   Przeglądarka bez wsparcia po prostu ładuje stronę. „Ograniczone animacje” → bez przejść.
+   Kafel miasta i zdjęcie na stronie miasta mają wspólną nazwę qc-hero (speed.js nadaje ją klikniętemu kaflowi). */
+@media (prefers-reduced-motion: no-preference){
+  @view-transition{navigation:auto}
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.2s}
+  .qc-hero img{view-transition-name:qc-hero}
+  ::view-transition-group(qc-hero){animation-duration:.42s;animation-timing-function:cubic-bezier(.16,1,.3,1);border-radius:12px;overflow:clip}
+  ::view-transition-old(qc-hero),::view-transition-new(qc-hero){width:100%;height:100%;object-fit:cover}
+}
+
+/* logowanie kodem 2026-10-29 */
+/* zaloguj.html: „E-mail → Wyślij kod → 6 cyfr” (JP, D-1); konto.html: „Hasło (opcjonalnie)”. Tekst ≥18 px, cele ≥44×44 px. */
+.lg .lg-lead{margin:0;font-size:19px;color:var(--ink)}
+.lg input.lg-code{width:100%;min-height:64px;padding:8px 14px;border:2px solid var(--rule);border-radius:12px;background:var(--page);color:var(--ink);
+  font:800 32px/1.2 'Archivo',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.35em;text-align:center}
+.lg input.lg-code::placeholder{color:var(--muted);letter-spacing:.2em}
+.lg #ciAgain:disabled{opacity:.75}
+.acc-pass{margin-top:28px;padding-top:20px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:8px;font-size:18px}
+.acc-pass[hidden]{display:none}
+.acc-pass h3{margin:0;font-size:22px}
+.acc-pass .acc-sec__sub{margin:0 0 6px}
+.acc-pass label{font-weight:800}
+.acc-pass__row{position:relative}
+.acc-pass__row input{width:100%;min-height:52px;padding:10px 64px 10px 14px;border:2px solid var(--rule);border-radius:10px;font:500 19px/1.4 'Archivo',sans-serif;background:var(--page);color:var(--ink)}
+.acc-pass__row input:focus{outline:3px solid var(--azzurro);outline-offset:1px;border-color:var(--azzurro)}
+.acc-pass__eye{position:absolute;right:4px;top:4px;width:48px;height:44px;border:0;border-radius:8px;background:none;cursor:pointer;color:var(--muted)}
+.acc-pass__eye:focus-visible{outline:3px solid var(--azzurro)}
+.acc-pass__hint{margin:0;font-size:18px;color:var(--muted)}
+.acc-pass .qc-btn{align-self:flex-start;min-height:48px;cursor:pointer}
+.acc-pass .qc-btn:disabled{opacity:.6;cursor:default}
+.acc-pass__msg{margin:0;min-height:1.4em;font-weight:700}
+.acc-pass__msg.is-ok{color:var(--verde)}
+.acc-pass__msg.is-err{color:#B3261E}
+
+/* widok dziecka 2026-10-29 — sekcja [data-view=kid]: I-3 ekran „Pokaż rodzicowi”, I-6 dźwięk, I-7 rodzeństwo,
+   I-8 obietnica odkrywcy, I-10 „Podaj dziecku”, I-14 zapowiedź wieczorem, I-15 tryb maluch (kid-play.js, kid-sound.js, kid-reward.js) */
+/* I-6: przełącznik dźwięku (domyślnie wyłączony) */
+.qk-snd{flex:none;width:48px;height:48px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--page);color:var(--muted);cursor:pointer}
+.qk-snd[aria-pressed="true"]{background:var(--azzurro);color:#fff}
+.qk-snd:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.qk-card__head .qk-snd{margin-left:auto}
+.qk-card__head .qk-card__count{flex:none}
+.qk-card__head .qk-me{min-width:0}
+/* wybór Quo: rodzeństwo i tryb maluch */
+.qk-team{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.qk-team[hidden]{display:none}
+.qk-team__item{display:inline-flex;align-items:center;border-radius:var(--r-pill);background:var(--page)}
+.qk-team__kid{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:4px 12px 4px 4px;border:0;border-radius:var(--r-pill);background:transparent;font:inherit;font-weight:800;font-size:var(--fs-min);color:var(--ink);cursor:pointer}
+.qk-team__kid[aria-pressed="true"]{background:var(--azzurro-50);box-shadow:0 0 0 3px var(--azzurro)}
+.qk-team__rm{width:44px;height:44px;border:0;border-radius:50%;background:transparent;font-size:26px;line-height:1;color:var(--muted);cursor:pointer}
+.qk-ava--sm{width:40px;height:40px}
+.qk-ava--sm img{width:38px;height:38px}
+.qk-smallsw{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;min-height:56px;border-radius:12px;background:var(--page);cursor:pointer}
+.qk-smallsw input{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:52px;height:32px;margin:0;border-radius:var(--r-pill);background:var(--slot);cursor:pointer;transition:background .2s}
+.qk-smallsw input::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:var(--lift-1);transition:transform .2s var(--ease)}
+.qk-smallsw input:checked{background:var(--verde)}
+.qk-smallsw input:checked::after{transform:translateX(20px)}
+.qk-smallsw input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.qk-smallsw > span{display:flex;flex-direction:column;gap:2px}
+.qk-smallsw b{font-weight:900;font-size:19px;color:var(--ink)}
+.qk-smallsw small{font-size:var(--fs-min);color:var(--ink2)}
+.qk-addkid{width:100%;margin-top:12px}
+.qk-addkid[hidden]{display:none}
+/* I-8: odznaka na dziś (róg karty obrazka) i okno obietnicy */
+.qk-oath{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:6px 14px;border-radius:8px;background:var(--foil);color:var(--sun-ink);font-weight:900;font-size:var(--fs-min);box-shadow:var(--lift-1);transform:rotate(-2deg)}
+.qk-vowsheet .qk-sheet__box{text-align:center}
+.qk-oath__quo{display:block;width:150px;height:150px;margin:0 auto 8px;object-fit:contain}
+.qk-vowsheet .qk-sheet__title{margin:0 48px 6px}
+.qk-oath__vow{margin:0 0 22px;padding:16px 18px;border-radius:14px;background:var(--azzurro-50);font-size:22px;font-weight:800;line-height:1.35;color:var(--azzurro-ink)}
+.qk-vow{position:relative;display:grid;place-items:center;width:168px;height:168px;margin:8px auto 0;border:0;border-radius:50%;background:var(--sun);color:var(--sun-ink);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:inset 0 -6px 0 rgba(0,0,0,.14),var(--lift-2)}
+.qk-vow__ring{position:absolute;inset:-10px;width:calc(100% + 20px);height:calc(100% + 20px);transform:rotate(-90deg);pointer-events:none}
+.qk-vow__ring circle{fill:none;stroke:var(--rule);stroke-width:8}
+.qk-vow__ring .qk-vow__fill{stroke:var(--verde);stroke-dasharray:339.3;stroke-dashoffset:339.3;stroke-linecap:round}
+.qk-vow.is-holding .qk-vow__fill,.qk-vow.is-held .qk-vow__fill{stroke-dashoffset:0;transition:stroke-dashoffset var(--hold,1s) linear}
+.qk-vow__txt{position:relative;font-stretch:75%;font-weight:900;font-size:26px;text-transform:uppercase}
+.qk-vow:focus-visible{outline:3px solid var(--azzurro);outline-offset:14px}
+.qk-oath__tip{margin:16px 0 0;font-size:var(--fs-min);font-weight:700;color:var(--ink2)}
+.qk-oath__tip[hidden],.qk-hand__tip[hidden]{display:none}
+.is-nudge{animation:qkNudge .4s var(--ease)}
+@keyframes qkNudge{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.qk-stamp{display:inline-flex;flex-direction:column;align-items:center;gap:4px;margin:26px auto 16px;padding:18px 26px;border-radius:14px;background:var(--foil);color:var(--sun-ink);box-shadow:var(--lift-2);transform:rotate(-4deg);animation:qkStamp .6s var(--ease) both}
+.qk-stamp span{font-size:34px;line-height:1}
+.qk-stamp b{font-stretch:75%;font-weight:900;font-size:28px;text-transform:uppercase}
+.qk-stamp small{font-size:var(--fs-min);font-weight:800}
+@keyframes qkStamp{from{transform:scale(1.6) rotate(8deg);opacity:0}to{transform:rotate(-4deg);opacity:1}}
+/* I-7: „Teraz szuka: …” nad misją */
+.qk-turn{display:none;grid-column:1/-1}
+.qc[data-view="kid"] .qk-turn,.qk-hand .qk-turn{display:block}
+.qk-turn__btn{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:6px 10px 6px 6px;border:0;border-radius:14px;background:var(--sun);color:var(--sun-ink);font:inherit;text-align:left;cursor:pointer;box-shadow:var(--lift-1);transform:rotate(-1deg)}
+.qk-turn__txt{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.15}
+.qk-turn__txt small{font-size:var(--fs-min);font-weight:700}
+.qk-turn__txt b{font-weight:900;font-size:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qk-turn__next{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.6);font-size:24px;font-weight:900}
+/* I-15: „Zaliczone / Mam to!”, czytanie na głos, „Pomóż mi”, „Czytaj dalej” */
+.qk-tiny{display:none;margin-top:14px}
+.qc[data-view="kid"].qk-small .qk-tiny,.qk-hand .qk-tiny{display:block}
+.qk-tiny__done{display:flex;align-items:center;justify-content:center;width:100%;min-height:64px;border:0;border-radius:14px;background:var(--azzurro);color:#fff;font:inherit;font-weight:900;font-size:24px;cursor:pointer;box-shadow:inset 0 -5px 0 rgba(0,0,0,.2)}
+.qk-tiny__done.is-done{background:var(--verde)}
+.qk-tiny__row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.qk-tiny__btn{flex:1 1 auto;min-height:56px;padding:0 16px;border:0;border-radius:12px;background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:19px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--rule)}
+.qk-tiny__btn.is-on{background:var(--azzurro-50);box-shadow:inset 0 0 0 3px var(--azzurro)}
+.qk-tiny__btn[hidden],.qk-tiny__ask[hidden]{display:none}
+.qk-tiny__ask{margin:10px 0 0;font-weight:800;color:var(--ink)}
+.qk-tiny__done:focus-visible,.qk-tiny__btn:focus-visible,.qk-turn__btn:focus-visible,.qk-team__kid:focus-visible,.qk-team__rm:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.qk-hand:not(.qk-small) .qk-tiny__row{display:none}
+.qc.qk-small .qc-task p,.qk-hand.qk-small .qc-task p{font-size:22px;line-height:1.4}
+.qc.qk-small .qc-task:not(.is-more) > p:not(.qc-task__hint) ~ p:not(.qc-task__hint),
+.qk-hand.qk-small .qc-task:not(.is-more) > p:not(.qc-task__hint) ~ p:not(.qc-task__hint){display:none}
+.qc.qk-small .qc-task:not(.is-help) .qc-task__hint,.qk-hand.qk-small .qc-task:not(.is-help) .qc-task__hint{display:none}
+.qc.qk-small .qc-funfact,.qk-hand.qk-small .qc-funfact{display:none}
+.qc.qk-small .qc-task input[type="checkbox"]{width:44px;height:44px}
+/* I-10: „Podaj dziecku” — przycisk u rodzica i pełny ekran dziecka na telefonie rodzica */
+.qk-handbtn{grid-column:1/-1;justify-self:start;background:var(--sun);color:var(--sun-ink);box-shadow:inset 0 -4px 0 rgba(0,0,0,.14);font-size:19px}
+.qk-handbtn:hover{background:var(--sun);box-shadow:inset 0 -4px 0 rgba(0,0,0,.22)}
+.qc[data-view="kid"] .qk-handbtn,.qc-stop--disabled .qk-handbtn{display:none!important}
+html.qk-hand-on{overflow:hidden}
+html.qk-hand-on .qc-dock,html.qk-hand-on .qc-pager{visibility:hidden}
+.qk-hand{position:fixed;inset:0;z-index:150;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 16px calc(24px + env(safe-area-inset-bottom));background:var(--page);outline:0}
+.qk-hand > *{max-width:640px;margin-left:auto;margin-right:auto}
+.qk-hand__top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.qk-hand__quo{flex:none;width:64px;height:64px;padding:0;border:0;border-radius:50%;background:var(--card);display:grid;place-items:center;cursor:pointer;box-shadow:var(--lift-1)}
+.qk-hand__quo > img{width:56px;height:56px;object-fit:contain}
+.qk-hand__quo .qk-ava{width:64px;height:64px}
+.qk-hand__title{flex:1;min-width:0}
+.qk-hand__title small{display:block;font-stretch:125%;font-weight:900;font-size:var(--fs-min);color:var(--azzurro)}
+.qk-hand__title h2{margin:0;font-stretch:62%;font-weight:900;font-size:clamp(28px,7vw,40px);line-height:1.05;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}
+.qk-hand [data-hand-turn]:not(:empty){margin-bottom:14px}
+.qk-hand__pick{display:flex;width:100%;margin-bottom:14px}
+.qk-hand__photo{margin:0 auto 14px;border-radius:14px;overflow:hidden;box-shadow:var(--lift-1)}
+.qk-hand__photo img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+.qk-hand .qc-funfact{margin-bottom:14px}
+.qk-hand__tasks{display:flex;flex-direction:column;gap:14px}
+.qk-hand__label{margin-bottom:8px;font-stretch:75%;font-weight:800;text-transform:uppercase;letter-spacing:.07em;font-size:var(--fs-min);color:var(--azzurro-ink)}
+.qk-hand .qc-task--photo .qk-hand__label{color:#6A4C00}
+.qk-hand .qc-task p{margin:0 0 8px;font-size:20px;line-height:1.45}
+.qk-hand.is-collected .qc-task{border-style:solid;border-color:var(--verde)}
+.qk-hand__state{margin:16px auto 0;text-align:center;font-weight:900;font-size:22px;color:var(--verde)}
+.qk-hand__state:empty{display:none}
+.qk-hand__pz{display:flex;width:100%;margin-top:14px}
+.qk-hand__back{margin-top:28px;padding-top:18px;border-top:2.5px dashed var(--slot);text-align:center}
+.qk-hold{position:relative;overflow:hidden;width:100%;min-height:60px;border:0;border-radius:14px;background:var(--card);color:var(--ink);font:inherit;font-weight:900;font-size:20px;cursor:pointer;box-shadow:inset 0 0 0 3px var(--ink2);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.qk-hold::before{content:"";position:absolute;inset:0;background:var(--azzurro-50);transform:scaleX(0);transform-origin:left center}
+.qk-hold.is-holding::before{transform:scaleX(1);transition:transform var(--hold,1s) linear}
+.qk-hold span{position:relative}
+.qk-hold:focus-visible,.qk-hand__quo:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.qk-hand__tip{margin:8px 0 0;font-size:var(--fs-min);color:var(--ink2)}
+/* karta QR rodzica: jeden telefon (I-10) i „wieczór przed” (I-14) */
+.qk-qr-one{margin:12px 0 0;padding:10px 14px;border-radius:10px;background:var(--azzurro-50);font-size:18px;color:var(--azzurro-ink)}
+.qk-qrday{margin:14px 0}
+.qk-qrday__q{margin:0 0 8px;font-weight:800;font-size:var(--fs-min)}
+.qk-qrday__opts{display:flex;flex-wrap:wrap;gap:8px}
+.qk-qrday__opts button{flex:1 1 140px;min-height:48px;padding:6px 14px;border:0;border-radius:var(--r-btn);background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:var(--fs-min);cursor:pointer;box-shadow:inset 0 0 0 2px var(--rule)}
+.qk-qrday__opts button[aria-pressed="true"]{background:var(--azzurro);color:#fff;box-shadow:none}
+.qk-qrday__opts button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.qk-qrday__note{margin:10px 0 0;font-size:var(--fs-min);color:var(--ink2)}
+.qk-qrday__note[hidden]{display:none}
+/* I-3: dziecko bez kodu */
+.qk-ask{max-width:640px}
+.qk-ask .qc-kidask__text{margin-bottom:8px}
+.qk-ask__lead{margin:0 0 20px;font-size:20px;color:var(--ink2)}
+.qk-ask__parent{margin:0 0 22px;padding:18px;border-radius:14px;background:var(--azzurro-50);text-align:left}
+.qk-ask__parent h2{margin:0 0 10px;font-stretch:75%;font-weight:900;font-size:22px;text-transform:uppercase;color:var(--azzurro-ink)}
+.qk-ask__steps{margin:0 0 14px;padding-left:28px;font-size:19px;line-height:1.45}
+.qk-ask__steps li{margin:0 0 6px}
+.qk-ask__scan{display:flex;width:100%;font-size:20px}
+.qk-ask__tip,.qk-ask__one{margin:12px 0 0;font-size:var(--fs-min);color:var(--ink2)}
+.qk-ask__msg{margin:10px 0 0;font-weight:800}
+.qk-ask__msg:empty,.qk-ask__picked:empty{display:none}
+.qk-ask__peek > p{margin:0 0 12px;font-size:19px;font-weight:700}
+.qk-ask__poses{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.qk-ask__pose{display:grid;place-items:center;aspect-ratio:1;min-height:64px;padding:4px;border:0;border-radius:50%;background:var(--page);cursor:pointer}
+.qk-ask__pose img{width:100%;height:100%;object-fit:contain}
+.qk-ask__pose[aria-pressed="true"]{background:var(--sun);box-shadow:0 0 0 3px var(--ink)}
+.qk-ask__pose:focus-visible{outline:3px solid var(--azzurro);outline-offset:2px}
+.qk-ask__picked{margin:12px 0 0;font-weight:800;color:var(--verde)}
+/* I-14: zapowiedź „Jutro: …!” */
+.qk-eve{max-width:640px;margin:28px auto 48px;padding:24px 18px;text-align:center;background:var(--card);border-radius:var(--r-stk);box-shadow:var(--lift-2)}
+.qk-eve__quo{display:block;width:180px;height:180px;margin:0 auto 6px;padding:0;border:0;background:none;cursor:pointer}
+.qk-eve__quo img{width:100%;height:100%;object-fit:contain}
+.qk-eve__quo:focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:50%}
+.qk-eve__title{margin:0 0 6px;font-stretch:62%;font-weight:900;font-size:clamp(40px,10vw,64px);line-height:1;text-transform:uppercase;color:var(--azzurro-ink);overflow-wrap:anywhere}
+.qk-eve__lead{margin:0 0 18px;font-size:20px;color:var(--ink2)}
+.qk-eve__pzt{margin:10px 0 20px;font-size:19px}
+.qk-eve__warm{margin:0 0 20px;padding:16px 18px;border-radius:14px;background:var(--sun-50);border:2.5px dashed #E5C25A;text-align:left}
+.qk-eve__warm h2{margin:0 0 6px;font-stretch:75%;font-weight:900;font-size:22px;text-transform:uppercase;color:#6A4C00}
+.qk-eve__warm p{margin:0;font-size:20px;line-height:1.4}
+.qk-eve__pick{display:flex;width:100%;font-size:20px}
+.qk-eve__team{display:flex;justify-content:center;gap:8px;margin-bottom:8px}
+.qk-eve__bye{margin:0 0 12px;font-size:22px;font-weight:900}
+@media(prefers-reduced-motion:reduce){.qk-stamp,.is-nudge{animation:none}.qk-turn__btn,.qk-oath{transform:none}}
+@media print{.qk-hand,.qk-handbtn,.qk-qrday{display:none!important}}

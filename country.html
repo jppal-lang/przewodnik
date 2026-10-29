@@ -9,10 +9,20 @@
 <script src="/offline.js?v=1" defer></script>
 <title>Quolino — kraj</title>
 <meta name="robots" content="index, follow">
+<!-- I-4: podgląd linku — ogólna grafika Quolino (miasta mają własne JPG z serwera SSR) -->
+<meta property="og:site_name" content="Quolino">
+<meta property="og:image" content="https://quolino.com/media/og/quolino.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="Quo, maskotka Quolino, i naklejki miast z trasami dla rodzin">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://quolino.com/media/og/quolino.jpg">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css?v=37">
 <script src="/lang-pick.js?v=2"></script>
 <script src="i18n-ui.js?v=8"></script>
+<script src="/speed.js?v=1"></script>
 </head>
 <body>
 
@@ -121,6 +131,8 @@ function ui(key, fb) { return uiStrings[key] || (window.QUI && window.QUI.t(key)
 function plForm(n, f) { var m = n % 10, h = n % 100; return n === 1 ? f[0] : (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) ? f[1] : f[2]; }
 function countLabel(n, key, fb, forms) { return String(currentLang).toLowerCase() === 'pl' ? n + ' ' + plForm(n, forms) : ui(key, fb) + ': ' + n; }
 var PLANS = ['gotowy plan', 'gotowe plany', 'gotowych planów'];
+// teksty page.* (ekran „Wkrótce”): PT('klucz', 'polski') — skaner ui-translate.mjs czyta je z tego pliku, tłumaczenia w uiStrings
+function PT(key, pl) { return ui(key, pl); }
 
 // ══════ GRAFIKI TRAS ══════
 // Jedna grafika z Que na wycieczke, robiona lokalnie skryptem img/!build-img.py.
@@ -131,9 +143,9 @@ var IMG_DIR = '/media/tours/';
 
 function imgBase(city) {
   if (!city) return '';
-  if (city.hero_image) return city.hero_image;          // nadpisanie z bazy
+  if (city.hero_image) return IMG_DIR + city.hero_image; // nadpisanie z bazy (sama nazwa pliku, jak w region.html)
   if (!city.country || !city.slug) return '';
-  return IMG_DIR + city.country + '-' + city.slug;
+  return IMG_DIR + 'quolino-' + city.country + '-' + city.slug;
 }
 function showFallback(wrap, color, letter) {
   wrap.classList.remove('loading');
@@ -273,12 +285,28 @@ function buildCountry(country, countryName, allRegions, regionTrs, allCities,
   // ── Hero ──
   html += '<div class="region-hero band page-band">';
   html += '<h1 class="region-name">' + esc(countryName) + '</h1>';
-  html += '<div class="region-meta"><span>' + (country.flag_code ? '<img src="/media/flags/' + country.flag_code + '.png" alt="">' : '') + esc(ui('continent.' + (country.continent || 'europe'), 'Europa')) + '</span><span>' + esc(countLabel(cityTotal, 'home.region_ready', 'gotowe plany', PLANS)) + '</span></div>';
+  html += '<div class="region-meta"><span>' + (country.flag_code ? '<img src="/media/flags/' + country.flag_code + '.png" alt="">' : '') + esc(ui('continent.' + (country.continent || 'europe'), 'Europa')) + '</span><span>' + esc(cityTotal ? countLabel(cityTotal, 'home.region_ready', 'gotowe plany', PLANS) : ui('chip.soon', 'Wkrótce')) + '</span></div>';
   html += '</div>';
 
+  // I-5 (JP 2026-10-29): kraj bez tras — zaproszenie z Quo zamiast „Jeszcze nic tu nie ma” (jak ekran „Wkrótce” regionu)
   if (!regions.length) {
-    html += '<div class="state-msg">' + esc(ui('error.no_regions', 'Jeszcze nic tu nie ma — wracamy wkrótce.')) + '</div>';
+    html += '<section class="soon-screen" aria-labelledby="soonTitle">' +
+      '<img class="soon-screen__quo" src="/media/icons/quo-wkrotce-256.webp" srcset="/media/icons/quo-wkrotce-256.webp 1x, /media/icons/quo-wkrotce-512.webp 2x" width="180" height="180" alt="" decoding="async">' +
+      '<h2 id="soonTitle"><span data-k="page.country.soon_title">' + esc(PT('page.country.soon_title', 'Quo szykuje tu trasy')) + '</span></h2>' +
+      '<p><span data-k="page.country.soon_lead">' + esc(PT('page.country.soon_lead', 'Mapa już leży na stole, a plecak czeka przy drzwiach. Pierwsze rodzinne trasy w tym kraju pojawią się wkrótce. Do tego czasu ruszcie tam, gdzie Quo już był.')) + '</span></p>' +
+      '<p class="nf__acts"><a class="qc-btn qc-btn--primary" href="/?lang=' + esc(currentLang) + '#regiony"><span data-k="page.country.soon_regions">' + esc(PT('page.country.soon_regions', 'Zobacz gotowe regiony')) + '</span></a>' +
+      '<a class="qc-btn" href="/?lang=' + esc(currentLang) + '"><span data-k="page.country.soon_home">' + esc(PT('page.country.soon_home', 'Strona główna')) + '</span></a></p></section>';
     el.innerHTML = html;
+    // teksty page.country.* nie przychodzą w uiStrings (zapytanie bez page.*) — jedno małe zapytanie tylko tutaj; brak → angielski → polski
+    if (currentLang !== 'pl') {
+      var soonLang = currentLang;
+      sb('ui_translations', 'select=key,lang,value&key=like.page.country.soon*&lang=in.(' + encodeURIComponent(soonLang) + ',en)').then(function (rows) {
+        if (soonLang !== currentLang) return;
+        var d = {}, en = {};
+        (rows || []).forEach(function (r) { (r.lang === soonLang ? d : en)[r.key] = r.value; });
+        document.querySelectorAll('.soon-screen [data-k]').forEach(function (n) { var v = d[n.getAttribute('data-k')] || en[n.getAttribute('data-k')]; if (v) n.textContent = v; });
+      }).catch(function () { /* zostaje polski */ });
+    }
     return;
   }
 
@@ -356,7 +384,7 @@ loadPage(currentLang);
 <script src="media/map/europe.js?v=3"></script>
 <script src="atlas.js?v=9"></script>
 <script src="motion.js?v=5" defer></script>
-<script src="/stats.js?v=2" defer></script>
+<script src="/stats.js?v=3" defer></script>
 <script src="/auth.js?v=2" defer></script>
 <script src="/site-nav.js?v=2" defer></script>
 </body>
