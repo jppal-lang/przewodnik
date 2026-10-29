@@ -10,7 +10,8 @@
    I-13 „Zwykły dzień · Upał · Deszcz” — wybór rodzica, bez prognozy i bez API: podświetla przystanki
         z kategorii wnętrz (kościół, muzeum, synagoga). qc.daymode.<slug> = {m, d} — ważny dziś i jutro.
    I-16 Karta „Przy kolacji” na ostatnim przystanku (widać ją po dotarciu do końca trasy, #city[data-trip-end]):
-        trzy pytania i notatka rodziny zapisywana w qc.album (pole note) — tylko na tym urządzeniu.
+        trzy pytania i notatka rodziny zapisywana w qc.album (pole note) — tylko na tym urządzeniu. Przed ukończeniem
+        trasy notatka czeka w qc.album jako szkic (pending: true) i nie robi z miasta zdobytego (saveDinner).
    I-17 Plan na kartce A4 + karta misji dla dziecka: arkusz #qcPrintPlan budowany przed drukiem
         (przycisk albo menu przeglądarki → „Drukuj” / „Zapisz jako PDF”), style w styles.css (@media print).
    Zero zależności; QR na kartce rysuje qrcodejs wbudowany w city.html (gdy jest).
@@ -300,21 +301,28 @@
       '<span class="qc-dinner__ok" role="status"></span></div>' +
       '<p class="qc-dinner__priv">' + esc(PT('page.trip.dinner_priv', 'Notatka zostaje tylko na tym telefonie, w albumie w panelu rodzica.')) + '</p></section>';
   }
-  function saveDinner(btn) {
+  // Notatka nie tworzy wpisu albumu (miasto zdobywa się dopiero po ukończeniu trasy, kid-reward.js saveAlbum).
+  // Bez wpisu czeka w tym samym kluczu qc.album jako szkic { slug, pending: true, note, note_date } — panel rodzica
+  // (konto.html) szkiców nie pokazuje, a saveAlbum po ukończeniu trasy przenosi notatkę do prawdziwego wpisu.
+  // Stare wpisy from:'dinner' (2026-10-29, przed tą zmianą) traktujemy tak samo jak szkic.
+  function isDraft(e) { return !!(e && (e.pending || e.from === 'dinner')); }
+  function saveDinner() {
     var ta = document.getElementById('qcDinnerNote'), ok = $('.qc-dinner__ok');
     if (!ta) return;
-    var text = String(ta.value || '').trim().slice(0, 600), list = albumList(), o = S.o, c = o.city || {}, i = -1;
-    list.forEach(function (e, j) { if (e && e.slug === o.slug) i = j; });
-    if (i < 0) {
-      if (!text) return;
-      var hero = c.hero_image ? '/media/tours/' + c.hero_image : (c.country && c.slug ? '/media/tours/quolino-' + c.country + '-' + c.slug : '');
-      list.push({ slug: o.slug, city: o.cityName || o.slug, country: c.country || '', region: c.region_slug || c.region || '', hero: hero,
-                  pieces: $$('.qc-stop[data-collectable]').length, date: today(), first: today(), nick: '', pose: 1, color: 0, from: 'dinner' });
-      i = list.length - 1;
-    }
-    if (text) { list[i].note = text; list[i].note_date = today(); } else { delete list[i].note; delete list[i].note_date; }
+    var text = String(ta.value || '').trim().slice(0, 600), list = albumList(), slug = S.o.slug, i = -1;
+    list.forEach(function (e, j) { if (e && e.slug === slug) i = j; });
+    if (i > -1 && isDraft(list[i])) { list.splice(i, 1); i = -1; }   // szkic budujemy od nowa (bez pól udających zdobyte miasto)
+    var draft = i < 0;
+    if (text) {
+      if (draft) { list.push({ slug: slug, pending: true }); i = list.length - 1; }
+      list[i].note = text; list[i].note_date = today();
+    } else if (!draft) { delete list[i].note; delete list[i].note_date; }
     lsSet(K_ALBUM, JSON.stringify(list));
-    if (ok) { ok.textContent = text ? PT('page.trip.dinner_saved', 'Zapisane w albumie.') : PT('page.trip.dinner_cleared', 'Notatka usunięta.'); setTimeout(function () { ok.textContent = ''; }, 3000); }
+    if (ok) {
+      ok.textContent = !text ? PT('page.trip.dinner_cleared', 'Notatka usunięta.') :
+        draft ? PT('page.trip.dinner_pending', 'Zapisane. Notatka trafi do albumu, gdy dziecko ukończy trasę.') : PT('page.trip.dinner_saved', 'Zapisane w albumie.');
+      setTimeout(function () { ok.textContent = ''; }, 4000);
+    }
   }
   function mountDinner() {
     if (S.o.locked) return;

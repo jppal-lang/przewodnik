@@ -306,7 +306,11 @@
     // I-8: odznaka „Obietnica odkrywcy” złożona dziś na tej trasie trafia do wpisu albumu (pole oath = data)
     var oath = a.oaths && a.oaths.indexOf(S.slug) > -1 && a.date === today() ? today() : (i > -1 && list[i].oath) || '';
     if (oath) entry.oath = oath;
-    if (i > -1) { if (list[i].date === entry.date && list[i].pieces === entry.pieces && (list[i].oath || '') === (entry.oath || '')) return; entry.first = list[i].first || list[i].date; list[i] = entry; }
+    // notatka „Przy kolacji” (trip-tools.js) przechodzi do wpisu; szkic (pending / stary from:'dinner') staje się wpisem dopiero tu
+    var draft = i > -1 && (list[i].pending || list[i].from === 'dinner');
+    if (i > -1 && list[i].note) { entry.note = list[i].note; if (list[i].note_date) entry.note_date = list[i].note_date; }
+    if (draft) { entry.first = entry.date; list[i] = entry; }
+    else if (i > -1) { if (list[i].date === entry.date && list[i].pieces === entry.pieces && (list[i].oath || '') === (entry.oath || '')) return; entry.first = list[i].first || list[i].date; list[i] = entry; }
     else { entry.first = entry.date; list.push(entry); }
     lsSet(K_ALBUM, list);
   }

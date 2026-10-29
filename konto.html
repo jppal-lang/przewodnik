@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/styles.css?v=39">
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
-<script src="/kid-reward.js?v=3"></script>
+<script src="/kid-reward.js?v=5"></script>
 <script src="/auth.js?v=3"></script>
 </head>
 <body class="acc">
@@ -233,7 +233,8 @@
   function pose(i, size) { return '/media/icons/pose-' + POSES[(i || 0) % POSES.length] + '-' + (size || 128) + '.webp'; }
   function colors() { return window.QReward ? window.QReward.colors : ['#0B4EA2']; }
 
-  var local = lsGet('qc.album') || [];
+  // szkice notatki „Przy kolacji” (pending, stare from:'dinner') to nie zdobyte miasta — do ukończenia trasy ich nie pokazujemy
+  var local = (lsGet('qc.album') || []).filter(function (e) { return e && e.slug && !e.pending && e.from !== 'dinner'; });
   // zalogowany rodzic widzi prawdziwy widok (pusty album = miasta „do zdobycia”); przykładowe dane tylko bez konta albo z ?demo=1
   var signedIn = AS ? AS === 'member' : !!(window.QAuth && QAuth.current());
   var demo = forceDemo || (!signedIn && !local.length);

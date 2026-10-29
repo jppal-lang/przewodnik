@@ -10,7 +10,7 @@
    Widok dziecka bez komercji: żadnych cen, partnerów, ocen, kont. Bez wieku i prawdziwych imion.
    Teksty: PT('page.trip.kid.…', 'polski') — tłumaczenia dopisuje ui-translate do ui_translations.
    Zależności: kid-reward.js (QReward), opcjonalnie kid-sound.js (QSound), haptic.js (QHaptic).
-   API: window.QKid = { init, ask, preview, previewDay, qrParams, str }
+   API: window.QKid = { init, ask, preview, previewDay, qrParams, qrExpiry, str }
    ===================================================================== */
 (function () {
   'use strict';
@@ -335,7 +335,8 @@
       '<div class="qk-qrday__opts" role="group" aria-labelledby="qkQrDayQ">' +
       '<button type="button" data-qrday="0" aria-pressed="' + !S.qrDay + '">' + esc(PT('page.trip.kid.qr_today', 'Dziś')) + '</button>' +
       '<button type="button" data-qrday="1" aria-pressed="' + !!S.qrDay + '">' + esc(PT('page.trip.kid.qr_tomorrow', 'Jutro — zapowiedź na wieczór')) + '</button></div>' +
-      '<p class="qk-qrday__note"' + (S.qrDay ? '' : ' hidden') + '>' + esc(PT('page.trip.kid.qr_tomorrow_note', 'Dziś wieczorem dziecko zobaczy zapowiedź trasy i wybierze swojego Quo. Rano pokażcie mu kod jeszcze raz.')) + '</p>';
+      '<p class="qk-qrday__note"' + (S.qrDay ? '' : ' hidden') + '>' + esc(PT('page.trip.kid.qr_tomorrow_eve', 'Dziś wieczorem dziecko zobaczy zapowiedź trasy i wybierze swojego Quo.')) +
+      '<span class="qk-qrday__again"' + (S.qrStale ? '' : ' hidden') + '> ' + esc(PT('page.trip.kid.qr_again', 'Ten kod działa tylko do północy — rano pokażcie dziecku kod jeszcze raz.')) + '</span></p>';
     if (copy) { copy.parentNode.insertBefore(day, copy); copy.parentNode.insertBefore(one, day); }
     else { qr.appendChild(one); qr.appendChild(day); }
   }
@@ -346,6 +347,13 @@
     if (S.regen) S.regen();
   }
   function qrParams(params) { if (S.qrDay && S.qrDay > today()) params.set('day', S.qrDay); }
+  // city.html po utworzeniu tokenu dziecka: exp (ms) = expires_at; dopisek „rano jeszcze raz” tylko, gdy token
+  // wygasa przed dniem trasy (SQL bez p_day). 0 = bez tokenu (klucz testera, gość) — dopisku nie ma.
+  function qrExpiry(exp) {
+    var start = S.qrDay ? new Date(S.qrDay + 'T12:00:00').getTime() : 0;
+    S.qrStale = !!(S.qrDay && exp && exp < start);
+    var a = document.querySelector('.qk-qrday__again'); if (a) a.hidden = !S.qrStale;
+  }
 
   // ── I-14: zapowiedź wieczorem ─────────────────────────
   function previewDay() {
@@ -473,5 +481,5 @@
     if (kidDevice() && avatarNow() && !oathed(avatarNow())) setTimeout(maybeOath, 600);
   }
 
-  window.QKid = { init: init, ask: ask, preview: preview, previewDay: previewDay, qrParams: qrParams, str: PT };
+  window.QKid = { init: init, ask: ask, preview: preview, previewDay: previewDay, qrParams: qrParams, qrExpiry: qrExpiry, str: PT };
 })();
