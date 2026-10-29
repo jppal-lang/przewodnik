@@ -146,7 +146,7 @@
     }
 
     function addFamilyMember(){
-      var name = prompt('Imię (np. Zuzia):');
+      var name = prompt('Ksywka gracza (nie prawdziwe imię), np. Rakieta:');   // I-5 2026-10-29: dziecko nie podaje imienia
       if(!name) return;
       var avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
       var family = getFamily();

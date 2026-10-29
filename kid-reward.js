@@ -10,6 +10,8 @@
  *  • Zdobyte miejsce trafia do albumu na tym urządzeniu (qc.album) — panel rodzica (konto.html) go czyta.
  *
  * Bez zależności. Widok dziecka bez komercji: żadnych cen, partnerów, BMC.
+ *  • 2026-10-29: rodzeństwo na jednym telefonie (qc.kid.avatar.team + turn), tryb maluch (small), odznaka obietnicy (oaths),
+ *    przełącznik dźwięku (kid-sound.js), wybór awatara wieczorem na jutro (pick({date})).
  * API: window.QReward.init({ slug, lang, cityName, country, region, hero })
  */
 (function () {
@@ -50,6 +52,9 @@
   // tłumaczenia: przycisk „Wróć do mapy" na ekranie finałowym
   var _BACK = {pl:'Wróć do mapy',en:'Back to map',de:'Zurück zur Karte',it:'Torna alla mappa',cs:'Zpět na mapu',da:'Tilbage til kort',es:'Volver al mapa',fr:'Retour à la carte',hr:'Natrag na kartu',hu:'Vissza a térképre',nl:'Terug naar kaart',no:'Tilbake til kart',pt:'Voltar ao mapa',ro:'Înapoi la hartă',sk:'Späť na mapu',sv:'Tillbaka till karta',uk:'Назад до мапи'};
   Object.keys(_BACK).forEach(function (l) { if (DICT[l]) DICT[l].back = _BACK[l]; });
+  // I-5 (2026-10-29): zaproszenie zamiast „0 / N” przed pierwszą misją
+  var _FIRST = {pl:'Zalicz pierwszą misję, a odsłonisz pierwszy kawałek!',en:'Finish your first mission to uncover the first piece!',de:'Schaffe deine erste Mission und deck das erste Teil auf!',it:'Completa la prima missione e scopri il primo pezzo!',cs:'Splň první misi a odkryješ první dílek!',da:'Klar din første mission, så afslører du den første brik!',es:'¡Supera tu primera misión y descubre la primera pieza!',fr:'Réussis ta première mission pour dévoiler le premier morceau !',hr:'Riješi prvu misiju i otkrij prvi dio!',hu:'Teljesítsd az első küldetést, és felfeded az első darabot!',nl:'Haal je eerste missie en je ziet het eerste stukje!',no:'Klar ditt første oppdrag, så avslører du den første biten!',pt:'Cumpre a primeira missão e revela a primeira peça!',ro:'Reușește prima misiune și descoperi prima bucată!',sk:'Splň prvú misiu a odkryješ prvý dielik!',sv:'Klara ditt första uppdrag så visas den första biten!',uk:'Виконай першу місію — і відкриєш перший шматочок!'};
+  Object.keys(_FIRST).forEach(function (l) { if (DICT[l]) DICT[l].first = _FIRST[l]; });
 
   var S = { av: null, lang: 'pl', slug: '', city: '', hero: '', country: '', region: '', total: 0, got: 0, cells: null, groups: null, prevGot: -1, root: null, built: false };
 
@@ -74,40 +79,95 @@
     return '<span class="qk-ava ' + (cls || '') + '" style="--ava:' + esc(COLORS[a.color] || COLORS[0]) + '"><img src="' + poseUrl(a.pose, 128) + '" alt="" width="64" height="64"></span>';
   }
 
-  function openPicker() {
+  // teksty dodane 2026-10-29 (rodzeństwo, tryb maluch, dźwięk, obietnica): słownik page.trip.kid.* z bazy przez kid-play.js, polski w kodzie
+  function PT(k, pl) { return window.QKid && window.QKid.str ? window.QKid.str(k, pl) : pl; }
+  var MAX_KIDS = 4;
+  // drużyna na dziś: rodzeństwo na jednym telefonie (I-7); pierwszy gracz = pola główne awatara (zgodność z albumem i panelem rodzica)
+  function kidsOf(a) {
+    if (!a) return [];
+    return a.team && a.team.length ? a.team : [{ pose: a.pose, color: a.color, nick: a.nick || '', small: !!a.small }];
+  }
+  function squeak() { if (window.QSound) window.QSound.squeak(); }
+
+  // o.date — dzień wyprawy (wieczór przed: wybór na jutro, I-14); o.lang — język, gdy init() nie był wołany
+  function openPicker(o) {
+    o = o || {};
+    if (o.lang && DICT[o.lang]) S.lang = o.lang;
+    var day = o.date || today();
     var prev = lsGet(K_AVATAR) || { pose: 1, color: 0, nick: '' };
-    var sel = { pose: prev.pose || 0, color: prev.color || 0 };
+    var cur = prev.date === day ? prev : null;
+    var kids = cur ? kidsOf(cur).map(function (k) { return { pose: k.pose || 0, color: k.color || 0, nick: k.nick || '', small: !!k.small }; })
+      : [{ pose: prev.pose || 0, color: prev.color || 0, nick: prev.nick || '', small: !!prev.small }];
+    var at = 0;
     var nicks = (lsGet(K_NICKS) || []).slice(0, 6);
     var dlg = sheet('qk-pick', '<h2 class="qk-sheet__title" id="qkPickT">' + esc(t('choose')) + '</h2>' +
       '<p class="qk-sheet__sub">' + esc(t('choose_sub')) + '</p>' +
+      '<div class="qk-team" data-team hidden></div>' +
       '<div class="qk-poses" role="radiogroup" aria-labelledby="qkPickT">' + POSES.map(function (p, i) {
-        return '<button type="button" class="qk-pose" role="radio" aria-checked="' + (i === sel.pose) + '" data-pose="' + i + '">' +
+        return '<button type="button" class="qk-pose" role="radio" aria-checked="false" data-pose="' + i + '">' +
           '<img src="' + poseUrl(i, 256) + '" alt="" width="96" height="96" loading="lazy"><span>' + esc(t('a' + i)) + '</span></button>';
       }).join('') + '</div>' +
       '<div class="qk-colors" role="radiogroup" aria-label="Kolor">' + COLORS.map(function (c, i) {
-        return '<button type="button" class="qk-color" role="radio" aria-checked="' + (i === sel.color) + '" data-color="' + i + '" style="--c:' + c + '" aria-label="' + (i + 1) + '"></button>';
+        return '<button type="button" class="qk-color" role="radio" aria-checked="false" data-color="' + i + '" style="--c:' + c + '" aria-label="' + (i + 1) + '"></button>';
       }).join('') + '</div>' +
-      '<label class="qk-nick"><span>' + esc(t('nick')) + '</span><span class="qk-nick__row"><input type="text" maxlength="20" autocomplete="off" value="' + esc(prev.nick || '') + '">' +
+      '<label class="qk-nick"><span>' + esc(t('nick')) + '</span><span class="qk-nick__row"><input type="text" maxlength="20" autocomplete="off" value="">' +
       '<button type="button" class="qk-dice" data-dice aria-label="' + esc(t('random')) + '">🎲 ' + esc(t('random')) + '</button></span><small>' + esc(t('nick_hint')) + '</small></label>' +
       (nicks.length ? '<div class="qk-nicks">' + nicks.map(function (n) { return '<button type="button" data-nick="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
+      '<label class="qk-smallsw"><input type="checkbox" data-small><span><b>' + esc(PT('page.trip.kid.small_title', 'Tryb maluch')) + '</b>' +
+        '<small>' + esc(PT('page.trip.kid.small_sub', 'Większe przyciski, krótsze teksty i czytanie na głos.')) + '</small></span></label>' +
+      '<button type="button" class="qc-btn qk-addkid" data-addkid>＋ ' + esc(PT('page.trip.kid.add_sibling', 'Gra też rodzeństwo')) + '</button>' +
       '<button type="button" class="qc-btn qc-btn--primary qk-go">' + esc(t('start')) + '</button>', 'qkPickT');
-    function paint() {
-      [].forEach.call(dlg.querySelectorAll('.qk-pose'), function (b) { b.setAttribute('aria-checked', String(+b.dataset.pose === sel.pose)); b.style.setProperty('--ava', COLORS[sel.color]); });
-      [].forEach.call(dlg.querySelectorAll('.qk-color'), function (b) { b.setAttribute('aria-checked', String(+b.dataset.color === sel.color)); });
+    var input = dlg.querySelector('.qk-nick input');
+    function sel() { return kids[at]; }
+    function label(k) { return k.nick || t('a' + k.pose); }
+    function paintTeam() {
+      var box = dlg.querySelector('[data-team]');
+      box.hidden = kids.length < 2;
+      box.innerHTML = kids.length < 2 ? '' : kids.map(function (k, i) {
+        return '<span class="qk-team__item"><button type="button" class="qk-team__kid" data-kid="' + i + '" aria-pressed="' + (i === at) + '">' +
+          avatarHtml(k, 'qk-ava--sm') + '<span>' + esc(label(k)) + '</span></button>' +
+          '<button type="button" class="qk-team__rm" data-rm="' + i + '" aria-label="' + esc(PT('page.trip.kid.remove', 'Usuń') + ': ' + label(k)) + '">×</button></span>';
+      }).join('');
     }
+    function paint() {
+      var k = sel();
+      [].forEach.call(dlg.querySelectorAll('.qk-pose'), function (b) { b.setAttribute('aria-checked', String(+b.dataset.pose === k.pose)); b.style.setProperty('--ava', COLORS[k.color]); });
+      [].forEach.call(dlg.querySelectorAll('.qk-color'), function (b) { b.setAttribute('aria-checked', String(+b.dataset.color === k.color)); });
+      input.value = k.nick || '';
+      dlg.querySelector('[data-small]').checked = !!k.small;
+      dlg.querySelector('[data-addkid]').hidden = kids.length >= MAX_KIDS;
+      paintTeam();
+    }
+    function free(list, key, n) { for (var i = 0; i < n; i++) if (!kids.some(function (k) { return k[key] === i; })) return i; return 0; }
     paint();
+    input.addEventListener('input', function () { sel().nick = input.value.trim().slice(0, 20); paintTeam(); });
+    dlg.addEventListener('change', function (e) { if (e.target.matches('[data-small]')) sel().small = e.target.checked; });
     dlg.addEventListener('click', function (e) {
       var p = e.target.closest('[data-pose]'), c = e.target.closest('[data-color]'), n = e.target.closest('[data-nick]');
-      if (p) { sel.pose = +p.dataset.pose; paint(); }
-      if (c) { sel.color = +c.dataset.color; paint(); }
-      if (n) dlg.querySelector('.qk-nick input').value = n.dataset.nick;
-      if (e.target.closest('[data-dice]')) dlg.querySelector('.qk-nick input').value = t('a' + sel.pose) + ' ' + (10 + Math.floor(Math.random() * 90));
+      var kb = e.target.closest('[data-kid]'), rm = e.target.closest('[data-rm]');
+      if (p) { sel().pose = +p.dataset.pose; paint(); squeak(); }
+      if (c) { sel().color = +c.dataset.color; paint(); }
+      if (n) { sel().nick = n.dataset.nick; paint(); }
+      if (kb) { at = +kb.dataset.kid; paint(); }
+      if (rm && kids.length > 1) { kids.splice(+rm.dataset.rm, 1); at = Math.min(at, kids.length - 1); paint(); }
+      if (e.target.closest('[data-dice]')) { sel().nick = t('a' + sel().pose) + ' ' + (10 + Math.floor(Math.random() * 90)); paint(); }
+      if (e.target.closest('[data-addkid]') && kids.length < MAX_KIDS) {
+        kids.push({ pose: free(kids, 'pose', POSES.length), color: free(kids, 'color', COLORS.length), nick: '', small: false });
+        at = kids.length - 1; paint();
+        var team = dlg.querySelector('[data-team]'); if (team && team.scrollIntoView) team.scrollIntoView({ block: 'nearest' });
+      }
       if (e.target.closest('.qk-go')) {
-        var nick = dlg.querySelector('.qk-nick input').value.trim().slice(0, 20);
-        lsSet(K_AVATAR, { date: today(), pose: sel.pose, color: sel.color, nick: nick });
-        if (nick) lsSet(K_NICKS, [nick].concat((lsGet(K_NICKS) || []).filter(function (x) { return x !== nick; })).slice(0, 8));
+        sel().nick = input.value.trim().slice(0, 20);
+        var first = kids[0];
+        var rec = { date: day, pose: first.pose, color: first.color, nick: first.nick, small: !!first.small };
+        if (kids.length > 1) { rec.team = kids; rec.turn = cur && cur.turn < kids.length ? cur.turn : 0; }
+        if (cur && cur.oaths) rec.oaths = cur.oaths;
+        lsSet(K_AVATAR, rec);
+        var all = kids.map(function (k) { return k.nick; }).filter(Boolean);
+        if (all.length) lsSet(K_NICKS, all.concat((lsGet(K_NICKS) || []).filter(function (x) { return all.indexOf(x) < 0; })).slice(0, 8));
         closeSheet(dlg);
         paintCard();
+        try { document.dispatchEvent(new CustomEvent('qc:kid', { detail: { type: 'picked', date: day } })); } catch (er) { /* stare przeglądarki */ }
       }
     });
   }
@@ -168,18 +228,30 @@
   function paintCard() {
     var card = document.getElementById('qkCard');
     if (!card) return;
-    var a = avatar(), done = S.total && S.got >= S.total;
+    var a = avatar(), done = S.total && S.got >= S.total, kids = kidsOf(a);
+    var snd = window.QSound && window.QSound.supported();
+    var oath = a && a.oaths && a.oaths.indexOf(S.slug) > -1;
     card.innerHTML =
+      (oath ? '<p class="qk-oath"><span aria-hidden="true">★</span> ' + esc(PT('page.trip.kid.oath_badge', 'Odkrywca {city}').replace('{city}', S.city)) +
+        ' · ' + esc(shortDate(a.date)) + '</p>' : '') +
       '<div class="qk-card__head">' +
         (a ? '<button type="button" class="qk-me" data-qk="pick" aria-label="' + esc(t('change')) + '">' + avatarHtml(a) +
-          '<span class="qk-me__txt"><b>' + esc(a.nick || t('a' + a.pose)) + '</b><small>' + esc(t('change')) + '</small></span></button>'
+          '<span class="qk-me__txt"><b>' + esc(a.nick || t('a' + a.pose)) + (kids.length > 1 ? ' +' + (kids.length - 1) : '') + '</b><small>' + esc(t('change')) + '</small></span></button>'
           : '<button type="button" class="qc-btn qk-me--empty" data-qk="pick">' + esc(t('choose')) + '</button>') +
+        (snd ? '<button type="button" class="qk-snd" data-qk="snd" aria-pressed="' + window.QSound.on() + '" aria-label="' + esc(PT('page.trip.kid.sound', 'Dźwięk')) + '">' + (window.QSound.on() ? SND_ON : SND_OFF) + '</button>' : '') +
         '<p class="qk-card__count"><b>' + Math.min(S.got, S.total) + '</b> / ' + S.total + '</p>' +
       '</div>' +
       '<p class="qk-card__label">' + esc(done ? t('done') : t('picture')) + '</p>' +
       '<button type="button" class="qk-card__pz" data-qk="open" aria-label="' + esc(t('picture') + ' — ' + t('progress', { n: Math.min(S.got, S.total), t: S.total })) + '">' + puzzleHtml(false) + '</button>' +
-      (done ? actionsHtml() : '<p class="qk-card__hint">' + esc(t('hint')) + '</p>');
+      (done ? actionsHtml() : '<p class="qk-card__hint">' + esc(S.got ? t('hint') : t('first')) + '</p>');
   }
+  function shortDate(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    if (!m) return '';
+    try { return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(S.lang, { day: '2-digit', month: '2-digit' }); } catch (e) { return m[3] + '.' + m[2]; }
+  }
+  var SND_ON = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+  var SND_OFF = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
   function actionsHtml() {
     var backHref = S.region ? ('/region.html?slug=' + encodeURIComponent(S.region) + '&country=' + encodeURIComponent(S.country)) : '/';
     return '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-qk="dl">' + DL + ' ' + esc(t('download')) + '</button>' +
@@ -231,7 +303,10 @@
     list.forEach(function (e, j) { if (e.slug === S.slug) i = j; });
     var entry = { slug: S.slug, city: S.city, country: S.country, region: S.region, hero: S.hero, pieces: S.total,
       date: today(), nick: a.nick || '', pose: a.pose == null ? 1 : a.pose, color: a.color || 0 };
-    if (i > -1) { if (list[i].date === entry.date && list[i].pieces === entry.pieces) return; entry.first = list[i].first || list[i].date; list[i] = entry; }
+    // I-8: odznaka „Obietnica odkrywcy” złożona dziś na tej trasie trafia do wpisu albumu (pole oath = data)
+    var oath = a.oaths && a.oaths.indexOf(S.slug) > -1 && a.date === today() ? today() : (i > -1 && list[i].oath) || '';
+    if (oath) entry.oath = oath;
+    if (i > -1) { if (list[i].date === entry.date && list[i].pieces === entry.pieces && (list[i].oath || '') === (entry.oath || '')) return; entry.first = list[i].first || list[i].date; list[i] = entry; }
     else { entry.first = entry.date; list.push(entry); }
     lsSet(K_ALBUM, list);
   }
@@ -393,7 +468,8 @@
     var b = e.target.closest('[data-qk]');
     if (!b) return;
     var k = b.getAttribute('data-qk');
-    if (k === 'pick') openPicker();
+    if (k === 'pick') { squeak(); openPicker(); }
+    else if (k === 'snd' && window.QSound) { window.QSound.set(!window.QSound.on()); paintCard(); var sb = document.querySelector('#qkCard [data-qk="snd"]'); if (sb) sb.focus(); }
     else if (k === 'open') openPuzzle(false);
     else if (k === 'dl') downloadPicture();
     else if (k === 'color') openColoring();
@@ -426,5 +502,9 @@
     S.slug = e.slug; S.city = e.city; S.hero = e.hero; S.av = { pose: e.pose == null ? 1 : e.pose, color: e.color || 0, nick: e.nick || '' };
   }
 
-  window.QReward = { init: init, count: count, use: use, picture: downloadPicture, coloring: openColoring, avatarUrl: poseUrl, colors: COLORS, poseName: function (i) { return t('a' + i); } };
+  function saveAvatar(a) { lsSet(K_AVATAR, a); paintCard(); }
+  window.QReward = { init: init, count: count, use: use, picture: downloadPicture, coloring: openColoring, avatarUrl: poseUrl, colors: COLORS, poseName: function (i) { return t('a' + i); },
+    // 2026-10-29 (kid-play.js): wybór awatara, obrazek, drużyna rodzeństwa, okno
+    pick: openPicker, puzzle: function () { return openPuzzle(false); }, avatar: avatar, saveAvatar: saveAvatar, kids: kidsOf, avatarHtml: avatarHtml,
+    sheet: sheet, close: closeSheet, progress: function () { return { got: S.got, total: S.total }; }, poses: POSES.length };
 })();

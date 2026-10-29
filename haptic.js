@@ -4,6 +4,7 @@
    Progresywne ulepszenie: bez navigator.vibrate (iOS Safari) nic się nie dzieje.
    Wyłączone przy prefers-reduced-motion: reduce oraz gdy dziecko wyłączy
    „Wibracje” w grze (localStorage quolino_game_haptics = '0', prefiks gry).
+   Każde wywołanie wysyła też zdarzenie window „qc:pulse” (nazwa w detail) — słucha go kid-sound.js.
    Zero zależności.
    ===================================================================== */
 (function () {
@@ -22,6 +23,8 @@
   function enabled() { return supported() && !reduced() && pref(); }
   function set(on) { try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) { /* prywatne okno */ } }
   function pulse(name) {
+    // 2026-10-29: zdarzenie dla dźwięków na żądanie (kid-sound.js) — niezależnie od wibracji i reduced-motion
+    try { window.dispatchEvent(new CustomEvent('qc:pulse', { detail: name })); } catch (e) { /* stare przeglądarki */ }
     if (!enabled() || !P[name]) return false;
     try { return navigator.vibrate(P[name]); } catch (e) { return false; }
   }
