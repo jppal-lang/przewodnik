@@ -36,7 +36,7 @@
 <link rel="alternate" hreflang="de" href="https://quolino.com/?lang=de">
 <link rel="alternate" hreflang="x-default" href="https://quolino.com/">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=38">
+<link rel="stylesheet" href="styles.css?v=39">
 <script src="/lang-pick.js?v=2"></script>
 <script src="i18n-ui.js?v=8"></script>
 <script src="/speed.js?v=1"></script>
@@ -241,16 +241,17 @@
   <p class="tiers-bonus" data-t="page.home.tiers.bonus">Najważniejsza jest wycieczka. Gra i filmy z Quo to dodatek za przejście trasy.</p>
 </section>
 
-<section class="album-page rules">
-  <div class="rules-text">
-    <h2 data-t="page.home.guide.h2">Jeden dzień, dwa widoki</h2>
+<section class="album-page" id="przewodnik" aria-labelledby="guideTitle">
+  <div class="album-head">
+    <h2 id="guideTitle" data-t="page.home.guide.h2">Jeden dzień, dwa widoki</h2>
     <p data-t="page.home.guide.p1">Quolino to plan wycieczki jednodniowej dla rodziców i gra terenowa dla dzieci w tym samym mieście. Rodzic prowadzi trasę od parkingu po ostatni przystanek, a dziecko na każdym przystanku dostaje misję i zbiera za nią naklejki.</p>
-    <p data-ui="home.about_p5">Dostępne regiony: Umbria, Marche, Emilia-Romania. Kolejne miasta dochodzą na bieżąco.</p>
   </div>
-  <div class="rules-lists">
-    <div class="rules-box rules-box--team">
-      <h3 data-t="page.home.guide.parent_h">Widok rodzica</h3>
-      <ul>
+  <div class="tiers tiers--two">
+    <article class="tier tier--main" aria-labelledby="guideParent">
+      <img class="tier-quo" src="media/icons/icon-viewpoint-city-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <p class="tier-tag" data-t="page.home.guide.parent_tag">Telefon rodzica</p>
+      <h3 id="guideParent" data-t="page.home.guide.parent_h">Widok rodzica</h3>
+      <ul class="tier-list">
         <li data-t="page.home.guide.parent_1">Plan dnia przystanek po przystanku: kolejność, czas zwiedzania i godziny otwarcia</li>
         <li data-t="page.home.guide.parent_2">Start z parkingu: cena, nawigacja i ostrzeżenie o strefie ZTL</li>
         <li data-t="page.home.guide.parent_3">Historia i ciekawostki do opowiedzenia przy każdym przystanku</li>
@@ -259,10 +260,12 @@
         <li data-t="page.home.guide.parent_6">Pomoc w pobliżu: apteka, toaleta, szpital</li>
         <li data-t="page.home.guide.parent_7">Ty decydujesz: wyłączasz przystanki, które dziś pomijacie</li>
       </ul>
-    </div>
-    <div class="rules-box">
-      <h3 data-t="page.home.guide.kid_h">Widok dziecka</h3>
-      <ul>
+    </article>
+    <article class="tier tier--paid" aria-labelledby="guideKid">
+      <img class="tier-quo" src="media/icons/quo-dzieci-256.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
+      <p class="tier-tag" data-t="page.home.guide.kid_tag">Telefon dziecka</p>
+      <h3 id="guideKid" data-t="page.home.guide.kid_h">Widok dziecka</h3>
+      <ul class="tier-list">
         <li data-t="page.home.guide.kid_1">Otwiera się na drugim telefonie po zeskanowaniu kodu QR albo na Twoim, przyciskiem „Podaj dziecku”</li>
         <li data-t="page.home.guide.kid_2">Na każdym przystanku misja i zagadka: znajdź, policz, sfotografuj</li>
         <li data-t="page.home.guide.kid_3">Za każdą wykonaną misję naklejka do albumu</li>
@@ -270,8 +273,9 @@
         <li data-t="page.home.guide.kid_5">Własny Quo na ten dzień: postać, kolor i wymyślona ksywka</li>
         <li data-t="page.home.guide.kid_6">Bez cen, reklam i zakupów</li>
       </ul>
-    </div>
+    </article>
   </div>
+  <p class="tiers-bonus" data-ui="home.about_p5">Dostępne regiony: Umbria, Marche, Emilia-Romania. Kolejne miasta dochodzą na bieżąco.</p>
 </section>
 
 <section class="album-page" id="regiony" aria-labelledby="regTitle">

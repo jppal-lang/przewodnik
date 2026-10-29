@@ -1962,3 +1962,9 @@ html.qk-hand-on .qc-dock,html.qk-hand-on .qc-pager{visibility:hidden}
 @media(prefers-reduced-motion:reduce){.qk-stamp,.is-nudge{animation:none}.qk-turn__btn,.qk-oath{transform:none}}
 @media print{.qk-hand,.qk-handbtn,.qk-qrday{display:none!important}}
 .qk-oath__ok{text-align:center}
+
+/* „Jeden dzień, dwa widoki” na wzór kart „Co dostajesz” (2026-10-29) */
+@media (min-width:900px){
+  .tiers.tiers--two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:1000px;margin-inline:auto}
+  .tiers--two .tier--main{transform:none}
+}
