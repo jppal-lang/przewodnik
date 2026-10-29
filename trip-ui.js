@@ -13,6 +13,8 @@
       Gość na ostatnim przystanku: „Załóż darmowe konto” zamiast wyszarzonego „Następny” (B2).
       Dotarcie do ostatniego przystanku ustawia #city[data-trip-end] — dopiero wtedy widać ocenę „Jak wam poszło?” (B3).
    4. Komputer: klik naklejki / pozycji listy rozwija przystanek i przewija do niego.
+   5. D-3 (JP 2026-10-29): QTrip.isFullDay(h) / QTrip.durationText(h, ui) — trasa > 9 h to „Pełny dzień” bez godzin.
+   6. Narzędzia rodzica pod listą „Cała trasa” — trip-tools.js (QTripTools.mount po renderOverview).
    Wywołanie: QTrip.init({...}) po każdym render() w city.html. Zero zależności.
    ===================================================================== */
 (function () {
@@ -465,6 +467,7 @@
     });
     refreshResume();
     refreshCollected();
+    if (window.QTripTools) window.QTripTools.mount(box, S.opts);   // I-1/I-12/I-13/I-16/I-17 (trip-tools.js)
     // przycisk w nagłówku miasta: gdy strona nie ma ani route_url, ani maps_query startu (np. podgląd szkicu), dajemy „Cała trasa”
     var acts = $('.qc-intro__actions');
     if (gm && acts && !(S.opts.city || {}).route_url && !$('[data-qc-route]', acts)) {
@@ -781,5 +784,23 @@
     apply(parse(location.hash), 'init');
   }
 
-  window.QTrip = { init: init, go: go };
+  // ══════════ D-3: CZAS TRASY (wspólne dla stron z trasą) ══════════
+  // QTrip.isFullDay(h) — true, gdy duration_hours > 9 (wtedy bez liczby godzin).
+  // QTrip.durationText(h, ui) — „Pełny dzień” (klucz page.trip.full_day) albo „~5 h”; '' bez danych.
+  //   ui(klucz, zapas) — funkcja tłumaczeń strony (opcjonalna); bez niej polski.
+  function isFullDay(h) { h = parseFloat(h); return isFinite(h) && h > 9; }
+  function durationText(h, ui) {
+    var n = parseFloat(h);
+    if (!isFinite(n) || n <= 0) return '';
+    if (n > 9) {
+      var MISS = '\u0000', v = typeof ui === 'function' ? ui('page.trip.full_day', MISS) : MISS;
+      if (v && v !== MISS && v !== 'page.trip.full_day') return v;
+      // zanim ui-translate doda page.trip.full_day: przetłumaczone „cały dzień” (label.full_day) z wielkiej litery; po polsku „Pełny dzień”
+      var w = typeof ui === 'function' ? ui('label.full_day', MISS) : MISS;
+      return w && w !== MISS && w !== 'label.full_day' && !/^cały dzień$/i.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : 'Pełny dzień';
+    }
+    return '~' + String(n).replace('.', ',') + ' h';
+  }
+
+  window.QTrip = { init: init, go: go, isFullDay: isFullDay, durationText: durationText };
 })();

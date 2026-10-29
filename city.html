@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="styles.css?v=37">
 <script src="/lang-pick.js?v=2"></script>
 <script src="i18n-ui.js?v=8"></script>
-<script src="trip-ui.js?v=12"></script>
+<script src="trip-ui.js?v=13"></script>
+<script src="trip-tools.js?v=1"></script>
 <script src="kid-reward.js?v=3"></script>
 <script src="haptic.js?v=1"></script>
 <!-- QR code generator (qrcodejs inline) -->
@@ -238,7 +239,9 @@ function shapeFull(j, lang) {
   var em = j.emergency_points || [];
   var pick = function(L) { return em.filter(function(e) { return e.lang === L; }); };
   var emL = pick(lang); if (!emL.length) emL = pick('en'); if (!emL.length) emL = pick(FALLBACK);
-  return { city: j.city, cityTrRows: j.city_translations || [], stops: j.stops || [], emergency: emL, locked: false, member: !!j.member };
+  var ph = j.phrases || [], pickP = function(L) { return ph.filter(function(p) { return p.lang === L; }); };
+  var phL = pickP(lang); if (!phL.length) phL = pickP('en'); if (!phL.length) phL = pickP(FALLBACK);
+  return { city: j.city, cityTrRows: j.city_translations || [], stops: j.stops || [], emergency: emL, phrases: phL, locked: false, member: !!j.member };
 }
 // Zalogowany (konto rodzica, JP 2026-10-18): token sesji idzie w treści wywołania, baza sprawdza podpis (trip_member).
 function hasSession() { try { return !!localStorage.getItem('qc.session'); } catch (e) { return false; } }
@@ -286,6 +289,62 @@ function kidData(lang) {
     return fallbackData(lang).then(function(d) { d.kidError = 'network'; return d; });
   });
 }
+// I-12 (JP 2026-10-29): link „plan dla drugiego rodzica” ?pt=… — token planu tej trasy (RPC plan_token_create, ważny 72 h),
+// treść z trip_plan. Jak token dziecka: znika z adresu i zostaje w sessionStorage tej karty (qc.pt).
+// Bez wdrożonej funkcji albo z nieważnym tokenem — zwykły widok gościa (z komunikatem, gdy token wygasł).
+var PLAN_TOKEN = (function() {
+  var q = new URLSearchParams(location.search), t = q.get('pt') || '', ok = /^[A-Za-z0-9_-]{32,64}$/;
+  if (t && ok.test(t)) {
+    try {
+      sessionStorage.setItem('qc.pt', JSON.stringify({ slug: citySlug, t: t }));
+      q.delete('pt');
+      if (history.replaceState) history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+    } catch (e) {}
+    return t;
+  }
+  try { var s = JSON.parse(sessionStorage.getItem('qc.pt') || 'null'); if (s && s.slug === citySlug && ok.test(s.t || '')) return s.t; } catch (e) {}
+  return '';
+})();
+function planData(lang) {
+  return rpc('trip_plan', { p_slug: citySlug, p_lang: lang, p_pt: PLAN_TOKEN }).then(function(j) {
+    if (j && !j.error) return shapeFull(j, lang);
+    var why = (j && j.error) || '';
+    if (why) { PLAN_TOKEN = ''; try { sessionStorage.removeItem('qc.pt'); } catch (e) {} }   // komunikat raz, potem zwykły gość
+    return guestData(lang).then(function(d) { d.keyError = why === 'plan_expired' || why === 'plan_invalid' ? why : ''; return d; });
+  }, function() { return fallbackData(lang); });
+}
+// link do wysłania: ustawienia dnia (pominięte przystanki) + token planu zalogowanego rodzica albo klucz testera
+var planTok = null;
+function planToken() {
+  if (planTok && planTok.slug === citySlug && (!planTok.exp || planTok.exp > Date.now() + 60 * 60 * 1000)) return planTok.p;
+  var rec = { slug: citySlug, exp: 0 };
+  rec.p = whenAuth().then(function(A) { return A ? A.session() : null; }).then(function(sess) {
+    if (!sess || !sess.at) throw new Error('brak sesji');
+    return rpc('plan_token_create', { p_slug: rec.slug, p_token: sess.at });
+  }).then(function(j) {
+    if (!j || !j.token) throw new Error((j && j.error) || 'brak tokenu');
+    rec.exp = Date.parse(j.expires_at) || 0;
+    return j.token;
+  }).catch(function(e) {
+    console.warn('[city.html] token planu:', e && e.message);
+    if (planTok === rec) planTok = null;
+    return '';
+  });
+  planTok = rec;
+  return rec.p;
+}
+function planLink() {
+  var p = new URLSearchParams();
+  if (!window.QSSR) { p.set('c', citySlug); p.set('lang', currentLang); }
+  var hidden = getHiddenStops();
+  if (hidden.length) p.set('hide', hidden.join(','));
+  var base = location.origin + (window.QSSR ? ssrPath(currentLang) : location.pathname);
+  var url = function() { var q = p.toString(); return base + (q ? '?' + q : ''); };
+  if (accessKey()) { p.set('k', accessKey()); return Promise.resolve(url()); }
+  if (!isMember) return Promise.resolve(url());
+  return planToken().then(function(t) { if (t) p.set('pt', t); return url(); });
+}
+
 // Ekran dla dziecka, gdy link nie daje dostępu (token wygasł/zły, trasa zablokowana): bez konta, bez klucza, bez list.
 function kidAskHtml() {
   var en = 'Ask your parent to open Quolino and show you the QR code.';
@@ -395,7 +454,7 @@ function loadPage(lang) {
     ? Promise.all(QD.core(lang, SB_URL, SB_KEY, FALLBACK)).then(function(r) {
         return { city: r[0][0], cityTrRows: r[1], stops: r[2], emergency: QD.asGuest ? [] : r[3], locked: !!QD.asGuest };
       })
-    : (KID_TOKEN ? kidData(lang) : fallbackData(lang));
+    : (KID_TOKEN ? kidData(lang) : (PLAN_TOKEN && !accessKey() && !hasSession() ? planData(lang) : fallbackData(lang)));
   var liveP = Promise.all([dataP].concat([
     sb('languages', 'select=code,name_native,flag_code&enabled=eq.true&order=priority'),
     sb('ui_translations', 'select=key,lang,value&or=(and(key.not.like.page.*,key.not.like.home.*),key.like.page.footer.*,key.like.page.trip.*,key.like.home.footer*)&lang=eq.' + lang),   // bez page.* (poza stopką) — D2 2026-10-29
@@ -474,11 +533,23 @@ function loadPage(lang) {
     ustawMeta(city, cityTr, processedStops);
     document.documentElement.lang = lang;
 
+    var kidHero = city.hero_image ? '/media/tours/' + city.hero_image : (city.country && city.slug ? '/media/tours/quolino-' + city.country + '-' + city.slug : '');
+    // I-14 (2026-10-29): QR wysłany wieczorem (day= w przyszłości) — dziecko widzi zapowiedź „Jutro: …!”, nie trasę (kid-play.js)
+    if (KID_LINK && !QD && window.QKid && window.QKid.previewDay()) {
+      var proot = document.getElementById('city');
+      if (proot) proot.dataset.view = 'kid';
+      window.QKid.preview(document.getElementById('mainContent'), { pt: PT, lang: lang, slug: citySlug, cityName: cityTr.title || city.slug, hero: kidHero });
+      buildLangPopup();
+      updateActiveLang();
+      return;
+    }
     // link dziecka bez dostępu: jeden prosty ekran zamiast listy pustych przystanków i ściany logowania (K2c)
     if (KID_LINK && D.locked && !QD) {
       var kroot = document.getElementById('city');
       if (kroot) kroot.dataset.view = 'kid';
       document.getElementById('mainContent').innerHTML = (offlineShown ? offlineNote(offlineShown) : '') + kidAskHtml();
+      // I-3: instrukcja dla rodzica, „Skanuj kod”, podgląd Quo do wyboru (kid-play.js)
+      if (window.QKid) window.QKid.ask(document.querySelector('.qc-kidask'), { pt: PT, lang: lang, slug: citySlug, cityName: cityTr.title || city.slug, qrTab: ui('tab.qr', 'QR dla dziecka') });
       buildLangPopup();
       updateActiveLang();
       return;
@@ -505,10 +576,16 @@ function loadPage(lang) {
         return { num: s.stop_number, name: t.name || '', time: s.time_label || '', cat: cat,
                  lat: s.lat == null ? null : +s.lat, lon: s.lon == null ? null : +s.lon, query: s.maps_query || '',
                  hours: t.opening_hours || s.opening_hours || '', hoursUnverified: s.hours_status === 'unverified', sample: !!s.sample,
+                 mission: t.kids_box || '', photo: t.photo_task || '',
                  dinner: s.variant === 'dinner' || (idx === processedStops.length - 1 && (cat === 'restaurant' || cat === 'icecream')) };
       }),
-      signupUrl: '/zaloguj.html?next=' + encodeURIComponent(location.pathname + location.search) + '#rejestracja'
+      signupUrl: '/zaloguj.html?next=' + encodeURIComponent(location.pathname + location.search) + '#rejestracja',
+      // trip-tools.js: plan na kartce (punkty pomocy, rozmówki) i plan dla drugiego rodzica
+      emergency: emergency.map(function(e) { return { type: e.type, label: e.label, description: e.description }; }),
+      phrases: D.phrases || [], member: isMember, planLink: planLink, planWarm: function() { if (isMember && !accessKey()) planToken(); }
     });
+    // widok dziecka 2026-10-29: Podaj dziecku, rodzeństwo, tryb maluch, obietnica, zapowiedź w karcie QR (kid-play.js)
+    if (window.QKid && !D.locked) window.QKid.init({ pt: PT, lang: lang, slug: citySlug, cityName: cityTr.title || city.slug, hero: kidHero, regenQR: generateKidQR });
     if (window.QReward && !D.locked) window.QReward.init({
       slug: citySlug, lang: lang, cityName: cityTr.title || city.slug, country: city.country || '', region: city.region_slug || city.region || '',
       hero: city.hero_image ? '/media/tours/' + city.hero_image : (city.country && city.slug ? '/media/tours/quolino-' + city.country + '-' + city.slug : '')
@@ -596,12 +673,16 @@ function render(d) {
   } else {
     html += '<span class="qc-album-count"><strong data-collected>0</strong>/<strong data-collect-total>0</strong> ' + esc(ui('label.stickers', 'naklejek')) + '</span>';
   }
-  html += '<span class="qc-fact">' + (d.regionName ? esc(d.regionName) + ' · ' : '') + esc(durationLabel(city)) + '</span>';
+  // D-3: trasa > 9 h — „Pełny dzień” bez liczby godzin (QTrip.durationText z trip-ui.js) i bez powtórzonego „cały dzień”
+  var fullDay = window.QTrip && window.QTrip.isFullDay ? window.QTrip.isFullDay(city.duration_hours) : +city.duration_hours > 9;
+  if (fullDay) { if (d.regionName) html += '<span class="qc-fact">' + esc(d.regionName) + '</span>'; }
+  else html += '<span class="qc-fact">' + (d.regionName ? esc(d.regionName) + ' · ' : '') + esc(durationLabel(city)) + '</span>';
   // liczebnik po polsku 1 / 2–4 / 5+; w innych językach „etykieta: N” (jak na stronach regionu i kraju)
   html += '<span class="qc-fact">' + (String(currentLang).toLowerCase() === 'pl'
     ? '<strong data-stop-count>' + stops.length + '</strong> <span data-stop-word>' + plStops(stops.length) + '</span>'
     : esc(ui('label.stops_label', 'Przystanki')) + ': <strong data-stop-count>' + stops.length + '</strong>') + '</span>';
-  if (city.duration_hours) html += '<span class="qc-fact"><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
+  if (fullDay) html += '<span class="qc-fact"><strong>' + esc(window.QTrip ? window.QTrip.durationText(city.duration_hours, ui) : PT('page.trip.full_day', 'Pełny dzień')) + '</strong></span>';
+  else if (city.duration_hours) html += '<span class="qc-fact"><strong>~' + city.duration_hours + ' h</strong> ' + ui('label.route', 'trasy') + '</span>';
   if (city.start_time && city.end_time) html += '<span class="qc-fact"><strong>' + esc(city.start_time) + ' → ' + esc(city.end_time) + '</strong></span>';
   if (city.walk_km) html += '<span class="qc-fact"><strong>' + esc(String(city.walk_km).replace('.', ',')) + ' km</strong> ' + ui('label.on_foot', 'pieszo') + (city.climb_m ? ' · ' + city.climb_m + ' m ' + ui('label.uphill', 'w górę') : '') + '</span>';
   html += '</p>';
@@ -754,11 +835,14 @@ function render(d) {
     if (full && item.bl) html += blocksHtml(item.bl);
     if (full) { /* próbka: bez zapowiedzi „po zalogowaniu” */ }
     else if (d.locked && t.blocks && t.blocks.length) {
-      html += '<p class="qc-locked-hint qc-locked-hint--blocks"><a href="#qcAccess">' + esc(ui('access.blocks_after', 'Po zalogowaniu')) + ': ' +
+      html += '<p class="qc-locked-hint qc-locked-hint--blocks"><a href="#qcAccess">' + esc(uiStrings['page.trip.locked_blocks'] || (currentLang === 'pl' ? 'W darmowym koncie' : ui('access.blocks_after', 'Po zalogowaniu'))) + ': ' +
               t.blocks.map(function(b) { return esc(ui('block.' + b, ({ legend: 'legenda', curiosity: 'ciekawostka', pop_culture: 'w popkulturze' })[b] || b)); }).join(' · ') +
               '</a></p>';
     } else if (d.locked && ((t.paragraphs_total || 0) > (t.desc_paragraphs || []).length || t.has_mission)) {
-      html += '<p class="qc-locked-hint"><a href="#qcAccess">' + esc(ui('access.more', 'Dalsza część opisu i misja dla dziecka — po zalogowaniu')) + '</a></p>';
+      // I-5: zaproszenie zamiast odmowy (PL od razu; inne języki — dotychczasowy napis, dopóki ui-translate nie doda page.trip.*)
+      var moreKey = t.has_mission ? 'page.trip.locked_mission' : 'page.trip.locked_more';
+      var morePl = t.has_mission ? 'Tu Quo ukrył misję dla dziecka i resztę historii. Darmowe konto je odkryje.' : 'Dalszy ciąg tej historii odkryje darmowe konto.';
+      html += '<p class="qc-locked-hint"><a href="#qcAccess">' + esc(uiStrings[moreKey] || (currentLang === 'pl' ? morePl : ui('access.more', morePl))) + '</a></p>';
     }
 
     // Opening hours chip
@@ -850,7 +934,7 @@ function render(d) {
     });
     html += '</div>';
   } else {
-    html += '<p class="qc-section__sub">' + ui('label.no_data', 'Dane wkrótce.') + '</p>';
+    html += '<p class="qc-section__sub">' + esc(uiStrings['page.trip.help_empty'] || (currentLang === 'pl' ? 'Tu jeszcze nie mamy sprawdzonych punktów pomocy. Zapytajcie w kawiarni albo w informacji turystycznej.' : ui('label.no_data', 'Dane wkrótce.'))) + '</p>';
   }
   html += '</section>';
 
@@ -937,6 +1021,7 @@ function accessBox(err) {
        '<a class="qc-btn" href="/zaloguj.html?next=' + next + '">' + esc(ui('access.signin', 'Zaloguj się')) + '</a></p>';
   if (err === 'session') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.session_bad', 'Sesja wygasła. Zaloguj się ponownie.')) + '</p>';
   else if (err === 'invalid_key') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_bad', 'Ten klucz jest nieważny albo wygasł.')) + '</p>';
+  else if (err === 'plan_expired' || err === 'plan_invalid') h += '<p class="qc-access__err" role="alert">' + esc(PT('page.trip.plan_expired', 'Link do planu wygasł. Poproś o nowy albo załóż darmowe konto.')) + '</p>';
   else if (err === 'rate_limit') h += '<p class="qc-access__err" role="alert">' + esc(ui('access.key_limit', 'Za dużo otwarć z tym kluczem w ostatniej godzinie. Spróbuj później.')) + '</p>';
   else if (err) h += '<p class="qc-access__err" role="alert">' + esc(ui('error.load', 'Błąd ładowania danych. Spróbuj odświeżyć stronę.')) + '</p>';
   // B3: pole klucza testera tylko dla testerów (klucz w adresie ?k= albo już zapisany na urządzeniu, także gdy okazał się zły)
@@ -1275,6 +1360,7 @@ function generateKidQR() {
   params.set('view', 'kid');
   var hidden = getHiddenStops();
   if (hidden.length) params.set('hide', hidden.join(','));
+  if (window.QKid) window.QKid.qrParams(params);   // I-14: „Jutro — zapowiedź na wieczór” → day=RRRR-MM-DD
   var seq = ++qrSeq;
   if (accessKey()) params.set('k', accessKey());   // klucz testera: telefon dziecka zapisze klucz i usunie go z adresu
   else if (KID_TOKEN) params.set('kt', KID_TOKEN);  // telefon dziecka przekazuje dalej ten sam token
@@ -1334,6 +1420,12 @@ function applyKidViewParam() {
         if (stop) stop.style.display = 'none';
       });
     }
+  } else if (params.get('hide')) {
+    // I-12: plan od drugiego rodzica — te same pominięte przystanki (przełączniki „dla dziecka” wyłączone)
+    params.get('hide').split(',').forEach(function(num) {
+      var cb = document.querySelector('[data-toggle-stop="' + num.trim() + '"]');
+      if (cb && cb.checked) { cb.checked = false; toggleStop(cb); }
+    });
   }
   updateAlbum();
 }
