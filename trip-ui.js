@@ -786,15 +786,15 @@
 
   // ══════════ D-3: CZAS TRASY (wspólne dla stron z trasą) ══════════
   // QTrip.isFullDay(h) — true, gdy duration_hours > 9 (wtedy bez liczby godzin).
-  // QTrip.durationText(h, ui) — „Pełny dzień” (klucz page.trip.full_day) albo „~5 h”; '' bez danych.
+  // QTrip.durationText(h, ui) — „Pełny dzień” (klucz filter.full_day) albo „~5 h”; '' bez danych.
   //   ui(klucz, zapas) — funkcja tłumaczeń strony (opcjonalna); bez niej polski.
   function isFullDay(h) { h = parseFloat(h); return isFinite(h) && h > 9; }
   function durationText(h, ui) {
     var n = parseFloat(h);
     if (!isFinite(n) || n <= 0) return '';
     if (n > 9) {
-      var MISS = '\u0000', v = typeof ui === 'function' ? ui('page.trip.full_day', MISS) : MISS;
-      if (v && v !== MISS && v !== 'page.trip.full_day') return v;
+      var MISS = '\u0000', v = typeof ui === 'function' ? ui('filter.full_day', MISS) : MISS;
+      if (v && v !== MISS && v !== 'filter.full_day') return v;
       // zanim ui-translate doda page.trip.full_day: przetłumaczone „cały dzień” (label.full_day) z wielkiej litery; po polsku „Pełny dzień”
       var w = typeof ui === 'function' ? ui('label.full_day', MISS) : MISS;
       return w && w !== MISS && w !== 'label.full_day' && !/^cały dzień$/i.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : 'Pełny dzień';
