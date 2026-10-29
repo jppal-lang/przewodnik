@@ -50,6 +50,9 @@ fi
 mkdir -p /root/quolino-web/ops /root/quolino-web/ssr
 # kopia przez plik tymczasowy + mv: deploy.sh może właśnie działać z tego katalogu
 for f in "$SRC"/ops/*.sh; do cp "$f" "/root/quolino-web/ops/.$(basename "$f").new" && chmod +x "/root/quolino-web/ops/.$(basename "$f").new" && mv -f "/root/quolino-web/ops/.$(basename "$f").new" "/root/quolino-web/ops/$(basename "$f")"; done
+# konta (GoTrue + bramka): zmieniony auth-compose.yml → po skopiowaniu `up -d` (stosuje nowe zmienne i etykiety Traefika; 2026-10-29)
+AUTH_YML=/root/quolino-web/ops/auth-compose.yml; auth_changed=0
+[ -f "$SRC/ops/auth-compose.yml" ] && ! cmp -s "$SRC/ops/auth-compose.yml" "$AUTH_YML" && auth_changed=1
 # pliki compose osobnych projektów (np. umami-compose.yml) — bez +x; brak plików = pętla nic nie robi
 for f in "$SRC"/ops/*.yml; do [ -f "$f" ] || continue; cp "$f" "/root/quolino-web/ops/.$(basename "$f").new" && mv -f "/root/quolino-web/ops/.$(basename "$f").new" "/root/quolino-web/ops/$(basename "$f")"; done
 cmp -s "$SRC/ssr/server.mjs" /root/quolino-web/ssr/server.mjs || cp "$SRC/ssr/server.mjs" /root/quolino-web/ssr/server.mjs
@@ -65,6 +68,12 @@ if ! cmp -s "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs; then
   cp "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs
   docker ps --format '{{.Names}}' | grep -q '^quolino-auth-auth-gate-1$' && docker restart quolino-auth-auth-gate-1 >/dev/null && echo "bramka rejestracji: zrestartowana"
 fi
+if [ "$auth_changed" = 1 ] && docker ps --format '{{.Names}}' | grep -q '^quolino-auth-gotrue-1$'; then
+  if docker compose -f "$AUTH_YML" up -d --remove-orphans >/dev/null 2>&1; then echo "konta (GoTrue, bramka): przeładowane z nowym auth-compose.yml"
+  else echo "konta: NIE przeładowane — sprawdź: docker compose -f $AUTH_YML up -d"; fi
+fi
 echo "ops i SSR: OK"
 # kompresja (API, SSR) i Cache-Control w Traefiku — osobny kontener z etykietami (D1, JP 2026-10-29); cofnięcie: ops/perf-traefik.sh down
 sh /root/quolino-web/ops/perf-traefik.sh apply || echo "kompresja/cache: NIE wdrożone (szczegóły wyżej) — reszta instalacji bez zmian"
+# własna strona 404 w nginx kontenera web (JP 2026-10-29); cofnięcie: ops/nginx-404.sh down
+sh /root/quolino-web/ops/nginx-404.sh || echo "nginx-404: NIE wdrożone (szczegóły wyżej) — reszta instalacji bez zmian"

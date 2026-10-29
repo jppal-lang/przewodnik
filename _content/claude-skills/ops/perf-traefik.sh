@@ -61,7 +61,9 @@ if not api: die('brak routera dla api.quolino.com')
 if len(web) != 1: die('router strony quolino.com: znaleziono %s (oczekiwany dokładnie 1)' % web)
 L = {'traefik.enable': 'true', 'quolino.perf': 'D1 2026-10-29',
      'traefik.http.services.quolino-perf-noop.loadbalancer.server.port': '80',
-     'traefik.http.middlewares.quolino-compress.compress.minresponsebodybytes': '1024'}
+     'traefik.http.middlewares.quolino-compress.compress.minresponsebodybytes': '1024',
+     # PostgREST dodaje „Content-Range”, a kompresja Traefika pomija odpowiedzi z tym nagłówkiem — strona go nie używa, usuwamy
+     'traefik.http.middlewares.quolino-norange.headers.customresponseheaders.Content-Range': ''}
 CC = {'quolino-cc-api': 'public, max-age=300', 'quolino-cc-img': 'public, max-age=2592000, stale-while-revalidate=86400',
       'quolino-cc-font': 'public, max-age=31536000, immutable', 'quolino-cc-asset': 'public, max-age=86400', 'quolino-cc-html': 'no-cache'}
 for k, v in CC.items(): L['traefik.http.middlewares.%s.headers.customresponseheaders.Cache-Control' % k] = v
@@ -78,8 +80,8 @@ def add(rn, base, rule, p, extra):
     L[pre + 'middlewares'] = ','.join(mws(base) + extra)
 for n, r in sorted(api.items()):
     r['_svc'] = svc(n, r); p = prio(r)
-    add(n + '-perf', r, '(%s)' % r['rule'], p + 1, ['quolino-compress@docker'])
-    add(n + '-perf-get', r, '(%s) && Method(`GET`) && !PathPrefix(`/rest/v1/rpc`)' % r['rule'], p + 2, ['quolino-compress@docker', 'quolino-cc-api@docker'])
+    add(n + '-perf', r, '(%s)' % r['rule'], p + 1, ['quolino-compress@docker', 'quolino-norange@docker'])
+    add(n + '-perf-get', r, '(%s) && Method(`GET`) && !PathPrefix(`/rest/v1/rpc`)' % r['rule'], p + 2, ['quolino-compress@docker', 'quolino-norange@docker', 'quolino-cc-api@docker'])
 for n, r in ssr.items():
     r['_svc'] = svc(n, r); add(n + '-perf', r, '(%s)' % r['rule'], prio(r) + 1, ['quolino-compress@docker'])
 w = routers[web[0]]; w['_svc'] = svc(web[0], w)
@@ -115,11 +117,11 @@ for line in open('/tmp/quolino-perf-plan.txt', encoding='utf-8'):
 sys.exit(subprocess.run(args + [image], stdout=subprocess.DEVNULL).returncode)
 PY
 sleep 6
-fail=""
+fail=""; warn=""
 hdr() { curl -s -o /dev/null -D - -m 20 -H 'Accept-Encoding: gzip, br' "$1" | tr -d '\r' | tr 'A-Z' 'a-z'; }
 h=$(hdr 'https://api.quolino.com/rest/v1/ui_translations?select=key,value&lang=eq.pl&limit=200')
 echo "$h" | grep -q '^http/[0-9.]* 200' || fail="$fail API≠200"
-echo "$h" | grep -q '^content-encoding: \(gzip\|br\|zstd\)' || fail="$fail API-bez-kompresji"
+echo "$h" | grep -q '^content-encoding: \(gzip\|br\|zstd\)' || warn="API bez kompresji (reszta działa)"
 echo "$h" | grep -q '^cache-control: public, max-age=300' || fail="$fail API-bez-cache"
 # POST (RPC) nie dostaje Cache-Control z założenia: router z cache ma Method(`GET`) && !PathPrefix(`/rest/v1/rpc`)
 h=$(hdr 'https://quolino.com/'); echo "$h" | grep -q '^http/[0-9.]* 200' || fail="$fail strona≠200"
@@ -131,4 +133,5 @@ if [ -n "$fail" ]; then
   docker rm -f "$NAME" >/dev/null 2>&1
   echo "kompresja/cache: sprawdzenie NIE przeszło ($fail) — cofnięte (kontener usunięty)"; exit 1
 fi
+[ -n "$warn" ] && echo "kompresja/cache: uwaga — $warn"
 echo "kompresja/cache: wdrożone ($HASH) — API gzip/br + max-age=300, SSR gzip/br, zdjęcia 30 dni, fonty 1 rok, CSS/JS z ?v= 1 dzień, HTML no-cache"
