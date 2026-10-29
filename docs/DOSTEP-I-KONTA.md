@@ -57,6 +57,13 @@ więc może nas znaleźć i podać link. Po etapie A roboty widzą i tak tylko t
 
 ## 4. Logowanie
 
+> **Zmiana JP 2026-10-29 (D-1): logowanie kodem z maila, hasło opcjonalne.** Rodzic wpisuje e-mail („Nie jestem robotem”) →
+> dostaje mail z 6-cyfrowym kodem (ważny 15 min, jednorazowy) → wpisuje kod na tej samej stronie i jest zalogowany. Pierwszy kod
+> zakłada konto (rejestracja = logowanie). Hasło można ustawić w panelu (konto.html → Prywatność → „Hasło (opcjonalnie)”);
+> „Zaloguj się hasłem” zostaje jako mniejsza opcja na zaloguj.html. Google bez zmian. Serwer: GoTrue `POST /otp` przez bramkę
+> auth-gate (ALTCHA, limity: `sql/2026-10-29-auth-gate-otp.sql`), kod sprawdza `POST /verify type=email`; szczegóły i cofnięcie:
+> `docs/LOGOWANIE.md` §10. Strona sama wraca do logowania hasłem, gdy serwer nie ma kodu włączonego.
+
 Strona (etap B): **Google** i **e-mail + hasło**. **Apple dopiero razem z aplikacją** (decyzja JP
 2026-10-13): logowanie Apple również na stronie wymaga płatnego konta Apple Developer, a przy aplikacji
 iOS i tak będzie potrzebne. Jedno konto może mieć kilka sposobów logowania (łączenie po zweryfikowanym

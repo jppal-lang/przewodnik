@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Twój kod do Quolino</title></head>
+<body style="margin:0;padding:0;background:#EAF0F8;font-family:Arial,Helvetica,sans-serif;color:#0E1A2B">
+  <!-- Szablon e-maila z kodem logowania (JP 2026-10-29, D-1). GoTrue: magic link (istniejące konto) i confirmation (nowe konto).
+       Pobiera go kontener quolino-auth (ops/auth-compose.yml). Zmienne GoTrue: {{ .Token }} (6 cyfr), {{ .ConfirmationURL }}.
+       Kod działa raz i przez 15 minut (GOTRUE_MAILER_OTP_EXP=900). Bez obrazków z zewnątrz i bez śledzenia otwarć.
+       Języki: polski + krótko angielski (jak pozostałe szablony). -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAF0F8;padding:24px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:28px">
+        <tr><td style="font-size:26px;font-weight:800;letter-spacing:-.5px;padding-bottom:18px">quolino<span style="color:#E0A800">.</span>com</td></tr>
+        <tr><td style="font-size:18px;line-height:1.5;padding-bottom:16px">
+          Twój kod do konta rodzica Quolino. Wpisz go na stronie, na której prosiłeś o kod. Jeśli nie masz jeszcze konta, kod je założy.
+        </td></tr>
+        <tr><td align="center" style="padding-bottom:18px">
+          <div style="display:inline-block;background:#EAF0F8;border-radius:12px;padding:14px 22px;font-family:'Courier New',Courier,monospace;font-size:36px;font-weight:700;letter-spacing:8px;color:#0E1A2B">{{ .Token }}</div>
+        </td></tr>
+        <tr><td style="font-size:16px;line-height:1.5;color:#5D6B82;padding-bottom:14px">
+          Kod działa raz i przez 15 minut. Jeśli to nie Ty prosiłeś o kod, zignoruj tę wiadomość — bez kodu nikt nie wejdzie na konto.
+        </td></tr>
+        <tr><td style="font-size:16px;line-height:1.5;color:#5D6B82;padding-bottom:14px">
+          Wolisz link? <a href="{{ .ConfirmationURL }}" style="color:#0B4EA2;font-weight:700">Zaloguj się jednym kliknięciem</a> — zadziała w przeglądarce, w której się otworzy.
+        </td></tr>
+        <tr><td style="font-size:15px;line-height:1.5;color:#5D6B82;border-top:1px solid #D3DDEA;padding-top:14px">
+          <span lang="en">Your Quolino sign-in code: <b>{{ .Token }}</b>. Enter it on the page where you asked for it. If you don't have an account yet, the code creates one. It works once, for 15 minutes. If you didn't ask for it, ignore this email.</span>
+        </td></tr>
+      </table>
+      <p style="font-size:13px;color:#8a8f99;margin:14px 0 0">Wiadomość automatyczna — nie odpowiadaj na nią. Kontakt: quolino.com/kontakt.html</p>
+    </td></tr>
+  </table>
+</body>
+</html>

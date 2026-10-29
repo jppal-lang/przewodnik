@@ -129,3 +129,24 @@ Bez ręcznej edycji plików.
 - Strona logowania wraca po zalogowaniu/rejestracji pod adres z `?next=` (tylko ścieżki quolino.com).
 - Do zrobienia: widok dziecka na telefonie dziecka dla zalogowanego rodzica (dziś kod QR niesie tylko klucz testera) —
   token dziecka ważny do końca dnia (`trip_runs.kid_token`, `docs/KONTO-RODZICA.md` §3).
+
+## 10. Zmiana 2026-10-29 (JP, D-1): logowanie kodem z maila, hasło opcjonalne
+
+- **Przepływ:** `zaloguj.html` → e-mail + „Nie jestem robotem” → „Wyślij kod” → pole na 6 cyfr na tej samej stronie
+  (`inputmode=numeric`, `autocomplete=one-time-code`, wklejanie ze spacjami, komplet cyfr = od razu sprawdzenie) → sesja jak przy haśle
+  (`qc.session`) → powrót pod `?next=` albo `/konto.html`. „Wyślij nowy kod” po 60 s (ALTCHA w tle, a gdy się nie uda — pole do zaznaczenia).
+  Kod zakłada konto, jeśli go nie ma (rejestracja = logowanie). „Zaloguj się hasłem” i „Nie pamiętasz hasła?” zostają jako mniejsza opcja.
+  Hasło ustawia się w `konto.html` → Prywatność → „Hasło (opcjonalnie)” (`PUT /user`).
+- **Serwer (`ops/auth-compose.yml`):** `GOTRUE_MAILER_OTP_LENGTH=6`, `GOTRUE_MAILER_OTP_EXP=900` (było 3600 — dotyczy też linku resetu),
+  `GOTRUE_RATE_LIMIT_OTP=30` i `GOTRUE_RATE_LIMIT_VERIFY=30` (na 5 min na IP), szablon `auth-mail/code.html` (kod + zapasowy link, PL + EN)
+  dla magic link i confirmation, temat „{{ .Token }} — Twój kod do Quolino”. `/otp` przestaje być zamknięte w Traefiku i idzie przez
+  bramkę auth-gate (`OTP_LOGIN=1`): ALTCHA, pułapka, czas, limity na skrót IP (10 wysyłek/h, 60 prób/dzień, 2000/dzień łącznie —
+  `sql/2026-10-29-auth-gate-otp.sql`); do GoTrue trafia tylko `{email, create_user:true}`. `/magiclink` dalej zamknięte.
+  GoTrue v2.197.0: `POST /verify {type:"email"}` sprawdza kod z maila logowania i z maila zakładania konta; nowy kod unieważnia poprzedni.
+- **Włączenie strony:** `QAuth.codeLogin()` pyta bramkę `GET /otp` → `{"otp":true,"length":6}`. Dziś Traefik odpowiada 403, więc strona
+  pokazuje logowanie hasłem jak dotąd; po wdrożeniu serwera przełącza się sama. Wdraża `deploy.sh approve <hash>` (install.sh przeładowuje
+  `quolino-auth`, gdy zmienił się `auth-compose.yml`; SQL wchodzi automatycznie).
+- **Cofnięcie:** szybkie — `OTP_LOGIN: "0"` w `auth-compose.yml` (bramka przestaje ogłaszać kod, strona wraca do hasła; kody już wysłane
+  wygasną); pełne — `git revert` commita serwerowego + `deploy.sh approve` (stare szablony `link.html`/`confirm.html` zostały). SQL nie wymaga cofania.
+- **Ryzyko szczątkowe:** GoTrue nie liczy błędnych prób na jeden kod; zgadywanie hamuje limit `/verify` na IP i 15 min ważności.
+

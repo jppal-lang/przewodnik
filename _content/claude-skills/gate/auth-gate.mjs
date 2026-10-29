@@ -1,5 +1,7 @@
-// Bramka rejestracji i resetu hasła (JP 2026-10-18: „zakładanie konta odporne na boty”).
-// Traefik kieruje tu tylko POST https://auth.quolino.com/auth/v1/signup i /recover (reszta idzie prosto do GoTrue).
+// Bramka rejestracji, resetu hasła i kodu logowania (JP 2026-10-18: „zakładanie konta odporne na boty”; 2026-10-29 D-1: logowanie kodem z maila).
+// Traefik kieruje tu tylko https://auth.quolino.com/auth/v1/signup, /recover i /otp (reszta idzie prosto do GoTrue).
+// GET /otp → {"otp":true,"length":6}, gdy logowanie kodem jest włączone (OTP_LOGIN=1) — po tym strona poznaje, że może pokazać
+// nowy przepływ; inaczej 404 i strona zostaje przy logowaniu hasłem. POST /otp przekazuje do GoTrue tylko {email, create_user:true}.
 // Przed przekazaniem do GoTrue: public.auth_gate_check w bazie (ALTCHA, pułapka, czas wypełnienia, limity na skrót IP).
 // Bez zależności. Pola altcha/hp/ms nie trafiają do GoTrue.
 import http from 'node:http';
@@ -7,9 +9,11 @@ import http from 'node:http';
 const GOTRUE = process.env.GOTRUE_URL || 'http://gotrue:9999';
 const API = process.env.API_URL || 'http://quolino-web-api-1:3000';
 const ORIGIN = process.env.ALLOW_ORIGIN || 'https://quolino.com';
-const PATHS = { '/signup': 'signup', '/recover': 'recover' };
+const OTP_ON = process.env.OTP_LOGIN === '1';
+const OTP_LENGTH = Math.min(10, Math.max(6, parseInt(process.env.OTP_LENGTH || '6', 10) || 6));
+const PATHS = { '/signup': 'signup', '/recover': 'recover', '/otp': 'otp' };
 const log = (...a) => console.log(new Date().toISOString(), ...a);
-const cors = { 'Access-Control-Allow-Origin': ORIGIN, 'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const cors = { 'Access-Control-Allow-Origin': ORIGIN, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'content-type, x-client-info', 'Access-Control-Max-Age': '600', Vary: 'Origin' };
 const send = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors }); res.end(JSON.stringify(obj)); };
 
@@ -27,12 +31,16 @@ http.createServer(async (req, res) => {
   if (u.pathname === '/health') return send(res, 200, { ok: true });
   const kind = PATHS[u.pathname];
   if (!kind) return send(res, 404, { code: 'not_found' });
+  if (kind === 'otp' && !OTP_ON) return send(res, 404, { code: 'otp_disabled' });
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
+  if (kind === 'otp' && req.method === 'GET') return send(res, 200, { otp: true, length: OTP_LENGTH });
   if (req.method !== 'POST') return send(res, 405, { code: 'method' });
   const ip = String(req.headers['x-real-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0]).trim() || req.socket.remoteAddress;
   let body;
   try { body = JSON.parse(await readBody(req) || '{}'); } catch { return send(res, 400, { code: 'bad_json', msg: 'Nieprawidłowe dane.' }); }
-  const { altcha, hp, ms, ...rest } = body || {};
+  const { altcha, hp, ms, ...given } = body || {};
+  // kod logowania: zawsze z zakładaniem konta (rejestracja = logowanie), bez metadanych i PKCE z przeglądarki
+  const rest = kind === 'otp' ? { email: String(given.email || '').trim(), create_user: true } : given;
   try {
     const r = await fetch(`${API}/rpc/auth_gate_check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Real-IP': ip },
       body: JSON.stringify({ p_kind: kind, p_altcha: altcha || null, p_hp: hp || null, p_ms: Number.isFinite(+ms) ? Math.round(+ms) : null }) });
@@ -51,4 +59,4 @@ http.createServer(async (req, res) => {
     res.writeHead(r.status, { 'Content-Type': r.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store', ...cors });
     res.end(text);
   } catch (e) { log(kind, 'GoTrue niedostępne', e.message); send(res, 503, { code: 'auth_unavailable', msg: 'Chwilowy błąd. Spróbuj za minutę.' }); }
-}).listen(8080, () => log('auth-gate :8080'));
+}).listen(8080, () => log('auth-gate :8080', OTP_ON ? 'kod logowania: włączony' : 'kod logowania: wyłączony'));
