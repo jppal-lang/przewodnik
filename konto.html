@@ -15,7 +15,7 @@
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
 <script src="/kid-reward.js?v=3"></script>
-<script src="/auth.js?v=2"></script>
+<script src="/auth.js?v=3"></script>
 </head>
 <body class="acc">
 <!--
@@ -169,6 +169,17 @@
         <button type="button" class="qc-btn" data-act="export" data-t="page.account.export_btn">Pobierz moje dane (JSON)</button>
         <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Wkrótce — na razie napisz do nas przez formularz kontaktowy" data-t="page.account.delete_btn">Usuń konto i dane</button>
       </div>
+      <!-- hasło opcjonalne (JP 2026-10-29, D-1): logujesz się kodem z maila; kto chce, ustawia hasło. Tylko dla zalogowanego. -->
+      <form class="acc-pass" id="accPass" novalidate hidden>
+        <h3 data-t="page.account.pass_h">Hasło (opcjonalnie)</h3>
+        <p class="acc-sec__sub" data-t="page.account.pass_sub">Logujesz się kodem z e-maila. Jeśli wolisz, ustaw hasło — kod dalej będzie działać.</p>
+        <label for="accPassIn" data-t="page.account.pass_label">Nowe hasło</label>
+        <div class="acc-pass__row"><input type="password" id="accPassIn" maxlength="72" minlength="10" autocomplete="new-password" aria-describedby="accPassHint">
+          <button type="button" class="acc-pass__eye" id="accPassEye" data-t-aria="page.account.pass_show" aria-label="Pokaż hasło" aria-pressed="false">👁</button></div>
+        <p class="acc-pass__hint" id="accPassHint" data-t="page.account.pass_hint">Co najmniej 10 znaków. Najłatwiej: trzy dowolne słowa.</p>
+        <button type="submit" class="qc-btn" id="accPassSave" data-t="page.account.pass_save">Ustaw hasło</button>
+        <p class="acc-pass__msg" id="accPassMsg" role="status" aria-live="polite"></p>
+      </form>
     </div>
   </section>
 </main>
@@ -556,6 +567,32 @@
   if (window.QAccAs) paint();
   else if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
   if (window.PT && PT.lang !== 'pl') PT.ready.then(function () { if (window.QAccAs) paint(); else if (window.QAuth) QAuth.ready.then(paint); });
+})();
+/* Ustaw hasło (opcjonalnie) — JP 2026-10-29, D-1. Tylko prawdziwa sesja (bez podglądu ?as=). PUT /user przez QAuth.setPassword. */
+(function () {
+  'use strict';
+  var f = document.getElementById('accPass'); if (!f || window.QAccAs || !window.QAuth || !QAuth.setPassword) return;
+  var inp = document.getElementById('accPassIn'), msg = document.getElementById('accPassMsg'), btn = document.getElementById('accPassSave'), eye = document.getElementById('accPassEye');
+  function say(t, kind) { msg.className = 'acc-pass__msg' + (kind ? ' is-' + kind : ''); msg.textContent = t || ''; }
+  function sync() { f.hidden = !QAuth.current(); }
+  QAuth.ready.then(sync); document.addEventListener('qauth', sync);
+  eye.addEventListener('click', function () {
+    var on = inp.type === 'password'; inp.type = on ? 'text' : 'password';
+    eye.setAttribute('aria-pressed', String(on)); eye.setAttribute('aria-label', on ? PT('page.account.pass_hide', 'Ukryj hasło') : PT('page.account.pass_show', 'Pokaż hasło'));
+  });
+  f.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (inp.value.length < 10) { say(PT('page.account.pass_short', 'Hasło musi mieć co najmniej 10 znaków.'), 'err'); inp.focus(); return; }
+    btn.disabled = true; say(PT('page.account.pass_saving', 'Zapisuję…'));
+    var r = await QAuth.setPassword(inp.value);
+    btn.disabled = false;
+    if (r.ok) { inp.value = ''; inp.type = 'password'; say(PT('page.account.pass_saved', 'Hasło ustawione. Możesz logować się hasłem albo kodem z e-maila.'), 'ok'); return; }
+    say(r.code === 'same_password' ? PT('page.account.pass_same', 'To jest Twoje obecne hasło — wpisz inne.')
+      : r.code === 'weak_password' ? PT('page.account.pass_weak', 'Hasło jest za słabe. Użyj co najmniej 10 znaków, np. trzech dowolnych słów.')
+      : r.status === 401 || r.code === 'no_session' ? PT('page.account.pass_session', 'Sesja wygasła. Zaloguj się jeszcze raz i spróbuj ponownie.')
+      : r.status === 0 ? PT('page.account.pass_offline', 'Brak połączenia z internetem. Spróbuj za chwilę.')
+      : PT('page.account.pass_err', 'Nie udało się zapisać hasła. Spróbuj za kilka minut.'), 'err');
+  });
 })();
 </script>
 <script>

@@ -4,8 +4,12 @@
    – Po kliknięciu linku z e-maila (potwierdzenie, reset) GoTrue wraca z #access_token=…&type=… — zapisujemy sesję i czyścimy adres.
    – Sesja w localStorage pod kluczem „qc.session” (token dostępu 1 h + token odświeżania z rotacją). Wylogowanie unieważnia ją na serwerze.
    – Ikona konta na pasku: zalogowany → /konto.html (kolor), niezalogowany → /zaloguj.html.
+   – Od 2026-10-29 (JP, D-1): logowanie KODEM Z MAILA (6 cyfr), hasło opcjonalne. Kod zakłada konto, jeśli go nie ma.
+     .codeLogin() pyta bramkę (GET /otp), czy serwer ma to włączone → {on, length}; bez tego strona zostaje przy haśle.
+     .sendCode(email, weryfikacja, next) → POST /otp przez bramkę (ALTCHA); .verifyCode(email, kod) → POST /verify type=email → sesja.
    Użycie: QAuth.signIn(email, hasło), .signUp(email, hasło, weryfikacja, next), .recover(email, weryfikacja), .setPassword(hasło),
-   .resend(email, next), .session(), .user(), .signOut(), .linkType() ('signup' | 'recovery' | ''), .ready (Promise), zdarzenie „qauth”. */
+   .resend(email, next), .codeLogin(), .sendCode(…), .verifyCode(…), .session(), .user(), .signOut(),
+   .linkType() ('signup' | 'recovery' | 'magiclink' | ''), .ready (Promise), zdarzenie „qauth”. */
 (function () {
   'use strict';
   var API = 'https://auth.quolino.com/auth/v1';
@@ -107,6 +111,42 @@
         body: JSON.stringify({ type: 'signup', email: String(email || '').trim() }) }));
     });
   }
+  // logowanie kodem z maila: czy serwer to obsługuje (bramka odpowiada na GET /otp dopiero po włączeniu, OTP_LOGIN=1)
+  var codeProbe = null;
+  function codeLogin() {
+    if (codeProbe) return codeProbe;
+    codeProbe = (async function () {
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      var t = ctl ? setTimeout(function () { ctl.abort(); }, 3000) : null;
+      try {
+        var r = await fetch(API + '/otp', { method: 'GET', cache: 'no-store', signal: ctl ? ctl.signal : undefined });
+        var b = r.ok ? await r.json() : null;
+        var n = b && Number(b.length);
+        return b && b.otp === true ? { on: true, length: n >= 6 && n <= 10 ? n : 6 } : { on: false, length: 6 };
+      } catch (e) { return { on: false, length: 6 }; }                        // dziś: Traefik zwraca 403 bez CORS → hasło
+      finally { if (t) clearTimeout(t); }
+    })();
+    return codeProbe;
+  }
+  // wysłanie kodu: bramka sprawdza „Nie jestem robotem” (altcha), pułapkę (hp) i czas (ms); GoTrue wysyła e-mail z kodem
+  // (nowe konto: zakłada je; link z tego samego maila wraca na next)
+  function sendCode(email, check, next) {
+    return safe(async function () {
+      var c = check || {};
+      return result(await call('/otp?redirect_to=' + encodeURIComponent(back(next, '/konto.html')), { method: 'POST',
+        body: JSON.stringify({ email: String(email || '').trim(), create_user: true, altcha: c.altcha, hp: c.hp || '', ms: c.ms || 0 }) }));
+    });
+  }
+  // sprawdzenie kodu: GoTrue zwraca sesję jak przy haśle
+  function verifyCode(email, code) {
+    return safe(async function () {
+      var r = await call('/verify', { method: 'POST',
+        body: JSON.stringify({ type: 'email', email: String(email || '').trim(), token: String(code || '').replace(/\D/g, '') }) });
+      if (r.ok && r.body.access_token) { save(fromTokens(r.body.access_token, r.body.refresh_token, r.body.expires_in)); paintNav(); emit(); }
+      else if (r.ok) r = { ok: false, status: r.status, body: { error_code: 'no_session' } };
+      return result(r);
+    });
+  }
   function setPassword(password) {
     return safe(async function () {
       var s = await session(); if (!s) return { ok: false, status: 401, code: 'no_session', msg: '' };
@@ -132,7 +172,7 @@
   window.addEventListener('storage', function (e) { if (e.key === KEY) { paintNav(); emit(); } });
 
   window.QAuth = { api: API, session: session, user: user, signIn: signIn, signUp: signUp, recover: recover, resend: resend,
-    setPassword: setPassword, signOut: signOut, refresh: refresh, current: load,
+    codeLogin: codeLogin, sendCode: sendCode, verifyCode: verifyCode, setPassword: setPassword, signOut: signOut, refresh: refresh, current: load,
     lastError: function () { return lastError; }, linkType: function () { return linkType; } };
   window.QAuth.ready = session().then(function () { paintNav(); emit(); });
 })();

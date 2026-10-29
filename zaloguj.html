@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zaloguj się lub załóż konto — Quolino</title>
-<meta name="description" content="Konto rodzica Quolino: załóż konto e-mailem i hasłem albo zaloguj się.">
+<meta name="description" content="Konto rodzica Quolino: zaloguj się albo załóż konto kodem z e-maila.">
 <meta name="pt-title" content="page.login.title">
 <meta name="robots" content="noindex, follow">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -23,13 +23,47 @@
   <div class="lg-head"><h1 id="lgTitle">Konto rodzica</h1>
     <img class="lg-quo" id="lgQuo" src="/media/icons/quo-zaloguj-256.webp" srcset="/media/icons/quo-zaloguj-256.webp 1x, /media/icons/quo-zaloguj-512.webp 2x" width="128" height="128" alt="" decoding="async"></div>
 
-  <div class="tabs" role="tablist" data-t-aria="page.login.tabs_aria" aria-label="Logowanie lub rejestracja" id="lgTabs">
+  <!-- KOD Z MAILA (JP 2026-10-29, D-1) — domyślny przepływ, gdy serwer go obsługuje (QAuth.codeLogin); inaczej zakładki z hasłem niżej -->
+  <form class="card" id="vCode" novalidate hidden>
+    <p class="lg-lead" data-t="page.login.code_lead">Wpisz e-mail, a wyślemy Ci 6-cyfrowy kod. Bez hasła. Nie masz jeszcze konta? Kod je założy.</p>
+    <div>
+      <label for="cdEmail" data-t="page.login.email">E-mail</label>
+      <input type="email" id="cdEmail" maxlength="200" autocomplete="email" inputmode="email" enterkeyhint="send" required>
+    </div>
+    <div class="hp" aria-hidden="true"><label for="cdWebsite">Strona www</label><input type="text" id="cdWebsite" tabindex="-1" autocomplete="off"></div>
+    <altcha-widget id="cdAltcha" name="altcha" language="pl" auto="onfocus" type="checkbox" hidelogo></altcha-widget>
+    <button type="submit" class="qc-btn qc-btn--primary" id="cdSend" data-t="page.login.code_send">Wyślij kod</button>
+    <p class="msg" id="cdMsg" role="status" aria-live="polite"></p>
+    <p class="small"><span data-t="page.login.code_note">Adres e-mail służy tylko do konta — bez reklam i newslettera. Szczegóły:</span> <a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a>.</p>
+    <button type="button" class="linkbtn" id="cdPass" data-t="page.login.code_use_pass">Zaloguj się hasłem</button>
+  </form>
+
+  <!-- WPISZ KOD — na tej samej stronie, bez przechodzenia przez link -->
+  <form class="card" id="vCodeIn" novalidate hidden>
+    <div class="done" role="status" aria-live="polite">
+      <p class="t" data-t="page.login.check_inbox">Sprawdź skrzynkę</p>
+      <p id="ciTxt"></p>
+    </div>
+    <div>
+      <label for="ciCode" data-t="page.login.code_label">Kod z e-maila</label>
+      <input type="text" id="ciCode" class="lg-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="14" enterkeyhint="go" spellcheck="false" aria-describedby="ciHint" required>
+      <p class="hint" id="ciHint" data-t="page.login.code_hint">6 cyfr. Kod działa 15 minut.</p>
+    </div>
+    <button type="submit" class="qc-btn qc-btn--primary" id="ciSend" data-t="page.login.code_signin">Zaloguj się</button>
+    <p class="msg" id="ciMsg" role="status" aria-live="polite"></p>
+    <p class="small" data-t="page.login.code_spam">Nie widzisz wiadomości? Zajrzyj do folderu Spam lub Oferty.</p>
+    <div id="ciRobot" hidden><altcha-widget id="ciAltcha" name="altcha" language="pl" type="checkbox" hidelogo></altcha-widget></div>
+    <button type="button" class="qc-btn" id="ciAgain" disabled>Wyślij nowy kod</button>
+    <button type="button" class="linkbtn" id="ciBack" data-t="page.login.code_change_email">Zmień adres e-mail</button>
+  </form>
+
+  <div class="tabs" role="tablist" data-t-aria="page.login.tabs_aria" aria-label="Logowanie lub rejestracja" id="lgTabs" hidden>
     <button type="button" role="tab" id="tabIn" aria-controls="vIn" aria-selected="true" data-t="page.login.signin">Zaloguj się</button>
     <button type="button" role="tab" id="tabUp" aria-controls="vUp" aria-selected="false" data-t="page.login.signup">Załóż konto</button>
   </div>
 
   <!-- LOGOWANIE -->
-  <form class="card" id="vIn" role="tabpanel" aria-labelledby="tabIn" novalidate>
+  <form class="card" id="vIn" role="tabpanel" aria-labelledby="tabIn" novalidate hidden>
     <div>
       <label for="inEmail" data-t="page.login.email">E-mail</label>
       <input type="email" id="inEmail" maxlength="200" autocomplete="username" inputmode="email" required>
@@ -43,6 +77,7 @@
     <p class="msg" id="inMsg" role="status" aria-live="polite"></p>
     <button type="button" class="qc-btn" id="inResend" hidden data-t="page.login.resend_confirm">Wyślij link potwierdzający ponownie</button>
     <button type="button" class="linkbtn" id="inForgot" data-t="page.login.forgot">Nie pamiętasz hasła?</button>
+    <button type="button" class="linkbtn" id="inCode" hidden data-t="page.login.code_instead">Zaloguj się kodem z e-maila</button>
   </form>
 
   <!-- REJESTRACJA -->
@@ -120,7 +155,7 @@
   <nav class="footer__links" data-t-aria="page.footer.nav" aria-label="Na skróty"><a href="/#jak" data-t="page.footer.how">Jak to działa</a><a href="/#dostep" data-t="page.footer.access">Co dostajesz</a><a href="/kontakt.html" data-t="page.footer.contact">Kontakt</a><a href="/wspolpraca.html" data-t="page.footer.partners">Współpraca</a><a href="/cookie-policy.html" data-t="page.footer.privacy">Prywatność</a></nav>
   <span class="footer__copy">© 2026 · <span data-t="page.footer.tagline">Rodzinne przewodniki na jednodniowe wypady</span></span>
 </div>
-<script src="/auth.js?v=2"></script>
+<script src="/auth.js?v=3"></script>
 <script src="/vendor/altcha/altcha.min.js?v=3.4.0"></script>
 <script>
 // powrót tam, skąd przyszedł (np. strona miasta): tylko ścieżki tej strony, bez zewnętrznych adresów
@@ -128,6 +163,8 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
 
 /* Konto rodzica (JP 2026-10-18): rejestracja e-mail + hasło → link potwierdzający; logowanie e-mail + hasło; reset hasła linkiem.
    Rejestracja i reset przechodzą przez bramkę „Nie jestem robotem” (ALTCHA z naszej bazy, jak formularz kontaktowy).
+   Od 2026-10-29 (JP, D-1): gdy serwer obsługuje kod z maila (QAuth.codeLogin → on), domyślnie „E-mail → Wyślij kod → 6 cyfr”
+   (rejestracja = logowanie, ta sama bramka ALTCHA); hasło jako mniejsza opcja. Bez tego strona działa jak dotąd (zakładki z hasłem).
    Sesja: /auth.js (window.QAuth). Plan: docs/LOGOWANIE.md. */
 (function () {
   'use strict';
@@ -135,25 +172,30 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
   var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
   var H = { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY };
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ['vIn', 'vUp', 'vForgot', 'vSent', 'vNewPass', 'vMe'];
+  var VIEWS = ['vCode', 'vCodeIn', 'vIn', 'vUp', 'vForgot', 'vSent', 'vNewPass', 'vMe'];
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  var opened = { vUp: 0, vForgot: 0 };   // czas otwarcia formularza (ochrona przed botami)
+  var opened = { vUp: 0, vForgot: 0, vCode: 0, vCodeIn: 0 };   // czas otwarcia formularza (ochrona przed botami)
+  var MODE = { on: false, length: 6 };   // logowanie kodem z maila: włączone, gdy serwer odpowiada (QAuth.codeLogin)
+  function home() { return MODE.on ? 'vCode' : 'vIn'; }
   var sent = null, timer = null, titled = null;   // titled: ostatni ekran, który ustawił tytuł (do odświeżenia po wczytaniu tłumaczeń)
   function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function titleFor(v) {
+    if (v === 'vCode') return PT('page.login.title', 'Zaloguj się lub załóż konto');
+    if (v === 'vCodeIn') return PT('page.login.code_title', 'Wpisz kod');
+    if (v === 'vIn' && MODE.on) return PT('page.login.pass_title', 'Logowanie hasłem');
     return v === 'vUp' ? PT('page.login.signup', 'Załóż konto') : v === 'vIn' ? PT('page.login.signin', 'Zaloguj się')
       : v === 'vMe' ? PT('page.login.account', 'Konto rodzica') : v === 'vNewPass' ? PT('page.login.newpass_title', 'Nowe hasło') : null;
   }
 
   function show(v) {
     VIEWS.forEach(function (id) { $(id).hidden = id !== v; });
-    var tabsOn = v === 'vIn' || v === 'vUp';
+    var tabsOn = !MODE.on && (v === 'vIn' || v === 'vUp');
     $('lgTabs').hidden = !tabsOn;
     $('tabIn').setAttribute('aria-selected', String(v === 'vIn'));
     $('tabUp').setAttribute('aria-selected', String(v === 'vUp'));
     if (opened[v] !== undefined) opened[v] = Date.now();
     // Quo dopasowany do ekranu (ikony z #quo-ikony, JP 2026-10-25); brak ikony → zostaje poprzednia
-    var QUO = { vIn: 'zaloguj', vUp: 'rejestracja', vForgot: 'reset-hasla', vSent: 'sprawdz-skrzynke', vNewPass: 'nowe-haslo', vMe: 'zalogowany' };
+    var QUO = { vCode: 'zaloguj', vCodeIn: 'sprawdz-skrzynke', vIn: 'zaloguj', vUp: 'rejestracja', vForgot: 'reset-hasla', vSent: 'sprawdz-skrzynke', vNewPass: 'nowe-haslo', vMe: 'zalogowany' };
     if (QUO[v]) { var q = $('lgQuo'); q.src = '/media/icons/quo-' + QUO[v] + '-256.webp'; q.srcset = '/media/icons/quo-' + QUO[v] + '-256.webp 1x, /media/icons/quo-' + QUO[v] + '-512.webp 2x'; }
     var t = v === 'vNewPass' ? null : titleFor(v);   // vNewPass: tytuł ustawia ścieżka odzyskiwania hasła (jak dotąd)
     if (t) { $('lgTitle').textContent = t; titled = v; }
@@ -163,6 +205,9 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     var c = r.code || '';
     if (r.status === 0) return PT('page.login.err_offline', 'Brak połączenia z internetem. Spróbuj za chwilę.');
     if (/^gate_/.test(c)) return PT.lang === 'pl' && r.msg ? r.msg : PT('page.login.err_gate', 'Potwierdź, że nie jesteś robotem.');
+    if (c === 'otp_expired') return PT('page.login.err_code', 'Ten kod nie pasuje albo już wygasł. Sprawdź cyfry albo wyślij nowy kod.');
+    if (c === 'over_email_send_rate_limit') return PT('page.login.err_code_wait', 'Kod już wysłaliśmy. Nowy możesz zamówić za minutę.');
+    if (c === 'otp_disabled') return PT('page.login.err_code_off', 'Logowanie kodem jest chwilowo wyłączone. Zaloguj się hasłem.');
     if (c === 'invalid_credentials') return PT('page.login.err_credentials', 'Nieprawidłowy e-mail lub hasło.');
     if (c === 'email_not_confirmed') return PT('page.login.err_not_confirmed', 'Najpierw potwierdź adres e-mail — kliknij link z wiadomości od Quolino.');
     if (c === 'weak_password') return PT('page.login.err_weak', 'Hasło jest za słabe. Użyj co najmniej 10 znaków, np. trzech dowolnych słów.');
@@ -180,7 +225,7 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
       verify: 'Zweryfikuj', verificationRequired: 'Zaznacz „Nie jestem robotem”.', verified: 'Zweryfikowano', verifying: 'Sprawdzam…',
       waitAlert: 'Trwa sprawdzanie… chwilę.', cancel: 'Anuluj', enterCode: 'Wprowadź kod', enterCodeAria: 'Wpisz kod', getAudioChallenge: 'Zadanie dźwiękowe',
       enterCodeFromImage: 'Wpisz kod z obrazka.' });
-    ['upAltcha', 'fgAltcha'].forEach(function (id) {
+    ['upAltcha', 'fgAltcha', 'cdAltcha', 'ciAltcha'].forEach(function (id) {
       var w = $(id); if (!w.configure) return;
       w.configure({ challenge: API + '/rpc/contact_challenge', hideLogo: false, hideFooter: true,
         fetch: function (url) { return fetch(url, { method: 'POST', headers: H, body: '{}' }); } });
@@ -197,7 +242,7 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
         verified: PT('page.altcha.verified', 'Zweryfikowano'), error: PT('page.altcha.error', 'Weryfikacja nie powiodła się. Spróbuj ponownie.'),
         expired: PT('page.altcha.expired', 'Weryfikacja wygasła. Zaznacz pole jeszcze raz.'), verificationRequired: PT('page.altcha.required', 'Zaznacz „Nie jestem robotem”.'),
         waitAlert: PT('page.altcha.wait', 'Trwa sprawdzanie… chwilę.'), footer: '' });
-      ['upAltcha', 'fgAltcha'].forEach(function (id) { $(id).setAttribute('language', PT.lang); }); return true;
+      ['upAltcha', 'fgAltcha', 'cdAltcha', 'ciAltcha'].forEach(function (id) { $(id).setAttribute('language', PT.lang); }); return true;
     };
     if (!go()) window.addEventListener('load', go);
   });
@@ -253,6 +298,8 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
   $('tabUp').addEventListener('click', function () { show('vUp'); history.replaceState(null, '', location.pathname + '#rejestracja'); });
   $('inForgot').addEventListener('click', function () { $('fgEmail').value = $('inEmail').value; show('vForgot'); });
   $('fgBack').addEventListener('click', function () { show('vIn'); });
+  $('cdPass').addEventListener('click', function () { if (!$('inEmail').value) $('inEmail').value = $('cdEmail').value.trim(); show('vIn'); $('inEmail').value ? $('inPass').focus() : $('inEmail').focus(); });
+  $('inCode').addEventListener('click', function () { if (!$('cdEmail').value) $('cdEmail').value = $('inEmail').value.trim(); show('vCode'); $('cdEmail').focus(); });
 
   // logowanie
   $('vIn').addEventListener('submit', async function (e) {
@@ -266,10 +313,16 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     $('inSend').disabled = false;
     if (r.ok) { say($('inMsg'), PT('page.login.signed_in', 'Zalogowano.'), 'ok'); location.href = nextUrl() || '/konto.html'; return; }
     say($('inMsg'), err(r), 'err');
-    if (r.code === 'email_not_confirmed') $('inResend').hidden = false;
+    if (r.code === 'email_not_confirmed') {
+      $('inResend').hidden = false;
+      if (MODE.on) $('inResend').textContent = PT('page.login.code_send_here', 'Wyślij kod na ten adres');
+    }
   });
   $('inResend').addEventListener('click', async function () {
-    var email = $('inEmail').value.trim(); this.disabled = true;
+    var email = $('inEmail').value.trim();
+    // kod z maila potwierdza też adres — zamiast linku
+    if (MODE.on) { this.hidden = true; $('cdEmail').value = email; show('vCode'); say($('cdMsg'), PT('page.login.robot_then_code', 'Zaznacz „Nie jestem robotem” i wyślij kod.')); return; }
+    this.disabled = true;
     var r = await QAuth.resend(email);
     this.disabled = false;
     if (r.ok) { this.hidden = true; showSent('signup', email); } else say($('inMsg'), err(r), 'err');
@@ -302,6 +355,80 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     say($('fgMsg'), err(r), 'err');
   });
 
+  // ── logowanie kodem z maila (2026-10-29) ──
+  var code = { email: '', busy: false, last: '' };
+  function codeText() {
+    $('ciTxt').innerHTML = esc(PT('page.login.code_sent_a', 'Wysłaliśmy 6-cyfrowy kod na')) + ' <b></b>. ' + esc(PT('page.login.code_sent_b', 'Wpisz go poniżej — nie zamykaj tej strony.'));
+    $('ciTxt').querySelector('b').textContent = code.email;
+  }
+  var ciTimer = null;
+  function codeCountdown() {
+    var left = COOLDOWN, b = $('ciAgain'), label = function () { return PT('page.login.code_again', 'Wyślij nowy kod'); };
+    b.disabled = true; b.textContent = label() + ' (' + left + ' s)';
+    clearInterval(ciTimer);
+    ciTimer = setInterval(function () {
+      left--;
+      if (left > 0) { b.textContent = label() + ' (' + left + ' s)'; return; }
+      clearInterval(ciTimer); b.disabled = false; b.textContent = label();
+    }, 1000);
+  }
+  function showCodeIn(email) {
+    code.email = email; code.last = '';
+    codeText(); $('ciCode').value = ''; say($('ciMsg'), ''); $('ciRobot').hidden = true;
+    show('vCodeIn'); codeCountdown();
+    try { $('ciCode').focus({ preventScroll: true }); } catch (e) { $('ciCode').focus(); }
+  }
+  function digits(v) { return String(v || '').replace(/\D/g, ''); }
+  $('vCode').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var email = $('cdEmail').value.trim(), a = altcha('cdAltcha');
+    if (!EMAIL_RE.test(email)) { say($('cdMsg'), PT('page.login.err_email_example', 'Wpisz pełny adres e-mail, np. anna@example.com.'), 'err'); $('cdEmail').focus(); return; }
+    if (!a) { say($('cdMsg'), PT('page.login.err_robot', 'Zaznacz „Nie jestem robotem” i poczekaj na zielony znaczek.'), 'err'); return; }
+    $('cdSend').disabled = true; say($('cdMsg'), PT('page.login.sending', 'Wysyłam…'));
+    var r = await QAuth.sendCode(email, { altcha: a, hp: $('cdWebsite').value, ms: Date.now() - opened.vCode }, nextUrl() || '/konto.html');
+    $('cdSend').disabled = false; resetAltcha('cdAltcha');
+    if (r.ok) { say($('cdMsg'), ''); showCodeIn(email); return; }
+    if (r.status === 404) r.code = 'otp_disabled';
+    say($('cdMsg'), err(r), 'err');
+  });
+  // wklejanie i autouzupełnianie: same cyfry; komplet cyfr → od razu sprawdzamy
+  $('ciCode').addEventListener('input', function () {
+    var d = digits(this.value).slice(0, MODE.length);
+    if (this.value !== d) this.value = d;
+    if (d.length === MODE.length && d !== code.last && !code.busy) $('vCodeIn').requestSubmit ? $('vCodeIn').requestSubmit() : $('ciSend').click();
+  });
+  $('vCodeIn').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var d = digits($('ciCode').value);
+    if (d.length !== MODE.length) { say($('ciMsg'), PT('page.login.err_code_len', 'Kod ma 6 cyfr. Przepisz go z wiadomości od Quolino.'), 'err'); $('ciCode').focus(); return; }
+    if (code.busy) return;
+    code.busy = true; code.last = d; $('ciSend').disabled = true; say($('ciMsg'), PT('page.login.signing_in', 'Loguję…'));
+    var r = await QAuth.verifyCode(code.email, d);
+    code.busy = false; $('ciSend').disabled = false;
+    if (r.ok) { say($('ciMsg'), PT('page.login.signed_in', 'Zalogowano.'), 'ok'); location.href = nextUrl() || '/konto.html'; return; }
+    say($('ciMsg'), err(r), 'err');
+    if (r.code === 'otp_expired') { try { $('ciCode').select(); } catch (x) { /* stary telefon */ } $('ciCode').focus(); }
+  });
+  // nowy kod: „Nie jestem robotem” sprawdzamy w tle; gdy się nie da — pokazujemy pole do zaznaczenia
+  async function robotInBackground(id) {
+    var w = $(id), v = altcha(id);
+    if (v) return v;
+    if (!w || typeof w.verify !== 'function') return '';
+    try { await Promise.race([Promise.resolve(w.verify()), new Promise(function (ok) { setTimeout(ok, 8000); })]); } catch (e) { /* pokażemy pole */ }
+    return altcha(id);
+  }
+  $('ciAgain').addEventListener('click', async function () {
+    if (!code.email) return;
+    var b = this; b.disabled = true; say($('ciMsg'), PT('page.login.sending', 'Wysyłam…'));
+    var a = await robotInBackground('ciAltcha');
+    if (!a) { $('ciRobot').hidden = false; b.disabled = false; say($('ciMsg'), PT('page.login.robot_again_code', 'Zaznacz „Nie jestem robotem” i kliknij „Wyślij nowy kod” jeszcze raz.'), 'err'); return; }
+    var r = await QAuth.sendCode(code.email, { altcha: a, hp: $('cdWebsite').value, ms: Date.now() - opened.vCodeIn }, nextUrl() || '/konto.html');
+    resetAltcha('ciAltcha');
+    if (r.ok) { $('ciRobot').hidden = true; $('ciCode').value = ''; code.last = ''; say($('ciMsg'), PT('page.login.code_resent', 'Wysłaliśmy nowy kod. Poprzedni już nie działa.'), 'ok'); codeCountdown(); $('ciCode').focus(); return; }
+    b.disabled = false; say($('ciMsg'), err(r), 'err');
+  });
+  $('ciBack').addEventListener('click', function () { clearInterval(ciTimer); $('cdEmail').value = code.email; show('vCode'); $('cdEmail').focus(); });
+
   // nowe hasło (po linku z e-maila)
   $('vNewPass').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -314,7 +441,7 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     say($('npMsg'), r.code === 'same_password' ? PT('page.login.err_same', 'To jest Twoje obecne hasło — wpisz inne.') : err(r), 'err');
   });
 
-  $('meOut').addEventListener('click', async function () { await QAuth.signOut(); show('vIn'); say($('inMsg'), PT('page.login.signed_out', 'Wylogowano.'), 'ok'); });
+  $('meOut').addEventListener('click', async function () { await QAuth.signOut(); show(home()); say($(MODE.on ? 'cdMsg' : 'inMsg'), PT('page.login.signed_out', 'Wylogowano.'), 'ok'); });
 
   function meText(s) {
     $('meTxt').innerHTML = esc(PT('page.login.me_as', 'Jesteś zalogowany jako')) + ' <b></b>.';
@@ -323,12 +450,17 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
 
   // stan początkowy
   var linkErr = QAuth.lastError();
-  QAuth.ready.then(function () {
+  // logowanie kodem: tylko gdy serwer potwierdza (bramka GET /otp); inaczej — jak dotąd, hasło
+  var probe = QAuth.codeLogin ? QAuth.codeLogin() : Promise.resolve({ on: false, length: 6 });
+  Promise.all([QAuth.ready, probe]).then(function (res) {
+    MODE = res[1] && res[1].on ? res[1] : { on: false, length: 6 };
+    $('inCode').hidden = !MODE.on;
+    if (MODE.on) $('ciCode').maxLength = MODE.length + 2;
     var s = QAuth.current();
     if (s && QAuth.linkType() === 'recovery') { $('lgTitle').textContent = PT('page.login.newpass_title', 'Nowe hasło'); titled = 'vNewPass'; show('vNewPass'); $('npPass').focus(); return; }
     if (s) { meText(s); show('vMe'); return; }
-    show(location.hash === '#rejestracja' ? 'vUp' : 'vIn');
-    if (linkErr) say($('inMsg'), /expired|otp_expired|invalid/.test(linkErr) ? PT('page.login.err_link_expired', 'Ten link już wygasł albo został użyty. Zaloguj się albo poproś o nowy.') : PT('page.login.err_link', 'Link nie zadziałał. Spróbuj jeszcze raz.'), 'err');
+    show(MODE.on ? 'vCode' : location.hash === '#rejestracja' ? 'vUp' : 'vIn');
+    if (linkErr) say($(MODE.on ? 'cdMsg' : 'inMsg'), /expired|otp_expired|invalid/.test(linkErr) ? PT('page.login.err_link_expired', 'Ten link już wygasł albo został użyty. Zaloguj się albo poproś o nowy.') : PT('page.login.err_link', 'Link nie zadziałał. Spróbuj jeszcze raz.'), 'err');
   });
 
   // tłumaczenia doszły po narysowaniu ekranu: odśwież teksty ustawiane ze skryptu (statyczne robi page-i18n.js)
@@ -338,6 +470,8 @@ function nextUrl() { var n = new URLSearchParams(location.search).get('next') ||
     var t = titleFor(titled); if (t) $('lgTitle').textContent = t;
     if (!$('vMe').hidden && QAuth.current()) meText(QAuth.current());
     if (!$('vSent').hidden) sentText();
+    if (!$('vCodeIn').hidden) codeText();
+    if (!$('ciAgain').disabled) $('ciAgain').textContent = PT('page.login.code_again', 'Wyślij nowy kod');
   });
 })();
 </script>
