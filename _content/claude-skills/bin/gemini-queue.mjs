@@ -34,6 +34,9 @@ const AGY_BUDGET = +(process.env.QUOLINO_AGY_WEEKLY_CALLS ?? 150);
 }
 // zlecenia z repo (_content/jobs/*.json, repo-jobs.mjs): jednorazowe zadania z białej listy, bez konsoli JP (JP 2026-10-30) — także w dzień
 try { const { runRepoJobs } = await import('./repo-jobs.mjs'); await runRepoJobs({ log }); } catch (e) { log(`zlecenia z repo: ${String(e.message).slice(0, 160)}`); }
+// podgląd stanu dla Claude (ops-status.mjs → ops.status_snapshot → rpc/ops_status): każdy przebieg crona, także w dzień i przy zajętej kolejce
+const opsStatus = async (trigger) => { try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger, log }); } catch (e) { log(`ops-status: ${String(e.message).slice(0, 160)}`); } };
+await opsStatus('gemini-queue');
 if (argv.includes('--night')) {
   const h = +new Intl.DateTimeFormat('pl-PL', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Warsaw' }).format(new Date());
   if (h >= 7 && h < 22) process.exit(0);
@@ -45,6 +48,7 @@ if (existsSync(LOCK)) {
 writeFileSync(LOCK, String(process.pid));
 const c = await db();
 const q = async (sql, p) => (await c.query(sql, p)).rows;
+let ranJob = false;
 
 try {
   await q(`UPDATE jobs SET status = 'queued' WHERE status = 'running' AND worker = 'gemini' AND created_at < now() - interval '3 hours'
@@ -52,6 +56,7 @@ try {
   // strażnik: przy wyczerpanym limicie nie zaczynamy NOWEJ trasy (wznawiamy tylko rozpoczęte — mają zapisany postęp w work/drafts)
   const queued = await q(`SELECT id, city_slug, request, result FROM jobs WHERE status = 'queued' AND worker = 'gemini' AND kind = 'draft' ORDER BY id`);
   const job = queued.find(j => !globalThis.__agyFull || existsSync(join(WORK, j.city_slug)));
+  ranJob = !!job;
   if (!job && queued.length) log(`kolejka: ${queued.length} nowych tras czeka na odnowienie limitu Antigravity (${agyQuotaOut() ?? 'próg 90%'})`);
   if (job) {
     const slug = job.city_slug;
@@ -86,3 +91,4 @@ try {
   await c.end();
   try { unlinkSync(LOCK); } catch { /* brak */ }
 }
+if (ranJob) await opsStatus('gemini-queue: po trasie');

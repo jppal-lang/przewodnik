@@ -69,6 +69,7 @@ export async function runRepoJobs({ log = (...a) => console.error(new Date().toI
       writeFileSync(REG, JSON.stringify(reg, null, 1));
       log(`zlecenie ${name}: ${reg[name].status} (kod ${code})`);
       done.push({ name, status: reg[name].status });
+      try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger: `repo-job: ${name}`, log }); } catch { /* podgląd pomocniczy */ }
     }
     writeFileSync(REG, JSON.stringify(reg, null, 1));
   } catch (e) { log(`zlecenia z repo: ${String(e.message).slice(0, 200)}`); }
