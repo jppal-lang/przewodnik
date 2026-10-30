@@ -1,6 +1,6 @@
 {
  "trip": "frasassi",
- "generated_at": "2026-10-30T15:20:06.972Z",
+ "generated_at": "2026-10-30T16:40:06.266Z",
  "versions": {
   "published": 1,
   "draft": 13
@@ -14,8 +14,57 @@
    "name": "Trasa turystyczna jaskiń",
    "category": "monument",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Grotte di Frasassi (18619).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/71/Grotte_di_Frasassi_%2818619%29.jpg/330px-Grotte_di_Frasassi_%2818619%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Grotte_di_Frasassi_(18619).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/7/71/Grotte_di_Frasassi_%2818619%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 7
+    },
+    {
+     "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-20-25 001.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG/330px-Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/8/87/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Maddy16869",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4496,
+     "height": 3000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-21-20 001.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG/330px-Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Maddy16869",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4496,
+     "height": 3000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-21-57 001.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG/330px-Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/4/47/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Maddy16869",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4496,
+     "height": 3000,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 56,
     "dropped": 9,
@@ -27,8 +76,57 @@
    "name": "Grotte di Frasassi",
    "category": "park",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Grotte di Frasassi (18619).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/71/Grotte_di_Frasassi_%2818619%29.jpg/330px-Grotte_di_Frasassi_%2818619%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Grotte_di_Frasassi_(18619).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/7/71/Grotte_di_Frasassi_%2818619%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 7
+    },
+    {
+     "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-20-25 001.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG/330px-Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/8/87/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-20-25_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Maddy16869",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4496,
+     "height": 3000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-21-20 001.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG/330px-Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Maddy16869",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4496,
+     "height": 3000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-21-57 001.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG/330px-Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/4/47/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-57_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Maddy16869",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4496,
+     "height": 3000,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 56,
     "dropped": 9,
@@ -53,8 +151,57 @@
    "name": "Museo Speleo Paleontologico e Archeologico",
    "category": "museum",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Museo speleo paleontologico e archeologico di Genga 58.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/Museo_speleo_paleontologico_e_archeologico_di_Genga_58.jpg/330px-Museo_speleo_paleontologico_e_archeologico_di_Genga_58.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Museo_speleo_paleontologico_e_archeologico_di_Genga_58.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/5/52/Museo_speleo_paleontologico_e_archeologico_di_Genga_58.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 7
+    },
+    {
+     "title": "File:Museo speleo paleontologico e archeologico di Genga 30.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Museo_speleo_paleontologico_e_archeologico_di_Genga_30.jpg/330px-Museo_speleo_paleontologico_e_archeologico_di_Genga_30.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Museo_speleo_paleontologico_e_archeologico_di_Genga_30.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Museo_speleo_paleontologico_e_archeologico_di_Genga_30.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    },
+    {
+     "title": "File:Museo speleo paleontologico e archeologico di Genga 31.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Museo_speleo_paleontologico_e_archeologico_di_Genga_31.jpg/330px-Museo_speleo_paleontologico_e_archeologico_di_Genga_31.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Museo_speleo_paleontologico_e_archeologico_di_Genga_31.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Museo_speleo_paleontologico_e_archeologico_di_Genga_31.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    },
+    {
+     "title": "File:Museo speleo paleontologico e archeologico di Genga 32.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Museo_speleo_paleontologico_e_archeologico_di_Genga_32.jpg/330px-Museo_speleo_paleontologico_e_archeologico_di_Genga_32.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Museo_speleo_paleontologico_e_archeologico_di_Genga_32.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Museo_speleo_paleontologico_e_archeologico_di_Genga_32.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 57,
     "dropped": 0,
@@ -66,8 +213,57 @@
    "name": "Świątynia Valadiera w skalnej paszczy",
    "category": "church",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa 13.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Eremo_di_Santa_Maria_Infra_Saxa_13.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa_13.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Eremo_di_Santa_Maria_Infra_Saxa_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    },
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa 2.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Eremo_di_Santa_Maria_Infra_Saxa_2.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa_2.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Eremo_di_Santa_Maria_Infra_Saxa_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    },
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Eremo_di_Santa_Maria_Infra_Saxa.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Eremo_di_Santa_Maria_Infra_Saxa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    },
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa, Genga.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Eremo_di_Santa_Maria_Infra_Saxa%2C_Genga.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa%2C_Genga.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa,_Genga.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Eremo_di_Santa_Maria_Infra_Saxa%2C_Genga.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Kimahri88",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 1300,
+     "height": 975,
+     "score": 5.21
+    }
+   ],
    "stats": {
     "found": 10,
     "dropped": 0,
@@ -79,8 +275,57 @@
    "name": "Abbazia di San Vittore alle Chiuse",
    "category": "church",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:San Vittore Genga 2012 (1) - kopie.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/San_Vittore_Genga_2012_%281%29_-_kopie.jpg/330px-San_Vittore_Genga_2012_%281%29_-_kopie.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:San_Vittore_Genga_2012_(1)_-_kopie.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/a2/San_Vittore_Genga_2012_%281%29_-_kopie.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Marie Čcheidzeová",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 2474,
+     "height": 1856,
+     "score": 5.77
+    },
+    {
+     "title": "File:Abbazia di San Vittore alle Chiuse – Genga.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Abbazia_di_San_Vittore_alle_Chiuse_%E2%80%93_Genga.jpg/330px-Abbazia_di_San_Vittore_alle_Chiuse_%E2%80%93_Genga.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Abbazia_di_San_Vittore_alle_Chiuse_%E2%80%93_Genga.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/1/13/Abbazia_di_San_Vittore_alle_Chiuse_%E2%80%93_Genga.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Travel_Designer",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4080,
+     "height": 3060,
+     "score": 5.5
+    },
+    {
+     "title": "File:Abbazia di San Vittore alle Chiuse 12.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Abbazia_di_San_Vittore_alle_Chiuse_12.jpg/330px-Abbazia_di_San_Vittore_alle_Chiuse_12.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Abbazia_di_San_Vittore_alle_Chiuse_12.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/5/50/Abbazia_di_San_Vittore_alle_Chiuse_12.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    },
+    {
+     "title": "File:Abbazia di San Vittore alle Chiuse 13.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/Abbazia_di_San_Vittore_alle_Chiuse_13.jpg/330px-Abbazia_di_San_Vittore_alle_Chiuse_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Abbazia_di_San_Vittore_alle_Chiuse_13.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Abbazia_di_San_Vittore_alle_Chiuse_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 48,
     "dropped": 4,
@@ -105,8 +350,57 @@
    "name": "Tempio del Valadier e Eremo di Santa Maria Infra Saxa",
    "category": "church",
    "view": "interior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa 10.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Eremo_di_Santa_Maria_Infra_Saxa_10.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa_10.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa_10.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Eremo_di_Santa_Maria_Infra_Saxa_10.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5
+    },
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa 4.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Eremo_di_Santa_Maria_Infra_Saxa_4.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa_4.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Eremo_di_Santa_Maria_Infra_Saxa_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5
+    },
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa 5.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Eremo_di_Santa_Maria_Infra_Saxa_5.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa_5.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa_5.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/66/Eremo_di_Santa_Maria_Infra_Saxa_5.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5
+    },
+    {
+     "title": "File:Eremo di Santa Maria Infra Saxa 7.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Eremo_di_Santa_Maria_Infra_Saxa_7.jpg/330px-Eremo_di_Santa_Maria_Infra_Saxa_7.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Eremo_di_Santa_Maria_Infra_Saxa_7.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/5/53/Eremo_di_Santa_Maria_Infra_Saxa_7.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Accurimbono",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3472,
+     "score": 5
+    }
+   ],
    "stats": {
     "found": 23,
     "dropped": 0,
