@@ -694,7 +694,8 @@
     var r = e && e.resolved; if (!r) return null;
     if (typeof r !== 'object') return { what: r === true ? 'poprawione przed kontrolą JP' : String(r), url: null, title: null };
     var url = r.url || r.source_url || (/^https?:/.test(r.source || '') ? r.source : null);
-    return { what: r.action || r.what || r.summary || r.text || r.note || 'poprawione przed kontrolą JP', url: url, title: r.source_title || r.title || null };
+    var ACT = { source_added: 'źródło dopisane', softened: 'zdanie złagodzone', removed: 'fragment usunięty', added: 'dopisane po potwierdzeniu', dropped: 'propozycja porzucona (brak źródła)' };
+    return { what: r.what || r.summary || r.text || r.note || ACT[r.action] || r.action || 'poprawione przed kontrolą JP', url: url, title: r.source_title || r.title || null };
   }
   // Rekomendacja — deterministyczna, bez AI. Zwraca { opt: 'fix'|'cut'|'keep'|'own', why: krótki powód }.
   function qaRecommend(x) {
