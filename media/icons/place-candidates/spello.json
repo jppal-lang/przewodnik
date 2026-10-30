@@ -1,6 +1,6 @@
 {
  "trip": "spello",
- "generated_at": "2026-10-30T15:25:14.756Z",
+ "generated_at": "2026-10-30T16:45:14.376Z",
  "versions": {
   "published": 1,
   "draft": 9
@@ -14,8 +14,57 @@
    "name": "Villa dei Mosaici",
    "category": "museum",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Spello - Mosaici di Villa S. Anna - 001.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Spello_-_Mosaici_di_Villa_S._Anna_-_001.jpg/330px-Spello_-_Mosaici_di_Villa_S._Anna_-_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Mosaici_di_Villa_S._Anna_-_001.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Spello_-_Mosaici_di_Villa_S._Anna_-_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Diego Baglieri",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4624,
+     "height": 3468,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello - Mosaici di Villa S. Anna - 007.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Spello_-_Mosaici_di_Villa_S._Anna_-_007.JPG/330px-Spello_-_Mosaici_di_Villa_S._Anna_-_007.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Mosaici_di_Villa_S._Anna_-_007.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/3/35/Spello_-_Mosaici_di_Villa_S._Anna_-_007.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Diego Baglieri",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello - Mosaici di Villa S. Anna - 008.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7b/Spello_-_Mosaici_di_Villa_S._Anna_-_008.JPG/330px-Spello_-_Mosaici_di_Villa_S._Anna_-_008.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Mosaici_di_Villa_S._Anna_-_008.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Spello_-_Mosaici_di_Villa_S._Anna_-_008.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Diego Baglieri",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello - Mosaici di Villa S. Anna - 010.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Spello_-_Mosaici_di_Villa_S._Anna_-_010.JPG/330px-Spello_-_Mosaici_di_Villa_S._Anna_-_010.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Mosaici_di_Villa_S._Anna_-_010.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Spello_-_Mosaici_di_Villa_S._Anna_-_010.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Diego Baglieri",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 22,
     "dropped": 0,
@@ -27,8 +76,57 @@
    "name": "Porta Consolare",
    "category": "monument",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Cammino Francescano della Marca, Spello, Porta Consolare 01.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Cammino_Francescano_della_Marca%2C_Spello%2C_Porta_Consolare_01.jpg/330px-Cammino_Francescano_della_Marca%2C_Spello%2C_Porta_Consolare_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_Porta_Consolare_01.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Cammino_Francescano_della_Marca%2C_Spello%2C_Porta_Consolare_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Mongolo1984",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 5.5
+    },
+    {
+     "title": "File:Porta Consolare, Spello, Italy (44586105435).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Porta_Consolare%2C_Spello%2C_Italy_%2844586105435%29.jpg/330px-Porta_Consolare%2C_Spello%2C_Italy_%2844586105435%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Porta_Consolare,_Spello,_Italy_(44586105435).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Porta_Consolare%2C_Spello%2C_Italy_%2844586105435%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4899,
+     "height": 3245,
+     "score": 5.5
+    },
+    {
+     "title": "File:Porta Consolare, Spello, Italy (45448623142).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Porta_Consolare%2C_Spello%2C_Italy_%2845448623142%29.jpg/330px-Porta_Consolare%2C_Spello%2C_Italy_%2845448623142%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Porta_Consolare,_Spello,_Italy_(45448623142).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Porta_Consolare%2C_Spello%2C_Italy_%2845448623142%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4928,
+     "height": 3264,
+     "score": 5.5
+    },
+    {
+     "title": "File:Porta Consolare, Spello, Italy (45448626222).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Porta_Consolare%2C_Spello%2C_Italy_%2845448626222%29.jpg/330px-Porta_Consolare%2C_Spello%2C_Italy_%2845448626222%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Porta_Consolare,_Spello,_Italy_(45448626222).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/a2/Porta_Consolare%2C_Spello%2C_Italy_%2845448626222%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4899,
+     "height": 3245,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 61,
     "dropped": 3,
@@ -40,8 +138,57 @@
    "name": "Chiesa di Sant'Andrea",
    "category": "church",
    "view": "interior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Spello - Chiesa di Sant'Andrea - L'altare della chiesa.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Spello_-_Chiesa_di_Sant%27Andrea_-_L%27altare_della_chiesa.jpg/330px-Spello_-_Chiesa_di_Sant%27Andrea_-_L%27altare_della_chiesa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Chiesa_di_Sant%27Andrea_-_L%27altare_della_chiesa.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/1/13/Spello_-_Chiesa_di_Sant%27Andrea_-_L%27altare_della_chiesa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "66colpi",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 5184,
+     "height": 3888,
+     "score": 5.5
+    },
+    {
+     "title": "File:Italien-Spello-SanAndrea-12E.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Italien-Spello-SanAndrea-12E.jpg/330px-Italien-Spello-SanAndrea-12E.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Italien-Spello-SanAndrea-12E.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/7/73/Italien-Spello-SanAndrea-12E.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Rikki Mitterer",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4128,
+     "height": 2322,
+     "score": 4.6
+    },
+    {
+     "title": "File:06038 Spello PG, Italy - panoramio (12).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/06038_Spello_PG%2C_Italy_-_panoramio_%2812%29.jpg/330px-06038_Spello_PG%2C_Italy_-_panoramio_%2812%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:06038_Spello_PG,_Italy_-_panoramio_(12).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/d/db/06038_Spello_PG%2C_Italy_-_panoramio_%2812%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "trolvag",
+     "license": "CC BY-SA 3.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+     "width": 4645,
+     "height": 2756,
+     "score": 4.5
+    },
+    {
+     "title": "File:Spello - Chiesa di Sant'Andrea - 002.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Spello_-_Chiesa_di_Sant%27Andrea_-_002.JPG/330px-Spello_-_Chiesa_di_Sant%27Andrea_-_002.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Chiesa_di_Sant%27Andrea_-_002.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/b/be/Spello_-_Chiesa_di_Sant%27Andrea_-_002.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Diego Baglieri",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 4.5
+    }
+   ],
    "stats": {
     "found": 67,
     "dropped": 2,
@@ -66,11 +213,60 @@
    "name": "Santa Maria Maggiore / Cappella Baglioni",
    "category": "church",
    "view": "interior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:\"L'Annunciazione\" di Pinturicchio nella Cappella Baglioni all'interno della Collegiata di Santa Maria Maggiore.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG/330px-%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Monica Rondoni",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 5184,
+     "height": 3456,
+     "score": 5
+    },
+    {
+     "title": "File:\"La Natività\" nella Cappella Baglioni della Collegiata di Santa Maria Maggiore di Spello.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG/330px-%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/ff/%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Monica Rondoni",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 5184,
+     "height": 3456,
+     "score": 5
+    },
+    {
+     "title": "File:06038 Spello PG, Italy - panoramio (8).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg/330px-06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:06038_Spello_PG,_Italy_-_panoramio_(8).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "trolvag",
+     "license": "CC BY-SA 3.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+     "width": 4659,
+     "height": 2756,
+     "score": 4.5
+    },
+    {
+     "title": "File:Cammino Francescano della Marca, Spello, Collegiata di Santa Maria Maggiore 01.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg/330px-Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_Collegiata_di_Santa_Maria_Maggiore_01.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/68/Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Mongolo1984",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 4.5
+    }
+   ],
    "stats": {
-    "found": 41,
-    "dropped": 3,
+    "found": 71,
+    "dropped": 4,
     "license_dropped": 0
    }
   },
@@ -79,8 +275,57 @@
    "name": "Collegiata di Santa Maria Maggiore (Cappella Baglioni)",
    "category": "church",
    "view": "interior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Cammino Francescano della Marca, Spello, Collegiata di Santa Maria Maggiore 01.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg/330px-Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_Collegiata_di_Santa_Maria_Maggiore_01.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/68/Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Mongolo1984",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 6
+    },
+    {
+     "title": "File:\"L'Annunciazione\" di Pinturicchio nella Cappella Baglioni all'interno della Collegiata di Santa Maria Maggiore.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG/330px-%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/%22L%27Annunciazione%22_di_Pinturicchio_nella_Cappella_Baglioni_all%27interno_della_Collegiata_di_Santa_Maria_Maggiore.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Monica Rondoni",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 5184,
+     "height": 3456,
+     "score": 5
+    },
+    {
+     "title": "File:\"La Natività\" nella Cappella Baglioni della Collegiata di Santa Maria Maggiore di Spello.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG/330px-%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/ff/%22La_Nativit%C3%A0%22_nella_Cappella_Baglioni_della_Collegiata_di_Santa_Maria_Maggiore_di_Spello.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Monica Rondoni",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 5184,
+     "height": 3456,
+     "score": 5
+    },
+    {
+     "title": "File:06038 Spello PG, Italy - panoramio (8).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg/330px-06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:06038_Spello_PG,_Italy_-_panoramio_(8).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "trolvag",
+     "license": "CC BY-SA 3.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+     "width": 4659,
+     "height": 2756,
+     "score": 4.5
+    }
+   ],
    "stats": {
     "found": 53,
     "dropped": 9,
@@ -108,8 +353,8 @@
    "status": "none",
    "candidates": [],
    "stats": {
-    "found": 8,
-    "dropped": 2,
+    "found": 0,
+    "dropped": 0,
     "license_dropped": 0
    }
   },
@@ -118,8 +363,57 @@
    "name": "Porta Venere + Torri di Properzio",
    "category": "monument",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Spello - Porta di Venere.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Spello_-_Porta_di_Venere.JPG/330px-Spello_-_Porta_di_Venere.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Porta_di_Venere.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Spello_-_Porta_di_Venere.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Attilios",
+     "license": "CC BY-SA 3.0",
+     "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+     "width": 2048,
+     "height": 1536,
+     "score": 5.52
+    },
+    {
+     "title": "File:Spello - Porta di Venere (gennaio 2024).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Spello_-_Porta_di_Venere_%28gennaio_2024%29.jpg/330px-Spello_-_Porta_di_Venere_%28gennaio_2024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Porta_di_Venere_(gennaio_2024).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Spello_-_Porta_di_Venere_%28gennaio_2024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Nastoshka",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4080,
+     "height": 3072,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello (Hispellum), Italy (30606153957).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/Spello_%28Hispellum%29%2C_Italy_%2830606153957%29.jpg/330px-Spello_%28Hispellum%29%2C_Italy_%2830606153957%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_(Hispellum),_Italy_(30606153957).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Spello_%28Hispellum%29%2C_Italy_%2830606153957%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4928,
+     "height": 3264,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello (Hispellum), Italy (43729811100).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Spello_%28Hispellum%29%2C_Italy_%2843729811100%29.jpg/330px-Spello_%28Hispellum%29%2C_Italy_%2843729811100%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_(Hispellum),_Italy_(43729811100).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/64/Spello_%28Hispellum%29%2C_Italy_%2843729811100%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4928,
+     "height": 3264,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 26,
     "dropped": 1,
@@ -144,8 +438,57 @@
    "name": "Porta Venere e Torri di Properzio",
    "category": "monument",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Spello - Porta di Venere.JPG",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Spello_-_Porta_di_Venere.JPG/330px-Spello_-_Porta_di_Venere.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Porta_di_Venere.JPG",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Spello_-_Porta_di_Venere.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Attilios",
+     "license": "CC BY-SA 3.0",
+     "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+     "width": 2048,
+     "height": 1536,
+     "score": 5.52
+    },
+    {
+     "title": "File:Spello - Porta di Venere (gennaio 2024).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Spello_-_Porta_di_Venere_%28gennaio_2024%29.jpg/330px-Spello_-_Porta_di_Venere_%28gennaio_2024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_Porta_di_Venere_(gennaio_2024).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Spello_-_Porta_di_Venere_%28gennaio_2024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Nastoshka",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4080,
+     "height": 3072,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello (Hispellum), Italy (30606153957).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/Spello_%28Hispellum%29%2C_Italy_%2830606153957%29.jpg/330px-Spello_%28Hispellum%29%2C_Italy_%2830606153957%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_(Hispellum),_Italy_(30606153957).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Spello_%28Hispellum%29%2C_Italy_%2830606153957%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4928,
+     "height": 3264,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello (Hispellum), Italy (43729811100).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Spello_%28Hispellum%29%2C_Italy_%2843729811100%29.jpg/330px-Spello_%28Hispellum%29%2C_Italy_%2843729811100%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_(Hispellum),_Italy_(43729811100).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/64/Spello_%28Hispellum%29%2C_Italy_%2843729811100%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Carole Raddato from FRANKFURT, Germany",
+     "license": "CC BY-SA 2.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+     "width": 4928,
+     "height": 3264,
+     "score": 5.5
+    }
+   ],
    "stats": {
     "found": 26,
     "dropped": 1,
@@ -157,11 +500,60 @@
    "name": "Belvedere e Arco Romano (Via Cappuccini)",
    "category": "viewpoint",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Panorama di Spello.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Panorama_di_Spello.jpg/330px-Panorama_di_Spello.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Panorama_di_Spello.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/0/09/Panorama_di_Spello.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "WikiRomaWiki",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 9068,
+     "height": 4492,
+     "score": 7
+    },
+    {
+     "title": "File:06038 Spello PG, Italy - panoramio (4).jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/06038_Spello_PG%2C_Italy_-_panoramio_%284%29.jpg/330px-06038_Spello_PG%2C_Italy_-_panoramio_%284%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:06038_Spello_PG,_Italy_-_panoramio_(4).jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/06038_Spello_PG%2C_Italy_-_panoramio_%284%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "trolvag",
+     "license": "CC BY-SA 3.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+     "width": 5184,
+     "height": 3456,
+     "score": 5.5
+    },
+    {
+     "title": "File:Abandoned drinking fountain near the Roman Aqueduct, Spello, Italia Aug 06, 2024 12-56-21 PM.jpeg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Abandoned_drinking_fountain_near_the_Roman_Aqueduct%2C_Spello%2C_Italia_Aug_06%2C_2024_12-56-21_PM.jpeg/330px-Abandoned_drinking_fountain_near_the_Roman_Aqueduct%2C_Spello%2C_Italia_Aug_06%2C_2024_12-56-21_PM.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Abandoned_drinking_fountain_near_the_Roman_Aqueduct,_Spello,_Italia_Aug_06,_2024_12-56-21_PM.jpeg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/1/17/Abandoned_drinking_fountain_near_the_Roman_Aqueduct%2C_Spello%2C_Italia_Aug_06%2C_2024_12-56-21_PM.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Dieterdreist",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 4032,
+     "height": 3024,
+     "score": 5.5
+    },
+    {
+     "title": "File:Spello - i borghi più belli d'Italia.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Spello_-_i_borghi_pi%C3%B9_belli_d%27Italia.jpg/330px-Spello_-_i_borghi_pi%C3%B9_belli_d%27Italia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Spello_-_i_borghi_pi%C3%B9_belli_d%27Italia.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Spello_-_i_borghi_pi%C3%B9_belli_d%27Italia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Raffaele pagani",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 5472,
+     "height": 3496,
+     "score": 5.5
+    }
+   ],
    "stats": {
-    "found": 0,
-    "dropped": 0,
+    "found": 46,
+    "dropped": 5,
     "license_dropped": 0
    }
   },
@@ -170,8 +562,57 @@
    "name": "Belvedere Panoramico — Punkt Widokowy",
    "category": "viewpoint",
    "view": "exterior",
-   "status": "none",
-   "candidates": [],
+   "status": "ok",
+   "candidates": [
+    {
+     "title": "File:Cammino Francescano della Marca, Spello, via degli Ulivi, Belvedere 01.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_01.jpg/330px-Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_via_degli_Ulivi,_Belvedere_01.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Mongolo1984",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 4
+    },
+    {
+     "title": "File:Cammino Francescano della Marca, Spello, via degli Ulivi, Belvedere 02.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_02.jpg/330px-Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_via_degli_Ulivi,_Belvedere_02.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/8/86/Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Mongolo1984",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 6000,
+     "height": 4000,
+     "score": 4
+    },
+    {
+     "title": "File:Italien-Spello-Via Toppe Belvedere-Briefkasten-01.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/Italien-Spello-Via_Toppe_Belvedere-Briefkasten-01.jpg/330px-Italien-Spello-Via_Toppe_Belvedere-Briefkasten-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Italien-Spello-Via_Toppe_Belvedere-Briefkasten-01.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Italien-Spello-Via_Toppe_Belvedere-Briefkasten-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Asurnipal",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 2576,
+     "height": 4592,
+     "score": 3.97
+    },
+    {
+     "title": "File:Italien-Spello-Via Toppe Belvedere-Briefkasten-02.jpg",
+     "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Italien-Spello-Via_Toppe_Belvedere-Briefkasten-02.jpg/330px-Italien-Spello-Via_Toppe_Belvedere-Briefkasten-02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "page": "https://commons.wikimedia.org/wiki/File:Italien-Spello-Via_Toppe_Belvedere-Briefkasten-02.jpg",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Italien-Spello-Via_Toppe_Belvedere-Briefkasten-02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "author": "Asurnipal",
+     "license": "CC BY-SA 4.0",
+     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+     "width": 2576,
+     "height": 4592,
+     "score": 3.97
+    }
+   ],
    "stats": {
     "found": 18,
     "dropped": 0,
