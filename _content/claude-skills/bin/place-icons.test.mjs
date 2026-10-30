@@ -198,6 +198,7 @@ test('kandydat do panelu: tylko adresy z Commons, krótkie pola', () => {
   const e = L.candidateEntry(ok);
   assert.equal(e.author.length, 160); assert.equal(e.thumb, ok.thumb); assert.equal(e.width, 4000);
   assert.equal(L.candidateEntry({ ...ok, thumb: 'https://evil.example/x.jpg' }), null);
+  assert.ok(L.candidateEntry({ ...ok, thumb: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/PV.jpg/320px-PV.jpg', page: 'https://commons.wikimedia.org/wiki/File%3APV.jpg' }));
   assert.equal(L.candidateEntry({ ...ok, page: 'javascript:alert(1)' }), null);
 });
 test('wybór JP: tytuły plików znormalizowane, najwyżej 2', () => {

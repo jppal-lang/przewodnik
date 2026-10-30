@@ -247,7 +247,7 @@ export function licenseOk(lic) {
 export const CANDIDATES_PER_STOP = 4;
 export const WAIT_HOURS = 48;   // przystanek z kandydatami bez wyboru JP i bez „automatu” czeka najwyżej tyle, potem automat
 export const candidatesPath = (trip) => `media/icons/place-candidates/${trip}.json`;
-const THUMB_RE = /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//;
+const THUMB_RE = /^https:\/\/(upload|thumb)\.wikimedia\.org\/wikipedia\/commons\//; // Commons podaje miniatury też z thumb.wikimedia.org (2026-10)
 const PAGE_RE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File(:|%3A)/i;
 // rekord kandydata (normPage z miniaturą 320 px) → wpis w pliku dla panelu; null, gdy adresy nie są z Commons
 export function candidateEntry(c) {

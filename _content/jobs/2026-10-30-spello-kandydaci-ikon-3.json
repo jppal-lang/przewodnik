@@ -1,0 +1,9 @@
+{
+ "script": "place-candidates.mjs",
+ "args": [
+  "spello"
+ ],
+ "why": "ponowienie: Commons podaje miniatury z thumb.wikimedia.org, filtr dopuszczał tylko upload.wikimedia.org (poprawione) — darmowe, tylko Commons",
+ "by": "Claude",
+ "timeout_min": 30
+}

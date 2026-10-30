@@ -1668,9 +1668,9 @@
   // Kandydaci: media/icons/place-candidates/<trasa>.json (place-candidates.mjs na serwerze, ten sam checkout repo co panel).
   // Wybór JP: admin.icon_refs / rpc admin_icon_refs_set (SQL 2026-10-30-icon-refs.sql): 1–2 pliki = wybór, [] = automat, null = brak decyzji.
   // Bez decyzji generator czeka na JP najwyżej wait_hours (48 h) od wygenerowania kandydatów, potem dobiera zdjęcia sam.
-  // Treść pliku to dane z Commons (autorzy, tytuły): tylko esc(); adresy wyłącznie z upload.wikimedia.org / commons.wikimedia.org.
+  // Treść pliku to dane z Commons (autorzy, tytuły): tylko esc(); adresy wyłącznie z upload/thumb.wikimedia.org / commons.wikimedia.org.
   var PRACTICAL = { parking: 1, restaurant: 1, icecream: 1, sweets: 1 };
-  var IC_THUMB = /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//, IC_PAGE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/;
+  var IC_THUMB = /^https:\/\/(upload|thumb)\.wikimedia\.org\/wikipedia\/commons\//, IC_PAGE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File(:|%3A)/i;
   function loadIconRefs(slug) {
     var ir = state.icref = { slug: slug, cand: null, sel: {}, selApi: false, msg: {} };
     var cand = DEMO ? api('/admin_queue').then(function () { return demoCandidates(slug); }) :
