@@ -4465,7 +4465,7 @@
     var own = ownedHats(), el = $('hatPicker'), html = '<button type="button" class="hat-btn" data-hat="" aria-pressed="' + (!curHat) + '">' + esc(PT('page.game.hat.none', 'Bez przebrania')) + '</button>';
     tripHats().forEach(function (k) {
       var has = own.indexOf(k) >= 0;
-      html += '<button type="button" class="hat-btn" data-hat="' + k + '" aria-pressed="' + (curHat === k) + '"' + (has ? '' : ' disabled') + '>' + esc(has ? HATS[k] : '🔒 ' + PT('page.game.hat.locked', 'ukryte')) + '</button>';
+      html += '<button type="button" class="hat-btn" data-hat="' + k + '" aria-pressed="' + (curHat === k) + '"' + (has ? '' : ' disabled') + '>' + esc(has ? HATS[k] : '🔒 ' + PT('page.game.hat.to_earn', 'do zdobycia')) + '</button>';
     });
     el.innerHTML = html;
     Array.prototype.forEach.call(el.children, function (b) { b.addEventListener('click', function () { curHat = b.dataset.hat || null; lsSet(LS + 'hat' + hatSuffix(), curHat || ''); renderHats(); }); });
@@ -4643,11 +4643,18 @@
     var powers = trip.stops.filter(function (s, i) { return p.stops[i].photo && s.powerup; }).map(function (s) { return POWER[s.powerup].name.split(' —')[0]; });
     var Dd = DIFF[diffKey], extra = Math.min(p.missions, Dd.cap - Dd.hearts);
     var html = '';
-    if (!p.found && !demo) html += '<p>' + esc(PT('page.game.bonus.none', 'Na tym telefonie nie ma jeszcze punktów z wycieczki. Gra działa i bez nich — jest tylko trochę trudniej.')) + '</p>';
+    // grupa A 2026-10-30 (I-5): puste stany jako zaproszenia, nie „+0 serduszek” / „brak mocy”; nowe klucze page.game.bonus.*_invite (polski fallback)
+    if (!p.found && !demo) html += '<p>' + esc(PT('page.game.bonus.invite', 'Możesz grać od razu. Na wycieczce zbierzesz serduszka i moce, które przydadzą się w grze.')) + '</p>';
     else html += '<p>' + esc(PT('page.game.bonus.head', 'Punkty z waszej wycieczki:')) + '</p>';
-    html += '<div class="row' + (p.missions ? '' : ' off') + '"><i>❤️</i>' + esc(fill(PT('page.game.bonus.missions', 'Misje: {m} z {t} → +{e} serduszek (start: {s})'), { m: p.missions, t: p.missionsTotal, e: extra, s: Dd.hearts + extra })) + '</div>';
-    if (p.photosTotal) html += '<div class="row' + (p.photos ? '' : ' off') + '"><i>📷</i>' + esc(fill(PT('page.game.bonus.photos', 'Zadania foto: {p} z {t}'), { p: p.photos, t: p.photosTotal }) + (powers.length ? ' → ' + powers.join(', ') : ' → ' + PT('page.game.bonus.nopower', 'brak mocy'))) + '</div>';
-    html += '<div class="row' + (p.full ? '' : ' off') + '"><i>⭐</i>' + esc(fill(PT('page.game.bonus.full', 'Całe przystanki: {f} z {n} → tajne skróty'), { f: p.full, n: trip.stops.length })) + '</div>';
+    html += '<div class="row' + (p.missions ? '' : ' off') + '"><i>❤️</i>' + esc(p.missions
+      ? fill(PT('page.game.bonus.missions', 'Misje: {m} z {t} → +{e} serduszek (start: {s})'), { m: p.missions, t: p.missionsTotal, e: extra, s: Dd.hearts + extra })
+      : fill(PT('page.game.bonus.missions_invite', 'Start z {s} serduszkami. Każda misja z wycieczki to +1 ❤️ — zbierz pierwsze serduszko!'), { s: Dd.hearts })) + '</div>';
+    if (p.photosTotal) html += '<div class="row' + (p.photos ? '' : ' off') + '"><i>📷</i>' + esc(p.photos
+      ? fill(PT('page.game.bonus.photos', 'Zadania foto: {p} z {t}'), { p: p.photos, t: p.photosTotal }) + (powers.length ? ' → ' + powers.join(', ') : '')
+      : fill(PT('page.game.bonus.photos_invite', 'Zadania foto na trasie: {t}. Każde da Quo moc w grze.'), { t: p.photosTotal })) + '</div>';
+    html += '<div class="row' + (p.full ? '' : ' off') + '"><i>⭐</i>' + esc(p.full
+      ? fill(PT('page.game.bonus.full', 'Całe przystanki: {f} z {n} → tajne skróty'), { f: p.full, n: trip.stops.length })
+      : PT('page.game.bonus.full_invite', 'Zalicz cały przystanek, a odkryjesz tajny skrót.')) + '</div>';
     var rec = loadRecord(), b = rec.best[diffKey];
     if (b && b.stars) html += '<div class="row"><i>🏆</i>' + esc(fill(PT('page.game.bonus.record', 'Rekord na tym poziomie: {s} / {n} ★'), { s: b.stars.reduce(function (a, s) { return a + s; }, 0), n: trip.stops.length * 3 })) + '</div>';
     el.innerHTML = html;
@@ -4872,12 +4879,12 @@
     if (album) $('stageAlbum').textContent = album;
     if (canvas) cv.setAttribute('aria-label', canvas);
     if (name) document.title = PT('page.game.title', 'Quo: Wyprawa') + ' — ' + name;
-    $('testBadge').hidden = !(STAGE && STAGE.approved !== true);
+    $('testBadge').hidden = !(TEST && STAGE && STAGE.approved !== true);   // grupa A 2026-10-30: plakietka raz, tylko z ?test=1
     var el = $('tripPicker'); if (!el) return;
     if (!STAGES || STAGES.stages.length < 2) { el.hidden = true; $('tripLabel').hidden = true; return; }
     el.innerHTML = STAGES.stages.map(function (st) {
       var on = STAGE && st.slug === STAGE.slug;
-      return '<button type="button" class="trip-btn" data-trasa="' + esc(st.slug) + '" aria-pressed="' + on + '"><img src="' + ICONS + 'icon-' + esc(st.icon) + '-128.webp" alt="" width="44" height="44"><span>' + esc(PT(st.name[0], st.name[1])) + (st.approved !== true ? '<small class="trip-test">' + esc(PT('page.game.html.test_badge', 'wersja testowa')) + '</small>' : '') + '</span></button>';
+      return '<button type="button" class="trip-btn" data-trasa="' + esc(st.slug) + '" aria-pressed="' + on + '"><img src="' + ICONS + 'icon-' + esc(st.icon) + '-128.webp" alt="" width="44" height="44"><span>' + esc(PT(st.name[0], st.name[1])) + '</span></button>';
     }).join('');
     Array.prototype.forEach.call(el.children, function (b) {
       b.addEventListener('click', function () {
