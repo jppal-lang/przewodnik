@@ -274,11 +274,16 @@ Każdy z tych błędów JP już raz poprawiał. Pełna analiza: `docs/WNIOSKI-Z-
    ```json
    {"verdict": "ok" | "fix",
     "summary": "2–3 zdania po polsku",
-    "errors":   [{"stop_key": "…|null", "field": "a|b|c|d|e|f|g|meta|plan", "problem": "…", "fix": "co dokładnie poprawić",
+    "errors":   [{"stop_key": "…|null", "path": "content.stops.<stop_key>.<pole>", "quote": "fragment z pola znak w znak",
+                  "problem": "…", "fix": "co dokładnie poprawić",
                   "old": "dosłowny cytat błędnego fragmentu z tekstu", "new": "poprawione brzmienie tego fragmentu albo \"\" = usuń"}],
-    "warnings": [{"stop_key": "…|null", "field": "…", "problem": "…"}],
+    "warnings": [{"stop_key": "…|null", "path": "…", "quote": "…", "problem": "…"}],
     "validator_exit": 0}
    ```
+   **Jedna uwaga = jedno miejsce** (panel pokazuje ją flagą przy fragmencie): `path` = `content.city.<pole>` |
+   `content.stops.<stop_key>.<pole>` | `meta.stops.<stop_key>.<pole>` | `content.day_plan.<stop_key>`, `quote` = krótki fragment
+   z tego pola (przy pustym polu pomiń). Uwagi zbiorcze zakazane: kilka faktów, przystanków albo pól = osobne wpisy.
+   W `problem` bez nazw technicznych pól (lokalny smaczek, misja dla dzieci, wstęp miasta…).
    `ok` tylko przy zerowej liczbie błędów walidatora i błędów merytorycznych. Uwagi (`warnings`)
    nie blokują. Każdy błąd ma konkretną instrukcję poprawki — autor ma ją wykonać bez zgadywania.
    **`old` / `new` (poprawka bez autora):** gdy błąd da się naprawić podmianą fragmentu, podaj w `old` fragment

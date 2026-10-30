@@ -19,6 +19,8 @@ import { spawn } from 'node:child_process';
 import { agyQuotaHit, agyQuotaOut } from './lib.mjs';
 import { claude, claudeUsage, claudeJson, extractJson, repairJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
+import './review-where.mjs';   // uwagi z kontroli przy polach: rozbicie zbiorczych, ścieżki (wspólne z panelem)
+const RW = globalThis.ReviewWhere;
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { triageErrors, gateErrors } from './jev.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
@@ -926,30 +928,52 @@ async function reviseMain() {
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle;
   await loadRules(q);
-  // Odpowiedzi JP na „Pytania z kontroli” (pole review.e.N / review.w.N, panel JP 2026-10-26):
-  //   „✓ Popraw według propozycji” → dosłowna podmiana stare → nowe z kontroli (bez AI), „✗ Zostaw” → bez zmian,
-  //   własny tekst → zwykła uwaga dla Gemini z treścią pytania. Pytania z odpowiedzią znikają z listy w nowej wersji.
-  const isQ = (c) => /^review\.[ew]\.\d+$/.test(c.field ?? '');
+  // Odpowiedzi JP na uwagi z kontroli (pole review.e.N / review.w.N, a dla rozbitych starych uwag zbiorczych review.w.N.j — panel, JP 2026-10-26/30):
+  //   „✓ Popraw według propozycji” → dosłowna podmiana stare → nowe z kontroli (bez AI), „✂ Usuń fragment” → usunięcie e.old albo cytatu
+  //   po dwukropku („✂ Usuń fragment: „…””, gdy kontrola nie podała old), „✗ Zostaw” → bez zmian, własny tekst → uwaga dla Gemini.
+  //   Podmiana tylko w miejscu uwagi (path: przystanek albo miasto), a gdy miejsca nie ma — w całym szkicu. Rozstrzygnięte znikają z listy.
+  const isQ = (c) => /^review\.[ew]\.\d+(\.\d+)?$/.test(c.field ?? '');
   const revs = {};
   for (const v of new Set(comments.filter(isQ).map(c => +(c.city_version ?? cur.version)))) {
     const [row] = v === cur.version ? [cur] : await q(`SELECT review FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, v]);
     revs[v] = row?.review ?? {};
   }
-  const itemOf = (c) => { const [, k, i] = c.field.split('.'); const rvv = revs[+(c.city_version ?? cur.version)] ?? {}; return (k === 'e' ? rvv.errors : rvv.warnings)?.[+i] ?? null; };
+  const itemOf = (c) => {
+    const [, k, i, j] = c.field.split('.'); const rvv = revs[+(c.city_version ?? cur.version)] ?? {};
+    const e = (k === 'e' ? rvv.errors : rvv.warnings)?.[+i] ?? null;
+    return j == null ? e : (RW.splitAggregate(e)?.[+j] ?? null);
+  };
+  const keyOf = (e) => `${e.stop_key ?? ''}|${e.problem}`;
+  const quoteOf = (body) => body.match(/^✂[^„"]*[„"]([\s\S]+)[”"]\s*$/)?.[1] ?? null;
   const lit = [], ask = [], answered = new Set();
   for (const c of comments) {
     if (!isQ(c)) { ask.push(c); continue; }
-    const it = itemOf(c); if (it) answered.add(`${it.stop_key ?? ''}|${it.problem}`);
-    if (/^✓/.test(c.body.trim()) && it?.old) lit.push({ find: it.old, replace: it.new ?? '' });
-    else if (/^✂/.test(c.body.trim()) && it?.old) lit.push({ find: it.old, replace: '' });   // „Usuń fragment” (panel, JP 2026-10-26)
-    else if (/^✗/.test(c.body.trim())) continue;
-    else ask.push({ ...c, field: null, field_label: 'pytanie z kontroli', body: `Pytanie z kontroli: ${it?.problem ?? c.field_label}${it?.old ? ` (fragment: „${it.old}”)` : ''}. Decyzja JP: ${c.body}` });
+    const it = itemOf(c), body = c.body.trim(); if (it) answered.add(keyOf(it));
+    const where = it?.path ?? (it?.stop_key ? `content.stops.${it.stop_key}` : null);
+    if (/^✓/.test(body) && it?.old) lit.push({ find: it.old, replace: it.new ?? '', path: where });
+    else if (/^✂/.test(body) && (quoteOf(body) || it?.old || it?.quote)) lit.push({ find: quoteOf(body) || it.old || it.quote, replace: '', path: where });
+    else if (/^✗/.test(body)) continue;
+    else ask.push({ ...c, field: null, field_label: it?.path ? `pytanie z kontroli · ${RW.label(RW.parsePath(it.path)?.field)}` : 'pytanie z kontroli', stop_key: c.stop_key ?? it?.stop_key ?? null,
+      body: `Pytanie z kontroli: ${it?.problem ?? c.field_label}${it?.old || it?.quote ? ` (fragment: „${it.old || it.quote}”)` : ''}. Decyzja JP: ${body}` });
   }
   const litChanges = [];
   if (lit.length) {
-    const walk = (o) => { if (typeof o === 'string') { let t = o; for (const p of lit) if (p.find && t.includes(p.find)) { t = t.split(p.find).join(p.replace); litChanges.push({ before: p.find, after: p.replace, why: 'pytanie z kontroli: zgoda JP na propozycję', auto: true }); } return t.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1'); }
-      if (Array.isArray(o)) return o.map(walk); if (o && typeof o === 'object') { for (const k of Object.keys(o)) o[k] = walk(o[k]); } return o; };
-    trip.content = walk(trip.content); trip.meta = walk(trip.meta); for (const k of Object.keys(blocks)) blocks[k] = walk(blocks[k]);
+    const stripRefsT = (t) => t.replace(/\s*\[\d+\]/g, '');
+    const walkWith = (p) => (o) => { if (typeof o === 'string') { let t = o; for (const f of [p.find, stripRefsT(p.find)]) if (f && t.includes(f)) { t = t.split(f).join(p.replace); litChanges.push({ before: f, after: p.replace, why: 'pytanie z kontroli: zgoda JP na propozycję', auto: true }); break; } return t.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1'); }
+      if (Array.isArray(o)) return o.map(walkWith(p)); if (o && typeof o === 'object') { for (const k of Object.keys(o)) o[k] = walkWith(p)(o[k]); } return o; };
+    for (const p of lit) {
+      const w = walkWith(p), at = p.path ? RW.parsePath(p.path) : null, n0 = litChanges.length;
+      if (at?.stop) {   // tylko ten przystanek: meta, proza, plan dnia, bloki z przypisami
+        const ms = trip.meta.stops.find(x => x.stop_key === at.stop);
+        if (ms) Object.assign(ms, w({ ...ms }));
+        if (trip.content.stops?.[at.stop]) trip.content.stops[at.stop] = w(trip.content.stops[at.stop]);
+        if (trip.content.day_plan?.[at.stop] != null) trip.content.day_plan[at.stop] = w(trip.content.day_plan[at.stop]);
+        if (blocks[at.stop]) blocks[at.stop] = w(blocks[at.stop]);
+      } else if (at && p.path && /\.city\./.test(p.path)) {
+        trip.content.city = w(trip.content.city); trip.meta.city = w(trip.meta.city);
+      }
+      if (litChanges.length === n0) { trip.content = w(trip.content); trip.meta = w(trip.meta); for (const k of Object.keys(blocks)) blocks[k] = w(blocks[k]); }   // bez miejsca albo nie znaleziono → cały szkic
+    }
     log(`${slug}: pytania z kontroli — ${lit.length} zgód, ${litChanges.length} podmian`);
   }
   const ap = ask.length ? await applyComments(trip, blocks, ask, cityTitle, argv.includes('--no-learn') ? 'Claude' : 'JP') : { changes: [], summaries: [] };
@@ -957,9 +981,12 @@ async function reviseMain() {
   if (!changes.length && !answered.size) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
   const fails = Object.values(blocks).filter(x => x?.check?.verdict === 'fix').length;
   // poprzednia kontrola przechodzi dalej bez pytań, na które JP już odpowiedział (każda nowa pełna kontrola znajdowała „nowe” drobiazgi)
-  const prev = cur.review ?? {}, open = (e) => !answered.has(`${e.stop_key ?? ''}|${e.problem}`);
-  const left = (prev.errors ?? []).filter(open);
-  const rv = { ...prev, verdict: left.length || fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: left, warnings: (prev.warnings ?? []).filter(open), rounds: [] };
+  // stare uwagi zbiorcze („Fakty bez źródła (3)…”) przechodzą rozbite — każdy fakt osobno, przy swoim polu
+  const prev = cur.review ?? {}, open = (e) => !answered.has(keyOf(e));
+  const split = (arr) => (arr ?? []).flatMap(e => (RW.splitAggregate(e) ?? [e]).map(({ sub, ...x }) => x));
+  const left = split(prev.errors).filter(open);
+  const rv = { ...prev, verdict: left.length || fails ? 'fix' : 'ok', summary: summaries.join(' · ').slice(0, 900), errors: left, warnings: split(prev.warnings).filter(open), rounds: [] };
+  try { RW.annotate(rv, RW.fieldsFromTrip(trip, blocks)); } catch (e) { log(`miejsca uwag: ${e.message}`); }
   trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
   const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)?.[1] ?? String(cur.version);
   const [nl] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);

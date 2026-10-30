@@ -5,6 +5,8 @@ import { writeFileSync, mkdirSync, readdirSync, readFileSync, unlinkSync, exists
 import { join } from 'node:path';
 import { run, env, log, extractJson, openrouter, openrouterJson } from './lib.mjs';
 import { rulesText, extraCheck, mergeReview } from './quality-lib.mjs';
+import './review-where.mjs';
+const RW = globalThis.ReviewWhere;
 
 export const SITE = env('QUOLINO_SITE_URL') || 'https://quolino.com';
 export const WORK = '/opt/data/quolino/work/drafts';
@@ -41,7 +43,10 @@ export async function review(dir) {
 // Pełna kontrola: trip-review (zasady umiejętności) + fakty z Wikipedią + zasady redakcyjne JP
 export async function fullReview(slug, trip) {
   const rv = await review(writeTrip(slug, trip));
-  return mergeReview(rv, await extraCheck(slug, trip));
+  const m = mergeReview(rv, await extraCheck(slug, trip));
+  // każda uwaga przy konkretnym polu (JP 2026-10-30): path/quote kodem, gdy kontrola ich nie podała
+  try { RW.annotate(m, RW.fieldsFromTrip(trip, trip.stop_blocks_v2)); } catch (e) { log(`miejsca uwag: ${e.message}`); }
+  return m;
 }
 
 // ── operacje na szkicu ───────────────────────────────────────────────────────────────────────

@@ -7,6 +7,8 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { SKILLS, run, claudeJson, JSON_QUOTE_RULE, log } from './lib.mjs';
+import './review-where.mjs';   // uwaga → konkretne pole (path/quote), ta sama logika co panel admina
+const RW = globalThis.ReviewWhere;
 
 const dir = resolve(process.argv[2] ?? '');
 if (!process.argv[2]) { console.error('Użycie: trip-review.mjs <katalog miasta> [--no-ai]'); process.exit(2); }
@@ -65,6 +67,11 @@ ${research}
 Pliki wycieczki:
 ${body}
 
+MIEJSCE UWAGI (panel pokazuje każdą uwagę flagą przy fragmencie, którego dotyczy): każdy wpis w "errors" i "warnings" dotyczy JEDNEGO miejsca —
+podaj "path" (content.city.<pole> | content.stops.<stop_key>.<pole> | meta.stops.<stop_key>.<pole> | content.day_plan.<stop_key>)
+i "quote" (krótki fragment z tego pola skopiowany znak w znak; przy pustym polu pomiń). ZAKAZ uwag zbiorczych: kilka faktów, przystanków
+albo pól = kilka osobnych wpisów (np. puste pole w trzech przystankach = trzy wpisy z path każdego przystanku). W "problem" pisz po polsku,
+bez nazw technicznych pól (zamiast local_flavor — „lokalny smaczek”, zamiast kids_box — „misja dla dzieci”).
 Odpowiedz wyłącznie JSON-em werdyktu. ${JSON_QUOTE_RULE}`;
   try {
     review = await claudeJson('quolino-trip-writing', prompt, { web: !incremental, rawFile: join(dir, `review-raw-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`) });
@@ -80,6 +87,8 @@ Odpowiedz wyłącznie JSON-em werdyktu. ${JSON_QUOTE_RULE}`;
   if (v.code !== 0) review.verdict = 'fix';
   try { writeFileSync(CACHE, JSON.stringify({ stops: stopHash, city: cityHash, validator: sha(validator), review }, null, 1)); } catch { /* bez pamięci podręcznej */ }
 }
+// path/quote dla uwag bez miejsca (kodem, bez AI) i rozbicie starych uwag zbiorczych
+try { RW.annotate(review, RW.fieldsFromTrip({ meta: META, content: PLJ })); } catch (e) { log(`miejsca uwag: ${e.message}`); }
 const out = join(dir, `review-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`);
 writeFileSync(out, JSON.stringify(review, null, 2));
 console.log(JSON.stringify({ verdict: review.verdict, errors: review.errors.length, warnings: review.warnings.length, report: out, summary: review.summary }, null, 2));

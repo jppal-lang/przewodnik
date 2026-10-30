@@ -27,4 +27,4 @@ if (opt('--stop')) {   // wszystkie pola przystanku (ścieżka: wartość), peł
 if (a.includes('--meta')) { const m = r.trip.meta ?? {}; const st = (m.stops ?? []).map(x => ({ key: x.key, t: x.time_label, d: x.duration_min ?? x.duration })); console.log(one(JSON.stringify({ ...m, stops: st }), 1800)); process.exit(0); }
 const rv = r.review ?? {}, from = +(opt('--from') ?? 0);
 console.log(`${slug} v${r.version} ${r.label} · błędy ${rv.errors?.length ?? 0} · ostrzeżenia ${rv.warnings?.length ?? 0}`);
-(rv.errors ?? []).slice(from, from + 12).forEach((e, i) => console.log(`#${from + i} [${e.stop_key ?? 'trasa'}] ${one(e.problem, 260)}${e.old ? `\n   OLD: ${one(e.old, 150)}` : ''}${e.new ? `\n   NEW: ${one(e.new, 150)}` : ''}`));
+(rv.errors ?? []).slice(from, from + 12).forEach((e, i) => console.log(`#${from + i} [${e.path ?? e.stop_key ?? 'trasa'}] ${one(e.problem, 260)}${e.quote ? `\n   CYTAT: ${one(e.quote, 150)}` : ''}${e.old ? `\n   OLD: ${one(e.old, 150)}` : ''}${e.new ? `\n   NEW: ${one(e.new, 150)}` : ''}`));

@@ -262,12 +262,13 @@ Gdy Wikipedia i strona oficjalna różnią się, napisz to w "evidence" i oznacz
 gdy tekst przeczy obu. Legendy oznaczone jako legenda i questy (polecenia dla dziecka) to nie twierdzenia — pomiń.
 Godzin, cen, zasad wejścia i opinii o lokalach NIE oceniasz. Różnica zaokrąglenia, pisowni albo poziomu
 szczegółu to nie sprzeczność.
+Każde twierdzenie osobno: jedno pole ("field") i jeden dosłowny cytat ("quote") — nigdy kilka faktów w jednym wpisie.
 (2) Sprawdź, czy fragment łamie którąś z zasad redakcyjnych (podaj jej numer).
 ${rulesText() || '(brak zasad redakcyjnych)'}
 Odpowiedz wyłącznie JSON-em:
-{"units": [{"key": "…", "claims": [{"field": "…", "claim": "…", "status": "confirmed|contradicted|not_in_source",
+{"units": [{"key": "…", "claims": [{"field": "nazwa pola z FRAGMENTY.text, np. lead, desc_paragraphs, local_flavor", "claim": "…", "status": "confirmed|contradicted|not_in_source",
             "source": 0, "evidence": "co mówi źródło (krótko, własnymi słowami)",
-            "quote": "przy contradicted: błędny fragment skopiowany z tekstu znak w znak", "fix": "przy contradicted: ten fragment poprawiony zgodnie ze źródłem (bez nowych faktów) albo \"\" = usuń"}],
+            "quote": "przy contradicted i not_in_source: fragment twierdzenia skopiowany z tekstu pola znak w znak (kilka–kilkanaście słów)", "fix": "przy contradicted: ten fragment poprawiony zgodnie ze źródłem (bez nowych faktów) albo \"\" = usuń"}],
             "rules": [{"rule_id": 0, "field": "…", "problem": "…", "quote": "fragment z tekstu znak w znak", "fix": "poprawiony fragment albo \"\""}]}]}
 
 FRAGMENTY:
@@ -301,7 +302,7 @@ ${JSON.stringify(todo.map(u => ({ key: u.key, name: u.name, category: u.category
       else if (c.status === 'contradicted') {
         facts.contradicted++;
         facts.issues.push({ stop_key: sk, claim: c.claim, evidence: c.evidence, url: c.url });
-        errors.push({ stop_key: sk, field: c.field, problem: `Niezgodne ze źródłem (${c.source_title ?? '?'}): „${c.claim}” — źródło: ${c.evidence}`, fix: c.fix ?? null,
+        errors.push({ stop_key: sk, field: c.field, ...(c.field ? { path: claimPath(u, c.field) } : {}), problem: `Niezgodne ze źródłem (${c.source_title ?? '?'}): „${c.claim}” — źródło: ${c.evidence}`, fix: c.fix ?? null,
           ...(c.quote ? { old: c.quote, new: c.fix ?? '' } : {}) });
       } else facts.unverified++;
     }
@@ -311,15 +312,24 @@ ${JSON.stringify(todo.map(u => ({ key: u.key, name: u.name, category: u.category
       const have = new Set(u.stop.sources ?? []);
       for (const url of used) if (!have.has(url)) { (u.stop.sources ??= []).push(url); facts.added_sources++; }
     }
+    // fakt bez źródła = osobna uwaga przy polu i cytacie (JP 2026-10-30: żadnych uwag zbiorczych „Fakty bez źródła (3)”)
     const unv = (r.claims ?? []).filter(c => c.status === 'not_in_source');
-    if (unv.length && !NO_WIKI.includes(u.category))
-      warnings.push({ stop_key: sk, problem: `Fakty bez źródła (${unv.length}) — potrzebny link do Wikipedii albo strony lokalnej: ${unv.slice(0, 3).map(c => c.claim).join('; ')}` });
+    if (!NO_WIKI.includes(u.category)) for (const c of unv)
+      warnings.push({ stop_key: sk, field: c.field ?? null, ...(c.field ? { path: claimPath(u, c.field) } : {}), ...(c.quote ? { quote: c.quote } : {}), claim: c.claim,
+        problem: `Fakt bez źródła — potrzebny link do Wikipedii albo strony lokalnej: „${c.claim}”` });
     for (const v of r.rules ?? [])
-      errors.push({ stop_key: sk, field: v.field, problem: `Zasada #${v.rule_id}: ${v.problem}`, fix: v.fix ?? null, rule_id: v.rule_id,
+      errors.push({ stop_key: sk, field: v.field, ...(v.field ? { path: claimPath(u, v.field) } : {}), problem: `Zasada #${v.rule_id}: ${v.problem}`, fix: v.fix ?? null, rule_id: v.rule_id,
         ...(v.quote ? { old: v.quote, new: v.fix ?? '' } : {}) });
     if (u.stop && FOOD.includes(u.category)) { const f = foodCheck(u.stop, u.name); errors.push(...f.errors); warnings.push(...f.warnings); }
   }
   return { errors, warnings, facts };
+}
+
+// ścieżka pola fragmentu (review-where.cjs): miasto → content.city.<pole>, przystanek → content.stops.<k>.<pole> / meta.stops.<k>.year_built
+function claimPath(u, field) {
+  const f = String(field).replace(/\[\d+\]|\.\d+$/g, '');
+  if (u.key === '_city') return `content.city.${f}`;
+  return f === 'year_built' ? `meta.stops.${u.key}.${f}` : `content.stops.${u.key}.${f}`;
 }
 
 // Wynik trip-review + kontrola dodatkowa w jednym werdykcie

@@ -29,12 +29,14 @@
   var RSCOPE = { quest: 'misje dzieci', opis: 'opisy', fakty: 'fakty', praktyczne: 'informacje praktyczne', 'plan-dnia': 'plan dnia', ton: 'ton i styl', struktura: 'struktura wycieczki', inne: 'inne' };
   var DUR = { half_day: 'pół dnia', full_day: 'cały dzień' };
 
-  var CITY_FIELDS = [['duration_type', 'Czas', durLabel], ['duration_hours', 'Godziny'], ['bandana_color', 'Kolor drużyny'],
-    ['hero_image', 'Grafika hero'], ['route_url', 'Trasa (link)'], ['travel_mode', 'Tryb trasy'], ['region_slug', 'Region']];
-  var CITY_TR = [['title', 'Tytuł'], ['subtitle', 'Podtytuł'], ['lead', 'Wstęp'], ['good_to_know', 'Dobrze wiedzieć'], ['local_food', 'Lokalne jedzenie']];
-  var STOP_TR = [['name', 'Nazwa'], ['desc_paragraphs', 'Opis'], ['kids_box', 'Misja dla dzieci'], ['hint', 'Podpowiedź'], ['local_flavor', 'Ciekawostka']];
-  var STOP_FIELDS = [['category', 'Kategoria'], ['time_label', 'Godzina'], ['visit_duration', 'Czas zwiedzania', minLabel],
-    ['price', 'Cena'], ['year_built', 'Rok'], ['maps_query', 'Mapa'], ['optional', 'Opcjonalny', yesNo], ['sunset_spot', 'Na zachód słońca', yesNo], ['lat', 'Szerokość geogr.'], ['lon', 'Długość geogr.']];
+  // etykiety pól — jedna mapa dla panelu i kontroli: review-where.js (FIELD_PL, kopia w bin/review-where.cjs)
+  var RW = window.ReviewWhere;
+  function F_(k, fmt) { return fmt ? [k, RW.label(k), fmt] : [k, RW.label(k)]; }
+  var CITY_FIELDS = [F_('duration_type', durLabel), F_('duration_hours'), F_('bandana_color'), F_('hero_image'), F_('route_url'), F_('travel_mode'), F_('region_slug')];
+  var CITY_TR = [F_('title'), F_('subtitle'), F_('lead'), F_('good_to_know'), F_('local_food')];
+  var STOP_TR = [F_('name'), F_('desc_paragraphs'), F_('kids_box'), F_('hint'), F_('local_flavor')];
+  var STOP_FIELDS = [F_('category'), F_('time_label'), F_('visit_duration', minLabel), F_('price'), F_('year_built'), F_('maps_query'),
+    F_('optional', yesNo), F_('sunset_spot', yesNo), F_('lat'), F_('lon')];
   var VER_FIELDS = [['stop_number', 'Numer']].concat(STOP_FIELDS);   // do liczenia wersji punktu liczy się też numer
 
   var SITE = 'https://quolino.com';   // podgląd szkicu na stronie: city.html?draft=<klucz>&v=N (jak draft-lib.mjs previewUrl)
@@ -143,6 +145,27 @@
       d.versions.push(v3);
       d.queue.forEach(function (q) { if (q.city_slug === 'spello') { q.version = 3; q.note = v3.note; q.created_at = v3.created_at; } });
       d.comments.forEach(function (c) { if (c.stop_key && c.field && c.field.indexOf('.') < 0) c.field = 'stop.' + c.field; });   // jak w bazie: stop.<kolumna>
+      // uwagi z kontroli przy konkretnych polach (JP 2026-10-30): fakt bez źródła przy wstępie miasta i przy ciekawostce przystanku,
+      // stara uwaga zbiorcza (rozbija się na flagi), pusty „lokalny smaczek” (flaga przy pierwszym przystanku z propozycji), automat
+      (v3.content.city_translations || []).forEach(function (t) {
+        if (t.lang === 'pl') t.lead = 'Spello jest zbudowane z biało-różowego wapienia z Monte Subasio, dlatego o zachodzie słońca całe miasteczko robi się różowe. Rzymianie nazywali je Hispellum.';
+      });
+      v3.content.stop_blocks_v2 = { 'porta-consolare': {
+        marked: { curiosity: { text: 'Na szczycie bramy rośnie stary oliwny krzew — jego korzenie podobno trzymają kamienie od XVII wieku [1].' },
+          legend: { text: 'Legenda mówi, że bramą wjechał do miasta cesarz Konstantyn.' }, pop_culture: null, fun_fact: { text: 'Brama ma trzy przejścia, ale używane jest tylko jedno [1].' } },
+        state: { curiosity: { state: 'found' }, legend: { state: 'found' }, pop_culture: { state: 'none', checked: 'Wikipedia it, strona gminy' }, fun_fact: { state: 'found' } },
+        sources: [{ n: 1, title: 'Porta Consolare (Spello) — Wikipedia', url: 'https://it.wikipedia.org/wiki/Porta_Consolare_(Spello)' }] } };
+      v3.review = JSON.parse(JSON.stringify(v3.review || { errors: [], warnings: [] }));
+      v3.review.warnings = (v3.review.warnings || []).concat([
+        { stop_key: null, path: 'content.city.lead', quote: 'Spello jest zbudowane z biało-różowego wapienia z Monte Subasio',
+          problem: '[nie blokuje] Fakt bez źródła — potrzebny link do Wikipedii albo strony lokalnej: Spello zbudowane z wapienia z Monte Subasio.' },
+        { stop_key: 'porta-consolare', path: 'blocks.porta-consolare.curiosity', quote: 'jego korzenie podobno trzymają kamienie od XVII wieku',
+          problem: '[nie blokuje] Fakt bez źródła — potrzebny link do Wikipedii albo strony lokalnej: wiek krzewu na bramie (XVII w.).' },
+        { stop_key: null, problem: 'Fakty bez źródła (2) — potrzebny link do Wikipedii albo strony lokalnej: miasto robi się różowe o zachodzie słońca; Rzymianie nazywali Spello Hispellum' },
+        { stop_key: null, problem: '[nie blokuje] local_flavor jest pusty w dwóch przystankach — dopisz tradycję albo święto, np. przy Belvedere (Infiorata w czerwcu).' },
+        { stop_key: 'parking-villa-dei-mosaici', path: 'meta.stops.parking-villa-dei-mosaici.price', problem: '[nie blokuje] Zasada #10: cena parkingu bez źródła.',
+          resolved: { action: 'cena zamieniona na „sprawdź na miejscu” (brak cennika na stronie gminy)', url: 'https://www.comune.spello.pg.it/', source_title: 'Comune di Spello' } }
+      ]);
       d.comments[0].resolved_in_version = 2;
       d.comments[1].status = 'done'; d.comments[1].hermes_reply = 'Przesunięte na 17:45.'; d.comments[1].resolved_in_version = 3;
       d.comments.push({ id: 3, city_slug: 'spello', city_version: 2, stop_key: null, field: 'city.lead', field_label: 'Wstęp', stop_version: null,
@@ -645,55 +668,109 @@
       (state.readOnly ? '' : '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="Uwaga dla Hermesa…"></textarea>' +
       '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form>') + '</div>';
   }
-  // ── Pytania z kontroli (JP 2026-10-26): każde ostrzeżenie i błąd z kontroli całej trasy jako osobna pozycja z własnym polem odpowiedzi.
-  // Odpowiedź to zwykła uwaga (pole review.e.N / review.w.N, N = indeks w review.errors / review.warnings) — idzie przyciskiem „Wyślij uwagi do poprawki”.
-  // Stała zasada JP: „uwagi i rozstrzygnięcia w czerwonej ramce przy konkretnym przystanku; zawsze kilka możliwości z rekomendacją”.
-  // Dlatego pytania renderują się W sekcji przystanku (#st-<stop_key>), a pytania do całej trasy — w „Opisie miasta”.
-  // Na górze szkicu zostaje tylko skrót: liczniki, linki do przystanków i przyciski „dla całej grupy” (wg rodzaju reguły).
-  // Treści odpowiedzi rozumie serwer: „✓” = podmiana stare → nowe, „✂” = usunięcie cytowanego fragmentu (stare → ""), „✗” = bez zmian.
+  // ── Uwagi z kontroli jako FLAGI przy konkretnym fragmencie (JP 2026-10-30; wcześniej czerwone ramki przy przystanku, 2026-10-26).
+  // Stała zasada JP: każda uwaga stoi PRZY KONKRETNEJ INFORMACJI — w polu, którego dotyczy. Cytowany fragment jest podświetlony
+  // i ma małą czerwoną flagę; klik otwiera notatkę (popover przy fragmencie) z nazwą pola po polsku, treścią uwagi, kilkoma
+  // możliwościami z rekomendacją i polem odpowiedzi. Uwaga bez cytatu → flaga przy nazwie pola; bez pola → przy „Cały przystanek” /
+  // „Cała wycieczka”. Pole ustala review-where.js: path z kontroli → cytat → kluczowe słowa faktu → nazwa pola w uwadze (bez AI).
+  // Uwagi zbiorcze ze starych kontroli („Fakty bez źródła (3)…”) są rozbite: każdy fakt to osobna flaga, odpowiedź w polu review.w.N.j.
+  // Odpowiedź = zwykła uwaga (pole review.e.N / review.w.N[.j]) — idzie przyciskiem „Wyślij uwagi do poprawki”; serwer (gemini-draft reviseMain):
+  // „✓” = podmiana stare → nowe, „✂” = usunięcie fragmentu (stare albo cytat po dwukropku), „✗” = bez zmian.
+  // Uwaga z polem `resolved` (rozstrzygnięta automatycznie przed JP) = szara flaga do wglądu, bez odpowiedzi.
   var QA_YES = '✓ Popraw według propozycji', QA_CUT = '✂ Usuń fragment', QA_NO = '✗ Zostaw bez zmian';
   var QA_OPT = { fix: 'Popraw według propozycji', cut: 'Usuń fragment', keep: 'Zostaw bez zmian', own: 'Własna decyzja' };
   var QA_BODY = { fix: QA_YES, cut: QA_CUT, keep: QA_NO };
+  var FLAG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 2.5a1 1 0 0 1 1 1V4h11.2a1 1 0 0 1 .8 1.6L15.6 9l2.4 3.4a1 1 0 0 1-.8 1.6H6v7a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1z"/></svg>';
   function qaPlural(n) { var d = n % 10, t = n % 100; return n === 1 ? 'pytanie' : d >= 2 && d <= 4 && (t < 12 || t > 14) ? 'pytania' : 'pytań'; }
   function plForm(n, one, few, many) { var d = n % 10, t = n % 100; return n + ' ' + (n === 1 ? one : d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many); }
-  function qaProblem(e) { return String(e && e.problem || '').replace(/^\[(nie blokuje|drobiazg)\]\s*/i, ''); }
-  function qaGroupKey(e) { var m = qaProblem(e).match(/^(Zasada #\d+|Walidator|[^:(]{3,40}?)\s*[:(]/); return m ? m[1].trim() : 'Inne'; }
+  function qaProblem(e) { return RW.humanize(String(e && e.problem || '').replace(/^\[(nie blokuje|drobiazg)\]\s*/i, '')); }
+  function qaGroupKey(e) { var m = String(e && e.problem || '').replace(/^\[(nie blokuje|drobiazg)\]\s*/i, '').match(/^(Zasada #\d+|Walidator|[^:(—]{3,40}?)\s*[:(—]/); return m ? m[1].trim() : 'Inne'; }
   function qaHasOld(e) { return e != null && e.old != null && String(e.old) !== ''; }
   function qaHasNew(e) { return e != null && e['new'] != null && String(e['new']) !== ''; }
+  function qaCutText(x) { return qaHasOld(x.e) ? String(x.e.old) : (x.quote || ''); }   // co usunie „✂”
+  function qaId(x) { return x.id.replace(/\./g, '-'); }
+  // rozstrzygnięcie automatyczne (inny krok procesu): tekst albo {action|what|summary|text, url|source_url|source, source_title}
+  function qaAuto(e) {
+    var r = e && e.resolved; if (!r) return null;
+    if (typeof r !== 'object') return { what: r === true ? 'poprawione przed kontrolą JP' : String(r), url: null, title: null };
+    var url = r.url || r.source_url || (/^https?:/.test(r.source || '') ? r.source : null);
+    return { what: r.action || r.what || r.summary || r.text || r.note || 'poprawione przed kontrolą JP', url: url, title: r.source_title || r.title || null };
+  }
   // Rekomendacja — deterministyczna, bez AI. Zwraca { opt: 'fix'|'cut'|'keep'|'own', why: krótki powód }.
-  function qaRecommend(e, block) {
-    var p = qaProblem(e), hasOld = qaHasOld(e), hasNew = qaHasNew(e);
-    if (block) {
-      // błąd blokujący z gotową poprawką → poprawiamy
+  function qaRecommend(x) {
+    var e = x.e, p = qaProblem(e), hasOld = !!qaCutText(x), hasNew = qaHasNew(e);
+    if (x.block) {
       if (hasNew) return { opt: 'fix', why: 'błąd blokujący, poprawka gotowa' };
-      // fakt sprzeczny ze źródłem (albo zdradzający rozwiązanie) i wiemy, który fragment → usuwamy
       if (hasOld && /sprzeczn|niezgodn|zdradza/i.test(p)) return { opt: 'cut', why: 'fakt niezgodny ze źródłem — bezpieczniej usunąć' };
-      // brak gotowej poprawki → decyduje JP
       return { opt: 'own', why: 'kontrola nie podała gotowej poprawki' };
     }
-    // ostrzeżenie o braku źródła dla cytowanego fragmentu (bez propozycji) → zostawiamy, to zwykle fakt niesporny
     if (!hasNew && hasOld && /Zasada #10|nie ma w źródle|bez źródła/i.test(p)) return { opt: 'keep', why: 'fakt niesporny, tylko brak przypisu' };
-    // styl, powtórzenia, gramatyka, literówki z gotową poprawką → poprawiamy
     if (hasNew && /styl|powtórz|gramaty|literówk|interpunk/i.test(p)) return { opt: 'fix', why: 'drobna poprawka językowa, gotowa' };
-    // ujednolicenie do „sprawdź na miejscu” — zasada wspólna #6 (nie wymyślać faktów)
     if (hasNew && /sprawdź na miejscu/i.test(String(e['new']))) return { opt: 'fix', why: 'ujednolicenie do „sprawdź na miejscu”' };
     return { opt: 'keep', why: 'ostrzeżenie nie blokuje publikacji' };
   }
-  // lista pytań do wersji: najpierw błędy, potem ostrzeżenia wg grup; numeracja wspólna dla skrótu i ramek
-  function qaItems(it, keys) {
+  // lista uwag do wersji: najpierw błędy, potem ostrzeżenia wg grup; każda z miejscem (przystanek + pole + cytat)
+  function qaItems(it, keys, draft) {
     var rv = it && it.review || {}, out = [], groups = {}, order = [], n = 0;
-    (rv.errors || []).forEach(function (e, i) { out.push({ k: 'e', i: i, e: e || {}, block: true, g: 'Blokujące', n: ++n }); });
-    var ws = [];
-    (rv.warnings || []).forEach(function (e, i) {
-      var g = qaGroupKey(e);
+    var F = RW.fieldsFromContent(draft, function (s) { return stopKey(s, draft.stop_translations); });
+    var all = RW.expand(rv).map(function (t) { return { k: t.k, i: t.i, j: t.j, e: t.e || {}, block: t.k === 'e', id: RW.itemId(t) }; });
+    all.forEach(function (x) { if (x.block) { x.g = 'Blokujące'; x.n = ++n; out.push(x); } });
+    all.forEach(function (x) {
+      if (x.block) return;
+      var g = qaGroupKey(x.e); x.g = g;
       if (!groups[g]) { groups[g] = []; order.push(g); }
-      var x = { k: 'w', i: i, e: e || {}, block: false, g: g }; groups[g].push(x); ws.push(x);
+      groups[g].push(x);
     });
-    if (order.indexOf('Inne') > 0) { order.splice(order.indexOf('Inne'), 1); order.push('Inne'); }   // „Inne” zawsze na końcu
+    if (order.indexOf('Inne') >= 0) { order.splice(order.indexOf('Inne'), 1); order.push('Inne'); }   // „Inne” zawsze na końcu
     order.forEach(function (g) { groups[g].forEach(function (x) { x.n = ++n; out.push(x); }); });
-    // pytanie do przystanku, którego nie ma w szkicu → ramka „Opis miasta” (z nazwą klucza)
-    out.forEach(function (x) { var sk = x.e.stop_key || null; x.box = sk && keys && keys[sk] ? sk : '_city'; x.orphan = sk && x.box === '_city' ? sk : null; });
-    return { list: out, order: order, groups: groups };
+    out.forEach(function (x) {
+      var w = RW.locate(x.e, F);
+      x.box = w.stop && keys && keys[w.stop] != null ? w.stop : '_city';
+      x.orphan = w.stop && x.box === '_city' ? w.stop : null;          // przystanek spoza szkicu → „Cała wycieczka”
+      x.fkey = x.orphan ? null : w.field;
+      x.field = x.fkey ? (x.box === '_city' ? 'city.' : 'stop.') + x.fkey : null;
+      x.quote = x.orphan ? null : w.quote;
+      x.path = w.path; x.auto = qaAuto(x.e);
+      var sn = x.box === '_city' ? null : keys[x.box];
+      x.where = x.orphan ? 'Przystanek „' + x.orphan + '” (nie ma go w szkicu)'
+        : x.box === '_city' ? (x.fkey ? 'Opis miasta · ' + RW.label(x.fkey) : 'Cała wycieczka · ogólne')
+        : 'Przystanek ' + (sn != null ? sn : '?') + ' · ' + (x.fkey ? RW.label(x.fkey) : 'cały przystanek');
+    });
+    return { list: out, order: order, groups: groups, F: F };
+  }
+  // uwagi do konkretnego pola (field null = pole ogólne „Cały przystanek” / „Cała wycieczka”)
+  function qaFor(box, field) { return (state.qa ? state.qa.list : []).filter(function (x) { return x.box === box && x.field === (field || null); }); }
+  // pola z flagą, których zwykły widok nie pokazuje (np. godziny otwarcia, zadanie foto, plan dnia) → dodatkowy wiersz
+  function qaExtraRows(box, shown, ver) {
+    var seen = {};
+    return (state.qa ? state.qa.list : []).filter(function (x) {
+      if (x.box !== box || !x.field || shown[x.field] || seen[x.field]) return false; seen[x.field] = 1; return true;
+    }).map(function (x) {
+      var f = state.qa.F.list.filter(function (y) { return y.path === x.path; })[0];
+      return cell(RW.label(x.fkey), null, f && f.text ? f.text : '(puste)', null, false,
+        commentBox(box === '_city' ? null : box, x.field, RW.label(x.fkey), ver), { box: box, field: x.field });
+    }).join('');
+  }
+  function flagBtn(x) {
+    return '<button type="button" class="adm-flag' + (x.auto ? ' adm-flag--auto' : x.block ? ' is-block' : '') + '" data-flag="' + qaId(x) + '" aria-expanded="false" aria-controls="q-' + qaId(x) + '"' +
+      ' aria-label="' + esc((x.auto ? 'Rozstrzygnięte automatycznie' : 'Uwaga ' + x.n) + ': ' + x.where) + '" title="' + esc(x.where) + '">' + FLAG + '<span class="adm-flag__n">' + (x.auto ? '✓' : x.n) + '</span></button>';
+  }
+  // treść pola z podświetlonymi fragmentami i flagami; zwraca { html, rest: uwagi bez fragmentu w tekście }
+  function qaHighlight(text, list) {
+    var spans = [], rest = [];
+    list.forEach(function (x) {
+      var q = x.quote, i = q ? text.indexOf(q) : -1;
+      if (q && i < 0) { var r = RW.exactIn(text, q); if (r) { q = r; i = text.indexOf(r); } }
+      if (i < 0 || spans.some(function (s) { return i < s.b && i + q.length > s.a; })) { rest.push(x); return; }
+      spans.push({ a: i, b: i + q.length, x: x });
+    });
+    spans.sort(function (p, q) { return p.a - q.a; });
+    var h = '', at = 0;
+    spans.forEach(function (s) {
+      h += esc(text.slice(at, s.a)) + '<mark class="adm-fl' + (s.x.auto ? ' adm-fl--auto' : '') + '" data-flag="' + qaId(s.x) + '">' + esc(text.slice(s.a, s.b)) + '</mark>' + flagBtn(s.x);
+      at = s.b;
+    });
+    return { html: h + esc(text.slice(at)), rest: rest };
   }
   function qaOptHtml(x, opt, rec, detail) {
     var on = rec.opt === opt;
@@ -702,56 +779,61 @@
       (on ? ' <span class="adm-qo__rec">Rekomendacja</span>' : '') + '</span>' + (detail || '') +
       (on ? '<span class="adm-qo__why">' + esc(rec.why) + '</span>' : '') + '</span></button>';
   }
+  // notatka (popover) jednej uwagi — w wierszu pola, otwierana flagą
   function qaItemHtml(x) {
-    var e = x.e, field = 'review.' + x.k + '.' + x.i, label = 'Pytanie ' + x.n, stop = e.stop_key || null;
-    var hasOld = qaHasOld(e), hasNew = qaHasNew(e), rec = qaRecommend(e, x.block);
+    var e = x.e, cut = qaCutText(x), hasNew = qaHasNew(e), rec = qaRecommend(x);
+    var head = '<p class="adm-pop__where">' + esc(x.where) + '</p><button type="button" class="adm-pop__x" data-pop-close aria-label="Zamknij notatkę">×</button>';
+    if (x.auto) {
+      return '<li class="adm-q__it adm-pop is-auto" id="q-' + qaId(x) + '" data-qid="' + qaId(x) + '" data-qk="' + esc(x.box) + '" role="dialog" aria-label="' + esc(x.where) + '">' + head +
+        '<p class="adm-q__head"><span class="adm-q__tag adm-q__tag--auto">rozstrzygnięte automatycznie</span></p>' +
+        '<p class="adm-q__txt">' + esc(qaProblem(e)) + '</p>' + (x.quote ? '<p class="adm-q__frag">Fragment: „' + esc(x.quote) + '”</p>' : '') +
+        '<p class="adm-q__auto"><b>Rozstrzygnięte automatycznie:</b> ' + esc(RW.humanize(x.auto.what)) +
+        (x.auto.url ? ' — <a href="' + esc(x.auto.url) + '" target="_blank" rel="noopener">' + esc(x.auto.title || 'źródło') + '</a>' : '') + '</p></li>';
+    }
     var opts = '';
     if (!state.readOnly) {
-      opts = '<div class="adm-qo__list" role="group" aria-label="Rozstrzygnięcie pytania ' + x.n + '">' +
-        (hasNew ? qaOptHtml(x, 'fix', rec, '<span class="adm-qo__d">' + (hasOld ? '<del>' + esc(e.old) + '</del> → ' : '') + '<ins>' + esc(e['new']) + '</ins></span>') : '') +
-        (hasOld ? qaOptHtml(x, 'cut', rec, '<span class="adm-qo__d"><del>' + esc(e.old) + '</del></span>') : '') +
-        qaOptHtml(x, 'keep', rec, hasOld && !hasNew ? '<span class="adm-qo__d">„' + esc(e.old) + '”</span>' : '') +
+      opts = '<div class="adm-qo__list" role="group" aria-label="Rozstrzygnięcie uwagi ' + x.n + '">' +
+        (hasNew ? qaOptHtml(x, 'fix', rec, '<span class="adm-qo__d">' + (qaHasOld(e) ? '<del>' + esc(e.old) + '</del> → ' : '') + '<ins>' + esc(e['new']) + '</ins></span>') : '') +
+        (cut ? qaOptHtml(x, 'cut', rec, '<span class="adm-qo__d"><del>' + esc(cut) + '</del></span>') : '') +
+        qaOptHtml(x, 'keep', rec, '') +
         qaOptHtml(x, 'own', rec, '<span class="adm-qo__d">wpisz, co zrobić</span>') + '</div>';
     }
-    var prop = state.readOnly && (hasOld || hasNew) ? '<p class="adm-q__prop">Propozycja: ' + (hasOld ? '<del>' + esc(e.old) + '</del>' : '') + (hasOld && hasNew ? ' → ' : '') + (hasNew ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>' : '';
-    var fix = e.fix ? '<p class="adm-q__prop">Wskazówka kontroli: ' + esc(e.fix) + '</p>' : '';
-    return '<li class="adm-q__it' + (x.block ? ' is-block' : '') + '" id="q-' + x.k + x.i + '" data-qg="' + esc(x.g) + '" data-rec="' + rec.opt + '"' + (hasNew ? ' data-fixable' : '') + '>' +
+    var prop = state.readOnly && (qaHasOld(e) || hasNew) ? '<p class="adm-q__prop">Propozycja: ' + (qaHasOld(e) ? '<del>' + esc(e.old) + '</del>' : '') + (qaHasOld(e) && hasNew ? ' → ' : '') + (hasNew ? '<ins>' + esc(e['new']) + '</ins>' : '') + '</p>' : '';
+    var fix = e.fix ? '<p class="adm-q__prop">Wskazówka kontroli: ' + esc(RW.humanize(e.fix)) + '</p>' : '';
+    var frag = x.quote ? '<p class="adm-q__frag">Fragment: „' + esc(x.quote) + '”</p>' : '';
+    var stop = x.box === '_city' ? (e.stop_key || null) : x.box;
+    return '<li class="adm-q__it adm-pop' + (x.block ? ' is-block' : '') + '" id="q-' + qaId(x) + '" data-qid="' + qaId(x) + '" data-qk="' + esc(x.box) + '" data-qg="' + esc(x.g) + '" data-rec="' + rec.opt + '"' +
+      (hasNew ? ' data-fixable' : '') + (cut ? ' data-cut="' + esc(cut) + '"' : '') + ' role="dialog" aria-label="' + esc('Uwaga ' + x.n + ': ' + x.where) + '">' + head +
       '<p class="adm-q__head"><b>' + x.n + '.</b> <span class="adm-q__tag' + (x.block ? '' : ' adm-q__tag--w') + '">' + (x.block ? 'blokuje' : 'ostrzeżenie') + '</span>' +
-      (x.orphan ? ' <span class="adm-q__where">przystanek: ' + esc(x.orphan) + '</span>' : '') +
       '<span class="adm-q__done"><span class="adm-q__ok" aria-hidden="true">✓</span> Rozstrzygnięte: <b class="adm-q__ans"></b>' +
       (state.readOnly ? '' : ' <button type="button" class="adm-linkbtn" data-qa-change>Zmień</button>') + '</span></p>' +
-      '<div class="adm-q__body"><p class="adm-q__txt">' + esc(qaProblem(e)) + '</p>' + prop + fix + opts +
-      '<div class="adm-q__own">' + commentBox(stop, field, label) + '</div></div></li>';
+      '<div class="adm-q__body"><p class="adm-q__txt">' + esc(qaProblem(e)) + '</p>' + frag + prop + fix + opts +
+      '<div class="adm-q__own">' + commentBox(stop, x.id, 'Uwaga ' + x.n + ' · ' + x.where) + '</div></div>' +
+      '<p class="adm-pop__next"><button type="button" class="adm-linkbtn" data-flag-next>Następna flaga →</button></p></li>';
   }
-  // czerwona ramka w sekcji przystanku (albo „Opisu miasta”) — wywoływana przy budowie szkicu
-  function qaBoxHtml(key) {
-    var list = (state.qa ? state.qa.list : []).filter(function (x) { return x.box === key; });
-    if (!list.length) return '';
-    var block = list.some(function (x) { return x.block; });
-    return '<div class="adm-qbox' + (block ? ' is-block' : '') + '" id="qb-' + esc(key) + '" data-qbox="' + esc(key) + '">' +
-      '<p class="adm-qbox__h">Do rozstrzygnięcia · <b data-qbox-n>' + list.length + '</b><small data-qbox-sum></small></p>' +
-      '<ol class="adm-q__list">' + list.map(qaItemHtml).join('') + '</ol></div>';
-  }
-  // skrót na górze szkicu: liczniki, linki do ramek, przyciski grupowe
+  // skrót na górze szkicu: pasek „Flagi: N — przejdź do następnej”, linki do przystanków, przyciski grupowe
   function questionsHtml(it) {
     var q = state.qa; if (!q || !q.list.length) return '';
-    var byBox = {}, boxes = [];
-    q.list.forEach(function (x) { if (!byBox[x.box]) { byBox[x.box] = 0; boxes.push(x.box); } byBox[x.box]++; });
+    var byBox = {}, boxes = [], auto = 0;
+    q.list.forEach(function (x) { if (x.auto) { auto++; return; } if (!byBox[x.box]) { byBox[x.box] = 0; boxes.push(x.box); } byBox[x.box]++; });
     var links = boxes.map(function (k) {
-      var nm = k === '_city' ? 'Cała trasa' : (stopName(k) || k);
+      var nm = k === '_city' ? 'Opis miasta' : (stopName(k) || k);
       return '<li><a href="#st-' + esc(k) + '" class="adm-qs__lnk" data-qlink="' + esc(k) + '"><span>' + esc(nm) + '</span> <b class="adm-n" data-qleft="' + esc(k) + '">' + byBox[k] + '</b></a></li>';
     }).join('');
     var grp = state.readOnly ? '' : q.order.map(function (g) {
-      var list = q.groups[g], fixable = list.some(function (x) { return qaHasNew(x.e); });
-      return '<div class="adm-q__grp" data-g="' + esc(g) + '"><p class="adm-q__gh">' + esc(g) + ' · ' + list.length + ' ' + qaPlural(list.length) + ' <small class="adm-q__gsum"></small></p>' +
+      var list = q.groups[g].filter(function (x) { return !x.auto; }), fixable = list.some(function (x) { return qaHasNew(x.e); });
+      if (!list.length) return '';
+      return '<div class="adm-q__grp" data-g="' + esc(g) + '"><p class="adm-q__gh">' + esc(RW.humanize(g)) + ' · ' + list.length + ' ' + qaPlural(list.length) + ' <small class="adm-q__gsum"></small></p>' +
         '<div class="adm-q__bulk">' + (fixable ? '<button type="button" class="qc-btn qc-btn--sm" data-qa-all="fix">Popraw wszystkie wg propozycji</button>' : '') +
         '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa-all="keep">Zostaw wszystkie</button>' +
         '<span class="adm-q__prog" role="status" aria-live="polite"></span></div></div>';
     }).join('');
-    return '<h3>Do rozstrzygnięcia: <span data-qsum></span></h3>' +
-      '<p class="adm-q__hint">Każde pytanie stoi w czerwonej ramce przy swoim przystanku. Wybierz jedną z możliwości (rekomendacja jest zaznaczona); potem „Wyślij uwagi do poprawki”.</p>' +
+    return '<div class="adm-flagbar"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><h3>Flagi: <b data-qleft-all>0</b></h3>' +
+      '<button type="button" class="qc-btn qc-btn--sm" data-flag-next>Przejdź do następnej</button><span class="adm-flagbar__sum" data-qsum></span></div>' +
+      '<p class="adm-q__hint">Każda uwaga z kontroli stoi przy fragmencie, którego dotyczy — czerwona flaga w treści pola. Kliknij flagę, wybierz jedną z możliwości (rekomendacja jest zaznaczona); potem „Wyślij uwagi do poprawki”.' +
+      (auto ? ' Szare flagi (' + auto + ') rozstrzygnięto automatycznie — tylko do wglądu.' : '') + '</p>' +
       '<ul class="adm-qs__stops">' + links + '</ul>' +
-      (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy ostrzeżeń naraz</summary>' + grp + '</details>' : '');
+      (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy uwag naraz</summary>' + grp + '</details>' : '');
   }
   function qaLastBody(li) {
     var box = li.querySelector('.adm-cm'); if (!box) return null;
@@ -764,9 +846,9 @@
     if (body.indexOf('✗') === 0) return QA_OPT.keep;
     return QA_OPT.own + ': ' + (body.length > 80 ? body.slice(0, 80) + '…' : body);
   }
-  // stan wszystkich pytań: rozstrzygnięte = jest uwaga do pola (nowsza niż moment kliknięcia „Zmień”)
+  // stan wszystkich uwag: rozstrzygnięta = jest odpowiedź do pola (nowsza niż moment kliknięcia „Zmień”)
   function qaRefresh() {
-    var items = $d.querySelectorAll('.adm-q__it'); if (!items.length) return;
+    var items = $d.querySelectorAll('.adm-q__it:not(.is-auto)');
     var left = {}, leftB = 0, leftW = 0, all = items.length, done = 0;
     [].forEach.call(items, function (li) {
       var c = qaLastBody(li); if (!c) return;
@@ -774,24 +856,21 @@
       if (li.classList.contains('is-pending')) isDone = true;
       li.classList.toggle('is-done', isDone);
       if (isDone && c.n > seen) { li.classList.remove('is-own'); li.querySelector('.adm-q__ans').textContent = qaAnsLabel(c.body); }
+      [].forEach.call($d.querySelectorAll('[data-flag="' + li.getAttribute('data-qid') + '"]'), function (f) { f.classList.toggle('is-done', isDone); });
       if (isDone) { done++; return; }
       if (li.classList.contains('is-block')) leftB++; else leftW++;
-      var bx = li.closest('[data-qbox]'), k = bx ? bx.getAttribute('data-qbox') : '_city';
+      var k = li.getAttribute('data-qk') || '_city';
       left[k] = (left[k] || 0) + 1;
-    });
-    [].forEach.call($d.querySelectorAll('[data-qbox]'), function (bx) {
-      var k = bx.getAttribute('data-qbox'), n = left[k] || 0, a = bx.querySelectorAll('.adm-q__it').length;
-      bx.querySelector('[data-qbox-n]').textContent = n;
-      bx.querySelector('[data-qbox-sum]').textContent = n ? ' · rozstrzygnięte ' + (a - n) + ' z ' + a : ' · wszystkie rozstrzygnięte ✓';
-      bx.classList.toggle('is-clear', !n);
     });
     [].forEach.call(document.querySelectorAll('[data-qleft]'), function (el) {
       var n = left[el.getAttribute('data-qleft')] || 0;
       el.textContent = n; el.classList.toggle('is-zero', !n);
-      if (el.classList.contains('adm-qdot')) { el.hidden = !n; el.title = n ? n + ' do rozstrzygnięcia' : ''; }
+      if (el.classList.contains('adm-qdot')) { el.hidden = !n; el.title = n ? plForm(n, 'flaga', 'flagi', 'flag') + ' do rozstrzygnięcia' : ''; }
     });
+    var allEl = document.querySelector('[data-qleft-all]'); if (allEl) allEl.textContent = leftB + leftW;
+    [].forEach.call(document.querySelectorAll('.adm-flagbar [data-flag-next]'), function (b) { b.disabled = !(leftB + leftW); });
     var sum = document.querySelector('[data-qsum]');
-    if (sum) sum.textContent = (leftB || leftW ? plForm(leftB, 'blokujący', 'blokujące', 'blokujących') + ', ' + plForm(leftW, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') : 'wszystko rozstrzygnięte ✓') +
+    if (sum) sum.textContent = (leftB || leftW ? plForm(leftB, 'blokująca', 'blokujące', 'blokujących') + ', ' + plForm(leftW, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') : 'wszystko rozstrzygnięte ✓') +
       ' · rozstrzygnięte ' + done + ' z ' + all;
     var rq = document.getElementById('revQs');
     if (rq) rq.classList.toggle('is-clear', !leftB && !leftW);
@@ -804,23 +883,76 @@
         b.disabled = !its.some(function (li) { return !li.classList.contains('is-done') && (b.getAttribute('data-qa-all') !== 'fix' || li.hasAttribute('data-fixable')); });
       });
     });
+    if (state.popLi) popPlace(state.popLi);
   }
-  // zapis odpowiedzi — kolejka: jedna uwaga naraz, każde pytanie najwyżej raz (do kliknięcia „Zmień”)
+  // ── notatka przy fladze: popover w wierszu pola (nie modal); Esc / klik obok zamyka ──
+  function flagAnchor(id) { return $d.querySelector('button.adm-flag[data-flag="' + id + '"]'); }
+  function popPlace(li) {
+    var row = li.closest('.adm-row'), fl = flagAnchor(li.getAttribute('data-qid')); if (!row || !fl) return;
+    var rr = row.getBoundingClientRect(), fr = fl.getBoundingClientRect(), w = Math.min(600, rr.width);
+    li.style.width = w + 'px';
+    li.style.left = Math.max(0, Math.min(fr.left - rr.left - 20, rr.width - w)) + 'px';
+    li.style.top = (fr.bottom - rr.top + 8) + 'px';
+    li.style.setProperty('--tip', Math.max(16, Math.min(fr.left - rr.left - parseFloat(li.style.left) + fr.width / 2, w - 16)) + 'px');
+  }
+  function popClose(focusFlag) {
+    var li = state.popLi; if (!li) return;
+    li.classList.remove('is-open'); state.popLi = null;
+    var row = li.closest('.adm-row'); if (row) row.classList.remove('has-pop');
+    [].forEach.call($d.querySelectorAll('[data-flag="' + li.getAttribute('data-qid') + '"]'), function (f) { f.classList.remove('is-on'); if (f.tagName === 'BUTTON') f.setAttribute('aria-expanded', 'false'); });
+    var fl = flagAnchor(li.getAttribute('data-qid')); if (focusFlag && fl) fl.focus();
+  }
+  function popOpen(id) {
+    var li = document.getElementById('q-' + id); if (!li) return;
+    if (state.popLi === li) { popClose(true); return; }
+    popClose();
+    state.popLi = li; li.classList.add('is-open');
+    var row = li.closest('.adm-row'); if (row) row.classList.add('has-pop');
+    [].forEach.call($d.querySelectorAll('[data-flag="' + id + '"]'), function (f) { f.classList.add('is-on'); if (f.tagName === 'BUTTON') f.setAttribute('aria-expanded', 'true'); });
+    popPlace(li);
+    var r = li.getBoundingClientRect();
+    if (r.bottom > window.innerHeight - 90 || r.top < 70) window.scrollBy({ top: r.top < 70 ? r.top - 120 : Math.min(r.bottom - window.innerHeight + 110, r.top - 120) });
+    var first = li.querySelector('.adm-qo.is-rec') || li.querySelector('.adm-qo') || li.querySelector('[data-pop-close]');
+    if (first) first.focus({ preventScroll: true });
+  }
+  function flagNext() {
+    var flags = [].slice.call($d.querySelectorAll('button.adm-flag:not(.adm-flag--auto):not(.is-done)'));
+    if (!flags.length) return;
+    var cur = state.popLi ? flagAnchor(state.popLi.getAttribute('data-qid')) : null, i = cur ? flags.indexOf(cur) : -1, nx = null;
+    if (cur && i < 0) nx = flags.filter(function (f) { return cur.compareDocumentPosition(f) & 4; })[0];
+    else if (cur) nx = flags[i + 1];
+    else nx = flags.filter(function (f) { return f.getBoundingClientRect().top > 80; })[0];
+    nx = nx || flags[0];
+    popClose();
+    nx.scrollIntoView({ block: 'center' });
+    popOpen(nx.getAttribute('data-flag'));
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.popLi) { e.preventDefault(); popClose(true); } });
+  window.addEventListener('resize', function () { if (state.popLi) popPlace(state.popLi); });
+  // zapis odpowiedzi — kolejka: jedna uwaga naraz, każda uwaga najwyżej raz (do kliknięcia „Zmień”)
   var qaQueue = Promise.resolve();
   function qaAnswer(li, opt) {
     if (!li || !QA_BODY[opt] || li.classList.contains('is-pending') || li.classList.contains('is-done')) return qaQueue;
     var form = li.querySelector('.adm-cm__form'); if (!form) return qaQueue;
+    var body = QA_BODY[opt];
+    // „✂” bez cytatu z kontroli (stare uwagi, fakty bez źródła): fragment po dwukropku — serwer usuwa dokładnie ten tekst
+    if (opt === 'cut' && li.hasAttribute('data-cut') && !li.querySelector('.adm-qo[data-qa="fix"]')) body = QA_CUT + ': „' + li.getAttribute('data-cut') + '”';
     li.classList.add('is-pending', 'is-done'); li.classList.remove('is-own');
     li.querySelector('.adm-q__ans').textContent = QA_OPT[opt] + ' (zapisuję…)';
     qaRefresh();
     qaQueue = qaQueue.then(function () {
-      form.querySelector('textarea').value = QA_BODY[opt];
+      form.querySelector('textarea').value = body;
       return sendComment(form);
-    }).catch(function (e) { if (window.console) console.error('Pytanie z kontroli:', e); })
+    }).catch(function (e) { if (window.console) console.error('Uwaga z kontroli:', e); })
       .then(function () { li.classList.remove('is-pending'); qaRefresh(); });
     return qaQueue;
   }
   document.addEventListener('click', function (e) {
+    var f = e.target.closest('[data-flag]');
+    if (f) { e.preventDefault(); popOpen(f.getAttribute('data-flag')); return; }
+    if (e.target.closest('[data-flag-next]')) { flagNext(); return; }
+    if (e.target.closest('[data-pop-close]')) { popClose(true); return; }
+    if (state.popLi && !e.target.closest('.adm-pop') && !e.target.closest('.adm-toast')) popClose();
     var b = e.target.closest('[data-qa]');
     if (b) {
       var li = b.closest('.adm-q__it'), opt = b.getAttribute('data-qa');
@@ -842,7 +974,7 @@
     b = e.target.closest('[data-qa-all]'); if (!b || b.disabled) return;
     var g = b.closest('.adm-q__grp'); if (!g || g.classList.contains('is-busy')) return;
     var opt2 = b.getAttribute('data-qa-all'), key = g.getAttribute('data-g'), prog = g.querySelector('.adm-q__prog');
-    var todo = [].filter.call($d.querySelectorAll('.adm-q__it:not(.is-done)'), function (li) {
+    var todo = [].filter.call($d.querySelectorAll('.adm-q__it:not(.is-done):not(.is-auto)'), function (li) {
       return li.getAttribute('data-qg') === key && (opt2 !== 'fix' || li.hasAttribute('data-fixable'));
     });
     if (!todo.length) return;
@@ -1038,11 +1170,15 @@
       return '<a class="qc-btn qc-btn--sm adm-preview" href="' + esc(base + x[0]) + '" target="_blank" rel="noopener">' + x[1] + '</a>';
     }).join('') + '</span>';
   }
-  function cell(label, oldV, newV, fmt, hasOld, cm) {
-    var changed = hasOld && !same(oldV, newV);
-    return '<div class="adm-row' + (changed ? ' is-chg' : '') + '"><small class="adm-row__k">' + esc(label) + (changed ? '<span class="adm-dot" title="zmienione"></span>' : '') + '</small>' +
+  // fl = { box: klucz przystanku albo '_city', field: 'stop.<pole>' | 'city.<pole>' | null } — flagi uwag z kontroli przy tym polu
+  function cell(label, oldV, newV, fmt, hasOld, cm, fl) {
+    var changed = hasOld && !same(oldV, newV), qs = fl ? qaFor(fl.box, fl.field) : [];
+    var hl = qs.length ? qaHighlight(show(newV, fmt), qs) : { html: esc(show(newV, fmt)), rest: [] };
+    return '<div class="adm-row' + (changed ? ' is-chg' : '') + (qs.length ? ' has-flags' : '') + '"><small class="adm-row__k">' + esc(label) + (changed ? '<span class="adm-dot" title="zmienione"></span>' : '') +
+      (hl.rest.length ? '<span class="adm-row__flags">' + hl.rest.map(flagBtn).join('') + '</span>' : '') + '</small>' +
       '<div class="adm-row__v">' + (changed ? '<span class="adm-old">' + esc(show(oldV, fmt)) + '</span>' : '') +
-      '<span class="' + (changed ? 'adm-new' : 'adm-val') + '">' + esc(show(newV, fmt)) + '</span></div>' + cm + '</div>';
+      '<span class="' + (changed ? 'adm-new' : 'adm-val') + '">' + hl.html + '</span></div>' + cm +
+      (qs.length ? '<ol class="adm-pops">' + qs.map(qaItemHtml).join('') + '</ol>' : '') + '</div>';
   }
 
   function render(it, draft, pub, all) {
@@ -1081,8 +1217,9 @@
     if (noEn) warn.push(['soft', noEn + ' z ' + newStops.length + ' przystanków bez tłumaczenia EN — inne języki zobaczą tekst zapasowy.']);
     if (!ctr.title) warn.push(['', 'Brak tytułu miasta po polsku.']);
 
-    var qkeys = {}; stops.forEach(function (x) { qkeys[x.key] = 1; });
-    state.qa = qaItems(it, qkeys);     // pytania z kontroli — rozkładane do ramek przy przystankach
+    var qkeys = {}; stops.forEach(function (x) { qkeys[x.key] = x.s.stop_number; });
+    state.popLi = null;
+    state.qa = qaItems(it, qkeys, draft);     // uwagi z kontroli — flagi przy polach, których dotyczą
     var title = ctr.title || it.city_name || it.city_slug;
     var route = routeUrl(c, newStops, draft.stop_translations, title);
     var html = '<article class="adm-sheet" style="--team:' + esc(team) + '">' +
@@ -1119,10 +1256,10 @@
 
     // opis miasta — każde pole z uwagami
     html += '<section class="adm-sheet__sec adm-anchor" id="st-_city" data-spy="_city"><h3>Opis miasta</h3>' +
-      qaBoxHtml('_city') +
-      '<div class="adm-rows">' + cell('Cała wycieczka', null, 'Uwaga ogólna do całego szkicu', null, false, commentBox(null, null, 'Cała wycieczka')) +
-      CITY_TR.map(function (f) { return cell(f[1], pctr ? pctr[f[0]] : null, ctr[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1])); }).join('') +
-      CITY_FIELDS.map(function (f) { return cell(f[1], pc ? pc[f[0]] : null, c[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1])); }).join('') +
+      '<div class="adm-rows">' + cell('Cała wycieczka', null, 'Uwaga ogólna do całego szkicu', null, false, commentBox(null, null, 'Cała wycieczka'), { box: '_city', field: null }) +
+      CITY_TR.map(function (f) { return cell(f[1], pctr ? pctr[f[0]] : null, ctr[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1]), { box: '_city', field: 'city.' + f[0] }); }).join('') +
+      CITY_FIELDS.map(function (f) { return cell(f[1], pc ? pc[f[0]] : null, c[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1]), { box: '_city', field: 'city.' + f[0] }); }).join('') +
+      qaExtraRows('_city', shownSet('city.', CITY_TR.concat(CITY_FIELDS)), null) +
       '</div></section>';
 
     html += '<section class="adm-sheet__sec"><h3>Przystanki</h3><div class="adm-stops">' +
@@ -1182,33 +1319,33 @@
       '<img class="adm-stop__ic" src="' + icon(s.category) + '" alt="" width="48" height="48" loading="lazy">' +
       '<span class="adm-stop__name">' + esc(t.name || '(bez nazwy PL)') + '<small>' + esc([s.category, s.time_label, s.visit_duration ? minLabel(s.visit_duration) : ''].filter(Boolean).join(' · ')) + '</small></span>' +
       '<span class="adm-stopx__tags">' + chip + histHtml + '</span></header>';
-    if (x.kind === 'del') return '<section class="adm-stopx adm-anchor" data-kind="del" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head + qaBoxHtml(x.key) +
-      '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver)) + '</div></section>';
-    var rows = cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver)) +
-      STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver)); }).join('') +
+    var fl = function (f) { return { box: x.key, field: f }; };
+    if (x.kind === 'del') return '<section class="adm-stopx adm-anchor" data-kind="del" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
+      '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) + '</div></section>';
+    var shown = shownSet('stop.', STOP_TR.concat(STOP_FIELDS, state.blocks && state.blocks[x.key] ? BLK.concat([['sources']]) : []));
+    var rows = cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) +
+      STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
       blockRows(x.key, ver) +
-      STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver)); }).join('');
-    return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head + qaBoxHtml(x.key) +
+      STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
+      qaExtraRows(x.key, shown, ver);
+    return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + rows + '</div></section>';
+  }
+  function shownSet(pre, defs) { var o = {}; defs.forEach(function (f) { o[pre + f[0]] = 1; }); return o;
   }
 
   // bloki nowych wytycznych (docs/TRESC-PRZYSTANKU.md): wersja z przypisami [n], źródła i wynik kontroli — tylko dla redakcji
-  var BLK = [['legend', 'Legenda'], ['curiosity', 'Ciekawostka'], ['pop_culture', 'W popkulturze'], ['fun_fact', 'Fun fact (dziecko)']];
-  function blockText(k, v) {
-    if (!v) return '';
-    if (k === 'legend') return [v.text, v.trace ? 'Ślad na miejscu: ' + v.trace : '', v.history ? 'Historia: ' + v.history : ''].filter(Boolean).join('\n\n');
-    if (k === 'pop_culture') return (v.items || []).map(function (i) { return [i.title, i.year].filter(Boolean).join(' (') + (i.year ? ')' : '') + ' — ' + (i.text || ''); }).join('\n\n');
-    return v.text || '';
-  }
+  var BLK = RW.BLOCKS.map(function (k) { return F_(k); });
+  var blockText = RW.blockText;   // ten sam tekst, w którym kontrola szuka cytatu
   function blockRows(key, ver) {
     var b = state.blocks && state.blocks[key]; if (!b) return '';
     var m = b.marked || {}, st = b.state || {};
     var rows = BLK.map(function (f) {
       var s = st[f[0]] || {}, txt = s.state === 'found' ? blockText(f[0], m[f[0]]) : 'brak — sprawdzono: ' + (s.checked || '(nie podano)');
-      return cell(f[1], null, txt, null, false, commentBox(key, 'stop.' + f[0], f[1], ver));
+      return cell(f[1], null, txt, null, false, commentBox(key, 'stop.' + f[0], f[1], ver), { box: key, field: 'stop.' + f[0] });
     }).join('');
     var src = (b.sources || []).map(function (x) { return '[' + x.n + '] ' + (x.title || '') + ' — ' + x.url; }).join('\n');
-    rows += cell('Źródła (przypisy [n])', null, src || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver));
+    rows += cell('Źródła (przypisy [n])', null, src || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver), { box: key, field: 'stop.sources' });
     var ck = b.check, va = b.validator, out = [];
     if (ck) out.push('Claude: ' + (ck.verdict === 'ok' ? 'ok' : 'do poprawy') + (ck.summary ? ' — ' + ck.summary : '') +
       (ck.errors || []).map(function (e) { return '\n• ' + (e.block ? e.block + ': ' : '') + e.problem + (e.fix ? ' → ' + e.fix : ''); }).join(''));
