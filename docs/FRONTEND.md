@@ -35,7 +35,7 @@ naklejkę, gdy zaliczy misje przystanku.
 | --foil | gradient złota | naklejka-folia: Quo #00, kolacja |
 | --team / --team-ink | z `cities.bandana_color` | kolor „drużyny” miasta (pas, pasek naklejki); jasny kolor → ciemny tekst |
 
-- Font: **Archivo** (Google Fonts, oś szerokości): nazwy 62% / 900 wersalikami,
+- Font: **Archivo** (pliki lokalne w /media/fonts, oś szerokości): nazwy 62% / 900 wersalikami,
   numery 125% / 900, tekst 100% / 400, **bazowo 19px, min 18px** dla treści.
 - Promienie: naklejka 12, przycisk 10, panel 16. Cienie: `--lift-1/2/3` (z offsetem i rozmyciem).
 - Cele dotykowe: **min 44×44px**.
