@@ -1,0 +1,10 @@
+{
+ "script": "trip-translate.mjs",
+ "args": [
+  "rimini",
+  "--fresh"
+ ],
+ "why": "ponowienie tłumaczenia Rimini: EN zgubił liczbę „70” ze źródła i wstrzymał pozostałe języki (zadanie 7, failed) — JP 2026-10-30 „ok”",
+ "by": "Claude",
+ "timeout_min": 120
+}

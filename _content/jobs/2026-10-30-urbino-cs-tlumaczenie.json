@@ -1,0 +1,12 @@
+{
+ "script": "trip-translate.mjs",
+ "args": [
+  "urbino",
+  "--langs",
+  "cs",
+  "--fresh"
+ ],
+ "why": "ponowienie tłumaczenia Urbino na czeski: podtytuł wyszedł ucięty (zadanie 8 z 2026-10-19, failed) — JP 2026-10-30 „ok”",
+ "by": "Claude",
+ "timeout_min": 120
+}
