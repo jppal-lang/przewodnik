@@ -122,7 +122,7 @@ test('source-check: potwierdza kodem, przez AI, łagodzi, dodaje, porzuca, pyta 
       if (/autoportret/.test(p.fakt) && /self-portrait/.test(blob)) { const n = p.zrodla.findIndex(z => /self-portrait/.test(JSON.stringify(z))); return { id: p.id, potwierdza: true, zrodlo: n, cytat: "The chapel contains the artist's self-portrait." }; }
       if (/Infiora/.test(p.fakt) && /Corpus Domini/.test(blob)) { const n = p.zrodla.findIndex(z => /in occasione della festa del Corpus Domini/.test(JSON.stringify(z))); return { id: p.id, potwierdza: true, zrodlo: n, cytat: 'in occasione della festa del Corpus Domini', zdanie: 'Na Boże Ciało mieszkańcy układają na ulicach dywany z płatków kwiatów — Infioraty.' }; }
       if (/2005/.test(p.fakt) && /parcheggio/.test(blob)) { const n = p.zrodla.findIndex(z => /parcheggio/.test(JSON.stringify(z))); return { id: p.id, potwierdza: true, zrodlo: n, cytat: 'durante i lavori di realizzazione di un parcheggio pubblico' }; }
-      if (/wież Asyżu/.test(p.fakt)) return { id: p.id, potwierdza: false, quote: 'Podobno widać stąd 7 wież Asyżu w pogodny dzień.', replace: '', kluczowy: false };
+      if (/wież Asyżu/.test(p.fakt)) return { id: p.id, potwierdza: false, sprzeczne: true, quote: 'Podobno widać stąd 7 wież Asyżu w pogodny dzień.', replace: '', kluczowy: false };
       if (/1490/.test(p.fakt)) return { id: p.id, potwierdza: true, zrodlo: 0, cytat: 'Pinturicchio lavorò qui dal 1490 al 1492 secondo le fonti' };   // cytatu nie ma w źródle → nie wolno potwierdzić
       if (/wapie/.test(p.fakt)) return { id: p.id, potwierdza: false, quote: 'zbudowano z biało-różowego wapienia', replace: 'zbudowano z kamienia z Monte Subasio', zrodlo: 0 };
       return { id: p.id, potwierdza: false };

@@ -1,0 +1,19 @@
+{
+ "script": "gemini-draft.mjs",
+ "args": [
+  "spello",
+  "--recheck",
+  "--from-id",
+  "75",
+  "--from",
+  "v3d",
+  "--no-review",
+  "--rounds",
+  "0",
+  "--facts",
+  "[{\"kind\": \"soften\", \"city\": true, \"fact\": \"lead: miasto z „biało-różowego wapienia”\", \"note\": \"Brak potwierdzenia barwy i rodzaju kamienia. Źródła mówią o kamieniu z „Monte Subasio”; italia.it pisze o „antiche case di arenaria”. Złagodź do sformułowania prawdziwego według źródeł.\", \"urls\": [\"https://www.italia.it/it/umbria/spello\", \"https://it.wikipedia.org/wiki/Spello\"]}, {\"kind\": \"verify\", \"stop\": \"Villa dei Mosaici\", \"fact\": \"Willę z mozaikami odkryto w 2005 roku podczas budowy parkingu\", \"urls\": [\"https://www.finestresullarte.info/musei/spello-apre-al-pubblico-villa-dei-mosaici\"]}, {\"kind\": \"verify\", \"stop\": \"Santa Maria Maggiore\", \"fact\": \"Pinturicchio namalował w kaplicy Baglioni swój autoportret\", \"urls\": [\"https://www.umbriatourism.it/-/la-cappella-baglioni-nella-chiesa-di-santa-maria-maggiore-spello\"]}, {\"kind\": \"add\", \"stop\": \"Borgo San Sisto\", \"field\": \"local_flavor\", \"fact\": \"Spello słynie z Infiorate: na Boże Ciało (Corpus Domini) mieszkańcy układają na ulicach dywany i obrazy z płatków kwiatów\", \"urls\": [\"https://it.wikipedia.org/wiki/Infiorata_di_Spello\", \"https://www.comune.spello.pg.it/arte-e-cultura/le-infiorate-di-spello-corpus-domini/\"]}]"
+ ],
+ "why": "source-check na Spello v3d z nową zasadą (JP 2026-10-30: usuwamy tylko fakty sprzeczne ze źródłem, resztę łagodzimy) → nowa wersja do zatwierdzenia zamiast v3e (14 usunięć)",
+ "by": "Claude",
+ "timeout_min": 60
+}

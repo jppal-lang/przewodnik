@@ -13,7 +13,7 @@
 //    (c) na końcu JEDNO krótkie zapytanie do AI (paczka wszystkich faktów) z wycinkami pobranych stron: „czy ten tekst potwierdza fakt?”.
 //    Nigdy „z pamięci”: cytat z odpowiedzi musi stać dosłownie w pobranym wycinku, inaczej fakt = niepotwierdzony.
 // 3. Wynik: potwierdzone → URL w meta.stops[].sources + notatka redakcyjna _notes (pole f: źródło z cytatem), uwaga resolved source_added;
-//    niepotwierdzone → złagodzenie albo usunięcie fragmentu (podmiana {quote, replace} kodem), resolved softened/removed;
+//    niepotwierdzone → złagodzenie (usunięcie tylko faktu sprzecznego ze źródłem, JP 2026-10-30) (podmiana {quote, replace} kodem), resolved softened/removed;
 //    „dodaj po potwierdzeniu” → jedno zdanie w polu (bez „—”), resolved added; bez źródła → propozycja porzucona (resolved dropped).
 //    Do JP zostaje tylko fakt kluczowy, którego nie da się ani potwierdzić, ani bezpiecznie złagodzić — z opcjami i rekomendacją.
 //    Rozstrzygnięte uwagi zostają w ostrzeżeniach z polem `resolved` (panel: szara flaga do wglądu, bez pytania; błąd → ostrzeżenie), licznik w rv.source_check.
@@ -322,8 +322,9 @@ export async function sourceCheck({ trip, blocks = {}, review, workDir = null, f
 Dla każdej pozycji:
 - "potwierdza": true tylko wtedy, gdy fragment źródła mówi to samo co fakt (inny język i inne słowa są w porządku). Wtedy "zrodlo" = numer źródła, "cytat" = dosłowny fragment tego źródła (do 200 znaków), skopiowany znak w znak.
 - rodzaj "dodaj" i potwierdzone: "zdanie" = jedno krótkie zdanie po polsku do pola (styl rodzinny, prosto, tylko fakt ze źródła, bez długich myślników „—” i „–”, bez przymiotników-wypełniaczy). Jeśli pole ma już treść, zdanie ma ją uzupełniać, nie powtarzać.
-- rodzaj "sprawdz" bez potwierdzenia albo rodzaj "zlagodz": "quote" = fragment TEKSTU TRASY (z pola tekst_trasy) skopiowany znak w znak, który zawiera fakt; "replace" = to samo miejsce sformułowane ogólniej i PRAWDZIWIE według fragmentów źródeł (wtedy "zrodlo" = numer źródła), albo "" = usuń fragment, gdy źródła nic o tym nie mówią. Zmieniaj najmniej, jak się da; zdanie po zmianie ma być poprawne po polsku. "kluczowy": true tylko, gdy bez tego faktu przystanek traci sens (np. główna atrakcja).
-Odpowiedz wyłącznie JSON-em: {"items": [{"id": 0, "potwierdza": false, "zrodlo": null, "cytat": "", "zdanie": "", "quote": "", "replace": "", "kluczowy": false}]}. W tekstach używaj cudzysłowów „…”, nigdy prostego ".
+- "sprzeczne": true tylko wtedy, gdy fragment źródła mówi co innego niż fakt (np. inna data, inna osoba). Brak informacji w źródle to NIE sprzeczność.
+- rodzaj "sprawdz" bez potwierdzenia albo rodzaj "zlagodz": "quote" = fragment TEKSTU TRASY (z pola tekst_trasy) skopiowany znak w znak, który zawiera fakt; "replace" = to samo miejsce złagodzone: ogólniej i PRAWDZIWIE według fragmentów źródeł (wtedy "zrodlo" = numer źródła) albo z ostrożnym słowem („według tradycji”, „podobno”, „mówi się, że”), albo skrócone do części pewnej. "replace" = "" (usunięcie) WYŁĄCZNIE gdy "sprzeczne": true. Zmieniaj najmniej, jak się da; zdanie po zmianie ma być poprawne po polsku. "kluczowy": true tylko, gdy bez tego faktu przystanek traci sens (np. główna atrakcja).
+Odpowiedz wyłącznie JSON-em: {"items": [{"id": 0, "potwierdza": false, "sprzeczne": false, "zrodlo": null, "cytat": "", "zdanie": "", "quote": "", "replace": "…", "kluczowy": false}]}. W tekstach używaj cudzysłowów „…”, nigdy prostego ".
 
 POZYCJE:
 ${JSON.stringify(payload)}`;
@@ -363,7 +364,12 @@ ${JSON.stringify(payload)}`;
     if (it.kind === 'add') { it.resolved = { action: 'dropped', why: 'brak potwierdzenia w źródłach — propozycja porzucona', checked: (it.g?.found ?? []).map(s => s.url).slice(0, 6) }; stats.dropped++; continue; }
     // niepotwierdzone → złagodzenie albo usunięcie fragmentu (podmiana kodem)
     const q = typeof r.quote === 'string' && r.quote.trim().length >= 6 ? r.quote : it.quote;
-    const rep = typeof r.replace === 'string' ? r.replace.trim() : null;
+    let rep = typeof r.replace === 'string' ? r.replace.trim() : null;
+    // JP 2026-10-30: usuwamy tylko fakt sprzeczny ze źródłem; brak źródła = łagodzimy, a gdy AI nie dało złagodzenia, zostawiamy bez zmian
+    if (rep === '' && r.sprzeczne !== true) {
+      notes.push({ stop_key: it.sk, field: 'f', note: `Bez źródła (zostawione, do weryfikacji redakcji): „${String(it.fact).slice(0, 160)}”` });
+      it.resolved = { action: 'kept', why: 'nie znaleziono źródła ani sprzeczności — tekst bez zmian, notatka redakcyjna', checked: (it.g?.found ?? []).map(s => s.url).slice(0, 6) }; stats.kept = (stats.kept ?? 0) + 1; continue;
+    }
     if (q && rep != null) {
       const n = applyQuote(targetsOf(trip, blocks, it.sk), q, rep);
       if (n) {
@@ -384,7 +390,7 @@ ${JSON.stringify(payload)}`;
 
   // 5) uwagi: rozstrzygnięte zostają na liście ostrzeżeń z polem `resolved` (panel: szara flaga „rozstrzygnięte automatycznie”, bez pytania),
   //    rozstrzygnięty błąd przechodzi do ostrzeżeń (nie blokuje); fakt kluczowy bez źródła zostaje pytaniem z opcjami i rekomendacją
-  const WHAT = { source_added: 'źródło dopisane', added: 'dodane po potwierdzeniu w źródle', softened: 'złagodzone według źródła', removed: 'usunięte (brak źródła)', dropped: 'porzucone (brak źródła)', multi: 'rozstrzygnięte automatycznie' };
+  const WHAT = { source_added: 'źródło dopisane', added: 'dodane po potwierdzeniu w źródle', softened: 'złagodzone według źródła', removed: 'usunięte (sprzeczne ze źródłem)', kept: 'zostawione bez zmian (brak źródła, notatka dla redakcji)', dropped: 'porzucone (brak źródła)', multi: 'rozstrzygnięte automatycznie' };
   const withWhat = (r) => ({ ...r, what: `${WHAT[r.action] ?? r.action}${r.action === 'multi' ? `: ${r.items.map(x => WHAT[x.action] ?? x.action).join(', ')}` : ''}` });
   const byIssue = new Map();
   for (const it of items) if (it.from) { const k = `${it.from.list}:${it.from.idx}`; if (!byIssue.has(k)) byIssue.set(k, []); byIssue.get(k).push(it); }
@@ -410,7 +416,7 @@ ${JSON.stringify(payload)}`;
   }
   rv.source_check = { at: new Date().toISOString(), ...stats };
   if (rv.verdict && !(rv.errors ?? []).length) rv.verdict = 'ok';
-  log(`source-check: potwierdzone ${stats.confirmed} (kodem ${stats.by_code}), złagodzone ${stats.softened}, usunięte ${stats.removed}, dodane ${stats.added}, porzucone ${stats.dropped}, do JP ${stats.to_jp} · AI: ${stats.ai_calls}`);
+  log(`source-check: potwierdzone ${stats.confirmed} (kodem ${stats.by_code}), złagodzone ${stats.softened}, usunięte ${stats.removed}, dodane ${stats.added}, porzucone ${stats.dropped}, zostawione ${stats.kept ?? 0}, do JP ${stats.to_jp} · AI: ${stats.ai_calls}`);
   return { changes, stats, review: rv, resolved: resolvedOut };
 }
 function addSource(trip, sk, url) {
