@@ -1,9 +1,0 @@
-{
- "script": "trip-translate.mjs",
- "args": [
-  "rimini"
- ],
- "why": "dokończenie tłumaczenia Rimini po limicie czasu pierwszego zlecenia (gotowe języki nie są tłumaczone drugi raz, bez --fresh)",
- "by": "Claude",
- "timeout_min": 300
-}
