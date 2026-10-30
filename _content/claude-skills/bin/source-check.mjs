@@ -111,6 +111,8 @@ function looseRe(old) {
   return new RegExp(n.split(' ').map(w => [...w].map(ch).join('')).join('(?:\\s+|\\s*\\[\\d+\\]\\s*)'));
 }
 const tidy = (t) => t.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').replace(/\.\s*\./g, '.').replace(/^\s*[,;]\s*/, '').trim();
+export const PRACTICAL = /€|\beuro\b|\bzł\b|\bcen[aęy]\b|bilet|parking|\bZTL\b|godzin[ay]? otwarcia|otwart[ey]|zamknięt|\b\d{1,2}[:.]\d{2}\b|telefon|\+\d{2}|rezerwac|wstęp|opłat|price|opening_hours|phone|ticket/i;
+export const HEDGE = /\bpodobno\b|\bponoć\b|mówi się|według tradycji|\bprawdopodobnie\b|\bchyba\b/i;
 export function applyQuote(targets, quote, replace) {
   if (typeof quote !== 'string' || quote.trim().length < 6 || typeof replace !== 'string') return 0;
   const re = looseRe(quote); let n = 0;
@@ -322,6 +324,7 @@ export async function sourceCheck({ trip, blocks = {}, review, workDir = null, f
 Dla każdej pozycji:
 - "potwierdza": true tylko wtedy, gdy fragment źródła mówi to samo co fakt (inny język i inne słowa są w porządku). Wtedy "zrodlo" = numer źródła, "cytat" = dosłowny fragment tego źródła (do 200 znaków), skopiowany znak w znak.
 - rodzaj "dodaj" i potwierdzone: "zdanie" = jedno krótkie zdanie po polsku do pola (styl rodzinny, prosto, tylko fakt ze źródła, bez długich myślników „—” i „–”, bez przymiotników-wypełniaczy). Jeśli pole ma już treść, zdanie ma ją uzupełniać, nie powtarzać.
+- FAKTY PRAKTYCZNE (cena, bilet, parking, ZTL, godziny otwarcia, dni zamknięcia, telefon, adres, rezerwacja, długość zwiedzania) NIGDY nie łagodzimy słowami „podobno”, „mówi się”, „według tradycji”. Bez potwierdzenia: "replace" = to samo miejsce bez konkretnej liczby/danej, z odesłaniem „sprawdź na miejscu” albo „aktualne ceny/godziny na stronie atrakcji” (np. „Parking jest płatny, aktualną cenę sprawdź na miejscu.”). Ostrożne słowa wolno tylko w historii, legendach i ciekawostkach.
 - "sprzeczne": true tylko wtedy, gdy fragment źródła mówi co innego niż fakt (np. inna data, inna osoba). Brak informacji w źródle to NIE sprzeczność.
 - rodzaj "sprawdz" bez potwierdzenia albo rodzaj "zlagodz": "quote" = fragment TEKSTU TRASY (z pola tekst_trasy) skopiowany znak w znak, który zawiera fakt; "replace" = to samo miejsce złagodzone: ogólniej i PRAWDZIWIE według fragmentów źródeł (wtedy "zrodlo" = numer źródła) albo z ostrożnym słowem („według tradycji”, „podobno”, „mówi się, że”), albo skrócone do części pewnej. "replace" = "" (usunięcie) WYŁĄCZNIE gdy "sprzeczne": true. Zmieniaj najmniej, jak się da; zdanie po zmianie ma być poprawne po polsku. "kluczowy": true tylko, gdy bez tego faktu przystanek traci sens (np. główna atrakcja).
 Odpowiedz wyłącznie JSON-em: {"items": [{"id": 0, "potwierdza": false, "sprzeczne": false, "zrodlo": null, "cytat": "", "zdanie": "", "quote": "", "replace": "…", "kluczowy": false}]}. W tekstach używaj cudzysłowów „…”, nigdy prostego ".
@@ -369,6 +372,11 @@ ${JSON.stringify(payload)}`;
     if (rep === '' && r.sprzeczne !== true) {
       notes.push({ stop_key: it.sk, field: 'f', note: `Bez źródła (zostawione, do weryfikacji redakcji): „${String(it.fact).slice(0, 160)}”` });
       it.resolved = { action: 'kept', why: 'nie znaleziono źródła ani sprzeczności — tekst bez zmian, notatka redakcyjna', checked: (it.g?.found ?? []).map(s => s.url).slice(0, 6) }; stats.kept = (stats.kept ?? 0) + 1; continue;
+    }
+    // fakty praktyczne: nigdy „podobno/mówi się” — tylko potwierdzone albo „sprawdź na miejscu” (JP 2026-10-30)
+    if (rep && PRACTICAL.test(`${it.fact} ${q ?? ''} ${it.field ?? ''}`) && HEDGE.test(rep)) {
+      notes.push({ stop_key: it.sk, field: 'f', note: `Fakt praktyczny bez źródła (zostawione, do weryfikacji redakcji): „${String(it.fact).slice(0, 160)}”` });
+      it.resolved = { action: 'kept', why: 'fakt praktyczny bez źródła — nie łagodzimy słowem „podobno”; tekst bez zmian, notatka redakcyjna' }; stats.kept = (stats.kept ?? 0) + 1; continue;
     }
     if (q && rep != null) {
       const n = applyQuote(targetsOf(trip, blocks, it.sk), q, rep);
