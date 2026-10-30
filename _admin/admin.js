@@ -105,7 +105,7 @@
         .map(function (v) { return { city_slug: v.city_slug, version: v.version, region: ((v.content || {}).city || {}).region_slug || null }; });
       var m = path.match(/^\/admin_versions\?city_slug=eq\.([^&]+)/);
       if (m) return d.versions.filter(function (v) { return v.city_slug === decodeURIComponent(m[1]); })
-        .map(function (v) { return { city_slug: v.city_slug, version: v.version, status: v.status, source: v.source || 'manual', note: v.note || null, created_at: v.created_at || '2026-10-0' + v.version + 'T10:00:00Z', content: v.content, review: v.review || null }; });
+        .map(function (v) { return { city_slug: v.city_slug, version: v.version, status: v.status, source: v.source || 'manual', note: v.note || null, created_at: v.created_at || '2026-10-0' + v.version + 'T10:00:00Z', content: v.content, review: v.review || null, changes: v.changes || [] }; });
       m = path.match(/^\/draft_comments\?city_slug=eq\.([^&]+)/);
       if (m && (!opts || !opts.method)) return d.comments.filter(function (c) { return c.city_slug === decodeURIComponent(m[1]); });
       if (path === '/draft_comments' && opts && opts.method === 'POST') {
@@ -179,6 +179,20 @@
         { stop_key: 'parking-villa-dei-mosaici', path: 'meta.stops.parking-villa-dei-mosaici.price', problem: '[nie blokuje] Zasada #10: cena parkingu bez źródła.',
           resolved: { action: 'cena zamieniona na „sprawdź na miejscu” (brak cennika na stronie gminy)', url: 'https://www.comune.spello.pg.it/', source_title: 'Comune di Spello' } }
       ]);
+      // porównanie wersji (JP 2026-10-30): zmiany słów v2 → v3 i skąd się wzięły (changes[].why jak z gemini-draft / source-check)
+      var tv3 = function (id) { return (v3.content.stop_translations || []).filter(function (t) { return t.lang === 'pl' && t.stop_id === id; })[0] || {}; };
+      tv3(59).desc_paragraphs = [tv3(59).desc_paragraphs[0], 'Odsłonięta część rezydencji pokazuje, jak bogato mieszkano w rzymskim Hispellum — mozaiki zajmują kilkanaście pomieszczeń.'];
+      tv3(65).kids_box = 'Rodzinna lornetka bez lornetki. Każdy wybiera jeden szczegół widoku — wzgórze, wieżę albo drogę — i opisuje go tak, żeby reszta go znalazła.';
+      tv3(58).kids_box = 'Czy wiecie, że wielkie odkrycia bywają dziełem przypadku? Zanim wejdziemy do willi, zgadnijcie: co koparka odsłoniła jako pierwsze?';
+      v3.changes = [
+        { path: 'content.stops.villa-dei-mosaici.desc_paragraphs', before: 'Około 500 m² odsłoniętej części rezydencji', after: 'Odsłonięta część rezydencji', auto: true,
+          why: 'source-check: złagodzone — „około 500 m²” bez potwierdzenia w źródle https://it.wikipedia.org/wiki/Villa_romana_di_Spello' },
+        { path: 'content.stops.belvedere-panoramico.kids_box', why: '- [Misja dla dzieci] ✓ Popraw według propozycji' },
+        { path: 'meta.stops.belvedere-panoramico.time_label', before: '18:15', after: '17:45', why: '- [Godzina] Zachód słońca w październiku ok. 18:30 — przesuń na 17:45.' },
+        { path: 'content.city.lead', why: '- [Wstęp] Wstęp za długi — dwa zdania wystarczą.' },
+        { before: 'największe odkrycia są czasem', after: 'wielkie odkrycia bywają', why: 'pytanie z kontroli: zgoda JP na propozycję', auto: true }
+      ];
+      v3.note = 'Poprawki JP (uwagi #2, #3) i source-check';
       d.comments[0].resolved_in_version = 2;
       d.comments[1].status = 'done'; d.comments[1].hermes_reply = 'Przesunięte na 17:45.'; d.comments[1].resolved_in_version = 3;
       d.comments.push({ id: 3, city_slug: 'spello', city_version: 2, stop_key: null, field: 'city.lead', field_label: 'Wstęp', stop_version: null,
@@ -504,7 +518,7 @@
   window.addEventListener('hashchange', function () { var h = location.hash; if (!h || h === '#' || h.indexOf('#/') === 0) route(); });
   // kotwice w szkicu (#st-…, #send) przewijamy ręcznie — adres zostaje #/<miasto>, więc „wstecz” i odświeżenie działają
   document.addEventListener('click', function (e) {
-    var a = e.target.closest('a[href^="#st-"], a[href="#send"]');
+    var a = e.target.closest('a[href^="#st-"], a[href^="#cmp-"], a[href="#send"]');
     if (!a) return;
     var el = document.getElementById(a.getAttribute('href').slice(1));
     e.preventDefault();
@@ -524,8 +538,10 @@
     state.trip = { slug: slug }; state.versions = null; state.current = null; state.drafts = {};
     var known = (state.trips || []).filter(function (t) { return t.slug === slug; })[0];
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję ' + esc(known ? known.name : slug) + '…</p></div>';
+    var vq = '/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content,review';
     Promise.all([
-      api('/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content,review&order=version.asc'),
+      // changes (skąd zmiana — porównanie wersji); gdyby widok nie miał tej kolumny, panel działa dalej bez niej
+      api(vq + ',changes&order=version.asc').catch(function (e) { if (e && e.session) throw e; return api(vq + '&order=version.asc'); }),
       loadComments(slug),
       loadToken(slug),
       loadIconRefs(slug)
@@ -845,7 +861,9 @@
         '<span class="adm-q__prog" role="status" aria-live="polite"></span></div></div>';
     }).join('');
     return '<div class="adm-flagbar"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><h3>Flagi: <b data-qleft-all>0</b></h3>' +
-      '<button type="button" class="qc-btn qc-btn--sm" data-flag-next>Przejdź do następnej</button><span class="adm-flagbar__sum" data-qsum></span></div>' +
+      '<button type="button" class="qc-btn qc-btn--sm" data-flag-next>Przejdź do następnej</button>' +
+      (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') +
+      '<span class="adm-flagbar__sum" data-qsum></span></div>' +
       '<p class="adm-q__hint">Każda uwaga z kontroli stoi przy fragmencie, którego dotyczy — czerwona flaga w treści pola. Kliknij flagę, wybierz jedną z możliwości (rekomendacja jest zaznaczona); potem „Wyślij uwagi do poprawki”.' +
       (auto ? ' Szare flagi (' + auto + ') rozstrzygnięto automatycznie — tylko do wglądu.' : '') + '</p>' +
       '<ul class="adm-qs__stops">' + links + '</ul>' +
@@ -884,7 +902,7 @@
       if (el.classList.contains('adm-qdot')) { el.hidden = !n; el.title = n ? plForm(n, 'flaga', 'flagi', 'flag') + ' do rozstrzygnięcia' : ''; }
     });
     var allEl = document.querySelector('[data-qleft-all]'); if (allEl) allEl.textContent = leftB + leftW;
-    [].forEach.call(document.querySelectorAll('.adm-flagbar [data-flag-next]'), function (b) { b.disabled = !(leftB + leftW); });
+    [].forEach.call(document.querySelectorAll('.adm-flagbar [data-flag-next], .adm-flagbar [data-qa-recall]'), function (b) { b.disabled = !(leftB + leftW); });
     var sum = document.querySelector('[data-qsum]');
     if (sum) sum.textContent = (leftB || leftW ? plForm(leftB, 'blokująca', 'blokujące', 'blokujących') + ', ' + plForm(leftW, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') : 'wszystko rozstrzygnięte ✓') +
       ' · rozstrzygnięte ' + done + ' z ' + all;
@@ -1255,6 +1273,8 @@
         : 'Wersja ' + esc(it.label || 'v' + it.version) + ' (' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyłasz w najnowszej wersji. ' +
           '<button type="button" class="adm-linkbtn" data-goto="' + esc(nw) + '">Przejdź do v' + esc(nw) + '</button>') + '</p>';
     }
+    state.cmpIt = it;
+    html += '<section class="adm-sheet__sec adm-cmp" id="cmpSec">' + cmpBarHtml(it) + '<div id="cmpView" class="adm-cmp__view" hidden></div></section>';
     html += '<section class="adm-sheet__sec adm-vc" id="verComments"></section>';
     html += '<section class="adm-sheet__sec adm-q" id="revQs" hidden></section>';
 
@@ -1315,6 +1335,7 @@
     drawMap(newStops, draft.stop_translations);
     updateCounts();
     spy();
+    cmpApply();
   }
 
   function sheetLabel(it) {
@@ -1350,6 +1371,298 @@
   }
   function shownSet(pre, defs) { var o = {}; defs.forEach(function (f) { o[pre + f[0]] = 1; }); return o;
   }
+
+  // ── porównanie wersji (JP 2026-10-30) ─────────────────
+  // Przełącznik „Pokaż zmiany względem: poprzednia / opublikowana / vN”. Pola z review-where.js (fieldsFromContent — te same,
+  // przy których stoją flagi), różnice słów liczone tu (LCS na słowach, bez bibliotek). Skąd zmiana: city_versions.changes[].why
+  // wersji z zakresu (gemini-draft / source-check / odpowiedzi JP) + rozstrzygnięcia automatyczne z review (resolved.url).
+  // Treść wersji panel ma już z admin_versions (content, changes) — bez nowego SQL.
+  function cmpTokens(s) { return String(s == null ? '' : s).match(/\s+|[^\s]+/g) || []; }
+  function wordDiff(a, b) {
+    var A = cmpTokens(a), B = cmpTokens(b), p = 0, ea = A.length, eb = B.length, raw = [];
+    while (p < ea && p < eb && A[p] === B[p]) p++;
+    while (ea > p && eb > p && A[ea - 1] === B[eb - 1]) { ea--; eb--; }
+    var n = ea - p, m = eb - p, i, j;
+    if (p) raw.push(['=', A.slice(0, p).join('')]);
+    if (n * m > 4e6) { raw.push(['-', A.slice(p, ea).join('')], ['+', B.slice(p, eb).join('')]); }
+    else if (n || m) {
+      var W = m + 1, L = new Uint32Array((n + 1) * W);
+      for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--)
+        L[i * W + j] = A[p + i] === B[p + j] ? L[(i + 1) * W + j + 1] + 1 : Math.max(L[(i + 1) * W + j], L[i * W + j + 1]);
+      i = 0; j = 0;
+      while (i < n && j < m) {
+        if (A[p + i] === B[p + j]) { raw.push(['=', A[p + i]]); i++; j++; }
+        else if (L[(i + 1) * W + j] >= L[i * W + j + 1]) raw.push(['-', A[p + i++]]);
+        else raw.push(['+', B[p + j++]]);
+      }
+      while (i < n) raw.push(['-', A[p + i++]]);
+      while (j < m) raw.push(['+', B[p + j++]]);
+    }
+    if (ea < A.length) raw.push(['=', A.slice(ea).join('')]);
+    // sklejanie: ciąg zmian przerwany samą spacją = jedna zmiana (czytelniej niż „del ins del ins”)
+    var out = [], k = 0;
+    while (k < raw.length) {
+      if (raw[k][0] === '=') { out.push(raw[k]); k++; continue; }
+      var del = '', ins = '';
+      while (k < raw.length) {
+        var o = raw[k];
+        if (o[0] === '-') del += o[1];
+        else if (o[0] === '+') ins += o[1];
+        else if (/^\s+$/.test(o[1]) && raw[k + 1] && raw[k + 1][0] !== '=') { del += o[1]; ins += o[1]; }
+        else break;
+        k++;
+      }
+      if (del) out.push(['-', del]);
+      if (ins) out.push(['+', ins]);
+    }
+    return out;
+  }
+  function diffHtml2(ops) {
+    return ops.map(function (o) {
+      return o[0] === '=' ? esc(o[1]) : o[0] === '-' ? '<del class="adm-df__del">' + esc(o[1]) + '</del>' : '<ins class="adm-df__ins">' + esc(o[1]) + '</ins>';
+    }).join('');
+  }
+  function cmpFields(content) { return RW.fieldsFromContent(content || {}, function (s) { return stopKey(s, (content || {}).stop_translations); }); }
+  function cmpShow(field, t) { return field === 'duration_type' && DUR[t] ? DUR[t] : t === 'true' ? 'tak' : t === 'false' ? 'nie' : field === 'visit_duration' && /^\d+$/.test(t) ? t + ' min' : t; }
+  // skąd zmiana: krótki opis + link do źródła (URL z treści why; „wg Wikidata Q…” → strona Wikidata)
+  function cmpWhy(ch, vrow) {
+    var w = String(ch && ch.why || '').trim(); if (!w) return null;
+    var url = (w.match(/https?:\/\/[^\s)\]”"'<>]+/) || [])[0] || null;
+    if (url) url = url.replace(/[.,;:]+$/, '');
+    var q = !url && w.match(/\bWikidata (Q\d+)\b/); if (q) url = 'https://www.wikidata.org/wiki/' + q[1];
+    var who = '', text = w;
+    if (/^-\s*\[/.test(w)) {
+      var lines = w.split('\n').map(function (l) { return l.replace(/^-\s*/, '').trim(); }).filter(Boolean);
+      who = /[✓✂✗]|Pytanie z kontroli/.test(w) ? 'odpowiedź JP' : /JP/.test(String(vrow.note || '')) ? 'uwaga JP' : 'uwaga z kontroli';
+      text = lines.join(' · ');
+    } else if (/^pytanie z kontroli/i.test(w)) { who = 'odpowiedź JP'; text = w.replace(/^pytanie z kontroli:\s*/i, ''); }
+    else if (/^source-check:/i.test(w)) { who = 'source-check'; text = w.replace(/^source-check:\s*/i, ''); }
+    else if (/^poprawka ręczna/i.test(w)) who = 'poprawka ręczna';
+    else if (/\(kod\)\s*$/.test(w)) { who = 'automat (kod)'; text = w.replace(/\s*\(kod\)\s*$/, ''); }
+    else if (ch.auto) who = 'kontrola';
+    if (url) text = text.replace(url, '').replace(/\s*(w źródle|źródło:?|wg)\s*$/i, '').trim();
+    if (text.length > 240) text = text.slice(0, 240) + '…';
+    return { v: vrow.version, who: who, text: RW.humanize(text), url: url && /^https?:\/\//.test(url) ? url : null };
+  }
+  function cmpWhyHtml(list) {
+    if (!list || !list.length) return '';
+    return '<ul class="adm-df__whys">' + list.map(function (w) {
+      return '<li><span class="adm-df__wv">v' + esc(w.v) + '</span> ' + (w.who ? '<b>' + esc(w.who) + ':</b> ' : '') + esc(w.text) +
+        (w.url ? ' <a href="' + esc(w.url) + '" target="_blank" rel="noopener noreferrer">źródło ↗</a>' : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  // model różnic: grupy (opis miasta, przystanki w kolejności nowszej wersji, potem usunięte) z wierszami pól
+  function cmpModel(curRow, baseRow) {
+    var A = cmpFields(baseRow.content), B = cmpFields(curRow.content), byA = {}, byB = {};
+    A.list.forEach(function (f) { byA[f.path] = f; });
+    B.list.forEach(function (f) { byB[f.path] = f; });
+    var keys = ['_city'].concat(B.stops, A.stops.filter(function (k) { return B.stops.indexOf(k) < 0; }));
+    var G = {}, groups = keys.map(function (k) {
+      var inA = k === '_city' || A.stops.indexOf(k) >= 0, inB = k === '_city' || B.stops.indexOf(k) >= 0;
+      var paths = [], seen = {};
+      B.list.concat(A.list).forEach(function (f) { if ((f.stop || '_city') === k && !seen[f.path]) { seen[f.path] = 1; paths.push(f.path); } });
+      var rows = paths.map(function (pt) {
+        var fa = byA[pt], fb = byB[pt], f = fb || fa, a = fa ? fa.text : '', b = fb ? fb.text : '';
+        return { path: pt, field: f.field, label: RW.label(f.field), a: cmpShow(f.field, a), b: cmpShow(f.field, b), changed: a !== b, why: [] };
+      }).filter(function (r) { return r.a || r.b; });
+      var g = { key: k, name: k === '_city' ? 'Opis miasta' : (B.names[k] || A.names[k] || k), no: inB ? B.stops.indexOf(k) + 1 : null,
+        kind: !inA ? 'new' : !inB ? 'del' : 'same', rows: rows, why: [] };
+      g.n = rows.filter(function (r) { return r.changed; }).length;
+      if (g.kind === 'same' && g.n) g.kind = 'chg';
+      G[k] = g; return g;
+    });
+    // skąd: changes wersji między bazą a bieżącą (gdy baza jest nowsza — ten sam zakres w drugą stronę)
+    var lo = Math.min(curRow.version, baseRow.version), hi = Math.max(curRow.version, baseRow.version), loose = [];
+    (state.versions || []).filter(function (r) { return r.version > lo && r.version <= hi; }).forEach(function (vr) {
+      (Array.isArray(vr.changes) ? vr.changes : []).forEach(function (ch) {
+        var w = cmpWhy(ch, vr); if (!w) return;
+        if (ch.op && ch.stop_key && G[ch.stop_key]) { pushWhy(G[ch.stop_key].why, w); return; }
+        var pp = ch.path ? RW.parsePath(ch.path, B) : null, gk = pp ? (pp.stop || '_city') : null, g = gk && G[gk];
+        if (ch.path && /(^|\.)_notes\b/.test(ch.path)) return;            // notatki redakcyjne — nie treść
+        if (g) {
+          var fs = pp.field ? String(pp.field).split('/') : [], hit = false;
+          g.rows.forEach(function (r) { if (r.changed && fs.indexOf(r.field) >= 0) { pushWhy(r.why, w); hit = true; } });
+          if (!hit && (g.n || g.kind !== 'same')) pushWhy(g.why, w);
+          return;
+        }
+        // bez ścieżki (podmiany tekstu): pole, w którym jest nowy, a wcześniej stary fragment
+        var af = String(ch.after == null ? '' : typeof ch.after === 'string' ? ch.after : ''), bf = String(typeof ch.before === 'string' ? ch.before : '');
+        var row = null;
+        groups.some(function (gg) { return gg.rows.some(function (r) { if (r.changed && ((af.length >= 4 && r.b.indexOf(af) >= 0) || (bf.length >= 4 && r.a.indexOf(bf) >= 0))) { row = r; return true; } return false; }); });
+        if (row) pushWhy(row.why, w); else if (!ch.path) pushWhy(loose, w);
+      });
+    });
+    // rozstrzygnięcia automatyczne z kontroli bieżącej wersji (szara flaga) — przy polu, którego dotyczą
+    RW.expand(curRow.review || {}).forEach(function (t) {
+      var au = qaAuto(t.e); if (!au) return;
+      var loc = RW.locate(t.e, B), g = G[loc.stop || '_city']; if (!g || !loc.path) return;
+      g.rows.forEach(function (r) { if (r.changed && r.path === loc.path) pushWhy(r.why, { v: curRow.version, who: 'rozstrzygnięte automatycznie', text: RW.humanize(au.what), url: au.url }); });
+    });
+    var total = 0, places = 0; groups.forEach(function (g) { total += g.n; if (g.n) places++; });
+    return { groups: groups, total: total, places: places, loose: loose };
+    function pushWhy(list, w) { if (!list.some(function (x) { return x.v === w.v && x.text === w.text; })) list.push(w); }
+  }
+  function cmpOptions(it) {
+    var all = state.versions || [], T = state.trip, cur = it.version, opts = [];
+    var prev = all.filter(function (r) { return r.version < cur; }).pop();
+    var pubOk = T.published != null && T.published !== cur;
+    if (prev) opts.push(['prev', 'poprzednia wersja (' + vlab(prev) + ')']);
+    if (pubOk && (!prev || prev.version !== T.published)) opts.push(['pub', 'opublikowana (v' + T.published + ')']);
+    else if (pubOk) opts[0][1] = 'poprzednia = opublikowana (' + vlab(prev) + ')';
+    all.forEach(function (r) {
+      if (r.version === cur || (prev && r.version === prev.version) || r.version === T.published) return;
+      opts.push(['v' + r.version, vlab(r) + ' · ' + (VST[r.status] || r.status) + ' · ' + dayMonth(r.created_at)]);
+    });
+    return opts;
+  }
+  function cmpBaseRow(it, sel) {
+    var all = state.versions || [], T = state.trip;
+    if (sel === 'prev') return all.filter(function (r) { return r.version < it.version; }).pop() || null;
+    if (sel === 'pub') return T.published != null ? all.filter(function (r) { return r.version === T.published; })[0] || null : null;
+    var m = /^v(\d+)$/.exec(sel || ''); return m ? all.filter(function (r) { return r.version === +m[1]; })[0] || null : null;
+  }
+  function cmpBarHtml(it) {
+    var opts = cmpOptions(it);
+    if (!opts.length) return '<p class="adm-cmp__none">Pierwsza wersja tej wycieczki — nie ma z czym porównać.</p>';
+    if (state.cmpSel && !opts.some(function (o) { return o[0] === state.cmpSel; })) state.cmpSel = '';
+    return '<div class="adm-cmp__bar"><label for="cmpSel">Pokaż zmiany względem:</label>' +
+      '<select id="cmpSel" class="adm-cmp__sel"><option value="">— bez porównania (zwykły widok) —</option>' +
+      opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (state.cmpSel === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
+      '<span class="adm-cmp__leg" aria-hidden="true"><del class="adm-df__del">usunięte</del> <ins class="adm-df__ins">dodane</ins></span></div>';
+  }
+  function cmpViewHtml(it) {
+    var cur = (state.versions || []).filter(function (r) { return r.version === it.version; })[0], base = cmpBaseRow(it, state.cmpSel);
+    if (!cur || !base) return '';
+    var M = cmpModel(cur, base), older = base.version < cur.version;
+    var notes = (state.versions || []).filter(function (r) { return r.version > Math.min(cur.version, base.version) && r.version <= Math.max(cur.version, base.version) && r.note; });
+    var h = '<p class="adm-cmp__sum"><b>' + esc(vlab(cur)) + '</b> względem <b>' + esc(vlab(base)) + '</b>' + (older ? '' : ' (nowszej)') + ': ' +
+      (M.total ? plForm(M.total, 'zmienione pole', 'zmienione pola', 'zmienionych pól') + ' w ' + plForm(M.places, 'miejscu', 'miejscach', 'miejscach') : 'brak różnic w treści') + '.</p>' +
+      (notes.length ? '<ul class="adm-cmp__notes">' + notes.map(function (r) { return '<li><span class="adm-df__wv">' + esc(vlab(r)) + '</span> ' + esc(r.note) + '</li>'; }).join('') + '</ul>' : '');
+    h += '<nav class="adm-cmp__toc" aria-label="Spis zmian"><ol>' + M.groups.map(function (g) {
+      var tag = g.kind === 'new' ? ' · nowy' : g.kind === 'del' ? ' · usunięty' : '';
+      return '<li class="adm-cmp__ti is-' + g.kind + '"><a href="#cmp-' + esc(g.key) + '"><span class="adm-toc__no">' + (g.key === '_city' ? '★' : g.no ? num(g.no) : '–') + '</span>' +
+        '<span class="adm-cmp__tn">' + esc(g.name) + esc(tag) + '</span><b class="adm-n' + (g.n ? '' : ' is-zero') + '" title="zmienione pola">' + g.n + '</b></a></li>';
+    }).join('') + '</ol></nav>';
+    if (M.loose.length) h += '<div class="adm-cmp__loose"><p class="adm-df__k">Zmiany bez wskazanego pola</p>' + cmpWhyHtml(M.loose) + '</div>';
+    h += M.groups.map(function (g) {
+      var ch = g.rows.filter(function (r) { return r.changed; }), same = g.rows.filter(function (r) { return !r.changed; });
+      var chip = g.kind === 'new' ? '<span class="adm-chip adm-chip--new">nowy</span>' : g.kind === 'del' ? '<span class="adm-chip adm-chip--del">usunięty</span>' :
+        g.n ? '<span class="adm-chip adm-chip--chg">' + plForm(g.n, 'zmiana', 'zmiany', 'zmian') + '</span>' : '<span class="adm-chip">bez zmian</span>';
+      return '<section class="adm-cmp__grp is-' + g.kind + '" id="cmp-' + esc(g.key) + '"><h4 class="adm-cmp__gh"><span class="adm-stop__no">' + (g.key === '_city' ? '★' : g.no ? num(g.no) : '–') + '</span>' +
+        '<span class="adm-cmp__gn">' + esc(g.name) + '</span>' + chip + '</h4>' + cmpWhyHtml(g.why) +
+        ch.map(function (r) {
+          return '<div class="adm-df"><p class="adm-df__k">' + esc(r.label) + '</p><div class="adm-df__v">' + (r.a || r.b ? diffHtml2(wordDiff(r.a, r.b)) : '') +
+            (!r.b ? ' <small class="adm-df__empty">(pole usunięte)</small>' : !r.a ? ' <small class="adm-df__empty">(pole dodane)</small>' : '') + '</div>' + cmpWhyHtml(r.why) + '</div>';
+        }).join('') +
+        (same.length ? '<details class="adm-df__same"><summary>Bez zmian: ' + plForm(same.length, 'pole', 'pola', 'pól') + CHEV + '</summary><dl>' +
+          same.map(function (r) { return '<dt>' + esc(r.label) + '</dt><dd>' + esc(r.b) + '</dd>'; }).join('') + '</dl></details>' : '') + '</section>';
+    }).join('');
+    return h;
+  }
+  function cmpApply() {
+    var sheet = $d.querySelector('.adm-sheet'), split = $d.querySelector('.adm-split'), v = document.getElementById('cmpView'), it = state.cmpIt;
+    if (!sheet || !v || !it) return;
+    var on = !!state.cmpSel && !!cmpBaseRow(it, state.cmpSel);
+    sheet.classList.toggle('is-cmp', on); if (split) split.classList.toggle('is-cmp', on);
+    v.innerHTML = on ? cmpViewHtml(it) : ''; v.hidden = !on;
+    if (state.popLi) popClose();
+  }
+  $d.addEventListener('change', function (e) {
+    if (e.target.id !== 'cmpSel') return;
+    state.cmpSel = e.target.value; cmpApply();
+  });
+
+  // ── „Przyjmij wszystkie rekomendacje” (JP 2026-10-30) ──
+  // Okno z listą czerwonych flag (bez szarych — te rozstrzygnął automat) i rekomendacją przy każdej; „Zastosuj” zapisuje
+  // odpowiedzi dokładnie tak jak klik w notatce (qaAnswer → uwaga do pola review.e.N / review.w.N[.j]), bez wysyłania.
+  function qaAnswerText(li, text) {
+    if (!li || !text || li.classList.contains('is-pending') || li.classList.contains('is-done')) return qaQueue;
+    var form = li.querySelector('.adm-cm__form'); if (!form) return qaQueue;
+    li.classList.add('is-pending', 'is-done'); li.classList.remove('is-own');
+    li.querySelector('.adm-q__ans').textContent = QA_OPT.own + ' (zapisuję…)';
+    qaRefresh();
+    qaQueue = qaQueue.then(function () { form.querySelector('textarea').value = text; return sendComment(form); })
+      .catch(function (e) { if (window.console) console.error('Uwaga z kontroli:', e); })
+      .then(function () { li.classList.remove('is-pending'); qaRefresh(); });
+    return qaQueue;
+  }
+  function recOpen() {
+    var todo = (state.qa ? state.qa.list : []).filter(function (x) {
+      var li = document.getElementById('q-' + qaId(x));
+      return !x.auto && li && !li.classList.contains('is-done') && !li.classList.contains('is-pending');
+    });
+    var dlg = document.getElementById('recDlg');
+    if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'recDlg'; dlg.className = 'adm-dlg'; dlg.setAttribute('aria-labelledby', 'recDlgH'); document.body.appendChild(dlg); }
+    var items = todo.map(function (x) {
+      var e = x.e, rec = qaRecommend(x), cut = qaCutText(x), id = qaId(x), opts = [];
+      if (qaHasNew(e)) opts.push(['fix', (qaHasOld(e) ? '<del>' + esc(e.old) + '</del> → ' : '') + '<ins>' + esc(e['new']) + '</ins>']);
+      if (cut) opts.push(['cut', '<del>' + esc(cut) + '</del>']);
+      opts.push(['keep', ''], ['own', '']);
+      return '<li class="adm-rec__it' + (x.block ? ' is-block' : '') + '" data-rec-id="' + esc(id) + '">' +
+        '<label class="adm-rec__ck"><input type="checkbox" checked data-rec-on> <span><b>' + x.n + '.</b> ' + esc(x.where) +
+        ' <span class="adm-q__tag' + (x.block ? '' : ' adm-q__tag--w') + '">' + (x.block ? 'blokuje' : 'ostrzeżenie') + '</span></span></label>' +
+        '<p class="adm-rec__p">' + esc(qaProblem(e)) + '</p>' +
+        '<fieldset class="adm-rec__opts"><legend class="adm-sr">Odpowiedź na uwagę ' + x.n + '</legend>' + opts.map(function (o) {
+          return '<label class="adm-rec__o' + (o[0] === rec.opt ? ' is-rec' : '') + '"><input type="radio" name="rec-' + esc(id) + '" value="' + o[0] + '"' + (o[0] === rec.opt ? ' checked' : '') + '>' +
+            '<span><span class="adm-rec__ot">' + esc(QA_OPT[o[0]]) + (o[0] === rec.opt ? ' <span class="adm-qo__rec">Rekomendacja</span>' : '') + '</span>' +
+            (o[1] ? '<span class="adm-qo__d">' + o[1] + '</span>' : '') + (o[0] === rec.opt ? '<span class="adm-qo__why">' + esc(rec.why) + '</span>' : '') + '</span></label>';
+        }).join('') +
+        '<textarea class="adm-rec__own" rows="2" placeholder="Co zrobić? Bez tekstu ta flaga zostanie pominięta."' + (rec.opt === 'own' ? '' : ' hidden') + ' aria-label="Własna decyzja do uwagi ' + x.n + '"></textarea></fieldset></li>';
+    }).join('');
+    dlg.innerHTML = '<form method="dialog" class="adm-dlg__f"><header class="adm-dlg__h"><h2 id="recDlgH">Przyjmij rekomendacje</h2>' +
+      '<button type="button" class="adm-pop__x" data-rec-close aria-label="Zamknij">×</button></header>' +
+      (todo.length ? '<p class="adm-dlg__sub">Przy każdej czerwonej fladze zaznaczona jest rekomendacja. Odznacz wyjątki albo zmień wybór. „Zastosuj” wypełni odpowiedzi tak, jak kliknięcia w notatkach — <b>nic nie zostanie wysłane</b>; wysyłasz potem przyciskiem „Wyślij uwagi do poprawki”.</p>' +
+        '<p class="adm-dlg__all"><button type="button" class="adm-linkbtn" data-rec-all="1">Zaznacz wszystkie</button> · <button type="button" class="adm-linkbtn" data-rec-all="0">Odznacz wszystkie</button></p>' +
+        '<ol class="adm-rec__list">' + items + '</ol>' : '<p class="adm-dlg__sub">Wszystkie czerwone flagi są już rozstrzygnięte.</p>') +
+      '<footer class="adm-dlg__foot"><button type="button" class="qc-btn adm-dlg__apply" data-rec-apply' + (todo.length ? '' : ' disabled') + '>Zastosuj</button>' +
+      '<button type="button" class="qc-btn qc-btn--ghost adm-dlg__cancel" data-rec-close>Anuluj</button><span class="adm-dlg__cnt" role="status" aria-live="polite"></span></footer></form>';
+    recCount(dlg);
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    var f = dlg.querySelector('[data-rec-apply]:not([disabled])') || dlg.querySelector('[data-rec-close]'); if (f) f.focus();
+  }
+  function recPicks(dlg) {
+    return [].map.call(dlg.querySelectorAll('.adm-rec__it'), function (li) {
+      var on = li.querySelector('[data-rec-on]').checked, r = li.querySelector('input[type=radio]:checked'), ta = li.querySelector('.adm-rec__own');
+      li.classList.toggle('is-off', !on);
+      return { id: li.getAttribute('data-rec-id'), on: on, opt: r ? r.value : null, text: ta ? ta.value.trim() : '' };
+    });
+  }
+  function recCount(dlg) {
+    var p = recPicks(dlg), ok = p.filter(function (x) { return x.on && (x.opt !== 'own' || x.text); }).length, skip = p.filter(function (x) { return x.on && x.opt === 'own' && !x.text; }).length;
+    var b = dlg.querySelector('[data-rec-apply]'); if (b && p.length) { b.textContent = 'Zastosuj (' + ok + ')'; b.disabled = !ok; }
+    var c = dlg.querySelector('.adm-dlg__cnt'); if (c) c.textContent = p.length ? ok + ' z ' + p.length + (skip ? ' · ' + skip + ' bez treści własnej decyzji — pominięte' : '') : '';
+  }
+  function recClose() { var d = document.getElementById('recDlg'); if (!d) return; if (d.close) d.close(); else d.removeAttribute('open'); var b = $d.querySelector('[data-qa-recall]'); if (b) b.focus(); }
+  function recApply() {
+    var dlg = document.getElementById('recDlg'), picks = recPicks(dlg).filter(function (x) { return x.on && (x.opt !== 'own' || x.text); });
+    recClose();
+    var last = qaQueue, n = 0;
+    picks.forEach(function (x) {
+      var li = document.getElementById('q-' + x.id); if (!li) return;
+      n++; last = x.opt === 'own' ? qaAnswerText(li, x.text) : qaAnswer(li, x.opt);
+    });
+    if (!n) return;
+    last.then(function () { sendNote('Zapisano ' + plForm(n, 'odpowiedź', 'odpowiedzi', 'odpowiedzi') + ' do flag — jeszcze niewysłane. Sprawdź i kliknij „Wyślij uwagi do poprawki”.', true); });
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-qa-recall]')) { recOpen(); return; }
+    var dlg = e.target.closest('#recDlg'); if (!dlg) return;
+    if (e.target === dlg) { recClose(); return; }                       // klik w tło
+    if (e.target.closest('[data-rec-close]')) { e.preventDefault(); recClose(); return; }
+    if (e.target.closest('[data-rec-apply]')) { e.preventDefault(); recApply(); return; }
+    var all = e.target.closest('[data-rec-all]');
+    if (all) { [].forEach.call(dlg.querySelectorAll('[data-rec-on]'), function (c) { c.checked = all.getAttribute('data-rec-all') === '1'; }); recCount(dlg); }
+  });
+  document.addEventListener('change', function (e) {
+    var dlg = e.target.closest && e.target.closest('#recDlg'); if (!dlg) return;
+    if (e.target.type === 'radio') {
+      var li = e.target.closest('.adm-rec__it'), ta = li.querySelector('.adm-rec__own');
+      li.querySelector('[data-rec-on]').checked = true;
+      ta.hidden = e.target.value !== 'own'; if (!ta.hidden) ta.focus();
+    }
+    recCount(dlg);
+  });
+  document.addEventListener('input', function (e) { if (e.target.classList && e.target.classList.contains('adm-rec__own')) recCount(e.target.closest('#recDlg')); });
 
   // ── referencja do ikony Quo (JP 2026-10-30) — docs/IKONY-MIEJSC.md §6 ──
   // Kandydaci: media/icons/place-candidates/<trasa>.json (place-candidates.mjs na serwerze, ten sam checkout repo co panel).
