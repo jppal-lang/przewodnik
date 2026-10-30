@@ -9,6 +9,12 @@
 //   rejestr work/repo-jobs.json (nazwa → running/done/failed, wynik); zmiana treści pliku o tej samej nazwie nie uruchamia go ponownie;
 // - zlecenie przerwane (proces padł) zostaje „failed”, nie powtarza się samo — nowa próba = nowy plik;
 // - dziennik zadania: work/jobs/<nazwa>.log. Katalog _content/jobs/ leży poza _content/claude-skills, więc nie czeka na zgodę JP w deploy.sh.
+// - ZGODA NA KOSZT PRZYCISKIEM (JP 2026-10-30, skrzynka decyzji w panelu): kosztowne zlecenie z "needs_jp": true (bez jp_ok)
+//   nie jest odrzucane — trafia do ops.cost_requests jako pending (tytuł, opis, szacunek "est_usd", "est_limit", payload {script, args})
+//   i czeka. JP klika „Zgoda” w panelu (#/decyzje) → przy najbliższym przebiegu wykonuje się DOKŁADNIE payload z bazy (to, co JP
+//   widział), ponownie sprawdzony białą listą; „Odrzuć” → zlecenie rejected. jp_ok zostaje drogą awaryjną (bez bazy).
+//   Przykład: {"script":"trip-translate.mjs","args":["rimini"],"needs_jp":true,"title":"Tłumaczenie Rimini (7 języków)",
+//              "why":"…","est_usd":0.4,"est_limit":"—","by":"Claude"}
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, openSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execFile, spawn } from 'node:child_process';
@@ -41,9 +47,9 @@ export function jpOkError(job, now = Date.now()) {
   if (!(age >= -1 && age <= 3)) return 'zgoda JP starsza niż 3 dni';
   return null;
 }
-export function validateJob(job) {
+export function validateJob(job, { costApproved = false } = {}) {
   if (!job || typeof job !== 'object') return 'zlecenie nie jest obiektem JSON';
-  if (COSTLY.has(job.script)) { const e = jpOkError(job); if (e) return e; }
+  if (COSTLY.has(job.script) && !costApproved) { const e = jpOkError(job); if (e) return e; }
   if (!Object.hasOwn(ALLOWED, job.script)) return `skrypt spoza białej listy: ${job.script}`;
   if (!Array.isArray(job.args) || job.args.some(x => typeof x !== 'string' || x.length > 20_000 || /[\0\n\r]/.test(x))) return 'args: lista napisów bez znaków nowej linii';
   if (job.args.some(x => /^--(notify-all|exec|eval)$/.test(x))) return 'niedozwolony argument';
@@ -51,16 +57,59 @@ export function validateJob(job) {
   if (job.not_before && Date.parse(job.not_before) > Date.now()) return 'wait';
   return null;
 }
+// Czy zlecenie ma czekać na zgodę w panelu (kosztowne, needs_jp: true, bez ważnego jp_ok).
+export const needsPanelOk = (job) => !!job && typeof job === 'object' && COSTLY.has(job.script) && job.needs_jp === true && !!jpOkError(job);
+const num = (x) => (typeof x === 'number' && Number.isFinite(x) && x >= 0 && x < 1e5 ? Math.round(x * 100) / 100 : null);
+const txt = (x, n) => (typeof x === 'string' && x.trim() ? x.trim().slice(0, n) : null);
+// Bramka kosztów: q(sql, params) → wiersze (ops.cost_requests). Zwraca { wait } | { reject } | { run, id, job } (job = payload z bazy).
+export async function costGate(job, name, q) {
+  const [row] = await q('SELECT id, status, payload FROM ops.cost_requests WHERE job_key = $1', [name]);
+  if (!row) {
+    const pre = validateJob(job, { costApproved: true });          // nie pytamy JP o zlecenie, które i tak by nie przeszło
+    if (pre === 'wait') return { wait: 'not_before' };
+    if (pre) return { reject: pre };
+    const payload = { script: job.script, args: job.args };
+    await q(`INSERT INTO ops.cost_requests (job_key, kind, title, detail, est_usd, est_limit, payload)
+             VALUES ($1, 'repo-job', $2, $3, $4, $5, $6::jsonb) ON CONFLICT (job_key) DO NOTHING`,
+      [name, txt(job.title, 200) ?? `${job.script} ${job.args.join(' ')}`.slice(0, 200), txt(job.why, 2000), num(job.est_usd), txt(job.est_limit, 200), JSON.stringify(payload)]);
+    return { wait: 'created' };
+  }
+  if (row.status === 'pending') return { wait: 'pending' };
+  if (row.status === 'rejected') return { reject: 'JP odrzucił w panelu (zgoda na koszt)' };
+  if (row.status !== 'approved') return { reject: `zgoda już wykorzystana (${row.status})` };
+  const p = row.payload ?? {};
+  const run = { ...job, script: p.script, args: p.args };
+  const bad = validateJob(run, { costApproved: true });
+  if (bad && bad !== 'wait') return { reject: `zgoda w panelu, ale zlecenie nie przechodzi kontroli: ${bad}` };
+  return { run: true, id: row.id, job: run };
+}
 const readReg = () => { try { return JSON.parse(readFileSync(REG, 'utf8')); } catch { return {}; } };
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 
-export async function runRepoJobs({ log = (...a) => console.error(new Date().toISOString().slice(11, 19), ...a), dry = false } = {}) {
+// Połączenie z bazą tylko gdy potrzebne (zlecenie z needs_jp); test podaje własne q.
+async function defaultQ() {
+  const { db } = await import('./lib.mjs');
+  const c = await db();
+  return { q: async (sql, p) => (await c.query(sql, p)).rows, end: () => c.end().catch(() => {}) };
+}
+function spawnJob(job, logF) {
+  const fd = openSync(logF, 'a');
+  return spawn('node', [join(dirname(new URL(import.meta.url).pathname), job.script), ...job.args], { cwd: BASE, stdio: ['ignore', fd, fd] });
+}
+
+export async function runRepoJobs({ log = (...a) => console.error(new Date().toISOString().slice(11, 19), ...a), dry = false, q = null, spawnFn = spawnJob } = {}) {
   if (!existsSync(join(REPO, '.git'))) return { skipped: 'brak klonu repo' };
   mkdirSync(join(WORK, 'jobs'), { recursive: true });
   if (existsSync(LOCK) && alive(+readFileSync(LOCK, 'utf8'))) return { skipped: 'trwa inne zlecenie' };
   writeFileSync(LOCK, String(process.pid));
   const git = (...a) => sh('git', ['-c', 'safe.directory=*', '-C', REPO, ...a], { env: { ...process.env, HOME: '/opt/data/home' }, maxBuffer: 20e6 });
   const done = [];
+  let conn = null;
+  const dbq = async (sql, p) => {
+    if (q) return q(sql, p);
+    if (!conn) conn = await defaultQ();
+    return conn.q(sql, p);
+  };
   try {
     await git('fetch', '-q', 'origin', 'main');
     const names = (await git('ls-tree', '--name-only', 'origin/main', `${JOBS_DIR}/`)).stdout.split('\n').map(x => x.trim()).filter(x => x.endsWith('.json')).sort();
@@ -70,26 +119,37 @@ export async function runRepoJobs({ log = (...a) => console.error(new Date().toI
       const name = path.split('/').pop().replace(/\.json$/, '');
       if (reg[name]) continue;
       let job = null; try { job = JSON.parse((await git('show', `origin/main:${path}`)).stdout); } catch (e) { job = { _err: e.message }; }
-      const bad = job?._err ? `niepoprawny JSON: ${job._err.slice(0, 120)}` : validateJob(job);
+      let costId = null;
+      if (!job?._err && needsPanelOk(job)) {
+        let g;
+        try { g = await costGate(job, name, dbq); } catch (e) { log(`zlecenie ${name}: zgoda na koszt — baza niedostępna (${String(e.message).slice(0, 120)}), czekam`); continue; }
+        if (g.wait) { if (g.wait === 'created') log(`zlecenie ${name}: kosztuje — czeka na zgodę JP w panelu (Decyzje)`); continue; }
+        if (g.reject) { reg[name] = { status: 'rejected', result: g.reject, at: new Date().toISOString() }; log(`zlecenie ${name}: ${g.reject}`); writeFileSync(REG, JSON.stringify(reg, null, 1)); continue; }
+        job = g.job; costId = g.id;
+      }
+      const bad = job?._err ? `niepoprawny JSON: ${job._err.slice(0, 120)}` : validateJob(job, { costApproved: costId != null });
       if (bad === 'wait') continue;
       if (bad) { reg[name] = { status: 'failed', result: bad, at: new Date().toISOString() }; log(`zlecenie ${name}: odrzucone — ${bad}`); writeFileSync(REG, JSON.stringify(reg, null, 1)); continue; }
       log(`zlecenie ${name}: ${job.script} ${job.args.join(' ').slice(0, 200)}${job.why ? ` — ${job.why.slice(0, 120)}` : ''}`);
       if (dry) { done.push({ name, dry: true }); continue; }
-      const logF = join(WORK, 'jobs', `${name}.log`), fd = openSync(logF, 'a');
-      const p = spawn('node', [join(dirname(new URL(import.meta.url).pathname), job.script), ...job.args], { cwd: BASE, stdio: ['ignore', fd, fd] });
-      reg[name] = { status: 'running', pid: p.pid, script: job.script, args: job.args, why: job.why ?? null, by: job.by ?? null, started_at: new Date().toISOString(), log: logF };
+      const logF = join(WORK, 'jobs', `${name}.log`);
+      if (costId != null) await dbq("UPDATE ops.cost_requests SET status = 'running', result = 'w toku' WHERE id = $1", [costId]).catch(() => {});
+      const p = spawnFn(job, logF);
+      reg[name] = { status: 'running', pid: p.pid, script: job.script, args: job.args, why: job.why ?? null, by: job.by ?? null, started_at: new Date().toISOString(), log: logF, ...(costId != null ? { cost_request: costId } : {}) };
       writeFileSync(REG, JSON.stringify(reg, null, 1));
       const code = await new Promise((res) => { const t = setTimeout(() => { try { p.kill('SIGTERM'); } catch {} }, (job.timeout_min ?? 180) * 60_000); p.on('close', (c) => { clearTimeout(t); res(c); }); });
       let tail = ''; try { tail = readFileSync(logF, 'utf8').trim().split('\n').slice(-3).join(' | ').slice(-400); } catch {}
       reg[name] = { ...reg[name], status: code === 0 ? 'done' : 'failed', code, result: tail, finished_at: new Date().toISOString() };
       writeFileSync(REG, JSON.stringify(reg, null, 1));
+      if (costId != null) await dbq('UPDATE ops.cost_requests SET status = $2, result = $3, finished_at = now() WHERE id = $1', [costId, reg[name].status, `kod ${code}: ${tail}`.slice(0, 2000)])
+        .catch((e) => log(`zlecenie ${name}: wynik do panelu nie zapisany (${String(e.message).slice(0, 120)})`));
       log(`zlecenie ${name}: ${reg[name].status} (kod ${code})`);
       done.push({ name, status: reg[name].status });
       try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger: `repo-job: ${name}`, log }); } catch { /* podgląd pomocniczy */ }
     }
     writeFileSync(REG, JSON.stringify(reg, null, 1));
   } catch (e) { log(`zlecenia z repo: ${String(e.message).slice(0, 200)}`); }
-  finally { try { unlinkSync(LOCK); } catch {} }
+  finally { try { unlinkSync(LOCK); } catch {} if (conn) await conn.end(); }
   return { done };
 }
 

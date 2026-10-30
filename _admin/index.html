@@ -7,14 +7,14 @@
 <title>Do zatwierdzenia · Quolino admin</title>
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../styles.css?v=40">
-<link rel="stylesheet" href="admin.css?v=25">
+<link rel="stylesheet" href="admin.css?v=26">
 </head>
 <body class="adm">
 
 <nav class="sticky-nav">
   <div class="sticky-nav-inner">
     <a href="./" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">admin</span></a>
-    <span class="adm-navr"><a class="adm-navlink" href="#/postep">Postęp prac</a><a class="adm-navlink" href="#/zgloszenia">Zgłoszenia</a><a class="adm-navlink" href="#/koszty">Koszty AI</a><a class="adm-navlink" href="./">Wycieczki</a><a class="adm-navlink" href="https://stats.quolino.com/" target="_blank" rel="noopener">Statystyki ↗</a><div class="adm-env" id="env" hidden></div></span>
+    <span class="adm-navr"><a class="adm-navlink adm-navlink--dec" href="#/decyzje">Decyzje <b class="adm-n is-zero" id="decNav" title="ładuję">·</b></a><a class="adm-navlink" href="#/postep">Postęp prac</a><a class="adm-navlink" href="#/zgloszenia">Zgłoszenia</a><a class="adm-navlink" href="#/koszty">Koszty AI</a><a class="adm-navlink" href="./">Wycieczki</a><a class="adm-navlink" href="https://stats.quolino.com/" target="_blank" rel="noopener">Statystyki ↗</a><div class="adm-env" id="env" hidden></div></span>
   </div>
 </nav>
 
@@ -29,6 +29,7 @@
 <main class="wrap-wide adm-layout">
   <div class="adm-browse" id="browse">
     <aside class="adm-filters" aria-label="Filtry wycieczek">
+      <a class="adm-decstart" id="decStart" href="#/decyzje"><span class="adm-decstart__h">Decyzje <b class="adm-n is-zero" id="decCount">·</b></span><span class="adm-decstart__txt">Sprawdzam, co czeka…</span></a>
       <details class="adm-fbox" id="fBox" open>
         <summary class="adm-fbox__sum"><span>Filtry</span><b class="adm-n is-zero" id="fActive" title="aktywne filtry">0</b>
           <svg class="adm-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></summary>
@@ -74,6 +75,6 @@
 </main>
 
 <script src="review-where.js?v=1"></script>
-<script src="admin.js?v=35"></script>
+<script src="admin.js?v=36"></script>
 </body>
 </html>

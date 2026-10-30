@@ -301,3 +301,24 @@ same.
 - `GET /api/icon_refs?trip=eq.<trasa>` — wybór JP (`stop_key`, `mode` = `pick` | `auto`, `files`).
 - `POST /api/rpc/admin_icon_refs_set` — `{ p_trip, p_stop_key, p_files }`: 1–2 tytuły `File:…` = wybór, `[]` = automat, `null` = brak decyzji.
   SQL: `_content/claude-skills/sql/2026-10-30-icon-refs.sql`. Tryb demo: przykładowi kandydaci z lokalnych obrazów.
+
+## Skrzynka decyzji (od v36, 2026-10-30) — `#/decyzje`
+
+Wszystko, co czeka na JP, w jednym miejscu; licznik przy „Decyzje” w nagłówku i na stronie startowej (odświeża się co minutę).
+SQL: `_content/claude-skills/sql/2026-10-30-skrzynka-decyzji.sql` (ostatni plik zatwierdzany konsolą). Bez niego sekcje pokazują, czego brakuje.
+
+| Sekcja | Odczyt | Decyzja |
+|---|---|---|
+| Wdrożenia (SQL, ops, cron, SSR, install.sh) | `GET /api/deploy_requests` (pliki, commity, diff) | `rpc/admin_deploy_decide {p_id, p_decision: approve\|reject\|cancel}` |
+| Zgody na koszty + budżet miesiąca | `GET /api/cost_requests`, `GET /api/ai_budget` | `rpc/admin_cost_decide {p_id, p_decision: approve\|reject}`, `rpc/admin_setting_set {p_name: 'ai_budget_month_usd', p_value}` |
+| Ustalenia strażników | `rpc/admin_watch_open {}` → `{ready, decide, rows}` (tabela `ops.watch_findings` z `2026-10-30-straznicy.sql`) | `rpc/admin_watch_decide {p_id, p_decision: accept\|reject\|recheck, p_note}` (funkcja z pliku strażników) |
+| Szkice tras | `GET /api/decision_drafts` (czerwone flagi = `review.errors`) | w widoku trasy (link) |
+| Zdjęcia do ikon | `media/icons/place-candidates/<trasa>.json` + `GET /api/icon_refs` | „Automat dla wszystkich” = `rpc/admin_icon_refs_set` z `[]`; wybór zdjęć w widoku trasy |
+
+- **Wdrożenie przyciskiem:** `ops/deploy.sh` (cron co 2 min) przy zmianach wymagających zgody wpisuje prośbę `pending` (jedną na zestaw
+  zmian; nowe zmiany wymagające zgody → nowa prośba, stara `superseded`). „Zatwierdź i wdróż” (dwa kliknięcia) → `approved` → najbliższy
+  przebieg robi to samo co `deploy.sh approve <hash>` i zapisuje wynik (`done`/`failed` + ostatnie linie, widać w „Ostatnie decyzje”).
+  Zanim serwer zacznie, można „Cofnij zatwierdzenie”. Konsola zostaje drogą awaryjną.
+- **Zgoda na koszt:** Claude dodaje `_content/jobs/<nazwa>.json` z `"needs_jp": true` (oraz `title`, `why`, `est_usd`, `est_limit`);
+  `repo-jobs.mjs` wpisuje prośbę `pending` i czeka; po „Zgoda” wykonuje payload z bazy (to, co JP widział). `jp_ok` działa dalej awaryjnie.
+- Tryb demo (`?demo=1`) ma przykładowe pozycje każdego rodzaju; decyzje zmieniają tylko dane w przeglądarce.

@@ -10,6 +10,7 @@
  * v5 (2026-10-18): lista jak sklep z filtrami (kraj, status, uwagi, skorowidz A–Z, wyszukiwarka), grupy krajów bez regionów;
  * wycieczka w zakładkach — jedna zakładka na wersję (najnowsza pierwsza). Na zakładce wersji widać uwagi wysłane do TEJ wersji
  * (draft_comments.city_version); starsze wersje tylko do podglądu, uwagi wysyła się wyłącznie w najnowszym szkicu.
+ * Skrzynka decyzji (2026-10-30, #/decyzje): wdrożenia, zgody na koszty z budżetem, strażnicy, szkice, zdjęcia do ikon — README §Skrzynka.
  */
 (function () {
   'use strict';
@@ -490,7 +491,8 @@
   }
   function route() {
     var h = location.hash;
-    document.body.classList.toggle('is-prog', h === '#/postep' || h === '#/koszty' || h === '#/zgloszenia');
+    document.body.classList.toggle('is-prog', h === '#/postep' || h === '#/koszty' || h === '#/zgloszenia' || h === '#/decyzje');
+    if (h === '#/decyzje') { showDetail(); window.scrollTo(0, 0); openDecisions(); return; }
     if (h === '#/baza-wiedzy') { showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     if (h === '#/koszty') { showDetail(); window.scrollTo(0, 0); openCosts(); return; }
@@ -1985,6 +1987,363 @@
     document.title = 'Zgłoszenia · Quolino admin';
   }
 
+  // ── Skrzynka decyzji (JP 2026-10-30): wszystko, co czeka na JP, w jednym miejscu — koniec z konsolą ──
+  // Źródła (SQL 2026-10-30-skrzynka-decyzji.sql): admin.deploy_requests (wdrożenia SQL/ops, zapisuje deploy.sh), admin.cost_requests
+  // (zgody na koszty, zapisuje repo-jobs.mjs), admin.ai_budget (zużycie miesiąca + próg), admin.decision_drafts (szkice z czerwonymi
+  // flagami), rpc admin_watch_open (ustalenia strażników; tabela z 2026-10-30-straznicy.sql), kandydaci zdjęć do ikon (pliki w repo)
+  // + admin.icon_refs. Decyzje: rpc admin_deploy_decide / admin_cost_decide / admin_setting_set / admin_watch_decide / admin_icon_refs_set.
+  // Treść commitów, diffów i ustaleń to dane — tylko esc(). Brak źródła (SQL jeszcze nie wdrożony) = komunikat w sekcji, reszta działa.
+  var GH = 'https://github.com/jppal-lang/przewodnik';
+  var DEC_SQL = 'baza czeka na SQL 2026-10-30-skrzynka-decyzji.sql (ostatni raz konsolą: deploy.sh approve).';
+  var DST = { pending: 'czeka na zgodę', approved: 'zatwierdzone — serwer wdroży w ciągu 2 min', running: 'wdrażam…', done: 'wdrożone', failed: 'błąd', rejected: 'odrzucone', superseded: 'zastąpione nowszą prośbą' };
+  var CSTS = { pending: 'czeka na zgodę', approved: 'zgoda — serwer uruchomi w ciągu 10 min', running: 'w toku', done: 'wykonane', failed: 'błąd', rejected: 'odrzucone' };
+  var WKIND = { hours: 'godziny', price: 'cena', closed: 'zamknięte', link: 'link', source: 'źródło', fact: 'fakt', photo: 'zdjęcie', translation: 'tłumaczenie' };
+  var inbox = { n: null, data: null, loading: null };
+
+  function demoInbox() {
+    var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
+    var d = state.demoInbox;
+    if (d) return d;
+    d = state.demoInbox = {
+      deploys: [{ id: 12, hash: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678', base: '0f1e2d3c4b5a69788796a5b4c3d2e1f001234567',
+        files: ['_content/claude-skills/sql/2026-10-30-skrzynka-decyzji.sql', '_content/claude-skills/ops/deploy.sh'],
+        summary: 'a1b2c3d Skrzynka decyzji w panelu: wdrożenia i koszty przyciskiem\n9f8e7d6 deploy.sh: prośby o zgodę w ops.deploy_requests',
+        diff: 'diff --git a/_content/claude-skills/sql/2026-10-30-skrzynka-decyzji.sql b/_content/claude-skills/sql/2026-10-30-skrzynka-decyzji.sql\n' +
+          'new file mode 100644\n--- /dev/null\n+++ b/_content/claude-skills/sql/2026-10-30-skrzynka-decyzji.sql\n@@ -0,0 +1,6 @@\n' +
+          '+-- 2026-10-30 (JP): SKRZYNKA DECYZJI w panelu admina\n+BEGIN;\n+CREATE TABLE IF NOT EXISTS ops.deploy_requests (id bigserial PRIMARY KEY, hash text NOT NULL UNIQUE);\n' +
+          '+-- samokontrola: gość bez dostępu\n+COMMIT;\n' +
+          'diff --git a/_content/claude-skills/ops/deploy.sh b/_content/claude-skills/ops/deploy.sh\n--- a/_content/claude-skills/ops/deploy.sh\n+++ b/_content/claude-skills/ops/deploy.sh\n@@ -8,2 +8,3 @@\n-#   sh deploy.sh approve <hash>\n+#   Zgoda JP: przycisk w panelu admina (#/decyzje)\n+#   awaryjnie: sh deploy.sh approve <hash>\n',
+        status: 'pending', created_at: iso(14), decided_at: null, result: null }],
+      history: [{ id: 11, hash: '5d5e84dc0000000000000000000000000000abcd', files: ['_content/claude-skills/sql/2026-10-30-icon-refs.sql'], summary: '5d5e84d Ikony: wybór zdjęć w panelu',
+        status: 'done', decided_at: iso(300), finished_at: iso(298), result: 'install.sh: OK\nSQL OK: 2026-10-30-icon-refs.sql\n✅ zatwierdzone i wdrożone: 5d5e84d Ikony: wybór zdjęć w panelu' }],
+      costs: [{ id: 4, job_key: '2026-10-30-rimini-tlumaczenie-2', kind: 'repo-job', title: 'Tłumaczenie Rimini na 7 języków', detail: 'Po poprawkach v4 tłumaczenia są nieaktualne; EN, DE, IT, FR, ES, CS, NL.',
+        est_usd: 0.4, est_limit: '—', payload: { script: 'trip-translate.mjs', args: ['rimini', '--fresh'] }, status: 'pending', created_at: iso(40) },
+        { id: 3, job_key: '2026-10-30-spello-recheck', kind: 'repo-job', title: 'Ponowna kontrola Spello v3f', detail: 'Kontrola faktów po łagodnym source-check.',
+          est_usd: 0, est_limit: '~14 wywołań Antigravity (abonament)', payload: { script: 'gemini-draft.mjs', args: ['spello', '--recheck'] }, status: 'approved', decided_at: iso(3), created_at: iso(90) }],
+      budget: { month_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(), usd_api: 3.12, usd_equiv_sub: 41.7, calls: 812, budget_usd: 10, pending_est_usd: 0.4 },
+      watch: { ready: true, decide: true, rows: [
+        { id: 31, kind: 'hours', city_slug: 'frasassi', stop_key: 'grotte-di-frasassi', title: 'Grotte di Frasassi: zimowe godziny od 4 listopada', detail: 'Strona jaskiń podaje od 4.11 wejścia o 10:00, 12:00, 15:00 (dotąd co godzinę).',
+          proposal: { field: 'stop.price', old: 'wejścia co godzinę 9:30–18:00', 'new': 'zimą (od 4.11) wejścia o 10:00, 12:00 i 15:00 — sprawdź na miejscu', why: 'oficjalna strona, aktualizacja 28.10' }, url: 'https://www.frasassi.com/', created_at: iso(70) },
+        { id: 30, kind: 'link', city_slug: 'spello', stop_key: null, title: 'Spello: link do parkingu nie działa (404)', detail: 'Strona gminy przeniosła cennik parkingów.',
+          proposal: { 'new': 'https://www.comune.spello.pg.it/parcheggi' }, url: 'https://www.comune.spello.pg.it/', created_at: iso(200) }] }
+    };
+    return d;
+  }
+
+  // zbiera wszystkie źródła; każde osobno — brak jednego nie blokuje reszty
+  function loadInbox() {
+    if (inbox.loading) return inbox.loading;
+    var soft = function (p) { return p.then(function (v) { return { ok: v }; }, function (e) { if (e && e.session) throw e; return { err: e.message }; }); };
+    var D = DEMO ? demoInbox() : null;
+    var deploys = DEMO ? Promise.resolve(D.deploys.filter(function (r) { return r.status === 'pending' || r.status === 'approved' || r.status === 'running'; }))
+      : api('/deploy_requests?status=in.(pending,approved,running)&order=id.desc&limit=10');
+    var hist = DEMO ? Promise.resolve(D.history.concat(D.deploys.filter(function (r) { return /done|failed|rejected|superseded/.test(r.status); })))
+      : api('/deploy_requests?status=in.(done,failed,rejected,superseded)&order=id.desc&limit=8&select=id,hash,files,summary,status,decided_at,finished_at,result');
+    var costs = DEMO ? Promise.resolve(D.costs) : api('/cost_requests?order=id.desc&limit=30');
+    var budget = DEMO ? Promise.resolve([D.budget]) : api('/ai_budget');
+    var watch = DEMO ? Promise.resolve(D.watch) : api('/rpc/admin_watch_open', { method: 'POST', body: {} });
+    var drafts = DEMO ? api('/admin_queue').then(function (q) { return q.map(function (x, i) { return Object.assign({}, x, { red_flags: i === 0 ? 3 : 0, warnings: 5 - i }); }); })
+      : api('/decision_drafts?order=created_at.desc').catch(function (e) {
+        if (e.session) throw e;
+        return api('/admin_queue').then(function (q) { return q.map(function (x) { return Object.assign({}, x, { red_flags: null }); }); });
+      });
+    var icons = loadIconInbox();
+    inbox.loading = Promise.all([soft(deploys), soft(hist), soft(costs), soft(budget), soft(watch), soft(drafts), soft(icons)]).then(function (r) {
+      var d = { deploys: r[0], hist: r[1], costs: r[2], budget: r[3], watch: r[4], drafts: r[5], icons: r[6] };
+      var pend = function (x, f) { return x.ok ? x.ok.filter(f).length : 0; };
+      d.count = {
+        deploy: pend(d.deploys, function (x) { return x.status === 'pending'; }),
+        cost: pend(d.costs, function (x) { return x.status === 'pending'; }),
+        watch: d.watch.ok && d.watch.ok.ready ? (d.watch.ok.rows || []).length : 0,
+        draft: d.drafts.ok ? d.drafts.ok.length : 0,
+        icon: d.icons.ok ? d.icons.ok.length : 0
+      };
+      inbox.n = d.count.deploy + d.count.cost + d.count.watch + d.count.draft + d.count.icon;
+      inbox.data = d; inbox.loading = null;
+      paintInboxCount();
+      return d;
+    }, function (e) { inbox.loading = null; throw e; });
+    return inbox.loading;
+  }
+  // przystanki z kandydatami zdjęć bez decyzji JP (ops.icon_refs) — jedna pozycja na trasę, z terminem automatu
+  function loadIconInbox() {
+    var slugs = (state.trips ? Promise.resolve(state.trips.map(function (t) { return t.slug; }))
+      : api('/admin_trips?select=city_slug').then(function (rows) { return (rows || []).map(function (r) { return r.city_slug; }); }, function () { return []; }));
+    return slugs.then(function (list) {
+      list = list.filter(function (s) { return /^[a-z0-9][a-z0-9-]{0,62}$/.test(s); });
+      var refs = api('/icon_refs?select=trip,stop_key,mode').catch(function () { return null; });
+      var cands = Promise.all(list.map(function (s) {
+        if (DEMO) return Promise.resolve(s === 'spello' ? demoCandidates(s) : null);
+        return fetch('../media/icons/place-candidates/' + encodeURIComponent(s) + '.json', { credentials: 'same-origin', cache: 'no-cache', redirect: 'manual' })
+          .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+      }));
+      return Promise.all([refs, cands]).then(function (res) {
+        if (res[0] == null) throw new Error('wybór zdjęć niedostępny (SQL 2026-10-30-icon-refs.sql)');
+        var done = {}; res[0].forEach(function (r) { done[r.trip + '|' + r.stop_key] = 1; });
+        var out = [];
+        res[1].forEach(function (c, i) {
+          if (!c || !c.stops) return;
+          var slug = list[i], open = [];
+          Object.keys(c.stops).forEach(function (k) {
+            var st = c.stops[k];
+            if (PRACTICAL[st.category] || done[slug + '|' + k]) return;
+            if (!Array.isArray(st.candidates) || !st.candidates.length) return;
+            open.push({ key: k, name: st.name || k });
+          });
+          if (!open.length) return;
+          var t0 = Date.parse(c.generated_at), dl = isNaN(t0) ? null : new Date(t0 + (+c.wait_hours || 48) * 3600000).toISOString();
+          out.push({ trip: slug, stops: open, deadline: dl });
+        });
+        return out;
+      });
+    });
+  }
+  function paintInboxCount() {
+    var n = inbox.n;
+    [['decNav', true], ['decCount', false]].forEach(function (x) {
+      var el = document.getElementById(x[0]); if (!el) return;
+      el.textContent = n == null ? '·' : n; el.classList.toggle('is-zero', !n);
+      el.setAttribute('title', n == null ? 'ładuję' : n + ' do decyzji');
+    });
+    var box = document.getElementById('decStart');
+    if (box) {
+      box.classList.toggle('is-hot', !!n);
+      var s = box.querySelector('.adm-decstart__txt');
+      if (s) s.textContent = n == null ? 'Sprawdzam, co czeka…' : n ? plForm(n, 'sprawa czeka', 'sprawy czekają', 'spraw czeka') + ' na Twoją decyzję' : 'Nic nie czeka na Twoją decyzję';
+    }
+  }
+
+  function usdPl(n) { n = +n || 0; return n.toFixed(2).replace('.', ',') + ' $'; }
+  function deployFiles(r) { return (r.files || []).map(function (f) { return String(f); }); }
+  function shortPath(f) { return f.replace(/^_content\/claude-skills\//, ''); }
+  function addedLines(diff) { return String(diff || '').split('\n').filter(function (l) { return l.charAt(0) === '+' && l.indexOf('+++') !== 0; }).map(function (l) { return l.slice(1); }); }
+  function recDeploy(r) {
+    var add = addedLines(r.diff), code = add.filter(function (l) { return !/^\s*--/.test(l) && !/^\s*#/.test(l); }).join('\n');
+    var files = deployFiles(r), sql = files.filter(function (f) { return /\.sql$/.test(f); });
+    if (/\b(DROP\s+(TABLE|SCHEMA|DATABASE|COLUMN)|TRUNCATE)\b/i.test(code)) return { tone: 'bad', text: 'Najpierw obejrzyj podgląd: zmiana usuwa dane albo tabele (DROP/TRUNCATE). Zatwierdź tylko, jeśli o to prosiłeś.' };
+    if (/\brm\s+-rf\b|\bcurl\b[^\n]*\|\s*(ba)?sh\b/.test(code)) return { tone: 'bad', text: 'Najpierw obejrzyj podgląd: skrypt usuwa pliki albo pobiera i uruchamia kod z sieci.' };
+    if (!r.diff) return { tone: 'ok', text: 'Zatwierdź, jeśli opis commitów zgadza się z tym, o co prosiłeś (podgląd zmian niedostępny — pliki w GitHub).' };
+    var all = String(r.diff);
+    if (sql.length && sql.length === files.length && /samokontrol/i.test(all)) return { tone: 'ok', text: 'Zatwierdź. Każdy plik SQL wykonuje się w całości albo wcale i sam się sprawdza; przy błędzie baza zostaje bez zmian.' };
+    return { tone: 'ok', text: 'Zatwierdź, jeśli opis commitów zgadza się z tym, o co prosiłeś. Podgląd zmian poniżej; serwer wykona dokładnie te pliki z repo.' };
+  }
+  function diffHtml(diff) {
+    var lines = String(diff || '').split('\n');
+    return lines.map(function (l) {
+      var c = /^(\+\+\+|---|diff --git|index |new file|deleted file)/.test(l) ? 'dec-diff__f' : l.charAt(0) === '+' ? 'dec-diff__a' : l.charAt(0) === '-' ? 'dec-diff__d' : l.indexOf('@@') === 0 ? 'dec-diff__h' : '';
+      return '<span' + (c ? ' class="' + c + '"' : '') + '>' + esc(l) + '</span>';
+    }).join('\n');
+  }
+  function decBtn(act, label, cls, confirm) {
+    return '<button type="button" class="qc-btn qc-btn--sm ' + (cls || '') + '" data-dec="' + act + '"' + (confirm ? ' data-confirm="1"' : '') + '>' + esc(label) + '</button>';
+  }
+  function decItem(kind, id, o) {
+    return '<article class="pg-card dec-item dec-item--' + kind + (o.tone === 'bad' ? ' pg-card--bad' : o.done ? ' pg-card--done' : ' pg-card--running') + '" data-kind="' + kind + '" data-id="' + esc(id) + '">' +
+      '<p class="dec-kind">' + esc(o.kind) + (o.when ? ' · <time>' + esc(when(o.when)) + '</time>' : '') + (o.pill ? ' <span class="pg-pill pg-pill--' + (o.pillTone || 'running') + '">' + esc(o.pill) + '</span>' : '') + '</p>' +
+      '<h4 class="dec-title">' + o.title + '</h4>' + (o.desc ? '<div class="dec-desc">' + o.desc + '</div>' : '') +
+      (o.rec ? '<p class="dec-rec dec-rec--' + (o.recTone || 'ok') + '"><b>Rekomendacja:</b> ' + esc(o.rec) + '</p>' : '') +
+      (o.extra || '') + (o.acts ? '<div class="dec-acts">' + o.acts + '</div>' : '') + '<p class="adm-msg dec-msg" role="status"></p></article>';
+  }
+  function deployHtml(r) {
+    var files = deployFiles(r), rec = recDeploy(r), lines = String(r.summary || '').trim().split('\n').filter(Boolean);
+    var desc = '<p>Serwer czeka na Twoją zgodę, żeby wykonać pliki, które działają jako administrator serwera albo na bazie' +
+      (files.some(function (f) { return /\.sql$/.test(f); }) ? ' (SQL wykona się raz)' : '') + '.</p>' +
+      (lines.length ? '<ul class="dec-commits">' + lines.slice(0, 12).map(function (l) { var m = l.match(/^([0-9a-f]{7,12})\s+(.*)$/); return '<li>' + (m ? '<a href="' + GH + '/commit/' + esc(m[1]) + '" target="_blank" rel="noopener noreferrer"><code>' + esc(m[1]) + '</code></a> ' + esc(m[2]) : esc(l)) + '</li>'; }).join('') +
+        (lines.length > 12 ? '<li>… i ' + (lines.length - 12) + ' więcej</li>' : '') + '</ul>' : '') +
+      '<ul class="dec-files">' + files.map(function (f) { return '<li><a href="' + GH + '/blob/' + esc(r.hash) + '/' + esc(f) + '" target="_blank" rel="noopener noreferrer"><code>' + esc(shortPath(f)) + '</code> ↗</a></li>'; }).join('') + '</ul>';
+    var extra = r.diff ? '<details class="dec-more"><summary>Podgląd zmian w plikach (' + addedLines(r.diff).length + ' linii dodanych)</summary><pre class="dec-diff">' + diffHtml(r.diff) + '</pre></details>' : '';
+    var acts = r.status === 'pending' ? decBtn('approve', 'Zatwierdź i wdróż', 'adm-btn-ok', true) + decBtn('reject', 'Odrzuć', 'adm-btn-no', true)
+      : r.status === 'approved' ? decBtn('cancel', 'Cofnij zatwierdzenie', '', false) : '';
+    return decItem('deploy', r.id, { kind: 'Wdrożenie', when: r.created_at, pill: r.status !== 'pending' ? DST[r.status] : null, pillTone: r.status === 'running' ? 'running' : 'done',
+      title: 'Wdrożenie czeka: ' + esc(files.map(shortPath).slice(0, 4).join(', ')) + (files.length > 4 ? ' i ' + (files.length - 4) + ' innych' : ''),
+      desc: desc, rec: r.status === 'pending' ? rec.text : null, recTone: rec.tone, tone: r.status === 'pending' ? rec.tone : null, extra: extra, acts: acts });
+  }
+  function costHtml(r, b) {
+    var p = r.payload || {}, est = r.est_usd != null ? +r.est_usd : null, left = b ? (+b.budget_usd || 0) - (+b.usd_api || 0) : null;
+    var rec = est == null ? 'Brak szacunku kwoty — zgódź się, jeśli wiesz, ile to kosztuje, albo odrzuć i poproś o szacunek.'
+      : left != null && est > left ? 'Uwaga: przekroczy próg miesięczny (zostało ' + usdPl(Math.max(left, 0)) + '). Zgoda tylko, jeśli to pilne.'
+      : est === 0 ? 'Zgoda — nie kosztuje płatnego API' + (r.est_limit && r.est_limit !== '—' ? ', zużyje tylko limit abonamentu.' : '.')
+      : 'Zgoda — mieści się w progu miesięcznym (zostanie ' + usdPl(left - est) + ').';
+    var desc = (r.detail ? '<p>' + esc(r.detail) + '</p>' : '') +
+      '<dl class="pg-meta dec-meta"><div><dt>szacunek</dt><dd>' + (est == null ? '—' : usdPl(est)) + '</dd></div>' +
+      (r.est_limit ? '<div><dt>limit abonamentu</dt><dd>' + esc(r.est_limit) + '</dd></div>' : '') +
+      '<div><dt>zlecenie</dt><dd><code>' + esc((p.script || '?') + ' ' + (Array.isArray(p.args) ? p.args.join(' ') : '')) + '</code></dd></div></dl>';
+    var acts = r.status === 'pending' ? decBtn('approve', 'Zgoda', 'adm-btn-ok', true) + decBtn('reject', 'Odrzuć', 'adm-btn-no', false) : '';
+    return decItem('cost', r.id, { kind: 'Zgoda na koszt', when: r.created_at, pill: r.status !== 'pending' ? CSTS[r.status] : null, pillTone: r.status === 'failed' ? 'bad' : r.status === 'done' ? 'done' : 'running',
+      title: esc(r.title), desc: desc, rec: r.status === 'pending' ? rec : null, recTone: est != null && left != null && est > left ? 'bad' : 'ok',
+      extra: r.job_key ? '<p class="dec-src">Plik zlecenia: <a href="' + GH + '/blob/main/_content/jobs/' + esc(r.job_key) + '.json" target="_blank" rel="noopener noreferrer"><code>_content/jobs/' + esc(r.job_key) + '.json</code> ↗</a></p>' : '', acts: acts });
+  }
+  function budgetHtml(b) {
+    var used = +b.usd_api || 0, cap = +b.budget_usd || 0, pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0, pend = +b.pending_est_usd || 0;
+    var tone = cap && used >= cap ? 'bad' : pct >= 70 ? 'warn' : 'ok';
+    var m = new Date(b.month_start || Date.now());
+    return '<div class="pg-card dec-budget"><p class="dec-kind">Budżet AI · ' + esc(MONTHS[m.getMonth()] + ' ' + m.getFullYear()) + '</p>' +
+      '<p class="dec-budget__big"><b>' + usdPl(used) + '</b> z ' + usdPl(cap) + ' <small>płatne API w tym miesiącu</small></p>' +
+      '<div class="dec-bar dec-bar--' + tone + '" role="img" aria-label="Zużyto ' + pct + '% progu miesięcznego"><span style="width:' + pct + '%"></span>' +
+      (pend && cap ? '<i style="left:' + pct + '%;width:' + Math.min(100 - pct, Math.round(pend / cap * 100)) + '%"></i>' : '') + '</div>' +
+      '<p class="dec-budget__eq">Ekwiwalent abonamentów (Claude, AI Pro): <b>' + usdPl(b.usd_equiv_sub) + '</b> — tyle kosztowałoby to w cenniku API; płacisz stały abonament.' +
+      (pend ? ' Czeka na zgodę lub w toku: <b>' + usdPl(pend) + '</b>.' : '') + '</p>' +
+      '<form class="dec-cap" data-cap><label for="decCap">Próg miesięczny (USD)</label><input id="decCap" type="text" inputmode="decimal" value="' + esc(String(cap).replace('.', ',')) + '" autocomplete="off">' +
+      '<button type="submit" class="qc-btn qc-btn--sm">Zapisz próg</button><span class="adm-msg" role="status"></span></form></div>';
+  }
+  function proposalHtml(p) {
+    if (p == null) return '';
+    if (typeof p !== 'object') return '<p class="dec-prop"><b>Propozycja:</b> ' + esc(p) + '</p>';
+    var h = '';
+    if (p.field) h += '<p class="dec-prop"><b>Pole:</b> ' + esc(RW.label(String(p.field).replace(/^(stop|city)\./, '')) || p.field) + '</p>';
+    if (p.old != null) h += '<p class="dec-prop"><b>Jest:</b> ' + esc(p.old) + '</p>';
+    if (p['new'] != null) h += '<p class="dec-prop dec-prop--new"><b>Propozycja:</b> ' + esc(p['new']) + '</p>';
+    if (p.text != null) h += '<p class="dec-prop dec-prop--new"><b>Propozycja:</b> ' + esc(p.text) + '</p>';
+    var rest = {}; Object.keys(p).forEach(function (k) { if (!/^(field|old|new|text|why|recommendation)$/.test(k)) rest[k] = p[k]; });
+    if (Object.keys(rest).length) h += '<details class="dec-more"><summary>Szczegóły propozycji</summary><pre class="dec-diff">' + esc(JSON.stringify(rest, null, 1).slice(0, 4000)) + '</pre></details>';
+    return h;
+  }
+  function watchHtml(r, canDecide) {
+    var p = r.proposal && typeof r.proposal === 'object' ? r.proposal : null;
+    var place = r.city_slug ? '<a href="#/' + esc(encodeURIComponent(r.city_slug)) + '">' + esc(titleCase(r.city_slug)) + '</a>' + (r.stop_key ? ' · ' + esc(r.stop_key) : '') : '';
+    var safeUrl = /^https?:\/\//i.test(String(r.url || '')) ? String(r.url) : null;
+    var desc = (place ? '<p class="dec-place">' + place + '</p>' : '') + (r.detail ? '<p>' + esc(r.detail) + '</p>' : '') + proposalHtml(r.proposal) +
+      (safeUrl ? '<p class="dec-src"><a href="' + esc(safeUrl) + '" target="_blank" rel="noopener noreferrer">Źródło ↗</a></p>' : '');
+    var rec = p && (p.recommendation || p.why) ? String(p.recommendation || ('Przyjmij — ' + p.why)) : 'Przyjmij, jeśli źródło to potwierdza; „Sprawdź ponownie” zleca strażnikowi drugi odczyt.';
+    var acts = canDecide ? decBtn('accept', 'Przyjmij propozycję', 'adm-btn-ok', false) + decBtn('reject', 'Odrzuć', 'adm-btn-no', false) + decBtn('recheck', 'Sprawdź ponownie', '', false) +
+      '<span class="dec-note"><input type="text" maxlength="500" placeholder="notatka (opcjonalnie)" aria-label="Notatka do decyzji" data-note></span>' : '';
+    return decItem('watch', r.id, { kind: 'Strażnik · ' + (WKIND[r.kind] || r.kind || 'ustalenie'), when: r.created_at, title: esc(r.title || 'Ustalenie'), desc: desc, rec: rec,
+      extra: canDecide ? '' : '<p class="adm-cmwarn">Zapis decyzji jeszcze niedostępny (brak funkcji admin_watch_decide).</p>', acts: acts });
+  }
+  function draftHtml(r) {
+    var red = r.red_flags, isNew = r.published_version == null && !r.published_stops_count;
+    var rec = red == null ? 'Otwórz trasę i przejrzyj uwagi kontroli.' : red > 0 ? 'Jeszcze nie publikuj: ' + plForm(red, 'czerwona flaga', 'czerwone flagi', 'czerwonych flag') + ' do rozstrzygnięcia w widoku trasy.'
+      : 'Przejrzyj i zatwierdź w widoku trasy — kontrola nie znalazła blokujących uwag' + (r.warnings ? ' (' + plForm(r.warnings, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') + ').' : '.');
+    var desc = '<p>' + (isNew ? 'Nowa trasa' : 'Zmiana opublikowanej' + (r.published_version ? ' v' + esc(r.published_version) : '')) + (r.stops_count ? ' · ' + plForm(+r.stops_count, 'przystanek', 'przystanki', 'przystanków') : '') +
+      (r.note ? ' · ' + esc(r.note) : '') + '</p>';
+    return decItem('draft', r.city_slug + ':' + r.version, { kind: 'Szkic trasy', when: r.created_at, pill: red == null ? null : red ? plForm(red, 'czerwona flaga', 'czerwone flagi', 'czerwonych flag') : 'bez czerwonych flag',
+      pillTone: red ? 'bad' : 'done', title: esc(r.city_name || titleCase(r.city_slug)) + ' v' + esc(r.version), desc: desc, rec: rec, recTone: red ? 'bad' : 'ok', tone: red ? 'bad' : null,
+      acts: '<a class="qc-btn qc-btn--sm adm-btn-ok" href="#/' + esc(encodeURIComponent(r.city_slug)) + '">Otwórz trasę →</a>' });
+  }
+  function iconHtml(r) {
+    var late = r.deadline && Date.parse(r.deadline) < Date.now();
+    var desc = '<p>' + plForm(r.stops.length, 'przystanek czeka', 'przystanki czekają', 'przystanków czeka') + ' na wybór zdjęć (1–2 na przystanek) do ikony Quo: ' +
+      esc(r.stops.slice(0, 6).map(function (s) { return s.name; }).join(', ')) + (r.stops.length > 6 ? '…' : '') + '.</p>' +
+      (r.deadline ? '<p class="dec-deadline' + (late ? ' is-late' : '') + '">' + (late ? 'Termin minął ' + esc(when(r.deadline)) + ' — generator może już dobierać zdjęcia sam.' : 'Bez decyzji automat ruszy ' + esc(when(r.deadline)) + '.') + '</p>' : '');
+    return decItem('icon', r.trip, { kind: 'Zdjęcia do ikon', title: esc(titleCase(r.trip)) + ' — ' + plForm(r.stops.length, 'przystanek', 'przystanki', 'przystanków') + ' bez wyboru', desc: desc,
+      rec: 'Bez preferencji kliknij „Automat dla wszystkich”; konkretne ujęcia wybierzesz w widoku trasy.', tone: late ? 'bad' : null,
+      acts: '<a class="qc-btn qc-btn--sm" href="#/' + esc(encodeURIComponent(r.trip)) + '">Wybierz zdjęcia →</a>' + decBtn('auto', 'Automat dla wszystkich', '', false) });
+  }
+  function histHtml(d) {
+    var rows = [];
+    (d.hist.ok || []).forEach(function (r) { rows.push({ at: r.finished_at || r.decided_at, kind: 'Wdrożenie', title: deployFiles(r).map(shortPath).join(', '), st: DST[r.status] || r.status, bad: r.status === 'failed', result: r.result }); });
+    (d.costs.ok || []).filter(function (r) { return /done|failed|rejected/.test(r.status); }).forEach(function (r) { rows.push({ at: r.finished_at || r.decided_at, kind: 'Koszt', title: r.title, st: CSTS[r.status] || r.status, bad: r.status === 'failed', result: r.result }); });
+    if (!rows.length) return '';
+    rows.sort(function (a, b) { return (Date.parse(b.at) || 0) - (Date.parse(a.at) || 0); });
+    return '<details class="pg-steps dec-hist"><summary>Ostatnie decyzje i wyniki (' + rows.length + ')</summary><ul>' + rows.slice(0, 12).map(function (x) {
+      return '<li><span class="pg-pill pg-pill--' + (x.bad ? 'bad' : 'done') + '">' + esc(x.st) + '</span> <b>' + esc(x.kind) + '</b> · ' + esc(x.title) + (x.at ? ' · ' + esc(when(x.at)) : '') +
+        (x.result ? '<pre class="dec-diff dec-result">' + esc(String(x.result).slice(-1500)) + '</pre>' : '') + '</li>';
+    }).join('') + '</ul></details>';
+  }
+  function decSection(id, title, n, body) {
+    return '<section class="dec-sec" id="dec-' + id + '" aria-labelledby="dech-' + id + '"><h3 class="pg-h3" id="dech-' + id + '">' + esc(title) + ' <b class="adm-n' + (n ? '' : ' is-zero') + '">' + n + '</b></h3>' + body + '</section>';
+  }
+  function openDecisions() {
+    state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
+    function draw(d) {
+      if (location.hash !== '#/decyzje') return;
+      var keep = {}; [].forEach.call($d.querySelectorAll('details[data-k]'), function (x) { keep[x.getAttribute('data-k')] = x.open; });
+      var C = d.count, none = function (t) { return '<p class="adm-empty dec-empty">' + esc(t) + '</p>'; };
+      var errBox = function (src, what) { return '<p class="adm-cmwarn">' + esc(what) + ' niedostępne: ' + esc(src.err) + (/deploy_requests|cost_requests|ai_budget|admin_watch_open|decision_drafts|schema cache|does not exist|404/i.test(src.err) ? ' — ' + DEC_SQL : '') + '</p>'; };
+      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a><span class="adm-cm__meta">odświeża się co 30 s · ' +
+        esc(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</span></div><section class="pg dec">' +
+        '<header class="pg-head"><div><p class="label">Skrzynka decyzji</p><h2>' + (inbox.n ? 'Czeka na Ciebie: ' + inbox.n : 'Nic nie czeka') + '</h2></div>' +
+        '<dl class="pg-kpi"><div><dt>wdrożenia</dt><dd>' + C.deploy + '</dd></div><div><dt>koszty</dt><dd>' + C.cost + '</dd></div><div><dt>strażnicy</dt><dd>' + C.watch + '</dd></div>' +
+        '<div><dt>szkice</dt><dd>' + C.draft + '</dd></div><div><dt>ikony</dt><dd>' + C.icon + '</dd></div></dl></header>' +
+        '<p class="dec-lead">Każdy przycisk zapisuje decyzję; serwer wykonuje ją sam — wdrożenia w ciągu 2 min, zlecenia w ciągu 10 min. Wynik zobaczysz tutaj.</p>';
+      // wdrożenia
+      var dep = d.deploys.err ? errBox(d.deploys, 'Wdrożenia') : d.deploys.ok.length ? d.deploys.ok.map(deployHtml).join('') : none('Nic nie czeka na wdrożenie.');
+      h += decSection('wdrozenia', 'Wdrożenia (SQL i serwer)', C.deploy, dep);
+      // koszty + budżet
+      var b = d.budget.ok && d.budget.ok[0];
+      var open = d.costs.ok ? d.costs.ok.filter(function (r) { return /pending|approved|running/.test(r.status); }) : [];
+      h += decSection('koszty', 'Zgody na koszty', C.cost, (b ? budgetHtml(b) : d.budget.err ? errBox(d.budget, 'Budżet') : '') +
+        (d.costs.err ? errBox(d.costs, 'Prośby o zgodę') : open.length ? open.map(function (r) { return costHtml(r, b); }).join('') : none('Nic nie czeka na zgodę na koszt.')));
+      // strażnicy
+      var w = d.watch.ok;
+      h += decSection('straznicy', 'Ustalenia strażników', C.watch, d.watch.err ? (/admin_watch_open|404|schema cache|does not exist/i.test(d.watch.err) ? none('Strażnicy jeszcze nie działają (' + DEC_SQL + ')') : errBox(d.watch, 'Ustalenia'))
+        : !w || !w.ready ? none('Strażnicy jeszcze nie działają — pojawią się po wdrożeniu SQL 2026-10-30-straznicy.sql.')
+        : (w.rows || []).length ? w.rows.map(function (r) { return watchHtml(r, !!w.decide); }).join('') : none('Strażnicy nie mają otwartych ustaleń.'));
+      // szkice
+      h += decSection('szkice', 'Szkice tras do zatwierdzenia', C.draft, d.drafts.err ? errBox(d.drafts, 'Szkice') : d.drafts.ok.length ? d.drafts.ok.map(draftHtml).join('') : none('Żaden szkic nie czeka.'));
+      // ikony
+      h += decSection('ikony', 'Zdjęcia do ikon', C.icon, d.icons.err ? errBox(d.icons, 'Wybór zdjęć') : d.icons.ok.length ? d.icons.ok.map(iconHtml).join('') : none('Wszystkie przystanki z kandydatami mają decyzję.'));
+      h += histHtml(d);
+      $d.innerHTML = h + '</section>';
+      [].forEach.call($d.querySelectorAll('details[data-k]'), function (x) { if (keep[x.getAttribute('data-k')]) x.open = true; });
+    }
+    function reload() {
+      return loadInbox().then(draw).catch(function (e) {
+        $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><p class="adm-empty">Skrzynka decyzji niedostępna: ' + esc(e.message) + '</p>';
+      });
+    }
+    function say(card, msg, bad) { var m = card.querySelector('.dec-msg'); if (m) { m.className = 'adm-msg dec-msg' + (bad ? ' adm-msg--err' : ''); m.textContent = msg; } }
+    function act(card, act, btn) {
+      var kind = card.getAttribute('data-kind'), id = card.getAttribute('data-id'), note = card.querySelector('[data-note]');
+      var all = card.querySelectorAll('button'); [].forEach.call(all, function (x) { x.disabled = true; });
+      say(card, 'Zapisuję…');
+      var p;
+      if (DEMO) p = demoDecide(kind, id, act);
+      else if (kind === 'deploy') p = api('/rpc/admin_deploy_decide', { method: 'POST', body: { p_id: +id, p_decision: act } });
+      else if (kind === 'cost') p = api('/rpc/admin_cost_decide', { method: 'POST', body: { p_id: +id, p_decision: act } });
+      else if (kind === 'watch') p = api('/rpc/admin_watch_decide', { method: 'POST', body: { p_id: /^\d+$/.test(id) ? +id : id, p_decision: act, p_note: note && note.value.trim() ? note.value.trim() : null } });
+      else if (kind === 'icon') {
+        var it = (inbox.data.icons.ok || []).filter(function (x) { return x.trip === id; })[0];
+        p = it ? it.stops.reduce(function (pr, s) { return pr.then(function () { return api('/rpc/admin_icon_refs_set', { method: 'POST', body: { p_trip: id, p_stop_key: s.key, p_files: [] } }); }); }, Promise.resolve()) : Promise.resolve();
+      }
+      p.then(function () {
+        say(card, kind === 'deploy' && act === 'approve' ? 'Zatwierdzone — serwer wdroży w ciągu 2 min.' : kind === 'cost' && act === 'approve' ? 'Zgoda zapisana — serwer uruchomi w ciągu 10 min.' : 'Zapisane.');
+        setTimeout(reload, DEMO ? 600 : 900);
+      }, function (e) {
+        [].forEach.call(all, function (x) { x.disabled = false; });
+        say(card, 'Nie zapisano: ' + e.message + (/admin_watch_decide|404|schema cache/i.test(e.message) && kind === 'watch' ? ' (strażnicy jeszcze nie działają)' : ''), true);
+      });
+    }
+    var armed = null, armT = null;
+    function disarm() { if (armed) { armed.classList.remove('is-armed'); armed.textContent = armed.getAttribute('data-label'); armed = null; } clearTimeout(armT); }
+    $d.onclick = function (e) {
+      var b = e.target.closest && e.target.closest('[data-dec]');
+      if (!b || b.disabled) return;
+      var card = b.closest('.dec-item'); if (!card) return;
+      if (b.hasAttribute('data-confirm') && armed !== b) {
+        disarm(); armed = b; b.setAttribute('data-label', b.textContent); b.classList.add('is-armed'); b.textContent = 'Kliknij jeszcze raz, aby potwierdzić';
+        armT = setTimeout(disarm, 6000); return;
+      }
+      var a = b.getAttribute('data-dec'); disarm(); act(card, a, b);
+    };
+    $d.onsubmit = function (e) {
+      var f = e.target.closest && e.target.closest('[data-cap]'); if (!f) return;
+      e.preventDefault();
+      var v = f.querySelector('input').value.trim(), m = f.querySelector('.adm-msg');
+      m.className = 'adm-msg'; m.textContent = 'Zapisuję…';
+      (DEMO ? Promise.resolve(demoInbox().budget.budget_usd = +v.replace(',', '.') || 0) : api('/rpc/admin_setting_set', { method: 'POST', body: { p_name: 'ai_budget_month_usd', p_value: v } }))
+        .then(function () { m.textContent = 'Zapisane.'; setTimeout(reload, 400); }, function (err) { m.className = 'adm-msg adm-msg--err'; m.textContent = 'Nie zapisano: ' + err.message; });
+    };
+    $d.onchange = null;
+    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję skrzynkę decyzji…</p></div>';
+    reload(); state.poll = setInterval(function () { if (location.hash === '#/decyzje' && !document.hidden && !$d.querySelector('.is-armed') && !$d.contains(document.activeElement && document.activeElement.matches('input') ? document.activeElement : null)) reload(); }, 30000);
+    document.title = 'Decyzje · Quolino admin';
+  }
+  function demoDecide(kind, id, act) {
+    var D = demoInbox();
+    if (kind === 'deploy') D.deploys.forEach(function (r) { if (String(r.id) === id) r.status = act === 'approve' ? 'approved' : act === 'cancel' ? 'pending' : 'rejected'; });
+    if (kind === 'cost') D.costs.forEach(function (r) { if (String(r.id) === id) { r.status = act === 'approve' ? 'approved' : 'rejected'; r.decided_at = new Date().toISOString(); } });
+    if (kind === 'watch') D.watch.rows = D.watch.rows.filter(function (r) { return String(r.id) !== id || act === 'recheck'; });
+    if (kind === 'icon') {
+      var it = (inbox.data.icons.ok || []).filter(function (x) { return x.trip === id; })[0];
+      if (it) it.stops.forEach(function (s) { state.demo.iconRefs.push({ trip: id, stop_key: s.key, mode: 'auto', files: [] }); });
+    }
+    return new Promise(function (res) { setTimeout(res, 250); });
+  }
+  // licznik w nagłówku i na stronie startowej: przy starcie, co minutę i po powrocie do karty
+  setInterval(function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* licznik pomocniczy */ }); }, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* jw. */ }); });
+
   // ── baza wiedzy redakcji: reguły z uwag (JP 2026-10-17, docs/BAZA-WIEDZY.md) ──
   var $kb = document.getElementById('kbOpen');
   function loadRules() {
@@ -2067,7 +2426,8 @@
   fitFilters();
   if (wide.addEventListener) wide.addEventListener('change', fitFilters);
   $fBox.addEventListener('toggle', function () { if (wide.matches && !$fBox.open) $fBox.open = true; });
-  loadTrips();
+  var tripsReady = loadTrips();
   route();
   loadRules();
+  if (location.hash !== '#/decyzje') (tripsReady && tripsReady.then ? tripsReady : Promise.resolve()).then(function () { return loadInbox(); }).catch(function () { /* licznik pomocniczy */ });
 })();
