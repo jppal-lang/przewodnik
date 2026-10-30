@@ -1,0 +1,117 @@
+{
+ "trip": "frasassi",
+ "generated_at": "2026-10-30T12:00:10.348Z",
+ "versions": {
+  "published": 1,
+  "draft": 13
+ },
+ "per_stop": 4,
+ "wait_hours": 48,
+ "note": "Kandydaci do wyboru w panelu admina (referencja do ikony Quo). Wybór: ops.icon_refs. Zasady: docs/IKONY-MIEJSC.md §6.",
+ "stops": {
+  "frasassi-02": {
+   "n": 2,
+   "name": "Trasa turystyczna jaskiń",
+   "category": "monument",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 56,
+    "dropped": 9,
+    "license_dropped": 0
+   }
+  },
+  "grotte-di-frasassi": {
+   "n": 2,
+   "name": "Grotte di Frasassi",
+   "category": "park",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 56,
+    "dropped": 9,
+    "license_dropped": 0
+   }
+  },
+  "frasassi-03": {
+   "n": 3,
+   "name": "San Vittore alle Chiuse i mostek na Sentino",
+   "category": "church",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 0,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "museo-speleo-paleontologico": {
+   "n": 3,
+   "name": "Museo Speleo Paleontologico e Archeologico",
+   "category": "museum",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 57,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "frasassi-04": {
+   "n": 4,
+   "name": "Świątynia Valadiera w skalnej paszczy",
+   "category": "church",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 10,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "abbazia-san-vittore-alle-chiuse": {
+   "n": 4,
+   "name": "Abbazia di San Vittore alle Chiuse",
+   "category": "church",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 48,
+    "dropped": 4,
+    "license_dropped": 0
+   }
+  },
+  "ponte-romano-torre-romanica": {
+   "n": 5,
+   "name": "Ponte Romano e Torre Romanica",
+   "category": "monument",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 0,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "tempio-del-valadier": {
+   "n": 6,
+   "name": "Tempio del Valadier e Eremo di Santa Maria Infra Saxa",
+   "category": "church",
+   "view": "interior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 23,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  }
+ }
+}
