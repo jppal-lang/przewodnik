@@ -248,7 +248,7 @@ export const CANDIDATES_PER_STOP = 4;
 export const WAIT_HOURS = 48;   // przystanek z kandydatami bez wyboru JP i bez „automatu” czeka najwyżej tyle, potem automat
 export const candidatesPath = (trip) => `media/icons/place-candidates/${trip}.json`;
 const THUMB_RE = /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//;
-const PAGE_RE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/;
+const PAGE_RE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File(:|%3A)/i;
 // rekord kandydata (normPage z miniaturą 320 px) → wpis w pliku dla panelu; null, gdy adresy nie są z Commons
 export function candidateEntry(c) {
   if (!c || !THUMB_RE.test(c.thumb ?? '') || !PAGE_RE.test(c.page ?? '')) return null;

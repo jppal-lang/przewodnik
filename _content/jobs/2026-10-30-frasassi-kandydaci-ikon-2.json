@@ -1,0 +1,9 @@
+{
+ "script": "place-candidates.mjs",
+ "args": [
+  "frasassi"
+ ],
+ "why": "ponowienie po poprawce (0 kandydatów: miniatury odrzucane przy budowie wpisu) — darmowe, tylko Commons",
+ "by": "Claude",
+ "timeout_min": 30
+}

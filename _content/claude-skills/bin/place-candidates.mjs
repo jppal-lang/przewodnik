@@ -52,7 +52,10 @@ async function main() {
       const top = free.slice(0, L.CANDIDATES_PER_STOP);
       // miniatury 320 px (osobne zapytanie: ranking działał na metadanych, adresy miniatur liczy Commons dla podanej szerokości)
       const small = top.length ? await fileInfos(top.map(c => c.title), 'thumb', 320) : [];
-      rec.candidates = top.map(c => L.candidateEntry({ ...c, thumb: small.find(s => s.title === c.title)?.thumb ?? null })).filter(Boolean);
+      const key = (t) => String(t ?? '').replace(/_/g, ' ').normalize('NFC').toLowerCase();
+      // miniatura 320 px, a gdy Commons zwróci tytuł w innej postaci (spacje/podkreślenia, Unicode) — miniatura z rankingu
+      rec.candidates = top.map(c => L.candidateEntry({ ...c, thumb: small.find(s => key(s.title) === key(c.title))?.thumb ?? c.thumb ?? c.url ?? null })).filter(Boolean);
+      if (top.length && !rec.candidates.length) log(`${trip} #${stop.n} ${stop.key}: UWAGA — ${top.length} zdjęć odrzuconych przy budowie wpisu (thumb=${String(top[0]?.thumb).slice(0, 60)}, page=${String(top[0]?.page).slice(0, 60)})`);
       rec.status = rec.candidates.length ? 'ok' : 'none';
       rec.stats = { found: g.cands.length, dropped: dropped.length, license_dropped: kept.length - free.length };
       log(`${trip} #${stop.n} ${stop.key}: ${rec.candidates.length} kandydatów (z ${g.cands.length}, odrzuconych ${dropped.length}, licencja ${kept.length - free.length})`);
