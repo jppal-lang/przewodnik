@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+const R = (r) => [...(r.review.errors ?? []), ...(r.review.warnings ?? [])].filter(x => x.resolved);
 import { issueKind, splitFacts, anchors, snippets, codeConfirm, applyQuote, addField, locateStop, sourceCheck, makeNet } from './source-check.mjs';
 
 const VILLA = 'https://example.org/villa';
@@ -132,33 +133,34 @@ test('source-check: potwierdza kodem, przez AI, łagodzi, dodaje, porzuca, pyta 
     facts: [{ fact: 'biało-różowy wapień w leadzie', city: true, kind: 'soften', note: 'Źródła mówią o „Monte Subasio”.' }] });
 
   // willa: na stronie nie ma „Comune”, więc decyduje AI — z cytatem dosłownym ze strony verify_url
-  const villa = r.review.resolved.find(x => x.stop_key === 'villa' && /2005/.test(x.problem));
+  const villa = R(r).find(x => x.stop_key === 'villa' && /2005/.test(x.problem));
   assert.equal(villa.resolved.action, 'source_added'); assert.equal(villa.resolved.url, VILLA);
   assert.ok(tr.meta.stops[1].sources.includes(VILLA));
   // autoportret: AI z cytatem dosłownym ze strony z researchu
-  const smm = r.review.resolved.find(x => x.stop_key === 'smm' && /autoportret/.test(x.problem));
+  const smm = R(r).find(x => x.stop_key === 'smm' && /autoportret/.test(x.problem));
   assert.equal(smm.resolved.action, 'source_added'); assert.equal(smm.resolved.url, CAPP);
   assert.ok(tr.meta.stops[2].sources.includes(CAPP));
   assert.ok(tr.content._notes.some(n => n.stop_key === 'smm' && n.field === 'f' && n.note.includes(CAPP)));
   assert.ok(r.review.facts.sources.some(s => s.url === CAPP));
   // drobny fakt bez źródła → usunięty
-  const bel = r.review.resolved.find(x => x.stop_key === 'belvedere');
+  const bel = R(r).find(x => x.stop_key === 'belvedere');
   assert.equal(bel.resolved.action, 'removed');
   assert.equal(tr.content.stops.belvedere.desc_paragraphs[0], 'Widok na dolinę.');
   // Infiorata → zdanie w lokalnym smaku, bez długiej pauzy, ze źródłem z Wikipedii (wyszukiwanie)
-  const inf = r.review.resolved.find(x => x.stop_key === 'borgo');
+  const inf = R(r).find(x => x.stop_key === 'borgo');
   assert.equal(inf.resolved.action, 'added'); assert.match(inf.resolved.url, /Infiorata/);
   assert.equal(tr.content.stops.borgo.local_flavor, 'Na Boże Ciało mieszkańcy układają na ulicach dywany z płatków kwiatów - Infioraty.');
   // Gladiator: brak źródła → propozycja porzucona, nie trafia do JP
-  assert.equal(r.review.resolved.find(x => /Gladiator/.test(x.problem)).resolved.action, 'dropped');
+  assert.equal(R(r).find(x => /Gladiator/.test(x.problem)).resolved.action, 'dropped');
   // zmyślony cytat AI (1490–1492) → nie potwierdzony; bez quote/replace i nie kluczowy → bez zmian, nie do JP
-  assert.equal(r.review.resolved.find(x => /1490/.test(x.problem)).resolved.action, 'dropped');
+  assert.equal(R(r).find(x => /1490/.test(x.problem)).resolved.action, 'dropped');
   assert.ok(!tr.meta.stops[2].sources.includes('https://it.wikipedia.org/wiki/Spello'));
   // polecenie „zlagodz” → lead złagodzony
   assert.equal(tr.content.city.lead.startsWith('Spello zbudowano z kamienia z Monte Subasio'), true);
-  assert.ok(r.review.resolved.some(x => x.from === 'polecenie' && x.resolved.action === 'softened'));
+  assert.ok(R(r).some(x => /^Do sprawdzenia/.test(x.problem) && x.resolved.action === 'softened' && x.resolved.what));
   // do JP: tylko błąd spoza toru (literówka) — żadnych pytań o źródła
-  assert.deepEqual(r.review.warnings, []);
+  assert.deepEqual(r.review.warnings.filter(w => !w.resolved), []);
+  assert.ok(r.review.warnings.every(w => w.resolved?.action && w.resolved?.what), 'format dla panelu: resolved.action + what');
   assert.equal(r.review.errors.length, 1);
   assert.equal(r.stats.ai_calls, 1, 'jedno zapytanie AI na całą paczkę');
   assert.ok(!calls.some(u => /google/.test(u)));
@@ -170,6 +172,7 @@ test('fakt kluczowy bez źródła i bez bezpiecznego złagodzenia → JP z opcja
   const rv = { verdict: 'ok', errors: [], warnings: [{ stop_key: 'villa', problem: 'Fakty bez źródła (1) — potrzebny link do Wikipedii albo strony lokalnej: willa należała do cesarza' }] };
   const r = await sourceCheck({ trip: tr, review: rv, deps: { fetch: fakeFetch([]), ai: async () => '{"items":[{"id":0,"potwierdza":false,"kluczowy":true}]}' } });
   assert.equal(r.review.warnings.length, 1);
+  assert.ok(!r.review.warnings[0].resolved);
   assert.ok(r.review.warnings[0].options.length >= 2);
   assert.match(r.review.warnings[0].recommend, /Usuń/);
   assert.equal(r.stats.to_jp, 1);
@@ -194,4 +197,16 @@ test('makeNet: Wikipedia i strona przez wstrzyknięty fetch', async () => {
   assert.match((await net.wiki('it', INFI)).text, /Corpus Domini/);
   assert.match((await net.page(VILLA)).text, /parcheggio pubblico/);
   assert.equal(await net.page('https://www.google.com/maps/search/?q=x'), null);
+});
+
+test('ta sama propozycja „dodaj” z kontroli i z polecenia → jedno zdanie', async () => {
+  const tr = trip();
+  const rv = { errors: [], warnings: [{ stop_key: 'borgo', problem: 'pole lokalny smaczek puste, Spello słynie z Infioraty — dodaj po potwierdzeniu w źródle' }] };
+  const ai = async (prompt) => JSON.stringify({ items: JSON.parse(prompt.slice(prompt.indexOf('POZYCJE:') + 8)).map(p => {
+    const n = p.zrodla.findIndex(z => /in occasione della festa del Corpus Domini/.test(JSON.stringify(z)));
+    return { id: p.id, potwierdza: n >= 0, zrodlo: n, cytat: 'in occasione della festa del Corpus Domini', zdanie: 'Na Boże Ciało ulice pokrywają dywany z kwiatów.' }; }) });
+  const r = await sourceCheck({ trip: tr, review: rv, deps: { fetch: fakeFetch([]), ai },
+    facts: [{ kind: 'add', stop: 'Borgo San Sisto', field: 'local_flavor', fact: 'Infiorata na Boże Ciało', urls: [INFI] }] });
+  assert.equal(tr.content.stops.borgo.local_flavor, 'Na Boże Ciało ulice pokrywają dywany z kwiatów.');
+  assert.equal(r.stats.added, 1); assert.equal(r.stats.dropped, 1);
 });

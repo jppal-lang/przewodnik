@@ -32,6 +32,8 @@ const AGY_BUDGET = +(process.env.QUOLINO_AGY_WEEKLY_CALLS ?? 150);
   }
   globalThis.__agyFull = pct >= 90 || !!agyQuotaOut();
 }
+// zlecenia z repo (_content/jobs/*.json, repo-jobs.mjs): jednorazowe zadania z białej listy, bez konsoli JP (JP 2026-10-30) — także w dzień
+try { const { runRepoJobs } = await import('./repo-jobs.mjs'); await runRepoJobs({ log }); } catch (e) { log(`zlecenia z repo: ${String(e.message).slice(0, 160)}`); }
 if (argv.includes('--night')) {
   const h = +new Intl.DateTimeFormat('pl-PL', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Warsaw' }).format(new Date());
   if (h >= 7 && h < 22) process.exit(0);

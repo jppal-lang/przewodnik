@@ -16,7 +16,7 @@
 //    niepotwierdzone → złagodzenie albo usunięcie fragmentu (podmiana {quote, replace} kodem), resolved softened/removed;
 //    „dodaj po potwierdzeniu” → jedno zdanie w polu (bez „—”), resolved added; bez źródła → propozycja porzucona (resolved dropped).
 //    Do JP zostaje tylko fakt kluczowy, którego nie da się ani potwierdzić, ani bezpiecznie złagodzić — z opcjami i rekomendacją.
-//    Rozstrzygnięte uwagi znikają z errors/warnings i lądują w rv.resolved (panel/historia), licznik w rv.source_check.
+//    Rozstrzygnięte uwagi zostają w ostrzeżeniach z polem `resolved` (panel: szara flaga do wglądu, bez pytania; błąd → ostrzeżenie), licznik w rv.source_check.
 // 4. AI: Antigravity (Gemini, AI Pro), gdy limit nie jest wyczerpany (agyQuotaOut), inaczej Claude CLI. Każde wywołanie w dzienniku
 //    kosztów (aiUsage → ai_usage, usage-summary.mjs), rola „source-check”. Najwyżej 2 wywołania na przebieg (po 12 faktów).
 // Testy: source-check.test.mjs (sztuczne dane, wstrzykiwany fetch i AI, bez sieci).
@@ -29,6 +29,7 @@ import { noDash } from './stop-content-lib.mjs';
 const ADD_RE = /dodaj\p{L}*[^.]{0,40}po potwierdzeniu|po potwierdzeniu w źródle|dopisz\p{L}*[^.]{0,40}po potwierdzeniu/iu;
 const UNSOURCED_RE = /bez źródła|bez potwierdzenia|do potwierdzenia|niepotwierdzon|nie ma w źródle|nie stoi w źródle|nie stoją w źródle|brak źródła|potrzebny link|nie ma (żadnego )?oparcia w źródł/iu;
 export function issueKind(e) {
+  if (e?.resolved) return null;                              // już rozstrzygnięte (poprzedni przebieg)
   const t = `${e?.problem ?? ''} ${e?.fix ?? ''}`;
   if (/Niezgodne ze źródłem/i.test(t)) return null;          // sprzeczność ze źródłem to inny tor (poprawka z dowodem)
   if (ADD_RE.test(t)) return 'add';
@@ -332,6 +333,7 @@ ${JSON.stringify(payload)}`;
   }
 
   // 4) wyniki → zmiany w trasie i rozstrzygnięcia uwag
+  const addedTo = new Set();
   const notes = (trip.content._notes = Array.isArray(trip.content._notes) ? trip.content._notes : []);
   for (const it of items) {
     const r = it.res ?? {}; const src = r.byCode ? r.src : it.srcs?.[r.zrodlo];
@@ -339,11 +341,13 @@ ${JSON.stringify(payload)}`;
     const quoteOk = !!(src && r.cytat && String(r.cytat).split(/…|\.\.\./).map(norm).filter(x => x.length >= 12).every(x => norm(src.sn.map(s => s.text).join(' ')).includes(x)) && norm(r.cytat).length >= 12);
     const confirmed = r.potwierdza === true && quoteOk && it.kind !== 'soften';
     const label = it.sk ? `stops.${it.sk}` : 'city';
+    if (confirmed && it.kind === 'add' && addedTo.has(`${it.sk}|${it.field}`)) { it.resolved = { action: 'dropped', why: 'to pole uzupełniono już w tym przebiegu (ta sama propozycja z kontroli i z polecenia)' }; stats.dropped++; continue; }
     if (confirmed && it.kind === 'add') {
       const zd = noDash(String(r.zdanie ?? '').trim());
       const tgt = it.sk ? trip.content.stops?.[it.sk] : trip.content.city;
       if (zd.length > 10 && tgt) {
         const before = tgt[it.field] ?? null;
+        addedTo.add(`${it.sk}|${it.field}`);
         tgt[it.field] = before && String(before).trim() ? `${String(before).trim().replace(/([^.!?])$/, '$1.')} ${zd}` : zd;
         addSource(trip, it.sk, src.url); notes.push({ stop_key: it.sk, field: 'f', note: `Źródło (${it.field}): ${src.url} — „${String(r.cytat).slice(0, 200)}”` });
         changes.push({ path: `content.${label}.${it.field}`, before, after: tgt[it.field], why: `source-check: dodane po potwierdzeniu w źródle ${src.url}`, auto: true });
@@ -378,25 +382,36 @@ ${JSON.stringify(payload)}`;
     it.resolved = { action: 'dropped', why: 'drobny fakt bez źródła, fragmentu nie znaleziono w tekście — bez zmian', checked: (it.g?.found ?? []).map(s => s.url).slice(0, 6) }; stats.dropped++;
   }
 
-  // 5) uwagi: w pełni rozstrzygnięte → rv.resolved; z faktem kluczowym bez źródła → zostają (z opcjami); polecenie → nowe pytania tylko przy fakcie kluczowym
+  // 5) uwagi: rozstrzygnięte zostają na liście ostrzeżeń z polem `resolved` (panel: szara flaga „rozstrzygnięte automatycznie”, bez pytania),
+  //    rozstrzygnięty błąd przechodzi do ostrzeżeń (nie blokuje); fakt kluczowy bez źródła zostaje pytaniem z opcjami i rekomendacją
+  const WHAT = { source_added: 'źródło dopisane', added: 'dodane po potwierdzeniu w źródle', softened: 'złagodzone według źródła', removed: 'usunięte (brak źródła)', dropped: 'porzucone (brak źródła)', multi: 'rozstrzygnięte automatycznie' };
+  const withWhat = (r) => ({ ...r, what: `${WHAT[r.action] ?? r.action}${r.action === 'multi' ? `: ${r.items.map(x => WHAT[x.action] ?? x.action).join(', ')}` : ''}` });
   const byIssue = new Map();
   for (const it of items) if (it.from) { const k = `${it.from.list}:${it.from.idx}`; if (!byIssue.has(k)) byIssue.set(k, []); byIssue.get(k).push(it); }
-  const drop = { errors: new Set(), warnings: new Set() };
+  const moved = new Set(), add = [];
   for (const [k, its] of byIssue) {
     const [list, idx] = k.split(':'); const e = rv[list][+idx];
     const res = its.filter(x => x.resolved).map(x => ({ fact: x.fact, ...x.resolved }));
     const jp = its.filter(x => x.toJp);
-    if (!jp.length) { drop[list].add(+idx); resolvedOut.push({ ...e, from: list, resolved: res.length === 1 ? res[0] : { action: 'multi', items: res } }); continue; }
+    if (!jp.length) {
+      const r = withWhat(res.length === 1 ? res[0] : { action: 'multi', items: res, url: res.find(x => x.url)?.url ?? null });
+      if (list === 'errors') { moved.add(+idx); add.push({ ...e, resolved: r }); } else rv[list][+idx] = { ...e, resolved: r };
+      resolvedOut.push({ stop_key: e.stop_key ?? null, problem: e.problem, resolved: r });
+      continue;
+    }
     rv[list][+idx] = { ...e, problem: jp.map(x => x.toJp.problem).join(' · '), options: jp[0].toJp.options, recommend: jp[0].toJp.recommend, source_check: true,
-      ...(res.length ? { resolved_part: res } : {}) };
+      ...(res.length ? { resolved_part: res.map(withWhat) } : {}) };
   }
-  for (const it of items) if (!it.from) { if (it.toJp) (rv.warnings ??= []).push(it.toJp); else resolvedOut.push({ stop_key: it.sk, problem: `Polecenie: ${String(it.fact).slice(0, 200)}`, from: 'polecenie', resolved: it.resolved }); }
-  for (const list of ['errors', 'warnings']) if (rv[list]) rv[list] = rv[list].filter((_, i) => !drop[list].has(i));
-  rv.resolved = [...(rv.resolved ?? []), ...resolvedOut];
+  if (moved.size) rv.errors = rv.errors.filter((_, i) => !moved.has(i));
+  rv.warnings = [...(rv.warnings ?? []), ...add];
+  for (const it of items) if (!it.from) {
+    if (it.toJp) (rv.warnings ??= []).push(it.toJp);
+    else { const w = { stop_key: it.sk, problem: `Do sprawdzenia: ${String(it.fact).slice(0, 200)}`, resolved: withWhat(it.resolved) }; rv.warnings.push(w); resolvedOut.push(w); }
+  }
   rv.source_check = { at: new Date().toISOString(), ...stats };
   if (rv.verdict && !(rv.errors ?? []).length) rv.verdict = 'ok';
   log(`source-check: potwierdzone ${stats.confirmed} (kodem ${stats.by_code}), złagodzone ${stats.softened}, usunięte ${stats.removed}, dodane ${stats.added}, porzucone ${stats.dropped}, do JP ${stats.to_jp} · AI: ${stats.ai_calls}`);
-  return { changes, stats, review: rv };
+  return { changes, stats, review: rv, resolved: resolvedOut };
 }
 function addSource(trip, sk, url) {
   if (!sk || !url) return;

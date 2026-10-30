@@ -23,6 +23,7 @@ import './review-where.mjs';   // uwagi z kontroli przy polach: rozbicie zbiorcz
 const RW = globalThis.ReviewWhere;
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { triageErrors, gateErrors } from './jev.mjs';
+import { sourceCheck } from './source-check.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
 import { whoIs, namesFromProblem } from './kimbyl.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
@@ -34,7 +35,8 @@ const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : un
 const REVISE = argv.includes('--revise'), RECHECK = argv.includes('--recheck');
 let name = opt('--name') ?? (REVISE || RECHECK ? slug : undefined);
 const region = opt('--region') ?? (REVISE || RECHECK ? '-' : undefined), country = opt('--country') ?? 'it';
-const duration = opt('--duration') ?? 'half_day', brief = opt('--brief') ?? '', channel = opt('--notify');
+const duration = opt('--duration') ?? 'half_day', brief = opt('--brief') ?? '';
+let channel = opt('--notify');
 const FRESH = argv.includes('--fresh'), CHECK = !argv.includes('--no-check');
 if (!slug || !/^[a-z0-9-]+$/.test(slug) || !name || !region || (REVISE && !opt('--comments'))) {
   console.error('Użycie: gemini-draft.mjs <slug> --revise --comments uwagi.json [--context plik] [--notify kanał]\n   albo: gemini-draft.mjs <slug> --name "Nazwa" --region <region_slug> [--country it] [--duration half_day|full_day] [--brief "…"] [--notify kanał] [--fresh] [--no-check]');
@@ -534,6 +536,7 @@ async function main() {
     writeFileSync(fRv2, JSON.stringify(rv, null, 2));
   }
 
+  const sc = await sourceCheckStep(trip, blocks, rv, SC_FACTS);
   log(`${slug}: ⑤ zapis wersji`);
   // _notes.field: baza przyjmuje tylko a–g (a dane, b opis, c misja, d wskazówka, e lokalny smak, f źródła, g uwaga) — Gemini podaje nazwy pól
   const NOTE_FIELD = { desc_paragraphs: 'b', desc: 'b', kids_box: 'c', quest: 'c', photo_task: 'c', hint: 'd', local_flavor: 'e', sources: 'f', source: 'f' };
@@ -546,7 +549,7 @@ async function main() {
     field: /^[a-g]$/.test(n.field) ? n.field : NOTE_FIELD[n.field] ?? (/hour|price|cost|ztl|phone|website|time|rating|reserv|lat|lon|maps/i.test(n.field ?? '') ? 'a' : 'g') }));
   // bez „—” i „–” (JP 2026-10-25) — mechanicznie, w całej treści i w blokach
   trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
-  const saved = await saveDraft(q, trip, { note: `nowe wytyczne (Gemini ${MODEL})${brief ? ': ' + brief.slice(0, 120) : ''}`, source: 'draft', changes: [], review: rv });
+  const saved = await saveDraft(q, trip, { note: `nowe wytyczne (Gemini ${MODEL})${brief ? ': ' + brief.slice(0, 120) : ''}`, source: 'draft', changes: sc.changes ?? [], review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`,
     [slug, saved.version, MODEL, JSON.stringify(blocks)]);
@@ -734,6 +737,15 @@ ${JSON.stringify(items)}`, 'dopytanie');
 
 // ── ④c pętla poprawek po kontroli całej trasy: poprawki → kontrola, dopóki są błędy i ich liczba spada (najwyżej MAX_ROUNDS) ──
 const MAX_ROUNDS = +(opt('--rounds') ?? 1);   // JP 2026-10-25: jedna runda poprawek, potem próg i do JP
+// ── ④d source-check (JP 2026-10-30): uwagi „fakt bez źródła / dodaj po potwierdzeniu” rozstrzyga pipeline, zanim pokaże je JP ──
+// --facts '[{"fact":"…","stop":"…","kind":"verify|add|soften","urls":["…"],"note":"…"}]' (JSON albo ścieżka pliku): konkretne fakty z polecenia.
+// --no-source-check: bez tego kroku. Szczegóły: source-check.mjs.
+const SC_FACTS = (() => { const v = opt('--facts'); if (!v) return []; try { return JSON.parse(existsSync(v) ? readFileSync(v, 'utf8') : v); } catch (e) { rawLog(`--facts: niepoprawny JSON (${e.message})`); return []; } })();
+async function sourceCheckStep(trip, blocks, rv, facts = []) {
+  if (!rv || argv.includes('--no-source-check')) return { changes: [], stats: null };
+  try { const r = await sourceCheck({ trip, blocks, review: rv, workDir: dir, facts, log, deps: { stopWikidata } }); return r; }
+  catch (e) { log(`${slug}: source-check nie przeszedł (${e.message.slice(0, 160)}) — uwagi zostają bez zmian`); return { changes: [], stats: null }; }
+}
 async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
   const first = rv, history = [{ round: 0, errors: rv?.errors?.length ?? 0, facts: rv?.facts ?? null }];
   for (let round = 1; round <= MAX_ROUNDS && rv?.errors?.length; round++) {
@@ -782,10 +794,21 @@ async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
 
 // ── ponowna kontrola i poprawki istniejącego szkicu nowego procesu (--recheck), np. po zmianie wytycznych ──
 async function recheckMain() {
-  const from = opt('--from') ? +String(opt('--from')).replace(/\D/g, '') : null;   // --from 8: start od wskazanej wersji (np. najlepszej v5c)
-  const [cur] = from ? await q(`SELECT version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, from])
-    : await q(`SELECT version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
-  if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu`);
+  // --from 8: numer wersji; --from v3d: etykieta (content.label); --from-id 75: id wiersza city_versions (z etykietą — sprawdzenie zgodności)
+  const fromLabel = /^v\d+[a-z]?$/.test(opt('--from') ?? '') ? opt('--from') : null, fromId = opt('--from-id') ? +opt('--from-id') : null;
+  const from = opt('--from') && !fromLabel ? +String(opt('--from')).replace(/\D/g, '') : null;
+  const COLS = 'version, trip, content, review';
+  let cur = null;
+  if (fromId) {
+    [cur] = await q(`SELECT ${COLS} FROM public.city_versions WHERE city_slug = $1 AND id = $2`, [slug, fromId]).catch(e => { log(`${slug}: --from-id ${fromId}: ${e.message.slice(0, 120)}`); return []; });
+    if (cur && fromLabel && cur.content?.label !== fromLabel) { log(`${slug}: id ${fromId} to ${cur.content?.label ?? 'v' + cur.version}, nie ${fromLabel} — biorę ${fromLabel} po etykiecie`); cur = null; }
+    if (!cur && !fromLabel) throw new Error(`${slug}: nie ma wersji o id ${fromId}`);
+  }
+  if (!cur && fromLabel) [cur] = await q(`SELECT ${COLS} FROM public.city_versions WHERE city_slug = $1 AND content->>'label' = $2 ORDER BY version DESC LIMIT 1`, [slug, fromLabel]);
+  else if (!cur && from) [cur] = await q(`SELECT ${COLS} FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, from]);
+  else if (!cur && !fromId) [cur] = await q(`SELECT ${COLS} FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu${fromLabel ? ` ${fromLabel}` : ''}`);
+  if (!channel) channel = (await q('SELECT discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(() => []))[0]?.discord_thread_id ?? null;
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle; STOPS_N = trip.meta.stops.length;
@@ -827,6 +850,7 @@ async function recheckMain() {
     rv.verdict = rv.errors.length ? 'fix' : 'ok';
     log(`${slug}: bez nowej kontroli — poprawione ${res.size}, do ostrzeżeń ${soft.size}, zostaje ${rv.errors.length}`);
   } else try { await pinCheck(trip).catch(() => {}); fixSchedule(trip); rv = await fullReview(slug, trip); } catch (e) { throw new Error(`kontrola trasy nie przeszła: ${e.message.slice(0, 200)}`); }
+  const sc0 = await sourceCheckStep(trip, blocks, rv, SC_FACTS); patchChanges.push(...(sc0.changes ?? []));
   // każda runda = podwersja szkicu: v5 → v5a, v5b, v5c (JP 2026-10-25). Numer w bazie rośnie jak zwykle, etykieta w content.label.
   const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)[1];
   const gl = await guidelinesVersion();
@@ -835,6 +859,7 @@ async function recheckMain() {
     const [n] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
     label = `v${base}${String.fromCharCode(97 + n.n)}`;
     log(`${slug}: ⑤ zapis ${label} (runda ${round})`);
+    if (round > 0) { const scr = await sourceCheckStep(trip, blocks, rvr); ap.changes = [...(ap.changes ?? []), ...(scr.changes ?? [])]; }
     const t = { meta: trip.meta, content: noDash(trip.content) };
     for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
     saved = await saveDraft(q, t, { note: round === 0 ? `${label}: poprawki ręczne i kontrola całej trasy (błędy ${rvr.errors?.length ?? 0})` : `${label}: poprawki po kontroli całej trasy, runda ${round} (błędy ${rvr.rounds.map(x => x.errors).join(' → ')})`, source: 'revise', changes: ap.changes ?? [], review: rvr });
@@ -844,7 +869,7 @@ async function recheckMain() {
   };
   const [c0] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
   rv = await fixLoop(trip, blocks, cityTitle, rv, null, saveRound, (round) => `v${base}${String.fromCharCode(96 + c0.n + round)}`);
-  if (!saved && (PATCH || opt('--set'))) await saveRound(0, rv, { changes: patchChanges });   // same poprawki ręczne, bez rund
+  if (!saved && (PATCH || opt('--set') || patchChanges.length || sc0.stats?.issues)) await saveRound(0, rv, { changes: patchChanges });   // poprawki ręczne / source-check, bez rund
   if (!saved) { await notify(channel, `✅ ${cityTitle}: kontrola całej trasy v${base} bez błędów — nic do poprawy.`); return; }
   const path = rv.rounds.map(x => x.errors).join(' → ');
   event(`gotowe: szkic ${label} · wytyczne ${gl ?? '?'} · błędy ${path}`, { stage: 7, status: 'done' });
@@ -991,6 +1016,7 @@ async function reviseMain() {
   const base = String(cur.content?.label ?? `v${cur.version}`).match(/^v(\d+)/)?.[1] ?? String(cur.version);
   const [nl] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
   const label = `v${base}${String.fromCharCode(97 + nl.n)}`;
+  { const scv = await sourceCheckStep(trip, blocks, rv); changes.push(...(scv.changes ?? [])); }
   const saved = await saveDraft(q, trip, { note: `${label}: poprawki JP (${comments.length} uwag${answered.size ? `, w tym ${answered.size} odpowiedzi na pytania z kontroli` : ''})`, source: 'revise', changes, review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks), label]);
