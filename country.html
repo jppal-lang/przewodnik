@@ -19,7 +19,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://quolino.com/media/og/quolino.jpg">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=39">
+<link rel="stylesheet" href="styles.css?v=40">
 <script src="/lang-pick.js?v=2"></script>
 <script src="i18n-ui.js?v=8"></script>
 <script src="/speed.js?v=1"></script>
@@ -84,9 +84,23 @@
   <nav class="crumbs band" id="crumbs" aria-label="Breadcrumb" data-ui-aria="nav.breadcrumb"></nav>
 
   <!-- Country content -->
-  <div id="pageContent">
-    <div class="state-msg">&#8230;</div>
+  <!-- grupa A 2026-10-30: szkielet „puste miejsca na naklejki” (jak P-2 w region.html) — pas kraju, miejsce na mapę i 2 sloty regionów; dane podmieniają go w buildCountry -->
+  <div id="pageContent" aria-busy="true">
+    <div class="region-hero band page-band">
+      <h1 class="region-name" id="skelName">&nbsp;</h1>
+      <div class="region-meta region-meta--skel" aria-hidden="true"><span>&nbsp;</span><span>&nbsp;</span></div>
+    </div>
+    <div class="atlas-host" aria-hidden="true">
+      <div class="atlas atlas--solo atlas--skel">
+        <div class="atlas-map is-solo"></div>
+        <div class="atlas-index"><section class="atlas-country"><div class="atlas-regions">
+          <div class="atlas-region atlas-region--soon"><span class="atlas-region__no">01</span><span class="atlas-region__art"></span><span class="atlas-region__txt"><span class="atlas-region__name">&nbsp;</span><span class="atlas-region__meta">&nbsp;</span></span></div>
+          <div class="atlas-region atlas-region--soon"><span class="atlas-region__no">02</span><span class="atlas-region__art"></span><span class="atlas-region__txt"><span class="atlas-region__name">&nbsp;</span><span class="atlas-region__meta">&nbsp;</span></span></div>
+        </div></section></div>
+      </div>
+    </div>
   </div>
+  <script>(function () { var q = window.QPAGE && QPAGE.kind === 'country' && QPAGE.name; var n = document.getElementById('skelName'); if (n && q) n.textContent = String(q); })();</script>
 
   <div class="footer">
     <img class="footer__quo" src="/media/icons/quo-stopka-256.webp" srcset="/media/icons/quo-stopka-256.webp 1x, /media/icons/quo-stopka-512.webp 2x" width="112" height="112" alt="" decoding="async" loading="lazy">
@@ -231,6 +245,7 @@ function loadPage(lang) {
 }
 
 function fail(msg) {
+  document.getElementById('pageContent').removeAttribute('aria-busy');
   document.getElementById('pageContent').innerHTML =
     '<div class="state-msg">' + esc(msg) + '<br><br><a href="/">' + esc(ui('nav.home', 'Strona główna')) + '</a></div>';
 }
@@ -268,6 +283,7 @@ function buildCrumbs(continent, countryName) {
 function buildCountry(country, countryName, allRegions, regionTrs, allCities,
                       countries, countryTrs) {
   var el = document.getElementById('pageContent');
+  el.removeAttribute('aria-busy');
   var html = '';
 
   // miasta pogrupowane po regionie (juz posortowane sort_order)
