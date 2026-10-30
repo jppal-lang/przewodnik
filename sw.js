@@ -3,19 +3,18 @@
    Zakres: cała strona (/). Zero ciasteczek, zero trackingu.
    - HTML, JS, CSS, manifest: najpierw sieć (świeża wersja po wdrożeniu), z pamięci tylko bez sieci
      albo gdy sieć nie odpowiada 6 s i mamy zapisaną kopię.
-   - Zdjęcia i ikony (/media/…, flagi, czcionki): najpierw z pamięci, w tle odświeżane z sieci.
+   - Zdjęcia i ikony (/media/…, flagi i czcionki — wszystko lokalne): najpierw z pamięci, w tle odświeżane z sieci.
    - API (api.quolino.com) NIE przechodzi przez SW: odpowiedzi RPC (POST) zapisuje strona w IndexedDB (offline.js).
    - Strona może poprosić o zapis listy adresów: postMessage({type:'cache', urls:[…]}) — tak trafiają do pamięci
      pliki pobrane przy pierwszym wejściu (zanim SW przejął stronę) i zdjęcia przystanków, których jeszcze nie widać.
    Nowe wydanie, które zmienia zasady zapisu: podbij V (stare pamięci znikają przy aktywacji).
    ===================================================================== */
 'use strict';
-var V = 'v1';
+var V = 'v2';   // v2 (grupa A 2026-10-30): bez CDN — czcionki i flagi są lokalne, stare wpisy z flagcdn/Google Fonts wylatują
 var STATIC = 'quolino-static-' + V;
 var IMG = 'quolino-img-' + V;
 var IMG_MAX = 500;                 // najwięcej zdjęć w pamięci (najstarsze wylatują)
 var NET_TIMEOUT = 6000;            // słaby zasięg: po tylu ms bierzemy kopię, jeśli jest
-var CDN = ['fonts.googleapis.com', 'fonts.gstatic.com', 'flagcdn.com'];
 
 self.addEventListener('install', function () { self.skipWaiting(); });
 
@@ -38,8 +37,7 @@ function kind(url, req) {
     if (/\.(webp|png|jpe?g|gif|svg|ico|avif|woff2?)$/.test(p)) return 'img';
     return null;                                                                            // film, inne
   }
-  if (CDN.indexOf(url.hostname) > -1) return url.hostname === 'fonts.googleapis.com' ? 'static' : 'img';
-  return null;
+  return null;   // obce domeny (API, CDN) — bez SW
 }
 // strona: jeden wpis na ścieżkę (zapytanie ?c=/?view=/?kt= czyta skrypt strony, HTML jest ten sam; token nie trafia do pamięci)
 function pageKey(url) { return url.origin + url.pathname; }

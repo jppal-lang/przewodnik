@@ -432,7 +432,7 @@ function cacheTripMedia() {
       if (u) urls.push(new URL(u, location.href).href);
     });
   });
-  urls = urls.filter(function(u) { return u.indexOf(location.origin + '/') === 0 || /^https:\/\/flagcdn\.com\//.test(u); });
+  urls = urls.filter(function(u) { return u.indexOf(location.origin + '/') === 0; });   // flagi i czcionki są lokalne
   window.QOffline.cacheUrls(urls);
 }
 window.addEventListener('online', function() { if (offlineShown) { offlineShown = 0; loadPage(currentLang); } });
