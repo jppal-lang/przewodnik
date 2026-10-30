@@ -5,7 +5,8 @@
 //   node ops-status.mjs            — zapis do bazy
 //   node ops-status.mjs --print    — tylko wypisz (bez zapisu)
 // Klucze: jobs (zlecenia z repo + końcówki logów), versions (wersje tras, bez treści), queue (ops.jobs, limit Antigravity, zużycie AI 24 h),
-// deploy (ostatni komunikat deploy.sh z work/deployed.txt + HEAD repo), cron (kiedy przebiegła kolejka, blokady).
+// deploy (ostatni komunikat deploy.sh z work/deployed.txt + HEAD repo), cron (kiedy przebiegła kolejka, blokady),
+// watch (strażnicy: otwarte ustalenia per rodzaj, 10 najnowszych bez cytatów i notatek, stan przebiegów z work/watch-state.json).
 // Bezpieczeństwo: ŻADNYCH zmiennych środowiskowych; każdy napis przechodzi przez scrub() (tokeny, JWT, e-maile, IP, URL z hasłem,
 // parametry ?token=…), każdy klucz ma limit rozmiaru (razem < 200 KB). Funkcje czyste są eksportowane i mają testy (ops-status.test.mjs).
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -82,7 +83,7 @@ export function fit(obj, maxBytes) {
   }
   return o;
 }
-export const LIMITS = { jobs: 80_000, versions: 30_000, queue: 50_000, deploy: 15_000, cron: 10_000 };   // razem < 200 KB
+export const LIMITS = { jobs: 80_000, versions: 30_000, queue: 50_000, deploy: 15_000, cron: 10_000, watch: 15_000 };   // razem < 200 KB
 
 // ── zbieranie ─────────────────────────────────────────────────────────────────
 const readJson = (f) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return null; } };
@@ -135,6 +136,28 @@ async function queueSnapshot(q, lib) {
   };
 }
 
+// strażnicy (watch.mjs): liczniki otwartych ustaleń per rodzaj + 10 najnowszych (bez cytatów, notatek JP i szczegółów) + stan przebiegów
+export function watchStateSummary(st) {
+  if (!st) return null;
+  return { last: st.last ?? {}, cursor: st.cursor ?? {}, channel_missing: st.channel_missing ?? null, chromium: st.chromium ?? null };
+}
+async function watchSnapshot(q) {
+  const [{ t } = {}] = await q(`SELECT to_regclass('ops.watch_findings') IS NOT NULL AS t`);
+  const state = watchStateSummary(readJson(join(WORK, 'watch-state.json')));
+  if (!t) return { ready: false, state };
+  return {
+    ready: true,
+    open_by_kind: await q(`SELECT kind, count(*) FILTER (WHERE status = 'open')::int AS open, count(*) FILTER (WHERE status = 'recheck')::int AS recheck,
+                                  count(*) FILTER (WHERE status = 'accepted' AND apply_state = 'pending')::int AS to_apply,
+                                  count(*) FILTER (WHERE apply_state = 'failed')::int AS apply_failed
+                             FROM ops.watch_findings WHERE status IN ('open', 'recheck', 'accepted') OR apply_state = 'failed' GROUP BY 1 ORDER BY 1`),
+    newest: await q(`SELECT id::int AS id, kind, city_slug, stop_key, left(title, 160) AS title, status, apply_state, left(coalesce(apply_result, ''), 160) AS apply_result,
+                            ends_at::text AS ends_at, recheck_at, seen_count, created_at, updated_at
+                       FROM ops.watch_findings ORDER BY created_at DESC LIMIT 10`),
+    state,
+  };
+}
+
 async function deploySnapshot() {
   const txt = (() => { try { return readFileSync(join(WORK, 'deployed.txt'), 'utf8').trim(); } catch { return null; } })();
   let head = null, sql = null;
@@ -155,6 +178,7 @@ function cronSnapshot(extra = {}) {
   return {
     last_run: new Date().toISOString(), trigger: extra.trigger ?? 'manual',
     gemini_queue_lock: lockInfo(join(WORK, 'gemini-queue.lock')), repo_jobs_lock: lockInfo(join(WORK, 'repo-jobs.lock')),
+    watch_lock: lockInfo(join(WORK, 'watch.lock')),
     files: { costs_jsonl: mtime(join(WORK, 'costs.jsonl')), repo_jobs_json: mtime(join(WORK, 'repo-jobs.json')), agy_quota: mtime(join(WORK, 'agy-quota.json')) },
   };
 }
@@ -167,6 +191,7 @@ export async function collect({ q, lib, trigger } = {}) {
     queue: q ? await safe(() => queueSnapshot(q, lib)) : { błąd: 'brak bazy' },
     deploy: await safe(() => deploySnapshot()),
     cron: cronSnapshot({ trigger }),
+    watch: q ? await safe(() => watchSnapshot(q)) : { błąd: 'brak bazy' },
   };
   return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, fit(scrubDeep(v), LIMITS[k])]));
 }

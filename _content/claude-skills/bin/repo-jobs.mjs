@@ -34,6 +34,9 @@ export const ALLOWED = {
   // ponowienie tłumaczenia opublikowanej trasy (te same kontrole jakości co w kolejce; bez --dry/--job z zewnątrz)
   // kandydaci zdjęć do ikon miejsc (tylko odczyt Commons + plik JSON w repo): dokładnie jeden argument — slug trasy
   'place-candidates.mjs': (a) => a.length === 1 && /^[a-z0-9][a-z0-9-]{0,62}$/.test(a[0]),
+  // strażnicy aktualności tras (JP 2026-10-30): jeden strażnik na żądanie, zawsze bez AI (0 kosztów); opcjonalnie --city <slug> i --dry
+  'watch.mjs': (a) => a.includes('--no-ai') && /^(prices|closures|track|recheck|links|venues|season|site|costs|apply)$/.test(a[0] ?? '') &&
+    a.slice(1).every((x, i, r) => x === '--no-ai' || x === '--dry' || x === '--city' || (r[i - 1] === '--city' && /^[a-z0-9][a-z0-9-]{0,62}$/.test(x))),
   'trip-translate.mjs': (a) => /^[a-z0-9-]+$/.test(a[0] ?? '') && a.slice(1).every((x, i, r) => x === '--fresh' || x === '--langs' || (r[i - 1] === '--langs' && /^[a-z]{2}(,[a-z]{2})*$/.test(x))),
 };
 // Skrypty, które wydają pieniądze albo limit AI (OpenRouter, Claude, Gemini). JP 2026-10-30: „dbaj o moje środki”.

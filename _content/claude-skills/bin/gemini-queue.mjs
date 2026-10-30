@@ -34,6 +34,8 @@ const AGY_BUDGET = +(process.env.QUOLINO_AGY_WEEKLY_CALLS ?? 150);
 }
 // zlecenia z repo (_content/jobs/*.json, repo-jobs.mjs): jednorazowe zadania z białej listy, bez konsoli JP (JP 2026-10-30) — także w dzień
 try { const { runRepoJobs } = await import('./repo-jobs.mjs'); await runRepoJobs({ log }); } catch (e) { log(`zlecenia z repo: ${String(e.message).slice(0, 160)}`); }
+// strażnicy aktualności tras (watch.mjs, JP 2026-10-30): decyzje JP → szkic, potem najwyżej jeden zaległy strażnik (limit czasu w ustawieniach); własna blokada
+try { const { runWatch } = await import('./watch.mjs'); await runWatch({ log }); } catch (e) { log(`strażnicy: ${String(e.message).slice(0, 160)}`); }
 // podgląd stanu dla Claude (ops-status.mjs → ops.status_snapshot → rpc/ops_status): każdy przebieg crona, także w dzień i przy zajętej kolejce
 const opsStatus = async (trigger) => { try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger, log }); } catch (e) { log(`ops-status: ${String(e.message).slice(0, 160)}`); } };
 await opsStatus('gemini-queue');

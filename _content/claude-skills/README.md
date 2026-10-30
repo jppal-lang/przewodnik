@@ -16,6 +16,8 @@
 | `bin/trip-approve.mjs` | decyzja JP: publikacja (+ zlecenie tłumaczenia) albo odrzucenie szkicu |
 | `bin/draft-lib.mjs` | operacje na szkicu (ścieżki pól), zapis wersji, powiadomienia w wątku Discorda |
 | `sql/trip-drafts.sql` | `trip_draft_save` (szkic bez ruszania strony), `draft_preview` (podgląd z kluczem), historia zmian |
+| `bin/watch.mjs`, `bin/watch-lib.mjs` | strażnicy aktualności tras (ceny/godziny, zamknięcia z cyklem życia, linki, lokale, sezon, strona, koszty AI) → `ops.watch_findings` → skrzynka decyzji; przyjęte propozycje → nowa wersja szkicu kodem. Wołane z `gemini-queue.mjs`; `node watch.mjs status` — harmonogram; testy `watch.test.mjs` |
+| `sql/2026-10-30-straznicy.sql` | `ops.watch_findings`, `admin.admin_watch_decide` (accept / reject / recheck; opcja w notatce „opcja 2”), ustawienia `watch_*` i `ai_alert_day_usd` |
 | `install.sh` | kopiuje to do kontenera Hermesa (`~/.claude/skills`, `/opt/data/quolino`) |
 
 Na VPS (kontener Hermesa):
