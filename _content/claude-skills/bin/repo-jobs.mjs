@@ -30,8 +30,20 @@ export const ALLOWED = {
   'place-candidates.mjs': (a) => a.length === 1 && /^[a-z0-9][a-z0-9-]{0,62}$/.test(a[0]),
   'trip-translate.mjs': (a) => /^[a-z0-9-]+$/.test(a[0] ?? '') && a.slice(1).every((x, i, r) => x === '--fresh' || x === '--langs' || (r[i - 1] === '--langs' && /^[a-z]{2}(,[a-z]{2})*$/.test(x))),
 };
+// Skrypty, które wydają pieniądze albo limit AI (OpenRouter, Claude, Gemini). JP 2026-10-30: „dbaj o moje środki”.
+// Zlecenie takiego skryptu musi nieść zgodę JP: pole jp_ok = { date: 'RRRR-MM-DD', quote: 'dosłowne słowa JP z czatu' },
+// nie starszą niż 3 dni. Bez tego serwer odrzuca zlecenie (status rejected), zanim cokolwiek wyda.
+export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs']);
+export function jpOkError(job, now = Date.now()) {
+  const ok = job?.jp_ok;
+  if (!ok || typeof ok !== 'object' || typeof ok.quote !== 'string' || ok.quote.trim().length < 2 || !/^\d{4}-\d{2}-\d{2}$/.test(ok.date ?? '')) return 'brak zgody JP (jp_ok {date, quote}) dla zlecenia, które kosztuje';
+  const age = (now - Date.parse(ok.date + 'T00:00:00Z')) / 86_400_000;
+  if (!(age >= -1 && age <= 3)) return 'zgoda JP starsza niż 3 dni';
+  return null;
+}
 export function validateJob(job) {
   if (!job || typeof job !== 'object') return 'zlecenie nie jest obiektem JSON';
+  if (COSTLY.has(job.script)) { const e = jpOkError(job); if (e) return e; }
   if (!Object.hasOwn(ALLOWED, job.script)) return `skrypt spoza białej listy: ${job.script}`;
   if (!Array.isArray(job.args) || job.args.some(x => typeof x !== 'string' || x.length > 20_000 || /[\0\n\r]/.test(x))) return 'args: lista napisów bez znaków nowej linii';
   if (job.args.some(x => /^--(notify-all|exec|eval)$/.test(x))) return 'niedozwolony argument';
