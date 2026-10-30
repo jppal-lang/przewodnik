@@ -83,37 +83,83 @@ autodetekcja `navigator.language` → zapis `questini_lang` → DOM swap po
 
 ## 6. POSTĘP UŻYTKOWNIKA / localStorage (jedyne dozwolone klucze)
 
-Stan z kodu na 2026-10-13. Nowy klucz = wpis tutaj ORAZ na stronie `cookie-policy.html`.
+Stan z kodu na **2026-10-30** (grep `localStorage` / `sessionStorage` / `indexedDB` w `*.js`, `*.html`, `gra/`, `offline.js`, `sw.js`;
+porównane z `cookie-policy.html` li05–li59). Nowy klucz = wpis tutaj ORAZ na stronie `cookie-policy.html`.
+Wszystko zostaje na urządzeniu; „usuwa” = kod sam czyści klucz, inaczej klucz żyje do wyczyszczenia danych przeglądarki.
 
-| Klucz                             | Cel                                                         |
-|-----------------------------------|-------------------------------------------------------------|
-| `quolino_lang`                    | wybrany język                                               |
-| `qc.task.<klucz zadania>`         | odhaczone misje i zadania foto (album naklejek, `city.html`)|
-| `quolino_missions:<miasto>`       | ukończone misje (starsze strony, `kids-view.js`)            |
-| `quolino_family`, `quolino_active_player` | pseudonimy graczy (starsze strony, bez wieku i zdjęć) |
-| `quolino_album:<strona>:<nr>`     | zdjęcia użytkownika, tylko na urządzeniu                    |
-| `quolino_client`                  | losowy numer przeglądarki przy wysyłaniu oceny (`opinion.js`)|
-| `quolino_rated_<miasto>`          | wycieczka już oceniona                                      |
-| `qc.session`                     | sesja zalogowanego rodzica (token + odświeżanie, `auth.js`); usuwa wylogowanie |
-| `quolino_nostats`                 | `1` = statystyki wyłączone (JP, testerzy); `?nostats=1/0` w adresie przełącza |
-| `quolino_migrated`, `quolino_migration_expiry` | jednorazowa migracja z `questini_*` (`migrate-storage.js`) |
-| `qc.pager.<slug>`                 | ostatni przystanek w widoku mobilnym wycieczki (pager ≤767 px, `trip-ui.js`) |
-| `qc.kid.avatar`                   | awatar dziecka na dziś `{date,pose,color,nick}` (`kid-reward.js`) |
-| `qc.kid.nicks`                    | zapisane nicki dzieci, max 8 (bez imion i wieku)            |
-| `qc.album`                        | zdobyte miejsca na tym urządzeniu (zapis po ostatniej misji; czyta `konto.html`) |
-| `qc.parent.shared`                | lista slugów udostępnionych wycieczek (wyzwanie 5 → 5%, `konto.html`) |
-| `qc.parent.codes`                 | wpisane kody `QUO-XXXX-XXXX` (na razie tylko podgląd, `konto.html`) |
-| `qc.parent.news`                  | zgoda na newsletter (`konto.html`)                          |
-| `qc.access`                       | klucz dostępu do pełnych wycieczek z linku `?k=` (`i18n-ui.js`; zapis i usunięcie z adresu; czyta `city.html` → RPC `trip_full`) |
-| `quolino_game_treasure_pending`   | gra → panel rodzica: skarby Quo czekające na zamianę na kupon, `[{trip, at}]` (zapisuje `gra/treasure.js`, gdy nie ma sesji albo serwer odmówił; `konto.html` po zalogowaniu woła `claim_game_treasure` i czyści wpisy; zostają przy `not_yet`, limicie i błędzie sieci) |
-| `quolino_game_treasure`           | gra: skarby już znalezione na tym urządzeniu `{<trip>: {at, level}}` — jeden na wycieczkę |
-| `quolino_game_demo`               | gra: przełącznik „Tryb demo: symuluj punkty z trasy” |
-| `quolino_game_diff`               | gra: ostatnio wybrany poziom (`easy` / `medium` / `hard`) |
-| `quolino_game_<wycieczka>`        | gra: rekordy i liczba rozgrywek per poziom, np. `quolino_game_frasassi` |
-| `quolino_game_hats`, `quolino_game_hat` | gra: zdobyte czapki Quo i aktualnie założona |
-| `quolino_game_photos`             | gra: zdjęcia z gry (JPEG ok. 30 KB, max 4 na wycieczkę), tylko na urządzeniu |
-| `adm.outbox`                      | panel admina: uwagi do szkiców, których API jeszcze nie przyjęło (`_admin/`, nie strona publiczna) |
-| sessionStorage `quolino_kidmode`  | widok dziecka na czas sesji                                 |
+### 6.1 localStorage — strona publiczna
+
+| Klucz | Gdzie (zapis → odczyt) | Co trzyma | Kiedy usuwany |
+|---|---|---|---|
+| `quolino_lang` | `lang-pick.js`, `i18n-ui.js`, strony (`index`, `country`, `region`, `city`) | kod wybranego języka | nigdy (nadpisywany) |
+| `qc.task.<klucz>` | `city.html` → `gra/game.js` (punkty z trasy) | `'1'`/`'0'` misja / zadanie foto odhaczone (`<qcKey>-mission`, `<qcKey>-photo`) | nigdy (odznaczenie zapisuje `'0'`) |
+| `qc.pager.<slug>` | `trip-ui.js` | numer ostatniego przystanku w pagerze ≤767 px | nigdy (nadpisywany) |
+| `qc.session` | `auth.js` (czyta też `gra/treasure.js`) | sesja rodzica: token, token odświeżania, `at` | wylogowanie / nieudane odświeżenie |
+| `qc.access` | `i18n-ui.js` (`QAccess`) → `city.html` (RPC `trip_full`) | klucz dostępu z linku `?k=` | `QAccess.clear()` / pusty klucz |
+| `qc.kid.avatar` | `kid-reward.js`, `kid-play.js` | awatar dziecka na dzień — kształt w §6.4 | nadpisywany następnego dnia (stary wpis ignorowany, gdy `date ≠ dziś`) |
+| `qc.kid.nicks` | `kid-reward.js` → `konto.html` | lista ksywek, max 8 (bez imion i wieku) | nigdy (przycinana do 8) |
+| `qc.kid.sound` | `kid-sound.js` | `'1'`/`'0'` dźwięki w widoku dziecka (domyślnie wyłączone) | nigdy |
+| `qc.album` | `kid-reward.js` (`saveAlbum`), `trip-tools.js` (notatka „Przy kolacji”) → `konto.html` | zdobyte miasta — kształt w §6.4 | nigdy (wpisy nadpisywane per `slug`; szkic notatki usuwa wyczyszczenie notatki) |
+| `qc.wakelock` | `trip-tools.js` (I-1) | `'1'`/`'0'` „Nie wygaszaj ekranu na trasie” | nigdy (nadpisywany) |
+| `qc.daymode.<slug>` | `trip-tools.js` | `{m, d}` — tryb dnia „Upał”/„Deszcz” i data wyboru (ważny dziś i jutro) | powrót do trybu zwykłego usuwa klucz; po terminie ignorowany |
+| `qc.parent.shared` | `konto.html` | lista slugów udostępnionych wycieczek (wyzwanie 5 → 5%) | nigdy |
+| `qc.parent.codes` | `konto.html` | wpisane kody `QUO-XXXX-XXXX` (na razie podgląd) | nigdy |
+| `qc.parent.news` | `konto.html` | zgoda na newsletter | odznaczenie |
+| `quolino_client` | `opinion.js`, `report-issue.js` | losowy identyfikator przeglądarki przy ocenie (jeden głos z urządzenia) | nigdy |
+| `quolino_rated_<miasto>` | `opinion.js` | wycieczka już oceniona (wartość = ocena) | nigdy |
+| `quolino_nostats` | `stats.js` (`?nostats=1/0`) | `'1'` = statystyki wyłączone (JP, testerzy) | `?nostats=0` |
+| `quolino_missions:<miasto>` | `kids-view.js` (stare strony `/wlochy/`) | ukończone misje | nigdy |
+| `quolino_family`, `quolino_active_player` | `kids-view.js` (stare strony) | pseudonimy graczy i aktywny gracz (bez wieku i zdjęć) | nigdy |
+| `quolino_album:<strona>:<nr>` | stare strony `/wlochy/` (`app.js`) | zdjęcia użytkownika | nigdy (tylko na urządzeniu) |
+| `quolino_migrated`, `quolino_migration_expiry` | `migrate-storage.js` | jednorazowa migracja z `questini_*` | `quolino_migration_expiry` usuwany po terminie |
+
+### 6.2 localStorage — gra „Quo: Wyprawa” (`gra/`, prefiks `quolino_game_`)
+
+| Klucz | Gdzie | Co trzyma | Kiedy usuwany |
+|---|---|---|---|
+| `quolino_game_<trasa>` | `game.js` (`loadRecord`) | rekordy i liczba rozgrywek per poziom, np. `quolino_game_frasassi` | nigdy |
+| `quolino_game_save_<trasa>` | `game.js` (`saveKey`) | `{ <poziom>: { v, n, sec, playNo, gameT, hearts, power, stats, secs, hid } }` — zapis „Graj dalej” | ukończenie trasy / „Zacznij od nowa” (`clearSave`; pusty obiekt = klucz usunięty) |
+| `quolino_game_diff` | `game.js` | ostatni poziom (`easy` / `medium` / `hard`) | nigdy |
+| `quolino_game_demo` | `game.js` | `'1'`/`'0'` „Tryb demo” — czytany tylko z `?test=1` | nigdy |
+| `quolino_game_hats[_<trasa>]`, `quolino_game_hat[_<trasa>]` | `game.js` (`hatSuffix`: bez przyrostka dla Frasassi) | zdobyte przebrania Quo i założone | nigdy |
+| `quolino_game_photos` | `game.js` | zdjęcia z gry (JPEG ok. 30 KB, max 4 na trasę) | nadpisywane (limit) |
+| `quolino_game_haptics` | `haptic.js` (P-7) | `'0'` = wibracje wyłączone (brak/`'1'` = włączone) | nigdy |
+| `quolino_game_treasure` | `gra/treasure.js` | znalezione skarby `{<trasa>: {at, level}}` — jeden na wycieczkę | nigdy |
+| `quolino_game_treasure_pending` | `gra/treasure.js` → `konto.html` | skarby czekające na kupon `[{trip, at}]` (brak sesji / serwer odmówił) | po `claim_game_treasure` w `konto.html`; zostają przy `not_yet`, limicie i błędzie sieci |
+
+### 6.3 sessionStorage, IndexedDB, Cache API
+
+| Klucz / magazyn | Gdzie | Co trzyma | Kiedy usuwany |
+|---|---|---|---|
+| sessionStorage `quolino_kidmode` | `kids-view.js` (stare strony) | widok dziecka na czas sesji | zamknięcie karty |
+| sessionStorage `qc.pt` | `city.html` | `{slug, t}` — token planu z linku od drugiego rodzica (≤ 3 dni) | zamknięcie karty; od razu, gdy serwer odrzuci token |
+| sessionStorage `qc.kt` | `city.html` | `{slug, t}` — token widoku dziecka z QR (odświeżenie strony dalej działa) | zamknięcie karty |
+| IndexedDB `quolino-offline`, magazyn `trips` | `offline.js` (`QOffline.save/load`) | ostatnio otwarta wersja trasy (odpowiedź RPC), max 12 tras | najstarsze wypadają powyżej 12 |
+| Cache API `quolino-static-<V>`, `quolino-img-<V>` | `sw.js` | pliki strony (HTML/JS/CSS) i obrazki (max 500) — tylko własna domena | przy nowym `V` w `sw.js` (aktywacja kasuje stare); obrazki ponad limit |
+
+Panel admina (`_admin/`, nie strona publiczna, poza `cookie-policy.html`): `adm.outbox` (uwagi do szkiców, których API jeszcze nie przyjęło),
+`adm.filters` (stan filtrów), `adm.fb` (filtry zgłoszeń: `src`, `cat`, `pri`, `open`), `adm.costMode` (widok kosztów).
+
+### 6.4 Kształt `qc.kid.avatar` i `qc.album` (2026-10-30)
+
+```js
+// qc.kid.avatar — jeden obiekt, ważny w dniu `date` (kid-reward.js pick(); wieczorem można wybrać na jutro: date = jutro)
+{ date: 'RRRR-MM-DD', pose: 0-7, color: 0-7, nick: '', small: false,       // pierwsze dziecko; small = „Tryb maluch”
+  team: [ { pose, color, nick, small }, … ],                                 // tylko rodzeństwo na jednym telefonie (≥ 2 dzieci)
+  turn: 0,                                                                   // indeks w team: „Teraz szuka” (kid-play.js)
+  oaths: ['<slug>', …] }                                                     // I-8: trasy z „Obietnicą odkrywcy” złożoną tego dnia
+
+// qc.album — tablica wpisów, jeden na slug
+[ { slug, city, country, region, hero, pieces, date: 'RRRR-MM-DD', first: 'RRRR-MM-DD',   // zdobyte miasto (saveAlbum, po ostatniej misji)
+    nick, pose, color,                                                       // awatar dziecka z dnia zdobycia
+    oath: 'RRRR-MM-DD',                                                      // opcjonalnie: odznaka obietnicy (konto.html: złota plakietka „Odkrywca · data”)
+    note: '…', note_date: 'RRRR-MM-DD' },                                    // opcjonalnie: notatka „Przy kolacji” (≤ 600 znaków)
+  { slug, pending: true, note, note_date } ]                                 // szkic notatki przed ukończeniem trasy — konto.html go nie pokazuje;
+                                                                             // saveAlbum przenosi notatkę do wpisu. Stare from:'dinner' = szkic.
+```
+
+Brakuje na `cookie-policy.html` (do dopisania przez rolę, która prowadzi tę stronę): `quolino_game_haptics`,
+sessionStorage `qc.kt` i `quolino_kidmode`, przyrostek `_<trasa>` przy `quolino_game_hats` / `quolino_game_hat`.
 
 Punkty dziecka: `punkty = round((ukończone_misje / misje_w_planie) * 10)`, max 10.
 
@@ -126,7 +172,7 @@ Dane nie opuszczają urządzenia (poza dobrowolnymi ocenami/zgłoszeniami).
 ## 7. COOKIE POLICY
 
 cookie-policy.html (PL; pozostałe języki później): zero trackerów i reklam, lista kluczy z §6, statystyki Umami bez ciasteczek
-i bez zapisu IP, zewnętrzne zasoby (Google Fonts, flagcdn). Bez baneru zgody (nic, co wymagałoby zgody). Link w stopce stron.
+i bez zapisu IP; czcionki i flagi lokalnie (bez Google Fonts i flagcdn — od 2026-10-30 także w `sw.js`). Bez baneru zgody (nic, co wymagałoby zgody). Link w stopce stron.
 
 ---
 
