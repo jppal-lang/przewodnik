@@ -3,7 +3,9 @@
 // Źródło prawdy: 2 prawdziwe zdjęcia z Wikimedia Commons (NIGDY z ludźmi) → NOWA ilustracja w stylu ilustracji hero Quolino,
 // zawsze złota godzina, sam obiekt na przezroczystym tle, metadane „© Quolino (quolino.com)”. Zasady: docs/IKONY-MIEJSC.md.
 //   node place-icons.mjs refs <trasa> [--stop key] [--force] [--again] [--dry]   zdjęcia referencyjne (Wikidata + Commons, wybór: Claude)
-//   node place-icons.mjs gen <trasa> [--only k1,k2] [--next] [--force]           generowanie (Antigravity) → #ikony-miejsc: 2 zdjęcia + ikona
+//   node place-icons.mjs gen <trasa> [--only k1,k2] [--next] [--force] [--no-wait] generowanie (Antigravity) → #ikony-miejsc: 2 zdjęcia + ikona
+// Wybór zdjęć przez JP w panelu admina (ops.icon_refs, kandydaci z place-candidates.mjs) ma pierwszeństwo przed automatem — także przy --force.
+// Przystanek z kandydatami bez wyboru JP i bez „automatu” czeka do 48 h od wygenerowania kandydatów (--no-wait: automat od razu).
 //   node place-icons.mjs fix <trasa> <N> "uwagi"                                    poprawka z uwagami JP (przy wyczerpanym limicie: czeka w kolejce)
 //   node place-icons.mjs ok <trasa> <N>                                             publikacja WebP 64/128/256/512 + media/icons/place-sources.json
 //   node place-icons.mjs status [trasa]
@@ -15,7 +17,7 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { env, log, run, aiUsage, claude, extractJson, db, agyQuotaOut, agyQuotaHit, agyWeekCalls } from './lib.mjs';
 import { ensureChannel, notify } from './draft-lib.mjs';
-import { qidOf, qidByName, entity } from './wikidata.mjs';
+import { fileInfos, download, gatherCandidates } from './place-icons-commons.mjs';
 import CFG from './place-icons-data.mjs';
 import * as L from './place-icons-lib.mjs';
 
@@ -25,7 +27,6 @@ const STYLE = join(REPO, L.STYLE_REF);
 const SOURCES = join(REPO, 'media/icons/place-sources.json');
 const TOKEN = env('DISCORD_BOT_TOKEN');
 const CHAN = ['ikony-miejsc', 'Grafiki'];
-const UA = { 'User-Agent': 'QuolinoBot/1.0 (quolino.com; place icons)' };
 const argv = process.argv.slice(2);
 const [cmd = 'status', a1, a2, a3] = argv;
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : null; };
@@ -77,56 +78,7 @@ async function ensureTrip(trip, { requireV2 = false } = {}) {
   return stops;
 }
 
-// ── Wikimedia Commons ─────────────────────────────────────────────────────────────────────────
-const API = 'https://commons.wikimedia.org/w/api.php';
-async function getJson(url) {
-  // Commons ogranicza tempo (429) — czekamy wg Retry-After, do 5 prób; między zapytaniami stała przerwa (grzeczny robot)
-  let last = '';
-  for (let i = 0; i < 5; i++) {
-    await sleep(700);
-    const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(30_000) }).catch((e) => { last = e.cause?.code ?? e.message; return null; });
-    if (r?.ok) return r.json();
-    if (r) last = `HTTP ${r.status}`;
-    if (r && r.status !== 429 && r.status < 500) throw new Error(`Commons ${r.status}: ${url.slice(0, 160)}`);
-    const ra = +(r?.headers?.get('retry-after') ?? 0);
-    await sleep(Math.max(ra * 1000, 8000 * (i + 1)));
-  }
-  throw new Error(`Commons niedostępne (${last}): ${url.slice(0, 160)}`);
-}
-const api = (p) => getJson(`${API}?${new URLSearchParams({ format: 'json', formatversion: '2', ...p })}`);
-const II = (width) => ({ prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: String(width), iiextmetadatalanguage: 'en',
-  iiextmetadatafilter: 'Artist|Credit|LicenseShortName|UsageTerms|LicenseUrl|ImageDescription|Categories|DateTimeOriginal' });
-async function fileInfos(titles, source, width = 960) {
-  const out = [];
-  for (let i = 0; i < titles.length; i += 20) {
-    const j = await api({ action: 'query', titles: titles.slice(i, i + 20).join('|'), ...II(width) });
-    for (const pg of j.query?.pages ?? []) { const c = L.normPage(pg, source); if (c) out.push(c); }
-  }
-  return out;
-}
-async function catMembers(cat, type, limit) {
-  const j = await api({ action: 'query', list: 'categorymembers', cmtitle: `Category:${cat}`, cmtype: type, cmlimit: String(limit) });
-  return (j.query?.categorymembers ?? []).map(m => m.title);
-}
-async function searchTitles(q, ns, limit) {
-  const j = await api({ action: 'query', list: 'search', srsearch: q, srnamespace: String(ns), srlimit: String(limit) });
-  return (j.query?.search ?? []).map(s => s.title);
-}
-// kategoria Commons po nazwie, gdy Wikidata jej nie ma: pierwsza, która zawiera istotne słowo z nazwy przystanku
-async function findCategory(stop) {
-  const words = String(stop.name_it || stop.name).toLowerCase().split(/[\s,'’()-]+/).filter(w => w.length >= 4 && w !== String(stop.city).toLowerCase());
-  for (const t of await searchTitles(`${stop.name_it || stop.name} ${stop.city}`, 14, 8)) if (words.some(w => t.toLowerCase().includes(w))) return t.replace(/^Category:/, '');
-  return null;
-}
-async function download(url, dest) {
-  for (let i = 0; i < 3; i++) {
-    const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(60_000) }).catch(() => null);
-    if (r?.ok && /^image\//.test(r.headers.get('content-type') ?? '')) { writeFileSync(dest, Buffer.from(await r.arrayBuffer())); return dest; }
-    if (r && r.status !== 429 && r.status < 500) throw new Error(`pobieranie ${r.status}: ${url}`);
-    await sleep(5000 * (i + 1));
-  }
-  throw new Error(`pobieranie nieudane: ${url}`);
-}
+// ── Wikimedia Commons: place-icons-commons.mjs (wspólne z place-candidates.mjs) ──────────────
 
 // ── Python: JPEG referencji, PNG, wycięcie tła + metadane, WebP ───────────────────────────────
 const PY = `
@@ -220,37 +172,23 @@ elif m == 'png': Image.open(job['src']).convert('RGBA').save(job['dst'], 'PNG')
 const py = (job) => run('python3', ['-c', PY, JSON.stringify(job)], { timeout: 300_000 });
 
 // ── 1. zdjęcia referencyjne ───────────────────────────────────────────────────────────────────
-async function findRefs(trip, stop, { again = false, dry = false } = {}) {
+async function findRefs(trip, stop, { again = false, dry = false, jpFiles = null } = {}) {
   const dir = L.stopDir(WORK, trip, stop.key), refsF = join(dir, 'refs.json');
   mkdirSync(dir, { recursive: true });
   const ov = CFG.stops?.[L.sourcesKey(trip, stop.key)] ?? {};
   const prev = readJson(refsF);
   const done = (rec) => { if (!dry) { writeFileSync(refsF, JSON.stringify({ trip, stop_key: stop.key, n: stop.n, name: stop.name, at: new Date().toISOString(), ...rec }, null, 1)); patchStop(trip, stop.key, s => { s.refs = rec.status; if (rec.status !== 'ok' && !s.v) s.status = rec.status; }); } return rec; };
+  if (jpFiles?.length) return jpRefs(trip, stop, jpFiles, { dir, done, view: L.viewMode({ category: stop.category, texts: stop.texts, override: ov.view }) });
   if (ov.skip) return done({ status: 'skip' });
   const rejected = [...new Set([...(prev?.rejected ?? []), ...(again ? (prev?.picked ?? []).map(p => p.title) : [])])];
-  const view = L.viewMode({ category: stop.category, texts: stop.texts, override: ov.view });
-  const names = [stop.name, stop.name_it, stop.name_en, stop.city].filter(Boolean);
-  let cands = [], qid = null, cat = ov.commonsCategory ?? null;
+  let cands = [], qid = null, cat = ov.commonsCategory ?? null, view = L.viewMode({ category: stop.category, texts: stop.texts, override: ov.view });
+  let names = [stop.name, stop.name_it, stop.name_en, stop.city].filter(Boolean);
   const manual = Array.isArray(ov.files) && ov.files.length === 2;
   if (manual) cands = await fileInfos(ov.files, 'manual');
-  else {
-    qid = (await qidOf(stop.wiki_article, stop.wiki_lang || 'it').catch(() => null))
-      ?? (stop.lat != null ? await qidByName(stop.name_it || stop.name, { lat: +stop.lat, lon: +stop.lon }, 'it').catch(() => null) : null);
-    const e = qid ? await entity(qid).catch(() => null) : null;
-    const p18 = (e?.claims?.P18 ?? []).map(c => c.mainsnak?.datavalue?.value).filter(Boolean).map(f => `File:${f}`);
-    const sl = e?.sitelinks?.commonswiki?.title;
-    cat ??= e?.claims?.P373?.[0]?.mainsnak?.datavalue?.value ?? (sl?.startsWith('Category:') ? sl.slice(9) : null) ?? await findCategory(stop).catch(() => null);
-    if (p18.length) cands.push(...await fileInfos(p18, 'p18'));
-    if (cat) {
-      cands.push(...await fileInfos(await catMembers(cat, 'file', 50), 'cat'));
-      const subs = (await catMembers(cat, 'subcat', 30)).filter(n => L.subcatOk(n, { names, view })).slice(0, 6);
-      for (const sc of subs) cands.push(...await fileInfos(await catMembers(sc.replace(/^Category:/, ''), 'file', 15), 'subcat'));
-    }
-    const q = ov.search ?? `${stop.name_it || stop.name} ${stop.city}`;
-    cands.push(...await fileInfos(await searchTitles(`${q} filetype:bitmap`, 6, 30), 'search'));
-  }
+  else ({ cands, qid, cat, view, names } = await gatherCandidates(stop, ov));
   const { kept, dropped } = manual ? { kept: cands.map(c => ({ ...c, score: 10 })), dropped: [] } : L.rankCandidates(cands, { names, view, exclude: rejected });
-  const top = kept.slice(0, CFG.candidates ?? 12);
+  for (const c of kept.filter(c => !L.licenseOk(c.license))) dropped.push({ title: c.title, reason: `licencja „${c.license}”` });
+  const top = kept.filter(c => L.licenseOk(c.license)).slice(0, CFG.candidates ?? 12);
   log(`${trip}/${stop.key}: Wikidata ${qid ?? '—'}, kategoria ${cat ?? '—'}, widok ${view}; kandydatów ${cands.length}, odrzuconych ${dropped.length}, do wyboru ${top.length}`);
   const base = { qid, commons_category: cat, view, rejected, dropped: dropped.slice(0, 60), candidates: top.map(c => ({ title: c.title, score: c.score, source: c.source })) };
   if (dry) { for (const c of top) console.log(`  ${String(c.score).padStart(5)} ${c.source.padEnd(6)} ${c.width}×${c.height} ${c.title}`); for (const d of dropped.slice(0, 40)) console.log(`   ✗ ${d.reason}: ${d.title}`); return base; }
@@ -281,18 +219,42 @@ async function findRefs(trip, stop, { again = false, dry = false } = {}) {
     }
     if (!pick) return done({ status: 'none', ...base, reasons: `Claude nie wybrał poprawnie: ${lastErr}` });
   }
-  // wybrane w 1280 px → ref-1.jpg, ref-2.jpg
-  const big = await fileInfos(pick.map(i => files[i].title), files[pick[0]].source, 1280);
+  const picked = await saveRefs(dir, pick.map(i => files[i]));
+  return done({ status: 'ok', ...base, picked, reasons, selection: manual ? 'data' : 'auto' });
+}
+// wybrane zdjęcia w 1280 px → ref-1.jpg (ref-2.jpg); stary ref-2.jpg znika, gdy JP wybrał jedno zdjęcie
+async function saveRefs(dir, chosen) {
+  const big = await fileInfos(chosen.map(c => c.title), chosen[0].source, 1280);
   const picked = [];
-  for (const [k, i] of pick.entries()) {
-    const c = big.find(b => b.title === files[i].title) ?? files[i];
+  for (const [k, f] of chosen.entries()) {
+    const c = big.find(b => b.title === f.title) ?? f;
     const src = await download(c.thumb, join(dir, `ref-${k + 1}.src`));
     const r = await py({ mode: 'jpeg', src, dst: join(dir, `ref-${k + 1}.jpg`) });
     if (r.code !== 0) throw new Error(`JPEG: ${r.err.slice(-300)}`);
     unlinkSync(src);
-    picked.push({ title: c.title, page: c.page, url: c.url, author: c.author, license: c.license, license_url: c.license_url, width: c.width, height: c.height, source: files[i].source });
+    picked.push({ title: c.title, page: c.page, url: c.url, author: c.author, license: c.license, license_url: c.license_url, width: c.width, height: c.height, source: f.source });
   }
-  return done({ status: 'ok', ...base, picked, reasons });
+  if (chosen.length < 2) try { unlinkSync(join(dir, 'ref-2.jpg')); } catch { /* nie było */ }
+  return picked;
+}
+// wybór JP z panelu admina (ops.icon_refs): 1–2 pliki; nadal sprawdzamy licencję i format (autor i licencja idą do refs.json → place-sources.json)
+async function jpRefs(trip, stop, titles, { dir, done, view }) {
+  const infos = await fileInfos(titles, 'jp');
+  const ok = [], bad = [];
+  for (const t of titles) {
+    const c = infos.find(i => i.title === t || i.title.replace(/ /g, '_') === t.replace(/ /g, '_'));
+    if (!c) { bad.push(`${t}: nie ma na Commons`); continue; }
+    if (!/^image\/(jpeg|png|webp|tiff)$/.test(c.mime)) { bad.push(`${t}: format ${c.mime}`); continue; }
+    if (!L.licenseOk(c.license)) { bad.push(`${t}: licencja „${c.license}”`); continue; }
+    const ppl = L.peopleHit(`${c.title} ${c.description} ${c.categories}`, [stop.name, stop.name_it, stop.city]);
+    if (ppl) log(`${trip}/${stop.key}: UWAGA — opis zdjęcia wybranego przez JP wspomina „${ppl}” (${t}); JP widział zdjęcie, zostawiam`);
+    ok.push(c);
+  }
+  for (const b of bad) log(`${trip}/${stop.key}: wybór JP odrzucony — ${b}`);
+  if (!ok.length) return { status: 'jp-invalid', reasons: bad.join('; ') };   // refs.json bez zmian; wołający przechodzi na automat
+  const picked = await saveRefs(dir, ok);
+  log(`${trip}/${stop.key}: referencje z wyboru JP — ${picked.map(p => p.title).join(' + ')}`);
+  return done({ status: 'ok', view, picked, selection: 'jp', jp_files: titles, reasons: `wybór JP w panelu admina${bad.length ? ` (odrzucone: ${bad.join('; ')})` : ''}` });
 }
 
 // ── 2. generowanie (Antigravity, AI Pro) ──────────────────────────────────────────────────────
@@ -341,15 +303,18 @@ const isQuota = (e) => e instanceof QuotaError || QUOTA_RE.test(String(e?.messag
 async function one(trip, key, notes = null) {
   globalThis.__aiCity = trip;
   const stop = stopMeta(trip, key); if (!stop) throw new Error(`${trip}/${key}: brak stop.json — najpierw: refs ${trip}`);
-  const dir = L.stopDir(WORK, trip, key), refs = readJson(join(dir, 'refs.json'));
+  const dir = L.stopDir(WORK, trip, key);
+  await ensureRefs(trip, key, { noWait: true });   // wybór JP w panelu (ops.icon_refs) ma pierwszeństwo — także przy poprawkach i --force
+  const refs = readJson(join(dir, 'refs.json'));
   if (refs?.status !== 'ok') throw new Error(`${trip}/${key}: brak zdjęć referencyjnych (refs: ${refs?.status ?? 'nie było'})`);
   if (!existsSync(STYLE)) throw new Error(`brak obrazu stylu ${STYLE} (sh repo.sh pull)`);
   const s = loadState(trip).stops[key] ?? {};
   const prev = s.v ? join(dir, L.outName(s.v)) : null;
-  const photos = [join(dir, 'ref-1.jpg'), join(dir, 'ref-2.jpg')];
+  const photos = [join(dir, 'ref-1.jpg'), join(dir, 'ref-2.jpg')].slice(0, Math.max(1, Math.min(2, refs.picked?.length ?? 2))).filter(existsSync);
+  if (!photos.length) throw new Error(`${trip}/${key}: brak pliku ref-1.jpg`);
   const withPrev = !!(notes && prev && existsSync(prev));
   const max = +(env('PLACE_ICONS_MAX_REFS') ?? 4);   // gdyby Antigravity nie przyjmował 4 obrazów: PLACE_ICONS_MAX_REFS=3 (poprawka bez 2. zdjęcia)
-  const usePhotos = photos.slice(0, Math.max(1, Math.min(2, max - 1 - (withPrev ? 1 : 0))));
+  const usePhotos = photos.slice(0, Math.max(1, Math.min(photos.length, max - 1 - (withPrev ? 1 : 0))));
   const images = [...usePhotos, STYLE, ...(withPrev ? [prev] : [])];
   const labels = [...usePhotos.map((_, i) => `photo ${i + 1} of the real place, architecture reference only`), 'the style reference', ...(withPrev ? ['the previous attempt'] : [])];
   const v = (s.v ?? 0) + 1;
@@ -365,8 +330,8 @@ async function one(trip, key, notes = null) {
   const warn = info.bg !== 'alpha' && info.transparent != null && info.transparent < 0.08 ? `tło prawie się nie wycięło (${Math.round(info.transparent * 100)}% przezroczyste, tło ${info.bg}) — pewnie nie było jednolite` : null;
   const now = new Date().toISOString();
   patchStop(trip, key, x => { x.v = v; x.status = 'review'; x.pending_notes = null; x.errors = 0; x.posted_at = now; (x.history ??= []).push({ v, at: now, notes, cut: info }); });
-  const id = await upload(L.caption(stop, trip, refs.picked, { v, notes, warn }), [
-    [photos[0], `${stop.n}-ref-1.jpg`], [photos[1], `${stop.n}-ref-2.jpg`], [f, `${stop.n}-${key}-v${v}.png`]]);
+  const id = await upload(L.caption(stop, trip, refs.picked, { v, notes, warn: [warn, refs.selection === 'jp' ? 'zdjęcia wybrał JP w panelu' : null].filter(Boolean).join(' · ') || null }), [
+    ...photos.map((p, i) => [p, `${stop.n}-ref-${i + 1}.jpg`]), [f, `${stop.n}-${key}-v${v}.png`]]);
   if (id) patchStop(trip, key, x => { x.msgs = [...(x.msgs ?? []), id].slice(-20); });
   return f;
 }
@@ -431,13 +396,42 @@ function todo(trip, { only = null, force = false } = {}) {
   return Object.entries(st.stops).filter(([k, s]) => only ? only.includes(k) || only.includes(String(s.n)) : (force || (!s.v && !['ok', 'none', 'skip'].includes(s.status) && (s.errors ?? 0) < 2)))
     .sort((a, b) => a[1].n - b[1].n).map(([k]) => k);
 }
-async function ensureRefs(trip, key) {
+// ── wybór referencji przez JP w panelu admina (JP 2026-10-30) ─────────────────────────────────
+// ops.icon_refs (trip, stop_key, mode 'pick'|'auto', files) — zapis: admin.admin_icon_refs_set (SQL 2026-10-30-icon-refs.sql).
+// Kandydaci: work/place-icons/<trasa>/candidates.json albo media/icons/place-candidates/<trasa>.json (place-candidates.mjs).
+// Bezpiecznik: przystanek z kandydatami bez wyboru i bez „automatu” czeka na JP najwyżej L.WAIT_HOURS (48 h) od wygenerowania kandydatów.
+let selCache = null;
+async function selections(trip) {
+  selCache ??= {};
+  if (selCache[trip] !== undefined) return selCache[trip];
+  let c;
+  try {
+    c = await db();
+    const { rows } = await c.query(`SELECT stop_key, mode, files FROM ops.icon_refs WHERE trip = $1`, [trip]);
+    selCache[trip] = Object.fromEntries(rows.map(r => [r.stop_key, { mode: r.mode, files: r.files }]));
+  } catch (e) { log(`${trip}: wybór zdjęć z panelu niedostępny (${String(e.message).slice(0, 120)}) — liczę jak „brak wyboru”`); selCache[trip] = {}; }
+  finally { try { await c?.end(); } catch {} }
+  return selCache[trip];
+}
+const candidatesOf = (trip) => readJson(join(WORK, trip, 'candidates.json')) ?? readJson(join(REPO, L.candidatesPath(trip)));
+async function gateOf(trip, key) { return L.iconGate({ sel: (await selections(trip))[key] ?? null, cand: candidatesOf(trip), key }); }
+// true = są referencje; false = brak dobrych zdjęć; 'wait' = czeka na wybór JP (noWait: jawna komenda JP — bez czekania, automat)
+async function ensureRefs(trip, key, { noWait = false } = {}) {
+  const g = await gateOf(trip, key);
+  if (g.wait && !noWait && !flag('--no-wait')) return 'wait';
   const r = readJson(join(L.stopDir(WORK, trip, key), 'refs.json'));
-  if (r?.status === 'ok') return true;
-  if (r && !flag('--force')) return false;   // „none” / „skip” — nie szukamy w kółko
-  const x = await findRefs(trip, stopMeta(trip, key));
+  if (g.use === 'pick') {
+    if (r?.status === 'ok' && r.selection === 'jp' && L.sameFiles(r.jp_files, g.files)) return true;
+    const x = await findRefs(trip, stopMeta(trip, key), { jpFiles: g.files });
+    if (x.status === 'ok') return true;
+    log(`${trip}/${key}: wybór JP nieużywalny (${x.reasons}) — automat`);
+  }
+  if (r?.status === 'ok' && r.selection !== 'jp') return true;
+  if (r && r.status !== 'ok' && !flag('--force')) return false;   // „none” / „skip” — nie szukamy w kółko
+  const x = await findRefs(trip, stopMeta(trip, key));             // brak referencji albo JP przełączył z wyboru na automat
   return x.status === 'ok';
 }
+const waitMsg = async (trip, key) => { const g = await gateOf(trip, key); return g.wait ? `czeka na wybór zdjęć JP w panelu admina (najpóźniej do ${g.until.slice(0, 16).replace('T', ' ')} UTC, potem automat)` : ''; };
 async function cmdGen(trip) {
   if (agyQuotaOut()) { console.error(`STOP: ${quotaMsg(agyQuotaOut())}. Generowanie wznowi: node place-icons.mjs queue (cron).`); process.exitCode = 1; return; }
   if (!lock()) { console.error('STOP: inny proces generuje teraz ikony (work/place-icons/agy.lock) — spróbuj za chwilę.'); process.exitCode = 1; return; }
@@ -448,7 +442,9 @@ async function cmdGen(trip) {
   for (const key of list) {
     if (n <= 0) break;
     try {
-      if (!await ensureRefs(trip, key)) { log(`${trip}/${key}: brak dobrych zdjęć — pomijam`); continue; }
+      const ok = await ensureRefs(trip, key);
+      if (ok === 'wait') { log(`${trip}/${key}: ${await waitMsg(trip, key)} — pomijam (--no-wait wymusza automat)`); continue; }
+      if (!ok) { log(`${trip}/${key}: brak dobrych zdjęć — pomijam`); continue; }
       await one(trip, key); n--;
     } catch (e) { if (await onGenError(trip, key, e) === 'quota') { process.exitCode = 1; break; } n--; }
   }
@@ -471,6 +467,7 @@ async function cmdFix(trip, n, notes) {
 async function cmdRefsAgain(trip, n) {   // „3 inne zdjęcia” → nowe referencje (bez dotychczasowych) i nowa wersja
   const key = keyOf(trip, n);
   await ensureTrip(trip).catch(() => null);
+  if ((await gateOf(trip, key)).use === 'pick') { await say(`ℹ️ ${trip} #${n}: zdjęcia tego przystanku wybrałeś w panelu admina (karta przystanku, „Referencja do ikony Quo”) — zmień tam wybór albo kliknij „Automat”.`); return; }
   const x = await findRefs(trip, stopMeta(trip, key), { again: true });
   if (x.status !== 'ok') { await say(`⚠️ ${trip} #${n}: nie ma innych zdjęć bez ludzi (${x.reasons ?? x.status}). Można wskazać pliki ręcznie w place-icons-data.mjs (files).`); return; }
   if (agyQuotaOut() || !lock()) {
@@ -514,6 +511,13 @@ async function cmdQueue() {
       try { stops = await ensureTrip(t.slug, { requireV2: !t.force }); } catch (e) { log(`${t.slug}: ${e.message}`); continue; }
       if (!stops) { log(`${t.slug}: brak opublikowanej wersji nowego procesu (workflow v2) — pomijam (force: true w place-icons-data.mjs wymusza)`); continue; }
     }
+    // JP wybrał w panelu inne zdjęcia dla ikony, która czeka na ocenę → nowa wersja z tymi zdjęciami (zaakceptowanych nie ruszamy)
+    for (const [key, s] of Object.entries(loadState(t.slug).stops)) {
+      if (!s.v || !['review', 'fix-pending'].includes(s.status) || s.pending_notes) continue;
+      const g = await gateOf(t.slug, key), r = readJson(join(L.stopDir(WORK, t.slug, key), 'refs.json'));
+      if (g.use === 'pick' && !(r?.selection === 'jp' && L.sameFiles(r.jp_files, g.files)))
+        patchStop(t.slug, key, x => { x.pending_notes = 'nowe zdjęcia referencyjne'; x.status = 'fix-pending'; });
+    }
     // najpierw poprawki czekające na limit
     for (const [key, s] of Object.entries(loadState(t.slug).stops).filter(([, s]) => s.pending_notes && (s.errors ?? 0) < 2).sort((a, b) => a[1].n - b[1].n)) {
       if (budget <= 0) break outer;
@@ -526,7 +530,9 @@ async function cmdQueue() {
       if (budget <= 0) break outer;
       if (waiting >= maxPending) { log(`${t.slug}: ${waiting} ikon czeka na ocenę JP — nie generuję na zapas`); break; }
       try {
-        if (!await ensureRefs(t.slug, key)) { log(`${t.slug}/${key}: brak dobrych zdjęć (refs.json) — pomijam`); continue; }
+        const ok = await ensureRefs(t.slug, key);
+        if (ok === 'wait') { log(`${t.slug}/${key}: ${await waitMsg(t.slug, key)} — pomijam`); continue; }
+        if (!ok) { log(`${t.slug}/${key}: brak dobrych zdjęć (refs.json) — pomijam`); continue; }
         await one(t.slug, key); budget--; waiting++;
       } catch (e) { budget--; if (await onGenError(t.slug, key, e) === 'quota') break outer; }
     }
@@ -588,7 +594,7 @@ function cmdStatus(trip) {
   for (const [t, st] of Object.entries(states)) {
     console.log(`\n${t} (wersja ${st.version ?? '?'}${st.workflow ? ', ' + st.workflow : ''})`);
     for (const [k, s] of Object.entries(st.stops).sort((a, b) => a[1].n - b[1].n))
-      console.log(`  ${String(s.n).padStart(2)} ${k.padEnd(28)} ${String(s.status ?? '').padEnd(12)} ${s.v ? 'v' + s.v : '  '} zdjęcia: ${s.refs ?? '—'}${s.pending_notes ? ` · czeka poprawka: ${s.pending_notes.slice(0, 60)}` : ''}${s.last_error && s.status !== 'ok' ? ` · błąd: ${s.last_error.slice(0, 80)}` : ''}  ${s.name ?? ''}`);
+      console.log(`  ${String(s.n).padStart(2)} ${k.padEnd(28)} ${String(s.status ?? '').padEnd(12)} ${s.v ? 'v' + s.v : '  '} zdjęcia: ${s.refs ?? '—'}${readJson(join(L.stopDir(WORK, t, k), 'refs.json'))?.selection === 'jp' ? ' (wybór JP)' : ''}${s.pending_notes ? ` · czeka poprawka: ${s.pending_notes.slice(0, 60)}` : ''}${s.last_error && s.status !== 'ok' ? ` · błąd: ${s.last_error.slice(0, 80)}` : ''}  ${s.name ?? ''}`);
   }
 }
 

@@ -294,3 +294,10 @@ COMMIT;
 Do ustalenia przez Backend: pipeline Hermesa i `import_city` mają zapisywać wyniki
 jako `draft` (to już jest na liście w `docs/BACKEND.md`) — wtedy trafiają do tej kolejki
 same.
+
+### Referencja do ikony Quo (2026-10-30) — `docs/IKONY-MIEJSC.md` §6
+
+- `GET ../media/icons/place-candidates/<trasa>.json` — kandydaci zdjęć z Commons (plik w repo, robi go `bin/place-candidates.mjs`).
+- `GET /api/icon_refs?trip=eq.<trasa>` — wybór JP (`stop_key`, `mode` = `pick` | `auto`, `files`).
+- `POST /api/rpc/admin_icon_refs_set` — `{ p_trip, p_stop_key, p_files }`: 1–2 tytuły `File:…` = wybór, `[]` = automat, `null` = brak decyzji.
+  SQL: `_content/claude-skills/sql/2026-10-30-icon-refs.sql`. Tryb demo: przykładowi kandydaci z lokalnych obrazów.

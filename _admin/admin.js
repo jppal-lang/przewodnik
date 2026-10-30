@@ -93,6 +93,7 @@
           body: 'Zachód słońca w październiku ok. 18:30 — przesuń na 17:45.', status: 'seen', hermes_reply: null, created_at: '2026-10-16T09:02:00Z' }
       ];
       demoMore(d);
+      d.iconRefs = d.iconRefs || [{ trip: 'spello', stop_key: 'porta-consolare', mode: 'pick', files: ['File:Porta Consolare (Spello) 2.jpg'], updated_at: '2026-10-30T09:00:00Z' }];
       state.demo = d; return d;
     });
     return load.then(function (d) {
@@ -115,6 +116,17 @@
         var n = 0;
         d.comments.forEach(function (c) { if (c.city_slug === opts.body.p_slug && c.status === 'new') { c.status = 'sent'; n++; } });
         return new Promise(function (res) { setTimeout(function () { res({ request_id: Date.now(), sent: n }); }, 300); });
+      }
+      if (/^\/icon_refs\?/.test(path)) {
+        var tm = path.match(/trip=eq\.([^&]+)/);
+        return (d.iconRefs || []).filter(function (r) { return !tm || r.trip === decodeURIComponent(tm[1]); });
+      }
+      if (path === '/rpc/admin_icon_refs_set') {
+        var ib = opts.body; d.iconRefs = (d.iconRefs || []).filter(function (r) { return !(r.trip === ib.p_trip && r.stop_key === ib.p_stop_key); });
+        var irow = ib.p_files == null ? { trip: ib.p_trip, stop_key: ib.p_stop_key, mode: null, files: [] }
+          : { trip: ib.p_trip, stop_key: ib.p_stop_key, mode: ib.p_files.length ? 'pick' : 'auto', files: ib.p_files, updated_at: new Date().toISOString() };
+        if (irow.mode) d.iconRefs.push(irow);
+        return new Promise(function (res) { setTimeout(function () { res(irow); }, 200); });
       }
       if (/^\/editorial_rules/.test(path)) { d.rules = d.rules || DEMO_RULES; return d.rules; }
       if (/^\/rpc\/admin_rule_(decide|add)$/.test(path)) {
@@ -513,7 +525,8 @@
     Promise.all([
       api('/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content,review&order=version.asc'),
       loadComments(slug),
-      loadToken(slug)
+      loadToken(slug),
+      loadIconRefs(slug)
     ]).then(function (res) {
       if (!state.trip || state.trip.slug !== slug) return;            // JP zdążył przejść gdzie indziej
       var all = (res[0] || []).filter(function (r) { return r.content; }).sort(function (a, b) { return a.version - b.version; });
@@ -1323,16 +1336,135 @@
     var fl = function (f) { return { box: x.key, field: f }; };
     if (x.kind === 'del') return '<section class="adm-stopx adm-anchor" data-kind="del" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) + '</div></section>';
+    head += iconRefHtml(x.key, s.category);
     var shown = shownSet('stop.', STOP_TR.concat(STOP_FIELDS, state.blocks && state.blocks[x.key] ? BLK.concat([['sources']]) : []));
     var rows = cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) +
       STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
       blockRows(x.key, ver) +
       STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
       qaExtraRows(x.key, shown, ver);
-    return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
+    return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" data-cat="' + esc(s.category || '') + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + rows + '</div></section>';
   }
   function shownSet(pre, defs) { var o = {}; defs.forEach(function (f) { o[pre + f[0]] = 1; }); return o;
+  }
+
+  // ── referencja do ikony Quo (JP 2026-10-30) — docs/IKONY-MIEJSC.md §6 ──
+  // Kandydaci: media/icons/place-candidates/<trasa>.json (place-candidates.mjs na serwerze, ten sam checkout repo co panel).
+  // Wybór JP: admin.icon_refs / rpc admin_icon_refs_set (SQL 2026-10-30-icon-refs.sql): 1–2 pliki = wybór, [] = automat, null = brak decyzji.
+  // Bez decyzji generator czeka na JP najwyżej wait_hours (48 h) od wygenerowania kandydatów, potem dobiera zdjęcia sam.
+  // Treść pliku to dane z Commons (autorzy, tytuły): tylko esc(); adresy wyłącznie z upload.wikimedia.org / commons.wikimedia.org.
+  var PRACTICAL = { parking: 1, restaurant: 1, icecream: 1, sweets: 1 };
+  var IC_THUMB = /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//, IC_PAGE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/;
+  function loadIconRefs(slug) {
+    var ir = state.icref = { slug: slug, cand: null, sel: {}, selApi: false, msg: {} };
+    var cand = DEMO ? api('/admin_queue').then(function () { return demoCandidates(slug); }) :
+      fetch('../media/icons/place-candidates/' + encodeURIComponent(slug) + '.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
+        .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    var sel = api('/icon_refs?trip=eq.' + encodeURIComponent(slug) + '&select=stop_key,mode,files,updated_at')
+      .then(function (rows) { ir.selApi = true; return rows || []; }, function (e) { ir.selErr = e.message; return []; });
+    return Promise.all([cand, sel]).then(function (res) {
+      ir.cand = res[0] && res[0].stops ? res[0] : null;
+      res[1].forEach(function (r) { ir.sel[r.stop_key] = { mode: r.mode, files: Array.isArray(r.files) ? r.files : [] }; });
+    });
+  }
+  function icCands(key) {
+    var c = state.icref && state.icref.cand, rec = c && c.stops[key];
+    return (rec && Array.isArray(rec.candidates) ? rec.candidates : []).filter(function (x) {
+      return x && typeof x.title === 'string' && (DEMO || (IC_THUMB.test(x.thumb || '') && IC_PAGE.test(x.page || '')));
+    }).slice(0, 4);
+  }
+  function icDeadline() {
+    var c = state.icref && state.icref.cand, t = c ? Date.parse(c.generated_at) : NaN;
+    return isNaN(t) ? null : new Date(t + (+c.wait_hours || 48) * 3600000);
+  }
+  function icStatus(key, list) {
+    var ir = state.icref, sel = ir.sel[key];
+    if (ir.msg[key]) return ir.msg[key];
+    if (sel && sel.mode === 'pick') return 'Wybrane: ' + sel.files.length + ' z 2 — generator narysuje Quo na podstawie ' + (sel.files.length === 1 ? 'tego zdjęcia.' : 'tych zdjęć.');
+    if (sel && sel.mode === 'auto') return 'Automat — generator sam wybierze zdjęcia (jak dotąd).';
+    if (!list.length) return '';
+    var dl = icDeadline();
+    return 'Brak wyboru — generowanie tej ikony czeka na Ciebie' + (dl ? ' do ' + when(dl.toISOString()) : '') + ', potem automat.';
+  }
+  function iconRefHtml(key, cat) {
+    var ir = state.icref;
+    if (!ir || PRACTICAL[cat]) return '';
+    var list = icCands(key), sel = ir.sel[key] || null, files = sel && sel.mode === 'pick' ? sel.files : [];
+    var h = '<div class="adm-icref" data-icref="' + esc(key) + '"><p class="adm-icref__h">Referencja do ikony Quo' +
+      '<small>kliknij 1–2 zdjęcia zabytku (bez ludzi); domyślnie automat</small></p>';
+    if (!ir.cand) return h + '<p class="adm-icref__st">Kandydaci zdjęć jeszcze nie gotowi — serwer pobiera je z Wikimedia Commons. Do tego czasu ikona powstaje automatycznie.</p></div>';
+    if (!list.length) return h + '<p class="adm-icref__st">Brak zdjęć z Commons bez ludzi i z wolną licencją — ikona powstanie automatycznie (albo pliki ręcznie w place-icons-data.mjs).</p></div>';
+    var off = !ir.selApi;
+    h += '<ul class="adm-icref__list">' + list.map(function (c, i) {
+      var on = files.indexOf(c.title) > -1, nm = c.title.replace(/^File:/, '');
+      return '<li class="adm-icref__it' + (on ? ' is-on' : '') + '">' +
+        '<button type="button" class="adm-icref__pick" data-icref-pick="' + esc(key) + '" data-file="' + esc(c.title) + '" aria-pressed="' + on + '"' + (off ? ' disabled' : '') +
+        ' aria-label="Zdjęcie ' + (i + 1) + ': ' + esc(nm) + (on ? ' (wybrane)' : '') + '">' +
+        '<img src="' + esc(c.thumb) + '" alt="" loading="lazy" decoding="async" width="320" height="' + (c.width && c.height ? Math.round(320 * c.height / c.width) : 240) + '">' +
+        '<span class="adm-icref__ck" aria-hidden="true">✓</span></button>' +
+        '<p class="adm-icref__meta" title="' + esc(nm) + '">' + esc(c.author || 'autor nieznany') + ' · ' + esc(c.license || 'licencja?') + '</p>' +
+        '<a class="adm-icref__lnk" href="' + esc(c.page) + '" target="_blank" rel="noopener noreferrer">otwórz na Commons ↗</a></li>';
+    }).join('') + '</ul>';
+    h += '<div class="adm-icref__bar"><button type="button" class="qc-btn qc-btn--sm adm-icref__auto' + (sel && sel.mode === 'auto' ? ' is-on' : '') + '" data-icref-auto="' + esc(key) + '"' +
+      (off ? ' disabled' : '') + ' aria-pressed="' + !!(sel && sel.mode === 'auto') + '">Automat</button>' +
+      (sel ? '<button type="button" class="adm-linkbtn" data-icref-clear="' + esc(key) + '"' + (off ? ' disabled' : '') + '>Cofnij decyzję</button>' : '') +
+      '<span class="adm-icref__st" role="status">' + esc(off ? 'Zapis wyboru jeszcze niedostępny — baza czeka na SQL 2026-10-30-icon-refs.sql (deploy.sh approve).' : icStatus(key, list)) + '</span></div></div>';
+    return h;
+  }
+  function icRedraw(key) {
+    var el = $d.querySelector('.adm-icref[data-icref="' + key.replace(/"/g, '') + '"]');
+    if (!el) return;
+    var sec = el.closest('.adm-stopx'), cat = sec ? sec.getAttribute('data-cat') : '';
+    var f = document.activeElement && el.contains(document.activeElement) ? (document.activeElement.getAttribute('data-file') || document.activeElement.className) : null;
+    var tmp = document.createElement('div'); tmp.innerHTML = iconRefHtml(key, cat);
+    el.parentNode.replaceChild(tmp.firstChild, el);
+    if (f) {
+      var nel = $d.querySelector('.adm-icref[data-icref="' + key.replace(/"/g, '') + '"]');
+      var b = [].filter.call(nel.querySelectorAll('button'), function (x) { return x.getAttribute('data-file') === f || x.className === f; })[0];
+      if (b) b.focus();
+    }
+  }
+  function icSave(key, files) {
+    var ir = state.icref, prev = ir.sel[key];
+    ir.msg[key] = 'Zapisuję…';
+    ir.sel[key] = files == null ? undefined : { mode: files.length ? 'pick' : 'auto', files: files };
+    if (files == null) delete ir.sel[key];
+    icRedraw(key);
+    return api('/rpc/admin_icon_refs_set', { method: 'POST', body: { p_trip: ir.slug, p_stop_key: key, p_files: files } }).then(function () {
+      delete ir.msg[key]; icRedraw(key);
+    }, function (e) {
+      if (prev) ir.sel[key] = prev; else delete ir.sel[key];
+      ir.msg[key] = 'Nie zapisano: ' + e.message; icRedraw(key);
+    });
+  }
+  $d.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-icref-pick],[data-icref-auto],[data-icref-clear]');
+    if (!b || b.disabled || !state.icref) return;
+    var ir = state.icref, key = b.getAttribute('data-icref-pick') || b.getAttribute('data-icref-auto') || b.getAttribute('data-icref-clear');
+    var sel = ir.sel[key], files = sel && sel.mode === 'pick' ? sel.files.slice() : [];
+    if (b.hasAttribute('data-icref-auto')) { icSave(key, sel && sel.mode === 'auto' ? null : []); return; }
+    if (b.hasAttribute('data-icref-clear')) { icSave(key, null); return; }
+    var f = b.getAttribute('data-file'), i = files.indexOf(f);
+    if (i > -1) files.splice(i, 1);
+    else if (files.length >= 2) { ir.msg[key] = 'Najwyżej 2 zdjęcia — najpierw odznacz jedno.'; icRedraw(key); setTimeout(function () { delete ir.msg[key]; icRedraw(key); }, 4000); return; }
+    else files.push(f);
+    icSave(key, files.length ? files : null);
+  });
+  // tryb demo: przykładowi kandydaci (lokalne obrazy zamiast Commons)
+  function demoCandidates(slug) {
+    var v = (state.demo && state.demo.versions || []).filter(function (r) { return r.city_slug === slug; }).pop();
+    if (!v) return null;
+    var pics = ['assisi', 'perugia', 'ancona', 'frasassi'], out = { trip: slug, generated_at: new Date(Date.now() - 5 * 3600000).toISOString(), wait_hours: 48, stops: {} };
+    (v.content.stops || []).forEach(function (s, i) {
+      if (PRACTICAL[s.category] || !s.stop_key) return;
+      out.stops[s.stop_key] = { n: s.stop_number, status: 'ok', candidates: [0, 1, 2].map(function (j) {
+        var p = pics[(i + j) % pics.length];
+        return { title: 'File:' + titleCase(s.stop_key) + ' (' + titleCase(slug) + ') ' + (j + 1) + '.jpg', thumb: '../media/tours/quolino-it-' + p + '-tile-384.webp',
+          page: 'https://commons.wikimedia.org/wiki/File:Example.jpg', author: ['Rosa Rossi', 'Wikimedia user Umbro', 'Paolo M.'][j], license: ['CC BY-SA 4.0', 'CC BY 2.0', 'CC0'][j], width: 384, height: 384 };
+      }) };
+    });
+    return out;
   }
 
   // bloki nowych wytycznych (docs/TRESC-PRZYSTANKU.md): wersja z przypisami [n], źródła i wynik kontroli — tylko dla redakcji

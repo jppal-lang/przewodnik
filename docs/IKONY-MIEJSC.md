@@ -60,3 +60,28 @@ node place-icons.mjs queue [--max 3] # cron co 30 min
 `gen`, `fix` i `queue` nie startują przy wyczerpanym limicie Antigravity (`work/agy-quota.json`); `queue` przerabia najwyżej 3 przystanki na przebieg
 i nie generuje, gdy na ocenę czeka już 6 ikon. Wyjątki (ręcznie wybrane pliki, kategoria Commons, wnętrze zamiast zewnętrza, pominięcie): `place-icons-data.mjs`.
 Pliki robocze: `/opt/data/quolino/work/place-icons/<trasa>/<stop_key>/`.
+
+## 6. Wybór zdjęć przez JP w panelu admina (JP 2026-10-30)
+
+**Po co:** JP sam wskazuje, które zdjęcia zabytku mają być referencją do ilustracji z Quo. Domyślnie (bez kliknięcia) działa automat jak dotąd.
+
+1. **Kandydaci** — `bin/place-candidates.mjs <trasa>` (serwer, ma dostęp do Commons; zlecenie z repo: `_content/jobs/*.json`,
+   skrypt na białej liście `repo-jobs.mjs`, jedyny argument = slug). Ten sam dobór co `refs`: Wikidata P18, kategoria Commons i podkategorie,
+   wyszukiwarka; filtr ludzi / map / nocy / wnętrz; **tylko wolne licencje** (`licenseOk`: CC0, PD, CC BY, CC BY-SA, GFDL, FAL…; NC/ND/nieznana odpadają).
+   Do 4 zdjęć na przystanek zwiedzania (miniatura 320 px z upload.wikimedia.org, strona pliku, autor, licencja, wymiary).
+   Przystanki: najnowsza opublikowana wersja + przystanki dodane w najnowszym szkicu.
+   Wynik: `media/icons/place-candidates/<trasa>.json` w repo (Hermes: `repo.sh publish`; panel czyta ten sam checkout co strona)
+   i kopia `work/place-icons/<trasa>/candidates.json`.
+2. **Panel** — karta przystanku (wycieczka → zakładka wersji), pod numerem i nazwą: „Referencja do ikony Quo”. Klik w miniaturę = wybór
+   (zielona ramka + ✓), najwyżej 2; „Automat” = generator wybiera sam; „Cofnij decyzję” = znowu brak wyboru; link „otwórz na Commons”.
+   Każdy klik zapisuje się od razu: `rpc/admin_icon_refs_set {p_trip, p_stop_key, p_files}` → `ops.icon_refs`
+   (SQL `_content/claude-skills/sql/2026-10-30-icon-refs.sql`, wymaga `deploy.sh approve`). Przystanki praktyczne — bez bloku.
+3. **Generowanie** — `place-icons.mjs` przed `gen`/`queue`/`fix` sprawdza `ops.icon_refs`:
+   - **wybór JP** (1–2 pliki) → te zdjęcia jako referencje (także przy `--force` i przy poprawkach); licencja i format nadal sprawdzane,
+     autor i licencja idą do `refs.json` i przy akceptacji do `place-sources.json`. Jedno zdjęcie = prompt „the first image is a real photograph”.
+     Gdy JP zmieni wybór dla ikony czekającej na ocenę, kolejka robi nową wersję z nowymi zdjęciami (zaakceptowanych nie rusza);
+   - **automat** → dotychczasowy dobór (Claude ogląda miniatury i wybiera 2);
+   - **brak decyzji** przy przystanku, który ma kandydatów → **bezpiecznik**: przystanek jest pomijany (log: „czeka na wybór zdjęć JP…”)
+     najwyżej **48 h od wygenerowania kandydatów** (`generated_at` w pliku), potem automat. Brak pliku kandydatów albo brak kandydatów → automat od razu.
+     `gen … --no-wait` wymusza automat od razu. „N inne zdjęcia” na Discordzie przy przystanku z wyborem JP → prośba o zmianę wyboru w panelu.
+   - Gdy tabeli jeszcze nie ma (SQL niezatwierdzony) — liczy się jak „brak decyzji”.

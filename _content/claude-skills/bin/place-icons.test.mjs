@@ -186,3 +186,42 @@ test('manifest gry: dopisanie klucza do "media" bez duplikatów', () => {
   assert.deepEqual(L.addToGameManifest({}, 'frasassi', 'abbazia').media, { frasassi: ['abbazia'] });
   assert.deepEqual(m0.media.spello, ['a']);
 });
+
+// ── wybór referencji przez JP w panelu (2026-10-30) ──
+test('licencje: wolne tak, NC/ND/nieznana nie', () => {
+  for (const s of ['CC BY-SA 4.0', 'CC BY 2.0', 'CC-BY-SA-3.0', 'CC0', 'Public domain', 'PD-self', 'GFDL', 'FAL', 'Attribution']) assert.equal(L.licenseOk(s), true, s);
+  for (const s of ['CC BY-NC 2.0', 'CC BY-NC-SA 4.0', 'CC BY-ND 3.0', 'nieznana', '', null, 'Fair use', 'All rights reserved']) assert.equal(L.licenseOk(s), false, String(s));
+});
+test('kandydat do panelu: tylko adresy z Commons, krótkie pola', () => {
+  const ok = { title: 'File:PV.jpg', thumb: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/PV.jpg/320px-PV.jpg', page: 'https://commons.wikimedia.org/wiki/File:PV.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/PV.jpg', author: 'X'.repeat(300), license: 'CC BY-SA 4.0', width: 4000, height: 3000, score: 5.5 };
+  const e = L.candidateEntry(ok);
+  assert.equal(e.author.length, 160); assert.equal(e.thumb, ok.thumb); assert.equal(e.width, 4000);
+  assert.equal(L.candidateEntry({ ...ok, thumb: 'https://evil.example/x.jpg' }), null);
+  assert.equal(L.candidateEntry({ ...ok, page: 'javascript:alert(1)' }), null);
+});
+test('wybór JP: tytuły plików znormalizowane, najwyżej 2', () => {
+  assert.deepEqual(L.normFiles(['File:A.jpg', 'File:A.jpg', 'File:B.JPG', 'File:C.png']), ['File:A.jpg', 'File:B.JPG']);
+  assert.deepEqual(L.normFiles(['A.jpg', 'File:x.svg', 'File:<b>.jpg', 7, null]), []);
+  assert.deepEqual(L.normFiles(null), []);
+});
+test('bramka generowania: wybór JP, automat, czekanie maks. 48 h', () => {
+  const t0 = Date.parse('2026-10-30T12:00:00Z');
+  const cand = { generated_at: '2026-10-30T12:00:00Z', stops: { a: { candidates: [{ title: 'File:A.jpg' }] }, b: { candidates: [] } } };
+  assert.deepEqual(L.iconGate({ sel: { mode: 'pick', files: ['File:A.jpg'] }, cand, key: 'a', now: t0 }), { use: 'pick', files: ['File:A.jpg'] });
+  assert.equal(L.iconGate({ sel: { mode: 'auto', files: [] }, cand, key: 'a', now: t0 }).use, 'auto');
+  const w = L.iconGate({ sel: null, cand, key: 'a', now: t0 + 3600_000 });
+  assert.equal(w.wait, true); assert.equal(w.until, '2026-11-01T12:00:00.000Z');
+  assert.equal(L.iconGate({ sel: null, cand, key: 'a', now: t0 + 48 * 3600_000 }).use, 'auto');            // po 48 h automat
+  assert.equal(L.iconGate({ sel: null, cand, key: 'b', now: t0 }).use, 'auto');                             // brak kandydatów → automat
+  assert.equal(L.iconGate({ sel: null, cand: null, key: 'a', now: t0 }).use, 'auto');                       // brak pliku → jak dotąd
+  assert.equal(L.iconGate({ sel: { mode: 'pick', files: ['zly'] }, cand, key: 'a', now: t0 }).wait, true);  // zły wybór = brak wyboru
+  assert.equal(L.sameFiles(['File:B.jpg', 'File:A.jpg'], ['File:A.jpg', 'File:B.jpg']), true);
+});
+test('zlecenie z repo: place-candidates.mjs tylko ze slugiem trasy', async () => {
+  const { validateJob } = await import('./repo-jobs.mjs');
+  assert.equal(validateJob({ script: 'place-candidates.mjs', args: ['spello'] }), null);
+  assert.match(validateJob({ script: 'place-candidates.mjs', args: ['spello', '--dry'] }), /niedozwolone/);
+  assert.match(validateJob({ script: 'place-candidates.mjs', args: ['../etc'] }), /niedozwolone/);
+  assert.match(validateJob({ script: 'place-candidates.mjs', args: [] }), /niedozwolone/);
+});

@@ -234,6 +234,53 @@ export function mergeSources(json, entry) {
   return Object.fromEntries(Object.keys(all).sort().map(k => [k, all[k]]));
 }
 
+// ── licencje: Commons przyjmuje tylko wolne licencje, ale metadane bywają puste albo dziwne — bierzemy tylko znane wolne ──
+// (CC0, domena publiczna, CC BY / BY-SA, GFDL, Free Art, „Attribution”); NC / ND / fair use / nieznana = odrzucone
+export function licenseOk(lic) {
+  const s = String(lic ?? '').trim();
+  if (!s || /nieznana|unknown/i.test(s)) return false;
+  if (/(^|[\s-])(NC|ND)([\s-]|$)|non-?commercial|no ?deriv|fair use|copyright(ed)? ?(by|all)|all rights reserved/i.test(s)) return false;
+  return /^(CC0|PD|Public domain|CC[- ]BY(-SA)?([ -]\d(\.\d)?)?|CC BY(-SA)? \d|GFDL|FAL|Free Art|Attribution|ODbL|OGL|Copyrighted free use|No restrictions)/i.test(s);
+}
+
+// ── kandydaci do wyboru przez JP w panelu (place-candidates.mjs → media/icons/place-candidates/<trasa>.json) ──
+export const CANDIDATES_PER_STOP = 4;
+export const WAIT_HOURS = 48;   // przystanek z kandydatami bez wyboru JP i bez „automatu” czeka najwyżej tyle, potem automat
+export const candidatesPath = (trip) => `media/icons/place-candidates/${trip}.json`;
+const THUMB_RE = /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//;
+const PAGE_RE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/;
+// rekord kandydata (normPage z miniaturą 320 px) → wpis w pliku dla panelu; null, gdy adresy nie są z Commons
+export function candidateEntry(c) {
+  if (!c || !THUMB_RE.test(c.thumb ?? '') || !PAGE_RE.test(c.page ?? '')) return null;
+  return { title: c.title, thumb: c.thumb, page: c.page, file_url: c.url ?? null, author: String(c.author ?? 'nieznany').slice(0, 160),
+    license: String(c.license ?? '').slice(0, 60), license_url: c.license_url ?? null, width: c.width ?? 0, height: c.height ?? 0, score: c.score ?? null };
+}
+// wybór JP (ops.icon_refs): pliki z panelu → poprawne tytuły File:…, najwyżej 2, bez powtórzeń
+export function normFiles(files) {
+  const out = [];
+  for (const f of Array.isArray(files) ? files : []) {
+    const t = String(f ?? '').trim();
+    if (/^File:[^|#<>[\]{}\n]{1,240}\.(jpe?g|png|webp|tiff?)$/i.test(t) && !out.includes(t)) out.push(t);
+  }
+  return out.slice(0, 2);
+}
+// czy generować ikonę przystanku i z czego:
+//   sel  = wiersz ops.icon_refs ({ mode: 'pick'|'auto', files }) albo null (brak wyboru / brak tabeli)
+//   cand = plik kandydatów trasy ({ generated_at, stops: { key: { candidates: [...] } } }) albo null
+// → { use: 'pick', files } | { use: 'auto', why } | { wait: true, until }
+export function iconGate({ sel = null, cand = null, key, now = Date.now(), waitHours = WAIT_HOURS } = {}) {
+  const files = normFiles(sel?.files);
+  if (sel?.mode === 'pick' && files.length) return { use: 'pick', files };
+  if (sel?.mode === 'auto') return { use: 'auto', why: 'JP wybrał automat' };
+  const list = cand?.stops?.[key]?.candidates;
+  const at = Date.parse(cand?.generated_at ?? '');
+  if (!Array.isArray(list) || !list.length || !Number.isFinite(at)) return { use: 'auto', why: 'brak kandydatów do wyboru' };
+  const until = at + waitHours * 3600_000;
+  if (now < until) return { wait: true, until: new Date(until).toISOString() };
+  return { use: 'auto', why: `minęło ${waitHours} h bez wyboru JP` };
+}
+export const sameFiles = (a, b) => JSON.stringify([...(a ?? [])].sort()) === JSON.stringify([...(b ?? [])].sort());
+
 // gra „Quo: Wyprawa” (gra/icons/manifest.json): "media": { "<trasa>": ["<stop_key>", …] } → media/icons/place-<trasa>-<stop_key>-256/512.webp
 export function addToGameManifest(json, trip, key) {
   const m = { ...(json ?? {}) };

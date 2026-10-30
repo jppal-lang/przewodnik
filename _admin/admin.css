@@ -560,3 +560,27 @@ mark.adm-fl--auto{background:#ECEEF2;border-bottom:2px dashed var(--muted)}
 .adm-flagbar__sum{font-size:18px;color:var(--ink2)}
 .adm-q.is-clear .adm-flagbar h3,.adm-q.is-clear .adm-flagbar__ic{color:var(--verde)}
 @media(max-width:620px){.adm-pop{padding:10px}.adm-qo__list{grid-template-columns:1fr}}
+
+/* referencja do ikony Quo (JP 2026-10-30): kandydaci zdjęć z Commons w karcie przystanku, pod numerem i nazwą; 1–2 do wyboru */
+.adm-icref{padding:12px 0 14px;border-bottom:1px dashed var(--rule)}
+.adm-icref__h{margin:0 0 8px;font-stretch:75%;font-weight:800;font-size:15px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.adm-icref__h small{display:block;font-stretch:100%;font-weight:500;font-size:16px;letter-spacing:0;text-transform:none}
+.adm-icref__list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:12px}
+.adm-icref__it{width:168px;display:flex;flex-direction:column;gap:4px}
+.adm-icref__pick{position:relative;display:block;width:168px;min-height:44px;padding:0;border:0;border-radius:10px;background:var(--slot);cursor:pointer;
+  box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden;transition:box-shadow .15s,transform .15s}
+.adm-icref__pick img{display:block;width:100%;height:120px;object-fit:cover}
+.adm-icref__pick:hover{transform:translateY(-1px);box-shadow:0 0 0 2px var(--azzurro)}
+.adm-icref__pick:focus-visible{outline:3px solid var(--azzurro);outline-offset:3px}
+.adm-icref__pick[aria-pressed="true"]{box-shadow:0 0 0 4px var(--verde)}
+.adm-icref__pick:disabled{cursor:not-allowed;opacity:.75;transform:none}
+.adm-icref__ck{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;display:none;place-items:center;
+  background:var(--verde);color:#fff;font-weight:900;font-size:20px;box-shadow:0 0 0 2px #fff}
+.adm-icref__pick[aria-pressed="true"] .adm-icref__ck{display:grid}
+.adm-icref__meta{margin:0;font-size:16px;line-height:1.3;color:var(--muted);overflow-wrap:anywhere}
+.adm-icref__lnk{display:inline-flex;align-items:center;min-height:44px;font-size:15px;font-weight:700;white-space:nowrap;color:var(--azzurro)}
+.adm-icref__bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:6px}
+.adm-icref__bar .qc-btn,.adm-icref__bar .adm-linkbtn{min-height:44px}
+.adm-icref__auto.is-on{box-shadow:0 0 0 3px var(--verde)}
+.adm-icref__st{font-size:17px;color:var(--ink2)}
+@media(max-width:620px){.adm-icref__it{width:calc(50% - 6px)}.adm-icref__pick{width:100%}.adm-icref__lnk{white-space:normal}}
