@@ -1,0 +1,182 @@
+{
+ "trip": "spello",
+ "generated_at": "2026-10-30T12:05:15.230Z",
+ "versions": {
+  "published": 1,
+  "draft": 9
+ },
+ "per_stop": 4,
+ "wait_hours": 48,
+ "note": "Kandydaci do wyboru w panelu admina (referencja do ikony Quo). Wybór: ops.icon_refs. Zasady: docs/IKONY-MIEJSC.md §6.",
+ "stops": {
+  "villa-dei-mosaici": {
+   "n": 2,
+   "name": "Villa dei Mosaici",
+   "category": "museum",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 22,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "porta-consolare": {
+   "n": 3,
+   "name": "Porta Consolare",
+   "category": "monument",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 61,
+    "dropped": 3,
+    "license_dropped": 0
+   }
+  },
+  "sant-andrea": {
+   "n": 4,
+   "name": "Chiesa di Sant'Andrea",
+   "category": "church",
+   "view": "interior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 67,
+    "dropped": 2,
+    "license_dropped": 0
+   }
+  },
+  "via-borgo-san-sisto": {
+   "n": 4,
+   "name": "Via Borgo San Sisto",
+   "category": "street",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 0,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "santa-maria-maggiore": {
+   "n": 5,
+   "name": "Santa Maria Maggiore / Cappella Baglioni",
+   "category": "church",
+   "view": "interior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 71,
+    "dropped": 4,
+    "license_dropped": 0
+   }
+  },
+  "collegiata-santa-maria-maggiore": {
+   "n": 5,
+   "name": "Collegiata di Santa Maria Maggiore (Cappella Baglioni)",
+   "category": "church",
+   "view": "interior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 53,
+    "dropped": 9,
+    "license_dropped": 0
+   }
+  },
+  "via-giulia": {
+   "n": 6,
+   "name": "Via Giulia — Ślad Rzymski",
+   "category": "street",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 0,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "pinacoteca-civica-spello": {
+   "n": 6,
+   "name": "Pinacoteca Civica e Diocesana di Spello (Palazzo dei Canonici)",
+   "category": "museum",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 0,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "porta-venere": {
+   "n": 7,
+   "name": "Porta Venere + Torri di Properzio",
+   "category": "monument",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 26,
+    "dropped": 1,
+    "license_dropped": 0
+   }
+  },
+  "vicoli-belvedere": {
+   "n": 8,
+   "name": "Vicoli / Belvedere — Finał Spaceru",
+   "category": "viewpoint",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 0,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  },
+  "porta-venere-torri-di-properzio": {
+   "n": 8,
+   "name": "Porta Venere e Torri di Properzio",
+   "category": "monument",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 26,
+    "dropped": 1,
+    "license_dropped": 0
+   }
+  },
+  "belvedere-arco-romano": {
+   "n": 9,
+   "name": "Belvedere e Arco Romano (Via Cappuccini)",
+   "category": "viewpoint",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 46,
+    "dropped": 5,
+    "license_dropped": 0
+   }
+  },
+  "belvedere-panoramico": {
+   "n": 10,
+   "name": "Belvedere Panoramico — Punkt Widokowy",
+   "category": "viewpoint",
+   "view": "exterior",
+   "status": "none",
+   "candidates": [],
+   "stats": {
+    "found": 18,
+    "dropped": 0,
+    "license_dropped": 0
+   }
+  }
+ }
+}
