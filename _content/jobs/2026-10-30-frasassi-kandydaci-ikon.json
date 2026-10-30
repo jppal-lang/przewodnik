@@ -1,0 +1,7 @@
+{
+ "script": "place-candidates.mjs",
+ "args": ["frasassi"],
+ "why": "kandydaci zdjęć z Commons do wyboru przez JP w panelu admina (referencja do ikony Quo) przed generacją 2026-10-31 16:44 UTC — JP 2026-10-30",
+ "by": "Claude",
+ "timeout_min": 60
+}
