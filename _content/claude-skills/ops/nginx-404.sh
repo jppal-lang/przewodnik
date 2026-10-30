@@ -23,10 +23,13 @@ if [ "${1:-}" = down ]; then
 fi
 if docker exec "$C" grep -q '# quolino-404 start' "$F"; then echo "nginx-404: już jest"; exit 0; fi
 printf '%s\n' "$BLOCK" > /tmp/quolino-404.block
-docker cp /tmp/quolino-404.block "$C":/tmp/quolino-404.block || exit 1
-# wstaw blok zaraz po „index index.html;”
-docker exec "$C" sh -c "sed -i '/^ *index index.html;/r /tmp/quolino-404.block' $F" || exit 1
-if docker exec "$C" sh -c 'nginx -t 2>&1' | grep -q 'successful'; then
+docker cp -q /tmp/quolino-404.block "$C":/tmp/quolino-404.block 2>/dev/null || docker cp /tmp/quolino-404.block "$C":/tmp/quolino-404.block >/dev/null || { echo "nginx-404: nie udało się skopiować bloku do kontenera"; exit 1; }
+# wstaw blok zaraz po „index index.html;” (awk zamiast sed -i: działa też tam, gdzie sed -i nie może podmienić pliku)
+docker exec "$C" sh -c "awk '{print} /^[[:space:]]*index[[:space:]]+index\.html;/{while((getline l < \"/tmp/quolino-404.block\")>0) print l}' $F > /tmp/default.conf.new && cat /tmp/default.conf.new > $F" \
+  || { echo "nginx-404: nie udało się zapisać $F (plik tylko do odczytu?)"; exit 1; }
+docker exec "$C" grep -q '# quolino-404 start' "$F" || { echo "nginx-404: nie znalazłem linii „index index.html;” — blok nie wstawiony"; docker exec "$C" sh -c "cp /tmp/default.conf.bak $F"; exit 1; }
+T=$(docker exec "$C" sh -c 'nginx -t 2>&1')
+if echo "$T" | grep -q 'successful'; then
   docker exec "$C" nginx -s reload
   sleep 1
   code=$(curl -s -o /tmp/q404.html -w '%{http_code}' -m 15 "https://quolino.com/to-nie-istnieje-$(date +%s)")
@@ -36,7 +39,9 @@ if docker exec "$C" sh -c 'nginx -t 2>&1' | grep -q 'successful'; then
     [ -n "$SRC" ] && docker cp "$C":$F "$SRC"
     echo "nginx-404: wdrożone — zły adres pokazuje stronę 404 Quolino (status 404)"; exit 0
   fi
-  echo "nginx-404: sprawdzenie nie przeszło (status $code) — cofam"
+  echo "nginx-404: sprawdzenie nie przeszło (status $code, $(head -c 120 /tmp/q404.html | tr -d '\n')) — cofam"
+else
+  echo "nginx-404: nginx -t odrzucił konfigurację:"; echo "$T" | tail -5
 fi
 docker exec "$C" sh -c "cp /tmp/default.conf.bak $F && nginx -s reload"
 echo "nginx-404: cofnięte, nginx jak przed zmianą"; exit 1
