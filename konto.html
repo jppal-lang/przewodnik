@@ -213,7 +213,7 @@
     ];
   }
   var DEMO_ALBUM = [
-    { slug: 'spello', city: 'Spello', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-spello', pieces: 7, date: '2026-08-12', nick: 'Zosia', pose: 4, color: 5 },
+    { slug: 'spello', city: 'Spello', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-spello', pieces: 7, date: '2026-08-12', nick: 'Zosia', pose: 4, color: 5, oath: '2026-08-12' },
     { slug: 'assisi', city: 'Asyż', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-assisi', pieces: 9, date: '2026-08-13', nick: 'Zosia', pose: 1, color: 0 },
     { slug: 'perugia', city: 'Perugia', country: 'it', region: 'umbria', hero: '/media/tours/quolino-it-perugia', pieces: 8, date: '2026-08-14', nick: 'Kuba', pose: 3, color: 2 },
     { slug: 'ancona', city: 'Ancona', country: 'it', region: 'marche', hero: '/media/tours/quolino-it-ancona', pieces: 6, date: '2026-08-17', nick: 'Kuba', pose: 6, color: 3 }
@@ -229,6 +229,10 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
   function dateLabel(iso) { var d = new Date(iso + 'T12:00:00'); if (isNaN(d)) return ''; var o = { day: 'numeric', month: 'long', year: 'numeric' }; try { return d.toLocaleDateString(LANG, o); } catch (e) { return d.toLocaleDateString('pl', o); } }
+  function shortDate(iso) { var d = new Date(iso + 'T12:00:00'); if (isNaN(d)) return ''; var o = { day: 'numeric', month: 'short' }; try { return d.toLocaleDateString(LANG, o); } catch (e) { return d.toLocaleDateString('pl', o); } }
+  // grupa A 2026-10-30: odznaka „Obietnica odkrywcy” (pole oath = data ISO, zapisuje kid-reward.js po I-8)
+  function oathTag(e, cls) { if (!e || !e.oath) return ''; var d = /^\d{4}-\d{2}-\d{2}$/.test(e.oath) ? shortDate(e.oath) : '';
+    return '<span class="' + cls + '" title="' + esc(PT('page.trip.kid.oath_title', 'Obietnica odkrywcy')) + '"><span class="oath__t"><span aria-hidden="true">★</span> ' + esc(PT('page.account.oath_badge', 'Odkrywca')) + '</span>' + (d ? '<span class="oath__d">' + esc(d) + '</span>' : '') + '</span>'; }
   function plural(n, one, few, many) { var m10 = n % 10, m100 = n % 100; return n === 1 ? one : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? few : many; }
   function pose(i, size) { return '/media/icons/pose-' + POSES[(i || 0) % POSES.length] + '-' + (size || 128) + '.webp'; }
   function colors() { return window.QReward ? window.QReward.colors : ['#0B4EA2']; }
@@ -338,7 +342,7 @@
       '<span class="acc-stk__img"><img src="' + esc(e.hero) + '-hero-480.webp" alt="" loading="lazy">' +
       '<span class="acc-stk__ava"><img src="' + pose(e.pose) + '" alt="" width="40" height="40"></span>' +
       (shared.indexOf(e.slug) > -1 ? '<span class="acc-stk__shared" title="' + esc(PT('page.account.shared_title', 'Udostępnione')) + '">✓</span>' : '') + '</span>' +
-      '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">' + esc([e.nick, dateLabel(e.date)].filter(Boolean).join(' · ')) + '</span></button>';
+      '<span class="acc-stk__name">' + esc(e.city) + '</span><span class="acc-stk__meta">' + esc([e.nick, dateLabel(e.date)].filter(Boolean).join(' · ')) + '</span>' + oathTag(e, 'acc-stk__oath') + '</button>';
   }
 
   // ── wyzwania ─────────────────────────────────────────
@@ -507,7 +511,7 @@
     var e = album.filter(function (x) { return x.slug === slug; })[0];
     if (!e || !window.QReward) return;
     window.QReward.use(e, LANG);
-    var w = sheet('<h2 class="qk-sheet__title" id="stT">' + esc(e.city) + '</h2><p class="qk-sheet__sub">' + esc([e.nick, dateLabel(e.date), e.pieces ? e.pieces + ' ' + PT('page.account.missions', 'misji') : ''].filter(Boolean).join(' · ')) + '</p>' +
+    var w = sheet('<h2 class="qk-sheet__title" id="stT">' + esc(e.city) + '</h2><p class="qk-sheet__sub">' + esc([e.nick, dateLabel(e.date), e.pieces ? e.pieces + ' ' + PT('page.account.missions', 'misji') : ''].filter(Boolean).join(' · ')) + '</p>' + oathTag(e, 'qk-oath') +
       '<div class="qk-puzzle is-done"><img src="' + esc(e.hero) + '-hero-1200.webp" alt="' + esc(e.city) + '" width="1200" height="675"></div>' +
       '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-x="share">' + esc(PT('page.account.share', 'Udostępnij')) + '</button><button type="button" class="qc-btn" data-x="dl">' + esc(PT('page.account.dl_img', 'Pobierz obrazek')) + '</button>' +
       '<button type="button" class="qc-btn" data-x="col">' + esc(PT('page.account.coloring', 'Kolorowanka do druku')) + '</button><a class="qc-btn" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">' + esc(PT('page.account.trip', 'Wycieczka')) + '</a></div>', 'stT');

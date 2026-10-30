@@ -1978,3 +1978,8 @@ html.qk-hand-on .qc-dock,html.qk-hand-on .qc-pager{visibility:hidden}
   .atlas--skel .atlas-map,.atlas--skel .atlas-region{animation:slotBreath 1.6s ease-in-out infinite alternate}
   .atlas--skel .atlas-region:nth-child(2){animation-delay:.2s}
 }
+/* konto: odznaka „Obietnica odkrywcy” przy mieście w albumie (złota plakietka jak .qk-oath) */
+.acc-stk__oath{align-self:flex-start;display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin:6px 4px 0;padding:3px 10px;border-radius:7px;background:var(--foil);color:var(--sun-ink);font-weight:900;font-size:var(--fs-min);line-height:1.2;box-shadow:var(--lift-1);transform:rotate(-2deg)}
+@media(prefers-reduced-motion:reduce){.acc-stk__oath{transform:none}}
+.acc-stk__oath .oath__t,.qk-oath .oath__t{white-space:nowrap}
+.acc-stk__oath .oath__d,.qk-oath .oath__d{font-weight:700;white-space:nowrap}
