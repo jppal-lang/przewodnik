@@ -1,6 +1,6 @@
 {
  "trip": "spello",
- "generated_at": "2026-10-30T12:05:15.230Z",
+ "generated_at": "2026-10-30T15:25:14.756Z",
  "versions": {
   "published": 1,
   "draft": 9
@@ -69,8 +69,8 @@
    "status": "none",
    "candidates": [],
    "stats": {
-    "found": 71,
-    "dropped": 4,
+    "found": 41,
+    "dropped": 3,
     "license_dropped": 0
    }
   },
@@ -108,8 +108,8 @@
    "status": "none",
    "candidates": [],
    "stats": {
-    "found": 0,
-    "dropped": 0,
+    "found": 8,
+    "dropped": 2,
     "license_dropped": 0
    }
   },
@@ -160,8 +160,8 @@
    "status": "none",
    "candidates": [],
    "stats": {
-    "found": 46,
-    "dropped": 5,
+    "found": 0,
+    "dropped": 0,
     "license_dropped": 0
    }
   },
