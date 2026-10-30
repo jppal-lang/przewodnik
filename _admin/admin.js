@@ -1997,7 +1997,7 @@
   var DEC_SQL = 'baza czeka na SQL 2026-10-30-skrzynka-decyzji.sql (ostatni raz konsolą: deploy.sh approve).';
   var DST = { pending: 'czeka na zgodę', approved: 'zatwierdzone — serwer wdroży w ciągu 2 min', running: 'wdrażam…', done: 'wdrożone', failed: 'błąd', rejected: 'odrzucone', superseded: 'zastąpione nowszą prośbą' };
   var CSTS = { pending: 'czeka na zgodę', approved: 'zgoda — serwer uruchomi w ciągu 10 min', running: 'w toku', done: 'wykonane', failed: 'błąd', rejected: 'odrzucone' };
-  var WKIND = { hours: 'godziny', price: 'cena', closed: 'zamknięte', link: 'link', source: 'źródło', fact: 'fakt', photo: 'zdjęcie', translation: 'tłumaczenie' };
+  var WKIND = { hours: 'godziny', price: 'cena', closed: 'zamknięte', link: 'link', source: 'źródło', fact: 'fakt', photo: 'zdjęcie', translation: 'tłumaczenie', closure: 'zamknięcie', reopen: 'otwarte ponownie', closure_overdue: 'termin zamknięcia minął', venue: 'lokal', season: 'zmiana sezonu', site: 'strona', cost: 'koszty AI' };
   var inbox = { n: null, data: null, loading: null };
 
   function demoInbox() {
