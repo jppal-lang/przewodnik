@@ -123,3 +123,40 @@ test('runRepoJobs: odrzucone w panelu → rejected, bez uruchomienia; baza niedo
   assert.equal(reg['2026-10-30-odrzucone'].status, 'rejected');
   assert.equal(calls.filter(c => c.args[0] === 'spello').length, 0);
 });
+
+test('gemini-draft --choices: dozwolone tylko <slug> --choices [--max-usd ≤0,5], zawsze kosztowne (jp_ok)', () => {
+  const ok = { date: new Date().toISOString().slice(0, 10), quote: 'tak dopisz' };
+  assert.equal(RJ.validateJob({ script: 'gemini-draft.mjs', args: ['spello', '--choices'], jp_ok: ok }), null);
+  assert.equal(RJ.validateJob({ script: 'gemini-draft.mjs', args: ['spello', '--choices', '--max-usd', '0.5'], jp_ok: ok }), null);
+  assert.match(RJ.validateJob({ script: 'gemini-draft.mjs', args: ['spello', '--choices'] }), /brak zgody JP/);
+  for (const a of [['spello', '--choices', '--max-usd', '5'], ['spello', '--choices', '--patch', '[]'], ['--choices', 'spello'], ['Spello;', '--choices'], ['spello', '--choices', '--max-usd']])
+    assert.match(RJ.validateJob({ script: 'gemini-draft.mjs', args: a, jp_ok: ok }), /niedozwolone/, a.join(' '));
+  assert.equal(RJ.validateJob({ script: 'gemini-draft.mjs', args: ['spello', '--choices'], jp_ok: ok, not_before: '2999-01-01T00:00:00Z' }), 'wait');
+  assert.ok(RJ.COSTLY.has('gemini-draft.mjs'));
+});
+
+test('afterExit: kod 75 = „later” z licznikiem prób, po LATER_MAX → failed; 0 → done', () => {
+  assert.equal(RJ.afterExit({ status: 'running' }, 0, 'x').status, 'done');
+  assert.equal(RJ.afterExit({ status: 'running' }, 1, 'x').status, 'failed');
+  const l = RJ.afterExit({ status: 'running' }, RJ.EXIT_LATER, 'limit');
+  assert.equal(l.status, 'later'); assert.equal(l.tries, 1);
+  assert.equal(RJ.afterExit({ status: 'running', tries: RJ.LATER_MAX - 1 }, RJ.EXIT_LATER, 'limit').status, 'failed');
+});
+
+test('runRepoJobs: zlecenie odłożone (kod 75) wraca do kolejki i rusza ponownie, po sukcesie — już nie', async () => {
+  const calls = [];
+  const ok = { date: new Date().toISOString().slice(0, 10), quote: 'tak dopisz' };
+  addJob('2026-10-31-test-pytania-wybor', { script: 'gemini-draft.mjs', args: ['testowo', '--choices'], jp_ok: ok });
+  const only = (c) => c.args[0] === 'testowo';
+  await RJ.runRepoJobs({ spawnFn: fakeSpawn(calls, RJ.EXIT_LATER), log: quiet });
+  let reg = JSON.parse(readFileSync(join(base, 'work/repo-jobs.json'), 'utf8'));
+  assert.equal(reg['2026-10-31-test-pytania-wybor'].status, 'later'); assert.equal(reg['2026-10-31-test-pytania-wybor'].tries, 1);
+  await RJ.runRepoJobs({ spawnFn: fakeSpawn(calls, RJ.EXIT_LATER), log: quiet });
+  reg = JSON.parse(readFileSync(join(base, 'work/repo-jobs.json'), 'utf8'));
+  assert.equal(reg['2026-10-31-test-pytania-wybor'].tries, 2);
+  await RJ.runRepoJobs({ spawnFn: fakeSpawn(calls, 0), log: quiet });
+  await RJ.runRepoJobs({ spawnFn: fakeSpawn(calls, 0), log: quiet });
+  reg = JSON.parse(readFileSync(join(base, 'work/repo-jobs.json'), 'utf8'));
+  assert.equal(reg['2026-10-31-test-pytania-wybor'].status, 'done');
+  assert.equal(calls.filter(only).length, 3);
+});

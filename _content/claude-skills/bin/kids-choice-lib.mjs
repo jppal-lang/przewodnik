@@ -65,3 +65,59 @@ z researchu albo z opisu tego przystanku, dodaj "kids_choice": {"options": ["…
 - dziecko sprawdza odpowiedź na miejscu (patrzy, liczy) albo w treści przystanku; misja i wskazówka NIE zdradzają odpowiedzi;
 - brak pewności, pytanie otwarte („wymyśl”, „opisz”, „narysuj”), przystanek praktyczny (parking, restauracja, lody) → "kids_choice": null.
 Nie wymyślaj faktów: lepiej bez pytania niż z odpowiedzią spoza źródła.`;
+
+// ── przebieg „tylko misje” (gemini-draft.mjs --choices, zgoda JP 2026-10-31): dopisanie pytań z wyborem do istniejącego szkicu ──
+const stripChoices = (trip) => {
+  const t = JSON.parse(JSON.stringify(trip ?? null));
+  for (const st of Object.values(t?.content?.stops ?? {})) if (st && typeof st === 'object') delete st.kids_choice;
+  return t;
+};
+// ścieżki, którymi szkice różnią się POZA content.stops.<klucz>.kids_choice (pusta lista = zmienione wyłącznie pytania z wyborem).
+// Porównanie dokładne: wartości, typy, klucze, kolejność elementów tablic (bez kolejności kluczy obiektu — jsonb w bazie jej nie trzyma).
+export function choiceOnlyDiff(before, after, max = 20) {
+  const out = [];
+  const walk = (a, b, p) => {
+    if (out.length >= max) return;
+    if (a === b) return;
+    const ta = Array.isArray(a) ? 'array' : a === null ? 'null' : typeof a, tb = Array.isArray(b) ? 'array' : b === null ? 'null' : typeof b;
+    if (ta !== tb) { out.push(p || '(korzeń)'); return; }
+    if (ta === 'array') { if (a.length !== b.length) { out.push(`${p}.length`); return; } a.forEach((x, i) => walk(x, b[i], `${p}[${i}]`)); return; }
+    if (ta === 'object') {
+      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        if (!Object.hasOwn(a, k) || !Object.hasOwn(b, k)) { out.push(p ? `${p}.${k}` : k); continue; }
+        walk(a[k], b[k], p ? `${p}.${k}` : k);
+      }
+      return;
+    }
+    if (!Object.is(a, b)) out.push(p || '(korzeń)');
+  };
+  walk(stripChoices(before), stripChoices(after), '');
+  return out;
+}
+// przystanki, którym wolno dopisać pytanie: zwiedzanie (nie parking/restauracja/lody/słodycze), z misją, bez poprawnego pytania
+export function choiceTargets(content, meta) {
+  const cat = Object.fromEntries((meta?.stops ?? []).map(s => [s.stop_key, s.category]));
+  return Object.entries(content?.stops ?? {})
+    .filter(([k, st]) => st && cat[k] && !NO_QUEST.has(cat[k]) && typeof st.kids_box === 'string' && st.kids_box.trim() && !choiceOk(st.kids_choice))
+    .map(([k]) => k);
+}
+// propozycje modelu → tylko przystanki z listy celów, tylko poprawny kształt, najwyżej `max` pytań (jedno wywołanie kontroli = 12 faktów)
+export function pickChoices(proposals, targets, { max = 12 } = {}) {
+  const ok = new Set(targets), out = {};
+  for (const [k, v] of Object.entries(proposals ?? {})) {
+    if (!ok.has(k) || v == null || Object.keys(out).length >= max) continue;
+    const ch = v && typeof v === 'object' && !Array.isArray(v) ? { options: Array.isArray(v.options) ? v.options.map(x => typeof x === 'string' ? x.trim().replace(/\s+/g, ' ') : x) : v.options,
+      correct: typeof v.correct === 'string' && /^[0-3]$/.test(v.correct) ? +v.correct : v.correct } : v;
+    if (choiceOk(ch)) out[k] = { options: ch.options, correct: ch.correct };
+  }
+  return out;
+}
+// otwarta prośba o poprawkę z panelu (draft_revision_requests new/working) — wtedy przebieg czeka, żeby nie rozwidlić wersji szkicu.
+// q(sql, params) → wiersze. Brak tabeli = brak próśb.
+export async function openRevisionRequests(q, slug) {
+  const [t] = await q(`SELECT to_regclass('public.draft_revision_requests') IS NOT NULL AS t`);
+  if (!t?.t) return [];
+  return q(`SELECT id, status, city_version FROM public.draft_revision_requests WHERE city_slug = $1 AND status IN ('new', 'working') ORDER BY id`, [slug]);
+}
+// kod wyjścia „spróbuj później” (EX_TEMPFAIL): repo-jobs.mjs zostawia zlecenie w kolejce zamiast „failed”
+export const EXIT_LATER = 75;

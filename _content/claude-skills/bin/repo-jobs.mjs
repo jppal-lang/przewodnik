@@ -28,7 +28,7 @@ const WORK = join(BASE, 'work');
 const REG = join(WORK, 'repo-jobs.json'), LOCK = join(WORK, 'repo-jobs.lock');
 // skrypt → kontrola argumentów (true = wolno). Tylko to, co nie wymaga zgody JP: poprawki szkiców (nowa wersja do zatwierdzenia w panelu) i odczyty.
 export const ALLOWED = {
-  'gemini-draft.mjs': (a) => a.includes('--recheck') || a.includes('--revise'),   // nowa trasa idzie przez kolejkę ops.jobs, nie tędy
+  'gemini-draft.mjs': (a) => a.includes('--recheck') || a.includes('--revise') || isChoicesArgs(a),   // nowa trasa idzie przez kolejkę ops.jobs, nie tędy
   'show-review.mjs': () => true,
   'usage-summary.mjs': () => true,
   // ponowienie tłumaczenia opublikowanej trasy (te same kontrole jakości co w kolejce; bez --dry/--job z zewnątrz)
@@ -39,6 +39,24 @@ export const ALLOWED = {
     a.slice(1).every((x, i, r) => x === '--no-ai' || x === '--dry' || x === '--city' || (r[i - 1] === '--city' && /^[a-z0-9][a-z0-9-]{0,62}$/.test(x))),
   'trip-translate.mjs': (a) => /^[a-z0-9-]+$/.test(a[0] ?? '') && a.slice(1).every((x, i, r) => x === '--fresh' || x === '--langs' || (r[i - 1] === '--langs' && /^[a-z]{2}(,[a-z]{2})*$/.test(x))),
 };
+// przebieg „tylko misje” (JP 2026-10-31): <slug> --choices [--max-usd ≤0.5]; nic poza tym (żadnych --facts/--patch)
+export function isChoicesArgs(a) {
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(a[0] ?? '') || a[1] !== '--choices') return false;
+  const r = a.slice(2);
+  if (!r.length) return true;
+  return r.length === 2 && r[0] === '--max-usd' && /^\d+(\.\d+)?$/.test(r[1]) && +r[1] > 0 && +r[1] <= 0.5;
+}
+// Kod wyjścia 75 („spróbuj później”, gemini-draft --choices: limit Antigravity, otwarta prośba o poprawkę) — zlecenie wraca do kolejki
+// (status „later”, kolejna próba przy następnym przebiegu crona), najwyżej LATER_MAX razy, potem failed.
+export const EXIT_LATER = 75, LATER_MAX = 72;
+export function afterExit(prev, code, tail, now = new Date().toISOString()) {
+  if (code === EXIT_LATER) {
+    const tries = (prev?.tries ?? 0) + 1;
+    if (tries < LATER_MAX) return { ...prev, status: 'later', code, tries, result: tail, finished_at: now };
+    return { ...prev, status: 'failed', code, tries, result: `odkładane ${tries} razy — koniec prób: ${tail}`.slice(0, 600), finished_at: now };
+  }
+  return { ...prev, status: code === 0 ? 'done' : 'failed', code, result: tail, finished_at: now };
+}
 // Skrypty, które wydają pieniądze albo limit AI (OpenRouter, Claude, Gemini). JP 2026-10-30: „dbaj o moje środki”.
 // Zlecenie takiego skryptu musi nieść zgodę JP: pole jp_ok = { date: 'RRRR-MM-DD', quote: 'dosłowne słowa JP z czatu' },
 // nie starszą niż 3 dni. Bez tego serwer odrzuca zlecenie (status rejected), zanim cokolwiek wyda.
@@ -120,7 +138,7 @@ export async function runRepoJobs({ log = (...a) => console.error(new Date().toI
     for (const [n, r] of Object.entries(reg)) if (r.status === 'running' && !alive(r.pid)) { reg[n] = { ...r, status: 'failed', result: 'przerwane (proces nie żyje)', finished_at: new Date().toISOString() }; }
     for (const path of names) {
       const name = path.split('/').pop().replace(/\.json$/, '');
-      if (reg[name]) continue;
+      if (reg[name] && reg[name].status !== 'later') continue;   // „later” = odłożone (kod 75), próbujemy ponownie
       let job = null; try { job = JSON.parse((await git('show', `origin/main:${path}`)).stdout); } catch (e) { job = { _err: e.message }; }
       let costId = null;
       if (!job?._err && needsPanelOk(job)) {
@@ -138,13 +156,13 @@ export async function runRepoJobs({ log = (...a) => console.error(new Date().toI
       const logF = join(WORK, 'jobs', `${name}.log`);
       if (costId != null) await dbq("UPDATE ops.cost_requests SET status = 'running', result = 'w toku' WHERE id = $1", [costId]).catch(() => {});
       const p = spawnFn(job, logF);
-      reg[name] = { status: 'running', pid: p.pid, script: job.script, args: job.args, why: job.why ?? null, by: job.by ?? null, started_at: new Date().toISOString(), log: logF, ...(costId != null ? { cost_request: costId } : {}) };
+      reg[name] = { ...(reg[name]?.status === 'later' ? { tries: reg[name].tries ?? 0 } : {}), status: 'running', pid: p.pid, script: job.script, args: job.args, why: job.why ?? null, by: job.by ?? null, started_at: new Date().toISOString(), log: logF, ...(costId != null ? { cost_request: costId } : {}) };
       writeFileSync(REG, JSON.stringify(reg, null, 1));
       const code = await new Promise((res) => { const t = setTimeout(() => { try { p.kill('SIGTERM'); } catch {} }, (job.timeout_min ?? 180) * 60_000); p.on('close', (c) => { clearTimeout(t); res(c); }); });
       let tail = ''; try { tail = readFileSync(logF, 'utf8').trim().split('\n').slice(-3).join(' | ').slice(-400); } catch {}
-      reg[name] = { ...reg[name], status: code === 0 ? 'done' : 'failed', code, result: tail, finished_at: new Date().toISOString() };
+      reg[name] = afterExit(reg[name], code, tail);
       writeFileSync(REG, JSON.stringify(reg, null, 1));
-      if (costId != null) await dbq('UPDATE ops.cost_requests SET status = $2, result = $3, finished_at = now() WHERE id = $1', [costId, reg[name].status, `kod ${code}: ${tail}`.slice(0, 2000)])
+      if (costId != null) await dbq('UPDATE ops.cost_requests SET status = $2, result = $3, finished_at = now() WHERE id = $1', [costId, reg[name].status === 'later' ? 'approved' : reg[name].status, `kod ${code}: ${tail}`.slice(0, 2000)])
         .catch((e) => log(`zlecenie ${name}: wynik do panelu nie zapisany (${String(e.message).slice(0, 120)})`));
       log(`zlecenie ${name}: ${reg[name].status} (kod ${code})`);
       done.push({ name, status: reg[name].status });

@@ -15,7 +15,7 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { agyQuotaHit, agyQuotaOut } from './lib.mjs';
 import { claude, claudeUsage, claudeJson, extractJson, repairJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
@@ -1048,6 +1048,162 @@ async function reviseMain() {
   await notify(channel, `✅ **${cityTitle} — szkic v${saved.version} · wytyczne ${gl ?? '?'}** po ${argv.includes('--no-learn') ? 'poprawkach z kontroli Claude' : 'Twoich poprawkach'} (${changes.length} zmian${fails ? `, kontrola Claude zgłasza uwagi przy ${fails} przystankach` : ''}).\n` +
     `${rv.summary}\n${learned?.length ? `Zapamiętane zasady: ${learned.length}\n` : ''}Panel: https://admin.quolino.com/_admin/#/${slug}`);
   console.log(JSON.stringify(out, null, 2));
+}
+
+// ── przebieg „tylko misje” (--choices, zgoda JP 2026-10-31 „tak dopisz”): pytania z wyborem do istniejącego szkicu ──────────
+// 1) najnowszy szkic z bazy w chwili uruchomienia; otwarta prośba o poprawkę z panelu → odłożone (kod 75), żeby nie rozwidlić wersji
+// 2) JEDNO wywołanie Antigravity: propozycje kids_choice dla przystanków zwiedzania z misją (najwyżej jedno pytanie na przystanek — pole jest jedno)
+// 3) source-check TYLKO nowych pytań (≤12 faktów = najwyżej 1 wywołanie AI); sprzeczne ze źródłem → pytanie znika
+// 4) walidator validate_trip.py: żadnych nowych błędów względem wersji wyjściowej
+// 5) asercja: szkic różni się WYŁĄCZNIE polami content.stops.*.kids_choice (meta, reszta treści, bloki bajt w bajt) — inaczej przerwanie
+// 6) zapis nowej wersji (vNx) z notatką „…: pytania z wyborem (tylko misje)”, po zapisie ponowne porównanie z bazą (niezgodność → wycofanie)
+// Bez limitu Antigravity: NIE przechodzi na Claude ani klucz API (droższe, bez zgody JP) — kod 75, zlecenie wraca do kolejki.
+// Twardy limit kosztu: --max-usd (domyślnie 0,50 $, równowartość cennika API z tokenów).
+const later = (m) => Object.assign(new Error(m), { later: true });
+function runValidator(trip, tag) {
+  const base = join(dir, `choices-${tag}`), d = join(base, slug); mkdirSync(d, { recursive: true });
+  writeFileSync(join(d, `${slug}.meta.json`), JSON.stringify(trip.meta, null, 2));
+  writeFileSync(join(d, `${slug}.pl.json`), JSON.stringify(trip.content, null, 2));
+  const local = new URL('../quolino-trip-writing/scripts/validate_trip.py', import.meta.url).pathname;
+  const py = existsSync(`${SKILLS}/quolino-trip-writing/scripts/validate_trip.py`) ? `${SKILLS}/quolino-trip-writing/scripts/validate_trip.py` : local;
+  const r = spawnSync('python3', [py, d], { encoding: 'utf8', timeout: 120_000 });
+  if (r.error) throw new Error(`walidator nie ruszył: ${r.error.message}`);
+  return { code: r.status, errors: String(r.stdout ?? '').split('\n').filter(l => l.includes('[BŁĄD]')).map(l => l.trim()) };
+}
+async function choicesMain() {
+  const MAX_USD = +(opt('--max-usd') ?? 0.5);
+  const overBudget = () => { if ((cost.equiv ?? 0) + cost.usd > MAX_USD) throw new Error(`limit kosztu przebiegu ${MAX_USD} $ przekroczony (${((cost.equiv ?? 0) + cost.usd).toFixed(3)} $) — przerwane, nic nie zapisano`); };
+  if (argv.includes('--no-agy') || !existsSync(AGY)) throw later('Antigravity niedostępny — bez zgody JP nie przechodzę na droższy model');
+  if (agyQuotaOut()) throw later(`limit Antigravity (AI Pro) wyczerpany do ${agyQuotaOut()}`);
+  const open = await openRevisionRequests(q, slug);
+  if (open.length) throw later(`otwarta prośba o poprawkę z panelu (#${open.map(r => `${r.id} ${r.status}`).join(', ')}) — przebieg odłożony, żeby nie rozwidlić wersji`);
+  const latest = async () => (await q(`SELECT id, version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]))[0];
+  const cur = await latest();
+  if (!cur?.trip?.meta || !cur.trip.content?.stops) throw new Error(`${slug}: brak szkicu`);
+  if (!channel) channel = (await q('SELECT discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(() => []))[0]?.discord_thread_id ?? null;
+  const orig = { meta: cur.trip.meta, content: cur.trip.content };
+  const origJson = JSON.stringify(orig);
+  const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {}, blocksJson = JSON.stringify(blocks);
+  const curLabel = String(cur.content?.label ?? `v${cur.version}`);
+  name = orig.content.city?.title ?? slug; STOPS_N = orig.meta.stops.length; WORK_LABEL = curLabel;
+  const targets = choiceTargets(orig.content, orig.meta);
+  log(`${slug}: pytania z wyborem — szkic ${curLabel} (id ${cur.id}, wersja ${cur.version}), przystanki do sprawdzenia: ${targets.length}`);
+  if (!targets.length) { log(`${slug}: brak przystanków zwiedzania bez pytania — nic do dopisania`); return; }
+
+  // ② jedno wywołanie: propozycje
+  const metaOf = Object.fromEntries(orig.meta.stops.map(s => [s.stop_key, s]));
+  const flat = (v) => typeof v === 'string' ? v : Array.isArray(v) ? v.map(flat).join(' ') : v && typeof v === 'object' ? Object.values(v).map(flat).join(' ') : '';
+  const material = targets.map(k => {
+    const st = orig.content.stops[k], m = metaOf[k], fr = join(dir, `v2-stop-${m.stop_number}-research.md`);
+    return { stop_key: k, nazwa: st.name, kategoria: m.category, misja: st.kids_box, wskazowka: st.hint ?? null, zadanie_foto: st.photo_task ?? null,
+      opis: (st.desc_paragraphs ?? []).join('\n'), bloki: stripRefs(flat(blocks[k]?.marked ?? '')).slice(0, 2500), zrodla: m.sources ?? [],
+      research: existsSync(fr) ? readFileSync(fr, 'utf8').slice(0, 3500) : null };
+  });
+  const prompt = `Jesteś redaktorem Quolino (rodzinna wycieczka piesza, misje dla dzieci). Do ISTNIEJĄCYCH misji dopisz pytania z wyborem odpowiedzi.
+NIE zmieniaj misji, wskazówek ani opisów — tylko propozycja "kids_choice" dla przystanku albo null.
+Dla każdego przystanku z listy: jeśli misja (pole "misja") jest pytaniem obserwacyjnym albo zadaniem z jedną sprawdzalną odpowiedzią
+(co jest na…, jakie zwierzę…, ile…, jaki kolor…) i POPRAWNA ODPOWIEDŹ WYNIKA WPROST z opisu, bloków, researchu albo źródeł tego przystanku,
+podaj {"options": ["…", "…", "…", "…"], "correct": <0..3>, "skad": "krótki cytat z materiału, z którego wynika odpowiedź"}. W innym wypadku null.
+- dokładnie 4 krótkie opcje (najwyżej ok. ${CHOICE_MAX} znaków, bez „—” i „–”), różne, ta sama kategoria (4 zwierzęta, 4 liczby, 4 kolory);
+- 3 błędne opcje wiarygodne dla dziecka, ale JEDNOZNACZNIE błędne według materiału (nie „też trochę prawda”);
+- poprawna opcja w losowym miejscu listy; "correct" = jej numer (0 = pierwsza);
+- poprawna odpowiedź NIE może stać w treści misji ani wskazówki (nie zdradzamy jej);
+- pytanie otwarte („wymyśl”, „opisz”, „narysuj”, „zrób zdjęcie”), brak pewności, odpowiedź tylko z pamięci → null.
+Nie wymyślaj faktów: lepiej null niż odpowiedź spoza materiału. Opcje po polsku, prosto, dla dziecka 6–12 lat.
+
+${RULES}
+
+PRZYSTANKI:
+${JSON.stringify(material)}
+
+Odpowiedz JSON-em: {"choices": {"<stop_key>": null | {"options": [...], "correct": 0, "skad": "…"}}}. ${JSON_QUOTE_RULE}`;
+  let raw;
+  try { raw = await agy(`${prompt}\n\nODPOWIEDZ WYŁĄCZNIE POPRAWNYM JSON-em, bez komentarzy i bez bloków \`\`\`.\n\nNie używaj wyszukiwarki ani narzędzi — pracuj tylko na materiale powyżej.`, 'pytania z wyborem', { tools: false }); }
+  catch (e) {
+    if (/quota reached|upgrade your subscription|RESOURCE_EXHAUSTED/i.test(e.message)) { agyQuotaHit(e.message); throw later(`limit Antigravity (AI Pro) wyczerpany (${e.message.slice(0, 120)})`); }
+    throw later(`Antigravity nie odpowiedział (${e.message.slice(0, 160)})`);
+  }
+  overBudget();
+  let parsed; try { parsed = asJson(raw.text); } catch { try { parsed = JSON.parse(repairJson(raw.text)); } catch (e) { throw later(`niepoprawny JSON z Antigravity (${e.message.slice(0, 80)})`); } }
+  const proposals = parsed?.choices ?? {};
+  // odpowiedź nie może stać w misji ani we wskazówce (ta sama reguła co ostrzeżenie walidatora)
+  for (const [k, v] of Object.entries(proposals)) {
+    const st = orig.content.stops[k]; if (!st || !v || !Array.isArray(v.options)) continue;
+    const good = String(v.options[+v.correct] ?? '').trim().toLowerCase(), tell = `${st.kids_box ?? ''} ${st.hint ?? ''}`.toLowerCase();
+    if (good.length >= 4 && tell.includes(good)) { log(`  ${k}: odpowiedź „${good}” stoi w misji albo wskazówce — pomijam`); proposals[k] = null; }
+  }
+  const fresh = pickChoices(proposals, targets, { max: 12 });
+  const why = Object.fromEntries(Object.entries(proposals).filter(([k]) => fresh[k]).map(([k, v]) => [k, String(v?.skad ?? '').slice(0, 300)]));
+  log(`${slug}: propozycje pytań: ${Object.keys(fresh).length} z ${targets.length} przystanków`);
+  if (!Object.keys(fresh).length) { log(`${slug}: model nie zaproponował żadnego pewnego pytania — bez nowej wersji`); event('gotowe: brak pytań do dopisania', { stage: 7, status: 'done' }); return; }
+
+  // ③ kontrola tylko nowych pól: kopia szkicu, w której jedynymi pytaniami są nowe (stare i tak nie są sprawdzane drugi raz)
+  const chk = JSON.parse(origJson);
+  for (const st of Object.values(chk.content.stops)) if (st) delete st.kids_choice;
+  for (const [k, ch] of Object.entries(fresh)) chk.content.stops[k].kids_choice = JSON.parse(JSON.stringify(ch));
+  let aiCalls = 0, aiErr = null;
+  const aiOnce = async (p) => {
+    if (++aiCalls > 1) throw new Error('kontrola pytań: najwyżej 1 wywołanie na trasę');
+    overBudget();
+    try { return (await agy(p, 'source-check pytań', { tools: false })).text; }
+    catch (e) { aiErr = e; if (/quota reached|upgrade your subscription|RESOURCE_EXHAUSTED/i.test(e.message)) agyQuotaHit(e.message); throw e; }
+  };
+  const sc = await sourceCheck({ trip: chk, blocks: JSON.parse(blocksJson), review: { errors: [], warnings: [] }, workDir: null, facts: [], log, deps: { stopWikidata, ai: aiOnce } });
+  if (aiErr) throw later(`kontrola pytań: Antigravity nie odpowiedział (${aiErr.message.slice(0, 160)})`);
+  overBudget();
+  const checked = Object.fromEntries(Object.keys(fresh).map(k => [k, chk.content.stops[k]?.kids_choice ?? null]));
+  const scWarn = (sc.review?.warnings ?? []).filter(w => w.path && /\.kids_choice$/.test(w.path));
+
+  // ④ nowy szkic = wersja wyjściowa + pytania, które przeszły kontrolę; walidator bez nowych błędów
+  const build = (set) => { const t = JSON.parse(origJson); for (const [k, ch] of Object.entries(set)) if (ch) t.content.stops[k].kids_choice = ch; return t; };
+  let keep = Object.fromEntries(Object.entries(checked).filter(([, ch]) => ch && choiceOk(ch)));
+  const v0 = runValidator(orig, 'przed'), base0 = new Set(v0.errors);
+  let next = build(keep), v1 = runValidator(next, 'po');
+  const bad = new Set(v1.errors.filter(l => !base0.has(l)).map(l => Object.keys(keep).find(k => l.includes(`${k}.kids_choice`))).filter(Boolean));
+  if (bad.size) { log(`${slug}: walidator odrzucił pytania: ${[...bad].join(', ')}`); for (const k of bad) delete keep[k]; next = build(keep); v1 = runValidator(next, 'po'); }
+  const newErr = v1.errors.filter(l => !base0.has(l));
+  if (newErr.length) throw new Error(`walidator: nowe błędy po dopisaniu pytań (${newErr.length}): ${newErr.slice(0, 3).join(' | ')}`);
+  log(`${slug}: walidator ✓ (bez nowych błędów; błędy wersji wyjściowej bez zmian: ${v0.errors.length})`);
+  if (!Object.keys(keep).length) { log(`${slug}: po kontroli nie zostało żadne pytanie — bez nowej wersji`); event('gotowe: pytania odrzucone przez kontrolę', { stage: 7, status: 'done' }); return; }
+
+  // ⑤ asercja: zmienione WYŁĄCZNIE kids_choice, tylko na przystankach-celach, bloki bez zmian
+  const diff = choiceOnlyDiff(orig, next);
+  const touched = Object.keys(next.content.stops).filter(k => JSON.stringify(next.content.stops[k].kids_choice ?? null) !== JSON.stringify(orig.content.stops[k]?.kids_choice ?? null));
+  if (diff.length || touched.some(k => !targets.includes(k)) || JSON.stringify(blocks) !== blocksJson || JSON.stringify(orig) !== origJson)
+    throw new Error(`asercja „tylko pytania z wyborem” nie przeszła — przerwane bez zapisu (${[...diff, ...touched.filter(k => !targets.includes(k))].slice(0, 6).join(', ')})`);
+
+  // ⑥ zapis — tuż przed nim ponowna bramka: nikt nie dodał nowszego szkicu ani prośby o poprawkę
+  const open2 = await openRevisionRequests(q, slug);
+  if (open2.length) throw later(`w trakcie przebiegu pojawiła się prośba o poprawkę (#${open2.map(r => r.id).join(', ')}) — bez zapisu`);
+  const now = await latest();
+  if (!now || now.id !== cur.id) throw later(`w trakcie przebiegu powstał nowszy szkic (${now?.content?.label ?? now?.version}) — bez zapisu, ponowię na nowszym`);
+  const b = curLabel.match(/^v(\d+)/)?.[1] ?? String(cur.version);
+  const [nl] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${b}[a-z]$`]);
+  const label = `v${b}${String.fromCharCode(97 + nl.n)}`; WORK_LABEL = label;
+  const WHY = 'pytania z wyborem odpowiedzi (zgoda JP 2026-10-31)';
+  const scBy = Object.fromEntries(scWarn.map(w => [String(w.path).match(/stops\.([^.]+)\./)?.[1], w.resolved?.what ?? null]));
+  const changes = Object.entries(keep).map(([k, ch]) => ({ path: `content.stops.${k}.kids_choice`, before: orig.content.stops[k]?.kids_choice ?? null, after: ch, why: WHY, auto: true,
+    ...(why[k] ? { evidence: why[k] } : {}), ...(scBy[k] ? { check: scBy[k] } : {}) }));
+  const review = { ...(cur.review ?? {}), warnings: [...(cur.review?.warnings ?? []), ...scWarn],
+    choices_check: { at: new Date().toISOString(), proposed: Object.keys(fresh).length, kept: Object.keys(keep).length, removed: Object.keys(fresh).length - Object.keys(keep).length, ...(sc.stats ?? {}) } };
+  log(`${slug}: ⑤ zapis ${label} (${Object.keys(keep).length} pytań z wyborem; koszt ≈ ${((cost.equiv ?? 0) + cost.usd).toFixed(3)} $)`);
+  const saved = await saveDraft(q, next, { note: `${label}: pytania z wyborem (tylko misje)`, source: 'revise', changes, review, raw: true });
+  const carry = Object.fromEntries(['workflow', 'workflow_model', 'guidelines', 'guidelines_ok'].filter(k => cur.content?.[k] !== undefined).map(k => [k, cur.content[k]]));
+  await q(`UPDATE public.city_versions SET content = content || $3::jsonb || jsonb_build_object('stop_blocks_v2', $4::jsonb, 'label', $5::text, 'choices_from', $6::text),
+             trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`,
+    [slug, saved.version, JSON.stringify(carry), blocksJson, label, curLabel]);
+  // po zapisie: baza ma oddać to samo (jsonb) — inaczej wycofanie: nowa wersja do archiwum, wyjściowa wraca jako szkic
+  const [row] = await q(`SELECT trip, content FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, saved.version]);
+  const d2 = choiceOnlyDiff(orig, { meta: row?.trip?.meta, content: row?.trip?.content }), d3 = choiceOnlyDiff(blocks, row?.content?.stop_blocks_v2 ?? null);
+  const lost = Object.entries(keep).filter(([k, ch]) => JSON.stringify(row?.trip?.content?.stops?.[k]?.kids_choice) !== JSON.stringify(ch)).map(([k]) => k);
+  if (d2.length || d3.length || lost.length) {
+    await q(`UPDATE public.city_versions SET status = 'archived', review_note = 'wycofane: przebieg --choices zmienił coś poza pytaniami z wyborem' WHERE city_slug = $1 AND version = $2`, [slug, saved.version]);
+    await q(`UPDATE public.city_versions SET status = 'draft' WHERE id = $1`, [cur.id]);
+    throw new Error(`po zapisie ${label} różni się od ${curLabel} poza pytaniami (${[...d2, ...d3.map(x => 'bloki.' + x), ...lost.map(x => x + ' (pytanie)')].slice(0, 6).join(', ')}) — wycofane, ${curLabel} znów szkicem`);
+  }
+  event(`gotowe: szkic ${label} · pytania z wyborem ${Object.keys(keep).length} (z ${curLabel})`, { stage: 7, status: 'done' });
+  await notify(channel, `🧩 **${name} — szkic ${label}**: pytania z wyborem odpowiedzi przy ${Object.keys(keep).length} misjach (reszta treści bez zmian względem ${curLabel}). Tłumaczenia po publikacji.\nPanel: https://admin.quolino.com/_admin/#/${slug}`);
+  console.log(JSON.stringify({ slug, from: curLabel, label, version: saved.version, choices: Object.keys(keep), usd_equiv: +((cost.equiv ?? 0) + cost.usd).toFixed(4) }, null, 2));
 }
 
 try { await (CHOICES ? choicesMain() : RECHECK ? recheckMain() : REVISE ? reviseMain() : main()); }

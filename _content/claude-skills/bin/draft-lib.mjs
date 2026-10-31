@@ -268,7 +268,12 @@ export async function fixRound(trip, instruction, reviewErrors) {
 }
 
 // ── zapis szkicu w bazie (nowa wersja draft; tabele na żywo nietknięte) ──────────────────────
-export async function saveDraft(q, trip, { note, source, changes, review }) {
+// raw: true — zapis DOKŁADNIE podanego szkicu, bez porządków poniżej (przebieg --choices: treść bajt w bajt jak w wersji wyjściowej)
+export async function saveDraft(q, trip, { note, source, changes, review, raw = false }) {
+  if (!raw) ({ trip } = normalizeDraft(trip));
+  return saveDraftRaw(q, trip, { note, source, changes, review });
+}
+function normalizeDraft(trip) {
   // teksty wycieczek są czystym tekstem (strona je escapuje) — HTML z modelu zamieniamy na akapity / zwykły tekst
   const plain = (v) => typeof v === 'string'
     ? v.replace(/\s*(<br\s*\/?>|<\/p>\s*<p[^>]*>)\s*/gi, '\n\n').replace(/<\/?[a-z][^>]*>/gi, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim()
@@ -302,6 +307,9 @@ export async function saveDraft(q, trip, { note, source, changes, review }) {
       console.error(`punkty awaryjne: pominięto ${dropped.length} wpis(y) bez poprawnego typu/adresu: ${JSON.stringify(dropped)}`);
     }
   }
+  return { trip };
+}
+async function saveDraftRaw(q, trip, { note, source, changes, review }) {
   let r;
   // rola `quolino` ma search_path = ops, public, a funkcje importu (import_city…) nie ustawiają własnej ścieżki,
   // więc `cities` trafiało do ops.cities (bez sort_order). Na czas zapisu wymuszamy public (JP 2026-10-12).

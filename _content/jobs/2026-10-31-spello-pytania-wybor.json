@@ -1,0 +1,12 @@
+{
+ "script": "gemini-draft.mjs",
+ "args": ["spello", "--choices", "--max-usd", "0.5"],
+ "why": "pytania z wyborem odpowiedzi do najnowszego szkicu (tylko pole kids_choice, reszta bez zmian; tłumaczenia po publikacji) — JP 2026-10-31 „tak dopisz”; szacunek ≈0,05 $ (Antigravity, abonament), twardy limit 0,50 $",
+ "title": "Pytania z wyborem: spello (tylko misje)",
+ "est_usd": 0.05,
+ "est_limit": "2 wywołania Antigravity (AI Pro)",
+ "jp_ok": {"date": "2026-10-31", "quote": "tak dopisz"},
+ "not_before": "2026-10-31T16:50:00Z",
+ "by": "Claude",
+ "timeout_min": 45
+}
