@@ -2,79 +2,109 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Do zatwierdzenia · Quolino admin</title>
+<meta name="color-scheme" content="light dark">
+<title>Pulpit · Quolino admin</title>
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../styles.css?v=41">
-<link rel="stylesheet" href="admin.css?v=29">
+<link rel="stylesheet" href="admin.css?v=30">
 </head>
 <body class="adm">
+<a class="ad-skip" href="#adMain">Przejdź do treści</a>
 
-<nav class="sticky-nav">
-  <div class="sticky-nav-inner">
-    <a href="./" class="logo"><span class="logo-name">quolino</span><span class="logo-dot">.</span><span class="logo-tld">admin</span></a>
-    <span class="adm-navr"><a class="adm-navlink adm-navlink--dec" href="#/decyzje">Decyzje <b class="adm-n is-zero" id="decNav" title="ładuję">·</b></a><a class="adm-navlink" href="#/postep">Postęp prac</a><a class="adm-navlink" href="#/zgloszenia">Zgłoszenia</a><a class="adm-navlink" href="#/koszty">Koszty AI</a><a class="adm-navlink" href="./">Wycieczki</a><a class="adm-navlink" href="https://stats.quolino.com/" target="_blank" rel="noopener">Statystyki ↗</a><div class="adm-env" id="env" hidden></div></span>
+<!-- boczny pasek (desktop) — ten sam zestaw linków co dolny pasek i menu „Więcej” na telefonie -->
+<aside class="ad-side" aria-label="Nawigacja panelu">
+  <a href="#/" class="ad-brand" aria-label="Quolino admin — pulpit"><span class="ad-brand__name">quolino</span><span class="ad-brand__dot" aria-hidden="true">.</span><span class="ad-brand__tld">admin</span></a>
+  <nav class="ad-nav" id="adNav">
+    <a class="ad-nav__a" href="#/" data-nav="pulpit"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.6"/><rect x="3" y="15" width="7.5" height="6" rx="1.6"/></svg><span>Pulpit</span></a>
+    <a class="ad-nav__a" href="#/trasy" data-nav="trasy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M8.5 16.5h7a3 3 0 0 0 0-6h-7a3 3 0 0 1 0-6H15"/></svg><span>Trasy</span><b class="ad-badge is-zero" id="count" title="szkice do zatwierdzenia">·</b></a>
+    <a class="ad-nav__a" href="#/decyzje" data-nav="decyzje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l3.5-8h9L20 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"/></svg><span>Decyzje</span><b class="ad-badge ad-badge--hot is-zero" id="decNav" title="ładuję">·</b></a>
+    <a class="ad-nav__a" href="#/straznicy" data-nav="straznicy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span>Strażnicy</span><b class="ad-badge is-zero" id="watchNav">·</b></a>
+    <a class="ad-nav__a" href="#/ikony" data-nav="ikony"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8.5 8.5"/></svg><span>Ikony</span><b class="ad-badge is-zero" id="iconNav">·</b></a>
+    <p class="ad-nav__h">Praca w tle</p>
+    <a class="ad-nav__a" href="#/postep" data-nav="postep"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><span>Postęp prac</span></a>
+    <a class="ad-nav__a" href="#/zgloszenia" data-nav="zgloszenia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Zgłoszenia</span></a>
+    <a class="ad-nav__a" href="#/koszty" data-nav="koszty"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 3 5.8 1.6 5.8 4.4 0 1.3-1.2 2.1-3 2.1-1.4 0-2.5-.6-3-1.6M12 6v1.8M12 16.4V18"/></svg><span>Koszty AI</span></a>
+    <a class="ad-nav__a" href="#/baza-wiedzy" data-nav="baza-wiedzy" id="kbOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v11.5H8.5A3.5 3.5 0 0 1 5 16z"/><path d="M5 16a3.5 3.5 0 0 1 3.5-3.5H19"/></svg><span>Baza wiedzy</span><b class="ad-badge is-zero" id="kbCount" title="reguły do zatwierdzenia">0</b></a>
+    <a class="ad-nav__a" href="https://stats.quolino.com/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Statystyki</span><span class="ad-ext" aria-label="(otwiera nową kartę)">↗</span></a>
+  </nav>
+  <div class="ad-side__foot">
+    <p class="ad-nav__h">Podgląd konta rodzica</p>
+    <span class="ad-side__views">
+      <a href="https://quolino.com/konto.html?as=guest" target="_blank" rel="noopener">Niezalogowany ↗</a>
+      <a href="https://quolino.com/konto.html?as=member" target="_blank" rel="noopener">Zalogowany ↗</a>
+    </span>
   </div>
+</aside>
+
+<div class="ad-main">
+  <header class="ad-top">
+    <a href="#/" class="ad-brand ad-brand--top" aria-label="Quolino admin — pulpit"><span class="ad-brand__name">q</span><span class="ad-brand__dot" aria-hidden="true">.</span></a>
+    <div class="ad-top__t">
+      <nav class="ad-crumbs" id="crumbs" aria-label="Okruszki" hidden></nav>
+      <h1 class="ad-title" id="secTitle">Pulpit</h1>
+    </div>
+    <div class="adm-env" id="env" hidden></div>
+  </header>
+
+  <main class="ad-content adm-layout" id="adMain" tabindex="-1">
+    <div class="adm-browse" id="browse">
+      <aside class="adm-filters" aria-label="Filtry wycieczek">
+        <details class="adm-fbox" id="fBox" open>
+          <summary class="adm-fbox__sum"><span>Filtry</span><b class="adm-n is-zero" id="fActive" title="aktywne filtry">0</b>
+            <svg class="adm-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></summary>
+          <div class="adm-fbox__body">
+            <label class="adm-f__lbl" for="fq">Szukaj miejscowości</label>
+            <input class="adm-search" id="fq" type="search" placeholder="np. Spello" autocomplete="off" spellcheck="false">
+            <fieldset class="adm-f"><legend>Kraj</legend><div id="fCountry"></div></fieldset>
+            <label class="adm-f__lbl" for="fSort">Sortuj</label>
+            <select class="adm-search adm-sort" id="fSort">
+              <option value="new">Najnowsze zmiany</option>
+              <option value="old">Najstarsze zmiany</option>
+              <option value="az">Kraj, potem A–Z</option>
+            </select>
+            <fieldset class="adm-f"><legend>Wytyczne</legend><div id="fStd"></div></fieldset>
+            <fieldset class="adm-f"><legend>Status</legend><div id="fStatus"></div></fieldset>
+            <fieldset class="adm-f" id="fFlagsBox" hidden><legend>Uwagi</legend><div id="fFlags"></div></fieldset>
+            <button type="button" class="qc-btn qc-btn--sm adm-fclear" id="fClear" hidden>Wyczyść filtry</button>
+          </div>
+        </details>
+        <p class="adm-browse__note">Strona pokazuje zawsze wersję opublikowaną — szkic trafia na nią dopiero po zatwierdzeniu.</p>
+      </aside>
+
+      <section class="adm-results" aria-labelledby="rh">
+        <nav class="adm-abc" id="abc" aria-label="Skorowidz miejscowości A–Z"></nav>
+        <h2 class="adm-results__h" id="rh"><span id="rCount">Ładuję…</span></h2>
+        <div id="results" aria-live="polite"><p class="adm-empty">Ładuję…</p></div>
+      </section>
+    </div>
+
+    <section class="adm-detail" id="detail" aria-live="polite" tabindex="-1" hidden></section>
+  </main>
+</div>
+
+<!-- telefon: dolny pasek + menu „Więcej” -->
+<nav class="ad-tabbar" aria-label="Nawigacja panelu">
+  <a class="ad-tab" href="#/" data-nav="pulpit"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.6"/><rect x="3" y="15" width="7.5" height="6" rx="1.6"/></svg><span>Pulpit</span></a>
+  <a class="ad-tab" href="#/trasy" data-nav="trasy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M8.5 16.5h7a3 3 0 0 0 0-6h-7a3 3 0 0 1 0-6H15"/></svg><span>Trasy</span></a>
+  <a class="ad-tab" href="#/decyzje" data-nav="decyzje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l3.5-8h9L20 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"/></svg><span>Decyzje</span><b class="ad-badge ad-badge--hot is-zero" id="decTab">·</b></a>
+  <a class="ad-tab" href="#/straznicy" data-nav="straznicy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span>Strażnicy</span></a>
+  <button type="button" class="ad-tab" id="moreBtn" aria-expanded="false" aria-controls="moreMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>Więcej</span></button>
 </nav>
-
-<header class="band adm-head">
-  <div class="wrap-wide">
-    <p class="label adm-head__eyebrow">Panel redakcji</p>
-    <h1 class="adm-head__title">Do zatwierdzenia <span class="adm-count" id="count">·</span></h1>
-    <p class="adm-head__sub">Wycieczki według krajów, jak na Discordzie: jeden kraj, w nim miejscowości od A do Z. Strona pokazuje zawsze wersję opublikowaną — szkic trafia na nią dopiero po zatwierdzeniu.</p>
-  </div>
-</header>
-
-<main class="wrap-wide adm-layout">
-  <div class="adm-browse" id="browse">
-    <aside class="adm-filters" aria-label="Filtry wycieczek">
-      <a class="adm-decstart" id="decStart" href="#/decyzje"><span class="adm-decstart__h">Decyzje <b class="adm-n is-zero" id="decCount">·</b></span><span class="adm-decstart__txt">Sprawdzam, co czeka…</span></a>
-      <details class="adm-fbox" id="fBox" open>
-        <summary class="adm-fbox__sum"><span>Filtry</span><b class="adm-n is-zero" id="fActive" title="aktywne filtry">0</b>
-          <svg class="adm-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="adm-fbox__body">
-          <label class="adm-f__lbl" for="fq">Szukaj miejscowości</label>
-          <input class="adm-search" id="fq" type="search" placeholder="np. Spello" autocomplete="off" spellcheck="false">
-          <fieldset class="adm-f"><legend>Kraj</legend><div id="fCountry"></div></fieldset>
-          <label class="adm-f__lbl" for="fSort">Sortuj</label>
-          <select class="adm-search adm-sort" id="fSort">
-            <option value="new">Najnowsze zmiany</option>
-            <option value="old">Najstarsze zmiany</option>
-            <option value="az">Kraj, potem A–Z</option>
-          </select>
-          <fieldset class="adm-f"><legend>Wytyczne</legend><div id="fStd"></div></fieldset>
-          <fieldset class="adm-f"><legend>Status</legend><div id="fStatus"></div></fieldset>
-          <fieldset class="adm-f" id="fFlagsBox" hidden><legend>Uwagi</legend><div id="fFlags"></div></fieldset>
-          <button type="button" class="qc-btn qc-btn--sm adm-fclear" id="fClear" hidden>Wyczyść filtry</button>
-        </div>
-      </details>
-      <a class="adm-kbbtn adm-progbtn" href="#/zgloszenia"><span>Zgłoszenia</span><b class="adm-n is-zero" id="fbCount">·</b></a>
-      <a class="adm-kbbtn adm-progbtn" href="#/koszty"><span>Koszty AI</span><b class="adm-n is-zero">$</b></a>
-      <a class="adm-kbbtn adm-progbtn" href="#/postep"><span>Postęp prac</span><b class="adm-n is-zero" id="progCount" title="przebiegi w toku">·</b></a>
-      <a class="adm-kbbtn adm-progbtn" href="https://stats.quolino.com/" target="_blank" rel="noopener"><span>Statystyki</span><b class="adm-n is-zero">↗</b></a>
-      <div class="adm-fbox adm-accviews">
-        <p class="adm-f__lbl">Podgląd panelu konta rodzica</p>
-        <span class="adm-views">
-          <a class="qc-btn qc-btn--sm adm-preview" href="https://quolino.com/konto.html?as=guest" target="_blank" rel="noopener">Niezalogowany</a>
-          <a class="qc-btn qc-btn--sm adm-preview" href="https://quolino.com/konto.html?as=member" target="_blank" rel="noopener">Zalogowany</a>
-        </span>
-        <p class="adm-accviews__note">Dane przykładowe. Widok dziecka — przycisk „Dziecko” przy wycieczce.</p>
-      </div>
-      <button type="button" class="adm-kbbtn" id="kbOpen"><span>Baza wiedzy redakcji</span><b class="adm-n is-zero" id="kbCount" title="reguły do zatwierdzenia">0</b></button>
-    </aside>
-
-    <section class="adm-results" aria-labelledby="rh">
-      <nav class="adm-abc" id="abc" aria-label="Skorowidz miejscowości A–Z"></nav>
-      <h2 class="adm-results__h" id="rh"><span id="rCount">Ładuję…</span></h2>
-      <div id="results" aria-live="polite"><p class="adm-empty">Ładuję…</p></div>
-    </section>
-  </div>
-
-  <section class="adm-detail" id="detail" aria-live="polite" tabindex="-1" hidden></section>
-</main>
+<div class="ad-more" id="moreMenu" hidden>
+  <p class="ad-more__h">Więcej</p>
+  <a href="#/ikony" data-nav="ikony">Ikony <b class="ad-badge is-zero" id="iconMore">·</b></a>
+  <a href="#/postep" data-nav="postep">Postęp prac</a>
+  <a href="#/zgloszenia" data-nav="zgloszenia">Zgłoszenia</a>
+  <a href="#/koszty" data-nav="koszty">Koszty AI</a>
+  <a href="#/baza-wiedzy" data-nav="baza-wiedzy">Baza wiedzy redakcji</a>
+  <a href="https://stats.quolino.com/" target="_blank" rel="noopener">Statystyki ↗</a>
+  <a href="https://quolino.com/konto.html?as=guest" target="_blank" rel="noopener">Konto rodzica: niezalogowany ↗</a>
+  <a href="https://quolino.com/konto.html?as=member" target="_blank" rel="noopener">Konto rodzica: zalogowany ↗</a>
+</div>
 
 <script src="review-where.js?v=2"></script>
-<script src="admin.js?v=42"></script>
+<script src="admin.js?v=43"></script>
 </body>
 </html>

@@ -325,3 +325,24 @@ SQL: `_content/claude-skills/sql/2026-10-30-skrzynka-decyzji.sql` (ostatni plik 
 - **Zgoda na koszt:** Claude dodaje `_content/jobs/<nazwa>.json` z `"needs_jp": true` (oraz `title`, `why`, `est_usd`, `est_limit`);
   `repo-jobs.mjs` wpisuje prośbę `pending` i czeka; po „Zgoda” wykonuje payload z bazy (to, co JP widział). `jp_ok` działa dalej awaryjnie.
 - Tryb demo (`?demo=1`) ma przykładowe pozycje każdego rodzaju; decyzje zmieniają tylko dane w przeglądarce.
+
+## Pulpit i nawigacja (od v43, 2026-10-31) — centrum dowodzenia
+
+Decyzja JP 2026-10-31: panel ma być ładniejszym, nowoczesnym dashboardem do zarządzania całym projektem. Kontrakt z API bez zmian.
+
+- **Nawigacja:** boczny pasek (desktop ≥ 900 px) — Pulpit `#/`, Trasy `#/trasy`, Decyzje `#/decyzje` (licznik), Strażnicy `#/straznicy`,
+  Ikony `#/ikony`, Postęp prac, Zgłoszenia, Koszty AI, Baza wiedzy, Statystyki ↗; na telefonie dolny pasek + menu „Więcej”.
+  Nagłówek z nazwą sekcji; w trasie okruszki Trasy › kraj › region › miasto. `#/straznicy` i `#/ikony` to sekcje skrzynki decyzji.
+- **Pulpit:** liczby (do decyzji, szkice, w pracy, opublikowane) · „Czeka na Ciebie” (szkice z czerwonymi flagami, wdrożenia, koszty,
+  strażnicy, zdjęcia ikon z terminem) · „Uwagi wysłane do poprawki” (`GET /api/draft_revision_requests?order=id.desc&limit=12`
+  + `GET /api/draft_comments?select=*&request_id=not.is.null`: w kolejce / Hermes nanosi / naniesione w vN / nieudane;
+  opcjonalnie kolumny `verify_status`, `verify_applied`, `verify_total` (albo `verify_*` przy uwagach) → „gotowa do akceptacji” / „x z y naniesionych”)
+  · tabela tras z etapem szkic → kontrola → do akceptacji → opublikowana (z `pipeline_runs` i próśb o poprawkę), wersja, data, flagi
+  (`decision_drafts.red_flags`), języki (gdy `admin_trips` ma kolumnę `langs text[]`) · Serwer · Strażnicy · Koszty AI (dziś / 7 dni
+  z `ai_usage_daily?day=gte.…`, budżet z `ai_budget`) · Statystyki ↗.
+- **Podgląd serwera:** panel próbuje raz `POST /api/rpc/ops_status {}`. Dziś funkcja jest tylko w schemacie `public` (gość API strony),
+  więc w panelu jej nie ma — kafelek Serwer pokazuje wtedy ostatnie wdrożenie z `deploy_requests` i kolejkę z `pipeline_*`, bez crona,
+  blokad i czasu przebiegów strażników. Włączenie: wrapper `admin.ops_status()` (SECURITY DEFINER, `GRANT EXECUTE … TO quolino_admin`).
+- **Trasa:** przyklejony pasek akcji pod nagłówkiem — wersja, „Porównaj z”, flagi (następna, „Przyjmij wszystkie rekomendacje”),
+  „Wyślij uwagi do poprawki”, „Zatwierdź i opublikuj” / „Odrzuć szkic” (na telefonie zostaje dolny pasek decyzji). Spis przystanków z boku ≥ 1200 px.
+- **Wygląd:** jasny i ciemny motyw (`prefers-color-scheme`), tokeny z `styles.css` przemapowane w `.adm`; statusy kolorem + słowem + ikoną.

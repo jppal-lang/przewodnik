@@ -155,6 +155,8 @@ bez okienek przeglądarki). Tylko PL, `noindex`.
 - `?demo=1` — dane testowe z `_admin/demo.json`, nic się nie zapisuje.
 - API (`/api/admin_queue`, `/api/admin_versions`, `/api/rpc/admin_approve|admin_reject`)
   i kontenery to zakres Backendu — kontrakt i szkic SQL w `_admin/README.md`.
+- Od v43 (2026-10-31): Pulpit jako strona startowa, boczny pasek / dolny pasek na telefonie, jasny i ciemny motyw,
+  przyklejony pasek akcji w trasie — opis w `_admin/README.md` §Pulpit i nawigacja.
 
 ## 6b. PODGLĄD LINKU, PRZEJŚCIA, SSR REGIONU (od 2026-10-29)
 

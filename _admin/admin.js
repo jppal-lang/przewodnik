@@ -119,6 +119,8 @@
         d.comments.forEach(function (c) { if (c.city_slug === opts.body.p_slug && c.status === 'new') { c.status = 'sent'; n++; } });
         return new Promise(function (res) { setTimeout(function () { res({ request_id: Date.now(), sent: n }); }, 300); });
       }
+      if (/^\/draft_revision_requests/.test(path)) return demoRevs(d);
+      if (/^\/draft_comments\?select=\*/.test(path)) return d.comments.slice().reverse();
       if (/^\/icon_refs\?/.test(path)) {
         var tm = path.match(/trip=eq\.([^&]+)/);
         return (d.iconRefs || []).filter(function (r) { return !tm || r.trip === decodeURIComponent(tm[1]); });
@@ -217,6 +219,21 @@
         published_version: null, published_stops_count: null, published_duration: null });
     });
   }
+  // prośby o poprawkę (draft_revision_requests) — w tym opcjonalne kolumny verify_* (sprawdzenie naniesienia uwag)
+  function demoRevs(d) {
+    if (d.revs) return d.revs;
+    var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
+    d.comments.forEach(function (c) { if (c.city_slug === 'spello' && c.city_version === 2) c.request_id = 3; });
+    d.revs = [
+      { id: 7, city_slug: 'wieliczka', city_version: 1, comment_ids: [21, 22, 23], status: 'new', result_version: null, hermes_reply: 'Czeka na odnowienie limitu Antigravity — ruszy samo.', attempts: 0, created_at: iso(40), updated_at: iso(12) },
+      { id: 6, city_slug: 'ancona', city_version: 1, comment_ids: [17, 18, 19, 20], status: 'working', result_version: null, hermes_reply: null, attempts: 1, created_at: iso(30), updated_at: iso(4) },
+      { id: 5, city_slug: 'urbino', city_version: 1, comment_ids: [12, 13, 14, 15, 16], status: 'done', result_version: 2, hermes_reply: 'Poprawione opisy i misje; dwie uwagi bez źródła — zostawione.', attempts: 1,
+        created_at: iso(600), updated_at: iso(520), verify_total: 5, verify_applied: 3, verify_status: 'partial' },
+      { id: 3, city_slug: 'spello', city_version: 2, comment_ids: [2, 3], status: 'done', result_version: 3, hermes_reply: 'Przesunięte na 17:45, wstęp skrócony do dwóch zdań.', attempts: 1,
+        created_at: '2026-10-16T09:10:00Z', updated_at: '2026-10-18T07:40:00Z', verify_total: 2, verify_applied: 2, verify_status: 'ok' }
+    ];
+    return d.revs;
+  }
   function demoTrips(d) {
     var by = {};
     d.versions.forEach(function (v) { (by[v.city_slug] = by[v.city_slug] || []).push(v); });
@@ -226,6 +243,7 @@
       var cm = d.comments.filter(function (x) { return x.city_slug === k; });
       return { city_slug: k, city_name: trOf(l.content.city_translations, 'pl').title || k, country: c.country, region_slug: c.region_slug,
         bandana_color: c.bandana_color, latest_version: l.version, latest_status: l.status, latest_at: l.created_at || '2026-10-0' + l.version + 'T10:00:00Z',
+        langs: langsOf(l.content.stop_translations).length ? langsOf(l.content.stop_translations) : langsOf(l.content.city_translations),
         stops_count: (l.content.stops || []).length, draft_version: pick('draft'), published_version: pick('published'), versions_count: vs.length,
         comments_working: cm.filter(function (x) { return x.status === 'sent' || x.status === 'seen'; }).length,
         comments_unsent: cm.filter(function (x) { return x.status === 'new'; }).length };
@@ -331,7 +349,7 @@
     var t = { slug: r.city_slug, name: r.city_name || titleCase(r.city_slug), country: r.country ? String(r.country).toLowerCase() : '',
       region: r.region_slug || '', color: r.bandana_color || '#0B4EA2', latest: r.latest_version, latestStatus: r.latest_status,
       latestAt: r.latest_at, stops: r.stops_count, draft: r.draft_version, published: r.published_version,
-      versions: r.versions_count || 1, std: r.guidelines || (r.workflow === 'v2' ? 'v02' : 'old'), glOk: r.guidelines_ok === true, working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
+      versions: r.versions_count || 1, langs: Array.isArray(r.langs) ? r.langs : null, std: r.guidelines || (r.workflow === 'v2' ? 'v02' : 'old'), glOk: r.guidelines_ok === true, working: r.comments_working || 0, unsent: (r.comments_unsent || 0) + (box[r.city_slug] || 0) };
     t.status = t.draft != null ? 'draft' : t.published != null ? 'published' : (t.latestStatus || 'archived');
     t.letter = letterOf(t.name);
     return t;
@@ -364,7 +382,7 @@
     });
   }
   function loadTrips() {
-    return api('/admin_trips?order=city_slug.asc').then(function (rows) { state.tripsApi = true; return rows; },
+    return state.tripsP = api('/admin_trips?order=city_slug.asc').then(function (rows) { state.tripsApi = true; return rows; },
       function (e) { if (e.session) throw e; state.tripsApi = false; return tripsFallback(); })
       .then(function (rows) {
         var box = outboxBy();
@@ -373,7 +391,8 @@
         state.trips.forEach(function (t) { have['c:' + t.country] = 1; have['s:' + t.status] = 1; });
         f.countries = f.countries.filter(function (c) { return have['c:' + c]; });     // kraj, którego już nie ma, nie chowa wszystkiego
         if (f.statuses.length && !f.statuses.some(function (s) { return have['s:' + s]; })) f.statuses = [];
-        $count.textContent = state.trips.filter(function (t) { return t.status === 'draft'; }).length;
+        var nd = state.trips.filter(function (t) { return t.status === 'draft'; }).length;
+        $count.textContent = nd; $count.classList.toggle('is-zero', !nd);
         renderList();
       }).catch(function (e) {
         $count.textContent = '!';
@@ -495,13 +514,32 @@
   document.getElementById('fClear').addEventListener('click', clearFilters);
   $res.addEventListener('click', function (e) { if (e.target.closest('[data-fclear]')) clearFilters(); });
 
-  // ── nawigacja: #/ lista, #/<miasto> najnowsza wersja, #/<miasto>/v<N> starsza wersja, #/baza-wiedzy ──
+  // ── nawigacja (v43, JP 2026-10-31: panel = centrum dowodzenia) ──
+  // #/ pulpit · #/trasy lista · #/<miasto> najnowsza wersja · #/<miasto>/v<N> starsza · #/decyzje · #/straznicy · #/ikony
+  // #/postep · #/koszty · #/zgloszenia · #/baza-wiedzy. Boczny pasek (desktop) i dolny pasek (telefon) — index.html.
+  var SECTIONS = { pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', postep: 'Postęp prac',
+    koszty: 'Koszty AI', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
+  var $title = document.getElementById('secTitle'), $crumbs = document.getElementById('crumbs');
+  // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
+  function setHead(key, title, crumbs) {
+    if ($title) $title.textContent = title || SECTIONS[key] || '';
+    if ($crumbs) {
+      $crumbs.hidden = !(crumbs && crumbs.length);
+      $crumbs.innerHTML = crumbs && crumbs.length ? '<ol>' + crumbs.map(function (c, i) {
+        return '<li>' + (c[1] ? '<a href="' + esc(c[1]) + '">' + esc(c[0]) + '</a>' : '<span>' + esc(c[0]) + '</span>') + (i < crumbs.length - 1 ? '<span class="ad-crumbs__sep" aria-hidden="true">›</span>' : '') + '</li>';
+      }).join('') + '</ol>' : '';
+    }
+    [].forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
+      if (a.getAttribute('data-nav') === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
   function showList() {
     clearInterval(state.poll);
     state.current = null; state.trip = null; state.versions = null;
     $d.hidden = true; $d.innerHTML = '';
+    setHead('trasy');
     if ($browse.hidden) { $browse.hidden = false; window.scrollTo(0, listScroll); if (state.trips) loadTrips(); }   // liczniki uwag mogły się zmienić
-    document.title = 'Do zatwierdzenia · Quolino admin';
+    document.title = 'Trasy · Quolino admin';
   }
   function showDetail() {
     if (!$browse.hidden) listScroll = window.scrollY || 0;
@@ -509,16 +547,36 @@
   }
   function route() {
     var h = location.hash;
-    document.body.classList.toggle('is-prog', h === '#/postep' || h === '#/koszty' || h === '#/zgloszenia' || h === '#/decyzje');
-    if (h === '#/decyzje') { showDetail(); window.scrollTo(0, 0); openDecisions(); return; }
-    if (h === '#/baza-wiedzy') { showDetail(); window.scrollTo(0, 0); openRules(); return; }
-    if (h === '#/postep') { showDetail(); window.scrollTo(0, 0); openProgress(); return; }
-    if (h === '#/koszty') { showDetail(); window.scrollTo(0, 0); openCosts(); return; }
-    if (h === '#/zgloszenia') { showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
+    moreClose();
+    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony)$/.test(h));
+    document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
+    if (!h || h === '#' || h === '#/' || h === '#/pulpit') { setHead('pulpit'); showDetail(); window.scrollTo(0, 0); openDashboard(); return; }
+    if (h === '#/trasy') { showList(); return; }
+    if (h === '#/decyzje' || h === '#/straznicy' || h === '#/ikony') { var only = h.slice(2); setHead(only); showDetail(); window.scrollTo(0, 0); openDecisions(only === 'decyzje' ? null : only); return; }
+    if (h === '#/baza-wiedzy') { setHead('baza-wiedzy'); showDetail(); window.scrollTo(0, 0); openRules(); return; }
+    if (h === '#/postep') { setHead('postep'); showDetail(); window.scrollTo(0, 0); openProgress(); return; }
+    if (h === '#/koszty') { setHead('koszty'); showDetail(); window.scrollTo(0, 0); openCosts(); return; }
+    if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
-    if (m) { openTrip(decodeURIComponent(m[1]), m[2] ? +m[2] : null); return; }
+    if (m) { var known = (state.trips || []).filter(function (t) { return t.slug === decodeURIComponent(m[1]); })[0];
+      tripHead(known ? known.name : titleCase(decodeURIComponent(m[1])), known ? known.country : '', known ? known.region : '');
+      openTrip(decodeURIComponent(m[1]), m[2] ? +m[2] : null); return; }
     showList();
   }
+  function tripHead(name, country, region) {
+    setHead('trasy', name, [['Trasy', '#/trasy']].concat(country ? [[countryName(country), null]] : []).concat(region ? [[regionName(region), null]] : []).concat([[name, null]]));
+  }
+  // telefon: menu „Więcej” nad dolnym paskiem
+  var $more = document.getElementById('moreMenu'), $moreBtn = document.getElementById('moreBtn');
+  function moreClose(focus) { if (!$more || $more.hidden) return; $more.hidden = true; $moreBtn.setAttribute('aria-expanded', 'false'); if (focus) $moreBtn.focus(); }
+  if ($moreBtn) $moreBtn.addEventListener('click', function () {
+    if (!$more.hidden) { moreClose(); return; }
+    $more.hidden = false; $moreBtn.setAttribute('aria-expanded', 'true');
+    var a = $more.querySelector('a'); if (a) a.focus();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $more && !$more.hidden) moreClose(true); });
+  document.addEventListener('click', function (e) { if ($more && !$more.hidden && !e.target.closest('#moreMenu, #moreBtn')) moreClose(); });
+  if ($more) $more.addEventListener('click', function (e) { if (e.target.closest('a')) moreClose(); });
   window.addEventListener('hashchange', function () { var h = location.hash; if (!h || h === '#' || h.indexOf('#/') === 0) route(); });
   // kotwice w szkicu (#st-…, #send) przewijamy ręcznie — adres zostaje #/<miasto>, więc „wstecz” i odświeżenie działają
   document.addEventListener('click', function (e) {
@@ -562,17 +620,16 @@
       state.current = { city_slug: slug, version: newest.version, status: newest.status, city_name: name,
         published_version: pub ? pub.version : null, bandana_color: c.bandana_color };
       document.title = name + ' · Quolino admin';
+      tripHead(name, state.trip.country, state.trip.region);
       $d.innerHTML = '<div class="adm-trip">' +
-        '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
-        '<p class="adm-trip__where">' + esc([countryName(state.trip.country), state.trip.region ? regionName(state.trip.region) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
         '<div class="adm-tabs" role="tablist" aria-label="Wersje wycieczki ' + esc(name) + '" id="vTabs">' + tabsHtml() + '</div>' +
         '<div id="tabPanel" role="tabpanel" tabindex="-1"></div></div>';
       showTab(ver);
       flushOutbox();
       state.poll = setInterval(refreshComments, 30000);   // także w tle: zapytanie co 30 s podtrzymuje sesję panelu (30 min bez ruchu = wylogowanie)
     }).catch(function (e) {
-      $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div>' +
-        '<div class="adm-placeholder"><p>Nie udało się wczytać wycieczki: ' + esc(e.message) + '</p></div>';
+      $d.innerHTML = '<div class="adm-placeholder adm-placeholder--err" role="alert"><p>Nie udało się wczytać wycieczki: ' + esc(e.message) + '</p>' +
+        '<p class="adm-done__acts"><a class="qc-btn qc-btn--sm" href="#/trasy">← Trasy</a></p></div>';
       state.versions = null;
     });
   }
@@ -864,9 +921,7 @@
         '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa-all="keep">Zostaw wszystkie</button>' +
         '<span class="adm-q__prog" role="status" aria-live="polite"></span></div></div>';
     }).join('');
-    return '<div class="adm-flagbar"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><h3>Flagi: <b data-qleft-all>0</b></h3>' +
-      '<button type="button" class="qc-btn qc-btn--sm" data-flag-next>Przejdź do następnej</button>' +
-      (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') +
+    return '<div class="adm-q__top"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><h3>Uwagi z kontroli</h3>' +
       '<span class="adm-flagbar__sum" data-qsum></span></div>' +
       '<p class="adm-q__hint">Każda uwaga z kontroli stoi przy fragmencie, którego dotyczy — czerwona flaga w treści pola. Kliknij flagę, wybierz jedną z możliwości (rekomendacja jest zaznaczona); potem „Wyślij uwagi do poprawki”.' +
       (auto ? ' Szare flagi (' + auto + ') rozstrzygnięto automatycznie — tylko do wglądu.' : '') + '</p>' +
@@ -949,17 +1004,29 @@
     [].forEach.call($d.querySelectorAll('[data-flag="' + id + '"]'), function (f) { f.classList.add('is-on'); if (f.tagName === 'BUTTON') f.setAttribute('aria-expanded', 'true'); });
     popPlace(li);
     var r = li.getBoundingClientRect();
-    if (r.bottom > window.innerHeight - 90 || r.top < 70) window.scrollBy({ top: r.top < 70 ? r.top - 120 : Math.min(r.bottom - window.innerHeight + 110, r.top - 120) });
+    var st = stickyTop();
+    if (r.bottom > window.innerHeight - 90 || r.top < st) window.scrollBy({ top: r.top < st ? r.top - st - 50 : Math.min(r.bottom - window.innerHeight + 110, r.top - st - 50) });
     var first = li.querySelector('.adm-qo.is-rec') || li.querySelector('.adm-qo') || li.querySelector('[data-pop-close]');
     if (first) first.focus({ preventScroll: true });
   }
+  // wysokość przyklejonego nagłówka + paska akcji (pasek przykleja się tylko na szerokim ekranie)
+  function stickyTop() {
+    var t = document.querySelector('.ad-top'), a = document.getElementById('actBar'), h = t ? t.getBoundingClientRect().height : 0;
+    if (a && getComputedStyle(a).position === 'sticky') h += a.getBoundingClientRect().height;
+    return h;
+  }
+  function fitActbar() {
+    var a = document.getElementById('actBar');
+    document.body.style.setProperty('--ad-act-h', a && getComputedStyle(a).position === 'sticky' ? Math.ceil(a.getBoundingClientRect().height) + 'px' : '0px');
+  }
+  window.addEventListener('resize', fitActbar);
   function flagNext() {
     var flags = [].slice.call($d.querySelectorAll('button.adm-flag:not(.adm-flag--auto):not(.is-done)'));
     if (!flags.length) return;
     var cur = state.popLi ? flagAnchor(state.popLi.getAttribute('data-qid')) : null, i = cur ? flags.indexOf(cur) : -1, nx = null;
     if (cur && i < 0) nx = flags.filter(function (f) { return cur.compareDocumentPosition(f) & 4; })[0];
     else if (cur) nx = flags[i + 1];
-    else nx = flags.filter(function (f) { return f.getBoundingClientRect().top > 80; })[0];
+    else nx = flags.filter(function (f) { return f.getBoundingClientRect().top > stickyTop() + 10; })[0];
     nx = nx || flags[0];
     popClose();
     nx.scrollIntoView({ block: 'center' });
@@ -1278,7 +1345,7 @@
           '<button type="button" class="adm-linkbtn" data-goto="' + esc(nw) + '">Przejdź do v' + esc(nw) + '</button>') + '</p>';
     }
     state.cmpIt = it;
-    html += '<section class="adm-sheet__sec adm-cmp" id="cmpSec">' + cmpBarHtml(it) + '<div id="cmpView" class="adm-cmp__view" hidden></div></section>';
+    html += '<section class="adm-sheet__sec adm-cmp" id="cmpSec" hidden><div id="cmpView" class="adm-cmp__view" hidden></div></section>';
     html += '<section class="adm-sheet__sec adm-vc" id="verComments"></section>';
     html += '<section class="adm-sheet__sec adm-q" id="revQs" hidden></section>';
 
@@ -1329,8 +1396,20 @@
       }).join('') + '</ol>' + (state.readOnly ? '' : '<div class="adm-toc__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
       '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div>') + '</nav>';
 
+    // pasek akcji wersji (v43): przyklejony u góry — wersja, porównanie, flagi, rekomendacje, wyślij, zatwierdź/odrzuć
+    var hasQ = !!(state.qa && state.qa.list.length);
+    var act = '<div class="adm-actbar" id="actBar" role="region" aria-label="Akcje wersji ' + esc(it.label || 'v' + it.version) + '">' +
+      '<span class="adm-actbar__ver"><b>' + esc(it.label || 'v' + it.version) + '</b><span>' + esc(VST[it.status] || it.status) + (it.isNewest ? '' : ' · starsza') + '</span></span>' +
+      '<span class="adm-actbar__cmp">' + cmpBarHtml(it) + '</span>' +
+      (hasQ ? '<span class="adm-flagbar adm-actbar__flags"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><span class="adm-actbar__fl">Flagi: <b data-qleft-all>0</b></span>' +
+        '<button type="button" class="qc-btn qc-btn--sm" data-flag-next>Następna flaga</button>' +
+        (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') + '</span>' : '') +
+      (state.readOnly ? '' : '<span class="adm-actbar__go"><button type="button" class="qc-btn qc-btn--sm adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
+        '<span class="adm-actbar__dec"><button type="button" class="qc-btn qc-btn--sm adm-btn-ok" data-act="approve"' + (newStops.length ? '' : ' disabled data-lock title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>' +
+        '<button type="button" class="qc-btn qc-btn--sm adm-btn-no" data-act="reject">Odrzuć szkic</button></span></span>') + '</div>';
     var $p = document.getElementById('tabPanel') || $d;
-    $p.innerHTML = '<div class="adm-split">' + html + toc + '</div>';
+    $p.innerHTML = act + '<div class="adm-split">' + html + toc + '</div>';
+    fitActbar();
     $p.setAttribute('aria-labelledby', 'tab-v' + it.version);
     var vc = document.getElementById('verComments');
     vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML;    // po wstawieniu menu: nazwy przystanków z menu
@@ -1529,7 +1608,7 @@
     var opts = cmpOptions(it);
     if (!opts.length) return '<p class="adm-cmp__none">Pierwsza wersja tej wycieczki — nie ma z czym porównać.</p>';
     if (state.cmpSel && !opts.some(function (o) { return o[0] === state.cmpSel; })) state.cmpSel = '';
-    return '<div class="adm-cmp__bar"><label for="cmpSel">Pokaż zmiany względem:</label>' +
+    return '<div class="adm-cmp__bar"><label for="cmpSel">Porównaj z:</label>' +
       '<select id="cmpSel" class="adm-cmp__sel"><option value="">— bez porównania (zwykły widok) —</option>' +
       opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (state.cmpSel === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
       '<span class="adm-cmp__leg" aria-hidden="true"><del class="adm-df__del">usunięte</del> <ins class="adm-df__ins">dodane</ins></span></div>';
@@ -1568,7 +1647,9 @@
     if (!sheet || !v || !it) return;
     var on = !!state.cmpSel && !!cmpBaseRow(it, state.cmpSel);
     sheet.classList.toggle('is-cmp', on); if (split) split.classList.toggle('is-cmp', on);
+    var sec = document.getElementById('cmpSec'); if (sec) sec.hidden = !on;
     v.innerHTML = on ? cmpViewHtml(it) : ''; v.hidden = !on;
+    fitActbar();
     if (state.popLi) popClose();
   }
   $d.addEventListener('change', function (e) {
@@ -2090,7 +2171,7 @@
       $d.innerHTML = '<div class="adm-sheet"><div class="adm-done"><h3>' + (act === 'approve' ? 'Opublikowane' : 'Odrzucone') + '</h3><p>' +
         esc(it.city_name || it.city_slug) + ' v' + it.version + (act === 'approve' ? ' jest teraz wersją na stronie. Poprzednia trafiła do historii.' : ' trafił do historii jako odrzucony.') +
         (act === 'approve' ? '</p><p style="margin-top:14px"><a href="../city.html?c=' + encodeURIComponent(it.city_slug) + '" target="_blank" rel="noopener">Otwórz stronę miasta</a>' : '') +
-        '</p><p class="adm-done__acts"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
+        '</p><p class="adm-done__acts"><a class="qc-btn qc-btn--sm adm-back" href="#/trasy">← Trasy</a><a class="qc-btn qc-btn--sm" href="#/">Pulpit</a>' +
         '<button type="button" class="qc-btn qc-btn--sm" data-reopen="' + esc(it.city_slug) + '">Wersje tej wycieczki</button></p></div></div>';
       state.trip = null; state.versions = null; state.current = null;
       loadTrips();
@@ -2195,13 +2276,13 @@
         return Promise.all(mains.map(function (r) { return api('/pipeline_events?run_id=eq.' + encodeURIComponent(r.run_id) + '&order=id.asc').catch(function () { return []; }); }))
           .then(function (evs) { render(order, by, evs, queue, runs); });
       }).catch(function (e) {
-        $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><p class="adm-empty">Postęp prac niedostępny: ' + esc(e.message) + '</p>';
+        $d.innerHTML = '<p class="adm-empty">Postęp prac niedostępny: ' + esc(e.message) + '</p>';
       });
     };
     function render(order, by, evs, queue, runs) {
       var active = order.filter(function (k) { return by[k][0].status === 'running' || by[k][0].status === 'stalled'; }).length;
       var sumG = runs.reduce(function (s, r) { return s + (+r.gemini_tokens || 0); }, 0), sumC = runs.reduce(function (s, r) { return s + (+r.claude_tokens || 0); }, 0);
-      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a>' +
+      var h = '<div class="adm-trip__bar">' +
         '<span class="adm-cm__meta">odświeża się co 30 s · ' + esc(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</span></div>' +
         '<section class="pg"><header class="pg-head"><div><p class="label">Postęp prac</p><h2>Wycieczki w procesie</h2></div>' +
         '<dl class="pg-kpi"><div><dt>pracuje</dt><dd>' + active + '</dd></div><div><dt>w kolejce</dt><dd>' + queue.filter(function (j) { return j.status === 'queued'; }).length + '</dd></div>' +
@@ -2275,7 +2356,7 @@
     var mode = 'm'; try { mode = localStorage.getItem('adm.costMode') || 'm'; } catch (e) { /* brak */ }
     var rows = null, err = null;
     function draw() {
-      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a><a class="qc-btn qc-btn--sm" href="#/postep">Postęp prac</a></div><section class="pg">';
+      var h = '<section class="pg">';
       if (err) { $d.innerHTML = h + '<p class="adm-empty">Koszty AI niedostępne: ' + esc(err) + '<br>Potrzebny SQL 2026-10-25-koszty-ai.sql (zatwierdzenie wdrożenia).</p></section>'; return; }
       var per = {}, keys = [], prov = {}, roles = {};
       rows.forEach(function (r) {
@@ -2353,7 +2434,7 @@
         .catch(function (e) { err = e.message; draw(); });
     }
     function draw() {
-      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><section class="pg">';
+      var h = '<section class="pg">';
       if (err) { $d.innerHTML = h + '<p class="adm-empty">Zgłoszenia niedostępne: ' + esc(err) + '<br>Potrzebny SQL 2026-10-25-zgloszenia-ai.sql (zatwierdzenie wdrożenia).</p></section>'; return; }
       var open = rows.filter(function (r) { return FB_OPEN[r.status]; });
       var urgent = open.filter(function (r) { return r.ai_priority === 1 || r.category === 'bezpieczenstwo' || r.category === 'fakt_zamkniete'; });
@@ -2518,10 +2599,13 @@
   }
   function paintInboxCount() {
     var n = inbox.n;
-    [['decNav', true], ['decCount', false]].forEach(function (x) {
+    var C = inbox.data ? inbox.data.count : {};
+    [['decNav', n, ' do decyzji'], ['decTab', n, ' do decyzji'], ['decCount', n, ' do decyzji'], ['watchNav', C.watch, ' ustaleń strażników'],
+      ['iconNav', C.icon, ' tras ze zdjęciami do wyboru'], ['iconMore', C.icon, ' tras ze zdjęciami do wyboru']].forEach(function (x) {
       var el = document.getElementById(x[0]); if (!el) return;
-      el.textContent = n == null ? '·' : n; el.classList.toggle('is-zero', !n);
-      el.setAttribute('title', n == null ? 'ładuję' : n + ' do decyzji');
+      var v = n == null ? null : x[1];
+      el.textContent = v == null ? '·' : v; el.classList.toggle('is-zero', !v);
+      el.setAttribute('title', v == null ? 'ładuję' : v + x[2]);
     });
     var box = document.getElementById('decStart');
     if (box) {
@@ -2661,43 +2745,48 @@
   function decSection(id, title, n, body) {
     return '<section class="dec-sec" id="dec-' + id + '" aria-labelledby="dech-' + id + '"><h3 class="pg-h3" id="dech-' + id + '">' + esc(title) + ' <b class="adm-n' + (n ? '' : ' is-zero') + '">' + n + '</b></h3>' + body + '</section>';
   }
-  function openDecisions() {
+  // only: null = cała skrzynka (#/decyzje); 'straznicy' / 'ikony' = jedna sekcja z własnej pozycji w nawigacji
+  function openDecisions(only) {
     state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
+    var myHash = location.hash;
     function draw(d) {
-      if (location.hash !== '#/decyzje') return;
+      if (location.hash !== myHash) return;
       var keep = {}; [].forEach.call($d.querySelectorAll('details[data-k]'), function (x) { keep[x.getAttribute('data-k')] = x.open; });
       var C = d.count, none = function (t) { return '<p class="adm-empty dec-empty">' + esc(t) + '</p>'; };
       var errBox = function (src, what) { return '<p class="adm-cmwarn">' + esc(what) + ' niedostępne: ' + esc(src.err) + (/deploy_requests|cost_requests|ai_budget|admin_watch_open|decision_drafts|schema cache|does not exist|404/i.test(src.err) ? ' — ' + DEC_SQL : '') + '</p>'; };
-      var h = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a><span class="adm-cm__meta">odświeża się co 30 s · ' +
+      var h = '<div class="adm-trip__bar"><span class="adm-cm__meta">odświeża się co 30 s · ' +
         esc(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</span></div><section class="pg dec">' +
-        '<header class="pg-head"><div><p class="label">Skrzynka decyzji</p><h2>' + (inbox.n ? 'Czeka na Ciebie: ' + inbox.n : 'Nic nie czeka') + '</h2></div>' +
+        (only ? '' : '<header class="pg-head"><div><h2>' + (inbox.n ? 'Czeka na Ciebie: ' + inbox.n : 'Nic nie czeka') + '</h2></div>' +
         '<dl class="pg-kpi"><div><dt>wdrożenia</dt><dd>' + C.deploy + '</dd></div><div><dt>koszty</dt><dd>' + C.cost + '</dd></div><div><dt>strażnicy</dt><dd>' + C.watch + '</dd></div>' +
-        '<div><dt>szkice</dt><dd>' + C.draft + '</dd></div><div><dt>ikony</dt><dd>' + C.icon + '</dd></div></dl></header>' +
-        '<p class="dec-lead">Każdy przycisk zapisuje decyzję; serwer wykonuje ją sam — wdrożenia w ciągu 2 min, zlecenia w ciągu 10 min. Wynik zobaczysz tutaj.</p>';
+        '<div><dt>szkice</dt><dd>' + C.draft + '</dd></div><div><dt>ikony</dt><dd>' + C.icon + '</dd></div></dl></header>') +
+        '<p class="dec-lead">' + (only === 'straznicy' ? 'Strażnicy co dzień sprawdzają godziny, ceny, linki, lokale i zmiany sezonu na trasach. Każde ustalenie czeka tu na Twoją decyzję.'
+          : only === 'ikony' ? 'Do każdego zabytku możesz wybrać 1–2 zdjęcia referencyjne do ikony Quo. Bez decyzji po terminie generator wybierze sam.'
+          : 'Każdy przycisk zapisuje decyzję; serwer wykonuje ją sam — wdrożenia w ciągu 2 min, zlecenia w ciągu 10 min. Wynik zobaczysz tutaj.') + '</p>';
+      if (only === 'straznicy') h += watchRunsHtml(d);
       // wdrożenia
       var dep = d.deploys.err ? errBox(d.deploys, 'Wdrożenia') : d.deploys.ok.length ? d.deploys.ok.map(deployHtml).join('') : none('Nic nie czeka na wdrożenie.');
-      h += decSection('wdrozenia', 'Wdrożenia (SQL i serwer)', C.deploy, dep);
+      if (!only) h += decSection('wdrozenia', 'Wdrożenia (SQL i serwer)', C.deploy, dep);
       // koszty + budżet
       var b = d.budget.ok && d.budget.ok[0];
       var open = d.costs.ok ? d.costs.ok.filter(function (r) { return /pending|approved|running/.test(r.status); }) : [];
-      h += decSection('koszty', 'Zgody na koszty', C.cost, (b ? budgetHtml(b) : d.budget.err ? errBox(d.budget, 'Budżet') : '') +
+      if (!only) h += decSection('koszty', 'Zgody na koszty', C.cost, (b ? budgetHtml(b) : d.budget.err ? errBox(d.budget, 'Budżet') : '') +
         (d.costs.err ? errBox(d.costs, 'Prośby o zgodę') : open.length ? open.map(function (r) { return costHtml(r, b); }).join('') : none('Nic nie czeka na zgodę na koszt.')));
       // strażnicy
       var w = d.watch.ok;
-      h += decSection('straznicy', 'Ustalenia strażników', C.watch, d.watch.err ? (/admin_watch_open|404|schema cache|does not exist/i.test(d.watch.err) ? none('Strażnicy jeszcze nie działają (' + DEC_SQL + ')') : errBox(d.watch, 'Ustalenia'))
+      if (!only || only === 'straznicy') h += decSection('straznicy', 'Ustalenia strażników', C.watch, d.watch.err ? (/admin_watch_open|404|schema cache|does not exist/i.test(d.watch.err) ? none('Strażnicy jeszcze nie działają (' + DEC_SQL + ')') : errBox(d.watch, 'Ustalenia'))
         : !w || !w.ready ? none('Strażnicy jeszcze nie działają — pojawią się po wdrożeniu SQL 2026-10-30-straznicy.sql.')
         : (w.rows || []).length ? w.rows.map(function (r) { return watchHtml(r, !!w.decide); }).join('') : none('Strażnicy nie mają otwartych ustaleń.'));
       // szkice
-      h += decSection('szkice', 'Szkice tras do zatwierdzenia', C.draft, d.drafts.err ? errBox(d.drafts, 'Szkice') : d.drafts.ok.length ? d.drafts.ok.map(draftHtml).join('') : none('Żaden szkic nie czeka.'));
+      if (!only) h += decSection('szkice', 'Szkice tras do zatwierdzenia', C.draft, d.drafts.err ? errBox(d.drafts, 'Szkice') : d.drafts.ok.length ? d.drafts.ok.map(draftHtml).join('') : none('Żaden szkic nie czeka.'));
       // ikony
-      h += decSection('ikony', 'Zdjęcia do ikon', C.icon, d.icons.err ? errBox(d.icons, 'Wybór zdjęć') : d.icons.ok.length ? d.icons.ok.map(iconHtml).join('') : none('Wszystkie przystanki z kandydatami mają decyzję.'));
-      h += histHtml(d);
+      if (!only || only === 'ikony') h += decSection('ikony', 'Zdjęcia do ikon', C.icon, d.icons.err ? errBox(d.icons, 'Wybór zdjęć') : d.icons.ok.length ? d.icons.ok.map(iconHtml).join('') : none('Wszystkie przystanki z kandydatami mają decyzję.'));
+      if (!only) h += histHtml(d);
       $d.innerHTML = h + '</section>';
       [].forEach.call($d.querySelectorAll('details[data-k]'), function (x) { if (keep[x.getAttribute('data-k')]) x.open = true; });
     }
     function reload() {
-      return loadInbox().then(draw).catch(function (e) {
-        $d.innerHTML = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><p class="adm-empty">Skrzynka decyzji niedostępna: ' + esc(e.message) + '</p>';
+      return Promise.all([loadInbox(), only === 'straznicy' ? loadOps().catch(function () { return null; }) : null]).then(function (r) { draw(r[0]); }).catch(function (e) {
+        $d.innerHTML = '<p class="adm-empty">Skrzynka decyzji niedostępna: ' + esc(e.message) + '</p>';
       });
     }
     function say(card, msg, bad) { var m = card.querySelector('.dec-msg'); if (m) { m.className = 'adm-msg dec-msg' + (bad ? ' adm-msg--err' : ''); m.textContent = msg; } }
@@ -2743,9 +2832,9 @@
         .then(function () { m.textContent = 'Zapisane.'; setTimeout(reload, 400); }, function (err) { m.className = 'adm-msg adm-msg--err'; m.textContent = 'Nie zapisano: ' + err.message; });
     };
     $d.onchange = null;
-    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję skrzynkę decyzji…</p></div>';
-    reload(); state.poll = setInterval(function () { if (location.hash === '#/decyzje' && !document.hidden && !$d.querySelector('.is-armed') && !$d.contains(document.activeElement && document.activeElement.matches('input') ? document.activeElement : null)) reload(); }, 30000);
-    document.title = 'Decyzje · Quolino admin';
+    $d.innerHTML = loadingHtml(only === 'straznicy' ? 'Ładuję ustalenia strażników…' : only === 'ikony' ? 'Ładuję zdjęcia do ikon…' : 'Ładuję skrzynkę decyzji…');
+    reload(); state.poll = setInterval(function () { if (location.hash === myHash && !document.hidden && !$d.querySelector('.is-armed') && !$d.contains(document.activeElement && document.activeElement.matches('input') ? document.activeElement : null)) reload(); }, 30000);
+    document.title = (only ? SECTIONS[only] : 'Decyzje') + ' · Quolino admin';
   }
   function demoDecide(kind, id, act) {
     var D = demoInbox();
@@ -2761,6 +2850,334 @@
   // licznik w nagłówku i na stronie startowej: przy starcie, co minutę i po powrocie do karty
   setInterval(function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* licznik pomocniczy */ }); }, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* jw. */ }); });
+
+  // ── Pulpit (JP 2026-10-31): cały projekt na jednym ekranie ──
+  // Tylko istniejące źródła: admin_trips, skrzynka decyzji (loadInbox), draft_revision_requests + draft_comments (stan uwag),
+  // pipeline_runs / pipeline_queue (praca w tle), ai_usage_daily (koszty), opcjonalnie rpc/ops_status (podgląd serwera:
+  // cron, blokady, ostatni komunikat deploy.sh, przebiegi strażników). Bez ops_status kafelek serwera pokazuje tylko to, co jest w admin.
+  // Kolumny verify_* (sprawdzenie naniesienia uwag, bin/draft-comments.mjs) obsługiwane opcjonalnie — gdy ich nie ma, nic nie znika.
+  function loadingHtml(t) { return '<div class="ad-loading" role="status"><span class="ad-spin" aria-hidden="true"></span><p>' + esc(t) + '</p></div>'; }
+  var ops = { data: null, at: 0, off: false, p: null };
+  function loadOps() {
+    if (DEMO) { ops.data = demoOps(); return Promise.resolve(ops.data); }
+    if (ops.off) return Promise.resolve(null);
+    if (ops.data && Date.now() - ops.at < 60000) return Promise.resolve(ops.data);
+    if (ops.p) return ops.p;
+    ops.p = api('/rpc/ops_status', { method: 'POST', body: {} }).then(function (r) {
+      ops.data = r && r.snapshots ? r : null; ops.at = Date.now(); if (!ops.data) ops.off = true; return ops.data;
+    }, function (e) { if (e && e.session) throw e; ops.off = true; return null; })
+      .then(function (v) { ops.p = null; return v; }, function (e) { ops.p = null; throw e; });
+    return ops.p;
+  }
+  function snap(k) { var s = ops.data && ops.data.snapshots && ops.data.snapshots[k]; return s && s.data && typeof s.data === 'object' ? s.data : null; }
+  function demoOps() {
+    var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
+    return { now: iso(0), snapshots: {
+      deploy: { data: { last_message: iso(25).slice(0, 16).replace('T', ' ') + ' UTC\n✅ zatwierdzone i wdrożone: d6933f0 Uwagi z panelu: prośby wracają do kolejki same', last_message_at: iso(25), waiting_for_jp: false, repo_head: 'd6933f0 Uwagi z panelu' } },
+      cron: { data: { last_run: iso(3), trigger: 'gemini-queue', gemini_queue_lock: null, repo_jobs_lock: null, watch_lock: null } },
+      queue: { data: { open: [], failed_7d: [{ id: 8, city_slug: 'urbino', kind: 'translate', result: 'cs: tłumaczenie ucięte', finished_at: iso(3000) }],
+        usage_24h: [], agyQuotaOut: new Date(now + 200 * 60000).toISOString(), agyWeekCalls: 159 } },
+      watch: { data: { ready: true, open_by_kind: [{ kind: 'hours', open: 1 }, { kind: 'link', open: 1 }],
+        state: { last: { prices: { at: iso(140), found: 6, ai: 4 }, links: { at: iso(120), found: 1, ai: 0 }, season: { at: iso(150), found: 2, ai: 1 },
+          venues: { at: iso(160), found: 0, ai: 0 }, site: { at: iso(110), found: 0, ai: 0 }, track: { at: iso(170), found: 0, ai: 0 }, costs: { at: iso(180), found: 0, ai: 0 } } } } }
+    } };
+  }
+  var WRUN = { prices: 'ceny i godziny', links: 'linki', site: 'strona', costs: 'koszty AI', track: 'zamknięcia', season: 'sezon', venues: 'lokale', hours: 'godziny', photos: 'zdjęcia' };
+  function watchRunsHtml(d) {
+    var w = snap('watch'), last = w && w.state && w.state.last, rows = (d && d.watch.ok && d.watch.ok.rows) || [], by = {};
+    rows.forEach(function (r) { by[r.kind] = (by[r.kind] || 0) + 1; });
+    var kinds = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
+    var h = '<section class="dec-sec" aria-labelledby="wrH"><h3 class="pg-h3" id="wrH">Stan strażników</h3><div class="pg-card ad-wruns">';
+    h += kinds.length ? '<p class="ad-wruns__sum">Otwarte ustalenia: ' + kinds.map(function (k) { return '<span class="ad-chip">' + esc(WKIND[k] || k) + ' <b>' + by[k] + '</b></span>'; }).join(' ') + '</p>'
+      : '<p class="ad-wruns__sum">Brak otwartych ustaleń.</p>';
+    if (last && Object.keys(last).length) {
+      h += '<ul class="ad-wruns__list">' + Object.keys(last).sort().map(function (k) {
+        var x = last[k] || {};
+        return '<li><b>' + esc(WRUN[k] || k) + '</b><span>' + (x.at ? esc(ago(x.at)) : '—') + '</span><span>' + plForm(+x.found || 0, 'ustalenie', 'ustalenia', 'ustaleń') + '</span></li>';
+      }).join('') + '</ul>';
+    } else h += '<p class="ad-note">Czas ostatnich przebiegów pojawi się, gdy panel dostanie podgląd serwera (funkcja <code>ops_status</code> w schemacie admin).</p>';
+    return h + '</div></section>';
+  }
+
+  var IC = {
+    draft: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
+    deploy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v5h16v-5"/></svg>',
+    cost: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 3 5.8 1.6 5.8 4.4 0 1.3-1.2 2.1-3 2.1-1.4 0-2.5-.6-3-1.6M12 6v1.8M12 16.4V18"/></svg>',
+    watch: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/></svg>',
+    icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8.5 8.5"/></svg>',
+    rev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></svg>',
+    bad: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5L22 20H2z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>',
+    wait: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+    ext: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg>'
+  };
+  // status = kolor + słowo + kształt ikony (nie sam kolor)
+  function stChip(tone, txt) { var i = tone === 'bad' ? IC.bad : tone === 'ok' ? IC.ok : IC.wait; return '<span class="ad-st ad-st--' + tone + '">' + i + '<span>' + esc(txt) + '</span></span>'; }
+  function todoRow(kind, href, title, meta, tone, status, ext) {
+    return '<li class="ad-todo ad-todo--' + tone + '"><span class="ad-todo__ic ad-todo__ic--' + kind + '">' + IC[kind] + '</span>' +
+      '<div class="ad-todo__b"><a class="ad-todo__t" href="' + esc(href) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>' + title + '</a>' + (meta ? '<p class="ad-todo__m">' + meta + '</p>' : '') + '</div>' +
+      (status ? stChip(tone, status) : '') + '</li>';
+  }
+  var REQST = { 'new': ['wait', 'w kolejce'], working: ['wait', 'Hermes nanosi'], done: ['ok', 'naniesione'], failed: ['bad', 'nieudane'] };
+  function n_(v) { return v == null || v === '' || isNaN(+v) ? null : +v; }
+  // weryfikacja naniesienia (kolumny verify_* — dodaje je bin/draft-comments.mjs; nazwy przyjmujemy elastycznie)
+  function verifyOf(r, cms) {
+    var has = Object.keys(r).some(function (k) { return /^verify_/.test(k) && r[k] != null; });
+    var applied = n_(r.verify_applied != null ? r.verify_applied : r.verify_done != null ? r.verify_done : r.verify_ok_count);
+    var total = n_(r.verify_total != null ? r.verify_total : r.verify_count);
+    var st = r.verify_status || r.verify_state || r.verify_result || null;
+    if (applied == null || total == null) {
+      var own = cms.filter(function (c) { return Object.keys(c).some(function (k) { return /^verify_/.test(k) && c[k] != null; }); });
+      if (own.length) {
+        has = true; total = own.length;
+        applied = own.filter(function (c) { var v = c.verify_status || c.verify_state || c.verify_result || c.verify_ok; return v === true || /^(ok|applied|done|passed|verified|true)$/i.test(String(v)); }).length;
+      }
+    }
+    if (!has) return null;
+    var ready = /^(ok|passed|ready|done|complete|verified)$/i.test(String(st || '')) || (total != null && total > 0 && applied >= total);
+    var bad = /^(failed|error|missing|partial)$/i.test(String(st || '')) || (total != null && applied != null && applied < total);
+    return { ready: ready && !(/^(failed|error)$/i.test(String(st || ''))), bad: bad && !ready, applied: applied, total: total, st: st };
+  }
+  function revRow(r, cms, names) {
+    var mine = cms.filter(function (c) { return +c.request_id === +r.id; });
+    var n = Array.isArray(r.comment_ids) ? r.comment_ids.length : mine.length;
+    var st = REQST[r.status] || ['wait', r.status], tone = st[0], label = st[1];
+    var nm = names[r.city_slug] || titleCase(r.city_slug), meta = [];
+    meta.push(plForm(n, 'uwaga', 'uwagi', 'uwag') + ' do v' + esc(r.city_version));
+    if (r.status === 'done' && r.result_version) label = 'naniesione w v' + r.result_version;
+    if (r.status === 'done' && mine.length) {
+      var ok = mine.filter(function (c) { return c.status === 'done'; }).length, rej = mine.filter(function (c) { return c.status === 'rejected'; }).length;
+      meta.push('Hermes: ' + ok + ' z ' + mine.length + ' poprawione' + (rej ? ', ' + rej + ' odrzucone z powodem' : ''));
+    }
+    var v = verifyOf(r, mine);
+    if (v) {
+      if (v.ready) { tone = 'ok'; label = 'gotowa do akceptacji'; }
+      else if (v.applied != null && v.total != null) { tone = v.bad && r.status === 'done' ? 'bad' : tone; label = v.applied + ' z ' + v.total + ' naniesionych'; }
+      else if (v.st) label = String(v.st);
+    }
+    if (r.hermes_reply) meta.push('„' + esc(String(r.hermes_reply).slice(0, 140)) + (String(r.hermes_reply).length > 140 ? '…' : '') + '”');
+    meta.push(esc(when(r.updated_at || r.created_at)));
+    return todoRow('rev', '#/' + encodeURIComponent(r.city_slug), esc(nm) + ' — uwagi wysłane do poprawki', meta.join(' · '), tone, label);
+  }
+
+  var STAGE4 = ['szkic', 'kontrola', 'do akceptacji', 'opublikowana'];
+  function stageOf(t, runs, reqs) {
+    var run = runs.filter(function (r) { return r.city_slug === t.slug && (r.status === 'running' || r.status === 'stalled'); })[0];
+    if (run) {
+      var early = run.kind !== 'revise' && (+run.stage || 0) < 4;
+      return { i: early ? 0 : 1, tone: run.status === 'stalled' ? 'bad' : 'wait', sub: run.status === 'stalled' ? 'stoi ≥ 15 min' : early ? 'Hermes pisze' : run.kind === 'revise' ? 'poprawki w toku' : 'kontrola w toku' };
+    }
+    var rq = reqs.filter(function (r) { return r.city_slug === t.slug && (r.status === 'new' || r.status === 'working'); })[0];
+    if (rq) return { i: 1, tone: 'wait', sub: rq.status === 'working' ? 'Hermes nanosi uwagi' : 'uwagi w kolejce' };
+    if (t.status === 'draft') return { i: 2, tone: 'warn', sub: t.published != null ? 'zmiana opublikowanej v' + t.published : 'nowa trasa' };
+    if (t.status === 'published') return { i: 3, tone: 'ok', sub: '' };
+    return { i: -1, tone: 'off', sub: VST[t.status] || t.status };
+  }
+  function stageHtml(s) {
+    var label = s.i < 0 ? s.sub : STAGE4[s.i];
+    return '<span class="ad-stage ad-stage--' + s.tone + '"><span class="ad-stage__bars" aria-hidden="true">' + STAGE4.map(function (x, i) {
+      return '<i class="' + (i < s.i || (i === s.i && s.i === 3) ? 'is-done' : i === s.i ? 'is-now' : '') + '"></i>';
+    }).join('') + '</span><span class="ad-stage__t"><b>' + esc(label) + '</b>' + (s.sub && s.i >= 0 ? '<small>' + esc(s.sub) + '</small>' : '') + '</span>' +
+      '<span class="adm-sr">' + (s.i >= 0 ? 'etap ' + (s.i + 1) + ' z 4' : '') + '</span></span>';
+  }
+
+  function openDashboard() {
+    state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
+    $d.onclick = null; $d.onsubmit = null; $d.onchange = null;
+    document.title = 'Pulpit · Quolino admin';
+    if (!$d.querySelector('.ad-dash')) $d.innerHTML = loadingHtml('Ładuję pulpit…');
+    var soft = function (p) { return Promise.resolve(p).then(function (v) { return { ok: v }; }, function (e) { if (e && e.session) throw e; return { err: e && e.message || 'błąd' }; }); };
+    var since = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+    Promise.all([
+      Promise.resolve(state.tripsP).catch(function () { return null; }),
+      soft(loadInbox()),
+      soft(api('/draft_revision_requests?order=id.desc&limit=12')),
+      soft(api('/draft_comments?select=*&request_id=not.is.null&order=id.desc&limit=400')),
+      soft(api('/pipeline_runs?order=last_at.desc&limit=40')),
+      soft(api('/pipeline_queue?status=in.(queued,running)&order=id.asc')),
+      soft(DEMO ? Promise.resolve(demoCosts().filter(function (r) { return r.day >= since; })) : api('/ai_usage_daily?day=gte.' + since + '&order=day.desc&limit=2000')),
+      loadOps().catch(function () { return null; })
+    ]).then(function (r) {
+      if (location.hash && location.hash !== '#/' && location.hash !== '#/pulpit' && location.hash !== '#') return;
+      drawDash({ inbox: r[1], revs: r[2], cms: r[3], runs: r[4], queue: r[5], usage: r[6] });
+    }).catch(function (e) {
+      $d.innerHTML = '<div class="adm-placeholder adm-placeholder--err" role="alert"><p>Pulpit niedostępny: ' + esc(e.message) + '</p></div>';
+    });
+    state.poll = setInterval(function () { if ((!location.hash || location.hash === '#/' || location.hash === '#/pulpit') && !document.hidden) openDashboard(); }, 60000);
+  }
+
+  function drawDash(D) {
+    var T = state.trips || [], I = D.inbox.ok || null, C = I ? I.count : null;
+    var names = {}; T.forEach(function (t) { names[t.slug] = t.name; });
+    var runs = D.runs.ok || [], reqs = D.revs.ok || [], cms = D.cms.ok || [], queue = D.queue.ok || [];
+    var redBy = {}; if (I && I.drafts.ok) I.drafts.ok.forEach(function (x) { redBy[x.city_slug] = x; });
+
+    // ─ Czeka na Ciebie ─
+    var todo = [];
+    if (I) {
+      (I.drafts.ok || []).forEach(function (x) {
+        var red = x.red_flags;
+        todo.push(todoRow('draft', '#/' + encodeURIComponent(x.city_slug), esc(x.city_name || titleCase(x.city_slug)) + ' v' + esc(x.version) + ' — szkic do akceptacji',
+          esc([x.published_version == null ? 'nowa trasa' : 'zmiana opublikowanej v' + x.published_version, x.stops_count ? plForm(+x.stops_count, 'przystanek', 'przystanki', 'przystanków') : '', when(x.created_at)].filter(Boolean).join(' · ')),
+          red ? 'bad' : 'warn', red == null ? 'do przejrzenia' : red ? plForm(red, 'czerwona flaga', 'czerwone flagi', 'czerwonych flag') : 'bez czerwonych flag'));
+      });
+      (I.deploys.ok || []).filter(function (x) { return x.status === 'pending'; }).forEach(function (x) {
+        var f = deployFiles(x).map(shortPath);
+        todo.push(todoRow('deploy', '#/decyzje', 'Wdrożenie czeka na zgodę', esc(f.slice(0, 3).join(', ') + (f.length > 3 ? ' i ' + (f.length - 3) + ' innych' : '')) + ' · ' + esc(when(x.created_at)), 'warn', 'zgoda'));
+      });
+      (I.costs.ok || []).filter(function (x) { return x.status === 'pending'; }).forEach(function (x) {
+        todo.push(todoRow('cost', '#/decyzje', esc(x.title || 'Zgoda na koszt'), (x.est_usd != null ? 'szacunek ' + esc(usdPl(x.est_usd)) + ' · ' : '') + esc(when(x.created_at)), 'warn', 'zgoda na koszt'));
+      });
+      var wr = (I.watch.ok && I.watch.ok.ready && I.watch.ok.rows) || [];
+      if (wr.length) {
+        var wb = {}; wr.forEach(function (r) { wb[r.kind] = (wb[r.kind] || 0) + 1; });
+        todo.push(todoRow('watch', '#/straznicy', plForm(wr.length, 'ustalenie strażników', 'ustalenia strażników', 'ustaleń strażników'),
+          esc(Object.keys(wb).map(function (k) { return (WKIND[k] || k) + ': ' + wb[k]; }).join(' · ')), 'warn', 'do decyzji'));
+      }
+      (I.icons.ok || []).forEach(function (x) {
+        var late = x.deadline && Date.parse(x.deadline) < Date.now();
+        todo.push(todoRow('icon', '#/' + encodeURIComponent(x.trip), esc(names[x.trip] || titleCase(x.trip)) + ' — zdjęcia do ikon',
+          esc(plForm(x.stops.length, 'przystanek', 'przystanki', 'przystanków') + ' bez wyboru') + (x.deadline ? ' · ' + (late ? 'termin minął ' : 'automat ruszy ') + esc(when(x.deadline)) : ''),
+          late ? 'bad' : 'warn', late ? 'po terminie' : 'termin ' + dayMonth(x.deadline)));
+      });
+    }
+    var revOpen = reqs.filter(function (r) { return r.status !== 'done'; }), revDone = reqs.filter(function (r) { return r.status === 'done'; }).slice(0, Math.max(0, 4 - revOpen.length));
+    var revRows = revOpen.concat(revDone).map(function (r) { return revRow(r, cms, names); });
+    var errs = I ? ['deploys', 'costs', 'watch', 'drafts', 'icons'].filter(function (k) { return I[k].err; }) : [];
+
+    var h = '<div class="ad-dash">';
+    // KPI
+    var pub = T.filter(function (t) { return t.published != null; }).length, drafts = T.filter(function (t) { return t.status === 'draft'; }).length;
+    var busy = runs.filter(function (r) { return r.status === 'running' || r.status === 'stalled'; }).length + reqs.filter(function (r) { return r.status === 'new' || r.status === 'working'; }).length;
+    h += '<section class="ad-kpis" aria-label="Stan projektu">' +
+      kpi('#/decyzje', 'Czeka na decyzję', inbox.n == null ? '—' : inbox.n, inbox.n ? 'hot' : '') +
+      kpi('#/trasy', 'Szkice do akceptacji', drafts, '') +
+      kpi('#/postep', 'W pracy (Hermes)', busy, '') +
+      kpi('#/trasy', 'Trasy opublikowane', pub + '<small> z ' + T.length + '</small>', '') + '</section>';
+
+    h += '<div class="ad-grid">';
+    h += '<section class="ad-card ad-card--todo" aria-labelledby="todoH"><header class="ad-card__h"><h2 id="todoH">Czeka na Ciebie</h2>' +
+      (todo.length ? '<b class="ad-badge ad-badge--hot">' + todo.length + '</b>' : '') + '<a class="ad-card__more" href="#/decyzje">Wszystkie decyzje →</a></header>';
+    if (!I) h += '<p class="ad-note ad-note--err" role="alert">Skrzynka decyzji niedostępna: ' + esc(D.inbox.err) + '</p>';
+    else if (todo.length) h += '<ul class="ad-todos">' + todo.join('') + '</ul>';
+    else h += '<div class="ad-empty">' + IC.ok + '<p><b>Nic nie czeka na Twoją decyzję.</b> Szkice, wdrożenia, koszty, strażnicy i zdjęcia do ikon — wszystko rozstrzygnięte.</p></div>';
+    if (errs.length) h += '<p class="ad-note">Niedostępne źródła: ' + esc(errs.map(function (k) { return { deploys: 'wdrożenia', costs: 'koszty', watch: 'strażnicy', drafts: 'szkice', icons: 'ikony' }[k]; }).join(', ')) + ' — szczegóły w Decyzjach.</p>';
+    h += '<h3 class="ad-sub">Uwagi wysłane do poprawki</h3>';
+    if (D.revs.err) h += '<p class="ad-note">Stan uwag niedostępny (' + esc(D.revs.err) + ').</p>';
+    else h += revRows.length ? '<ul class="ad-todos">' + revRows.join('') + '</ul>' : '<p class="ad-note">Brak wysłanych uwag.</p>';
+    h += '</section>';
+
+    // ─ Zdrowie ─
+    h += '<div class="ad-health">' + serverCard(I, runs, queue) + watchCard(I) + costCard(D.usage, I) +
+      '<a class="ad-card ad-card--link" href="https://stats.quolino.com/" target="_blank" rel="noopener"><span class="ad-card--link__ic">' + IC.ext + '</span>' +
+      '<span><b>Statystyki odwiedzin</b><small>stats.quolino.com — otwiera nową kartę</small></span></a></div>';
+    h += '</div>';
+
+    // ─ Trasy ─
+    var withLangs = T.some(function (t) { return t.langs && t.langs.length; });
+    var rows = T.map(function (t) { return { t: t, s: stageOf(t, runs, reqs) }; });
+    var ord = { 2: 0, 1: 1, 0: 2, 3: 3, '-1': 4 };
+    rows.sort(function (a, b) { return ord[a.s.i] - ord[b.s.i] || (Date.parse(b.t.latestAt) || 0) - (Date.parse(a.t.latestAt) || 0); });
+    h += '<section class="ad-card ad-card--trips" aria-labelledby="tripsH"><header class="ad-card__h"><h2 id="tripsH">Trasy</h2><b class="ad-badge">' + T.length + '</b>' +
+      '<a class="ad-card__more" href="#/trasy">Lista z filtrami →</a></header>';
+    if (!state.trips) h += '<p class="ad-note ad-note--err" role="alert">Nie mogę wczytać tras z API admina. Podgląd na danych testowych: <a href="?demo=1">?demo=1</a>.</p>';
+    else if (!T.length) h += '<p class="ad-note">Brak tras w bazie.</p>';
+    else {
+      h += '<div class="ad-table' + (withLangs ? ' ad-table--langs' : '') + '" role="table" aria-label="Trasy i ich etap"><div class="ad-tr ad-tr--h" role="row">' +
+        ['Trasa', 'Etap', 'Wersja', 'Zmiana', 'Flagi i uwagi'].concat(withLangs ? ['Języki'] : []).concat(['Akcje']).map(function (x) { return '<span role="columnheader">' + x + '</span>'; }).join('') + '</div>' +
+        rows.map(function (x) { return tripRow(x.t, x.s, redBy[x.t.slug], withLangs); }).join('') + '</div>';
+    }
+    h += '</section></div>';
+    $d.innerHTML = h;
+  }
+  function kpi(href, label, val, tone) {
+    return '<a class="ad-kpi' + (tone ? ' ad-kpi--' + tone : '') + '" href="' + href + '"><span class="ad-kpi__l">' + esc(label) + '</span><b class="ad-kpi__v">' + val + '</b></a>';
+  }
+  function tripRow(t, s, dr, withLangs) {
+    var flags = [];
+    if (dr && dr.red_flags) flags.push('<span class="ad-flag ad-flag--bad">' + IC.bad + plForm(dr.red_flags, 'czerwona', 'czerwone', 'czerwonych') + '</span>');
+    else if (dr && dr.red_flags === 0) flags.push('<span class="ad-flag ad-flag--ok">' + IC.ok + 'bez czerwonych</span>');
+    if (dr && dr.warnings) flags.push('<span class="ad-flag">' + plForm(+dr.warnings, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') + '</span>');
+    if (t.working) flags.push('<span class="ad-flag ad-flag--info">Hermes poprawia: ' + t.working + '</span>');
+    if (t.unsent) flags.push('<span class="ad-flag ad-flag--warn">niewysłane: ' + t.unsent + '</span>');
+    var ver = t.draft != null ? 'v' + t.draft + (t.published != null ? ' <small>na stronie v' + esc(t.published) + '</small>' : '') : 'v' + esc(t.latest);
+    return '<div class="ad-tr" role="row"><span role="cell" class="ad-td ad-td--name"><span class="ad-team" style="--team:' + esc(t.color) + '" aria-hidden="true"></span>' +
+      '<a href="#/' + encodeURIComponent(t.slug) + '"><b>' + esc(t.name) + '</b></a><small>' + esc([countryName(t.country), t.region ? regionName(t.region) : ''].filter(Boolean).join(' · ')) + '</small></span>' +
+      '<span role="cell" class="ad-td" data-l="Etap">' + stageHtml(s) + '</span>' +
+      '<span role="cell" class="ad-td ad-td--ver" data-l="Wersja">' + ver + '</span>' +
+      '<span role="cell" class="ad-td ad-td--date" data-l="Zmiana">' + esc(when(t.latestAt)) + '</span>' +
+      '<span role="cell" class="ad-td ad-td--flags' + (flags.length ? '' : ' is-empty') + '" data-l="Flagi i uwagi">' + (flags.length ? flags.join('') : '<span class="ad-muted">—</span>') + '</span>' +
+      (withLangs ? '<span role="cell" class="ad-td ad-td--langs" data-l="Języki">' + (t.langs && t.langs.length ? '<span title="' + esc(t.langs.join(', ')) + '">' + t.langs.length + ' · ' + esc(t.langs.slice(0, 5).join(' ')) + (t.langs.length > 5 ? '…' : '') + '</span>' : '—') + '</span>' : '') +
+      '<span role="cell" class="ad-td ad-td--acts"><a class="ad-btn" href="#/' + encodeURIComponent(t.slug) + '">' + (s.i === 2 ? 'Przejrzyj' : 'Otwórz') + '<span class="adm-sr"> ' + esc(t.name) + '</span></a>' +
+      (t.published != null ? '<a class="ad-btn ad-btn--ghost ad-btn--ic" href="' + SITE + '/city.html?c=' + encodeURIComponent(t.slug) + '" target="_blank" rel="noopener" title="Na stronie (nowa karta)">' + IC.ext + '<span class="adm-sr">' + esc(t.name) + ' na stronie (nowa karta)</span></a>' : '') + '</span></div>';
+  }
+  function hRow(label, val, tone) { return '<li class="ad-hrow"><span class="ad-hrow__l">' + esc(label) + '</span><span class="ad-hrow__v">' + (tone ? stChip(tone, val) : esc(val)) + '</span></li>'; }
+  function serverCard(I, runs, queue) {
+    var dep = snap('deploy'), cron = snap('cron'), q = snap('queue'), rows = [];
+    var lastDep = null;
+    if (dep && dep.last_message) {
+      var msg = String(dep.last_message).split('\n').filter(function (l) { return l && !/^\d{4}-\d\d-\d\d \d/.test(l); })[0] || '';
+      lastDep = { at: dep.last_message_at, bad: /❌|błąd|failed/i.test(msg), txt: msg.replace(/^[✅❌⏳]\s*/, '').slice(0, 120) };
+    } else if (I && I.hist.ok && I.hist.ok.length) {
+      var x = I.hist.ok.filter(function (r) { return r.status === 'done' || r.status === 'failed'; })[0];
+      if (x) lastDep = { at: x.finished_at || x.decided_at, bad: x.status === 'failed', txt: deployFiles(x).map(shortPath).join(', ') };
+    }
+    rows.push(lastDep ? hRow('Ostatnie wdrożenie', (lastDep.bad ? 'błąd · ' : '') + ago(lastDep.at), lastDep.bad ? 'bad' : 'ok') : hRow('Ostatnie wdrożenie', '—'));
+    if (I && I.count) rows.push(hRow('Wdrożenia czekające na zgodę', String(I.count.deploy), I.count.deploy ? 'warn' : 'ok'));
+    var act = runs.filter(function (r) { return r.status === 'running'; }).length, stl = runs.filter(function (r) { return r.status === 'stalled'; }).length;
+    var qd = queue.filter(function (j) { return j.status === 'queued'; }).length + (q && Array.isArray(q.open) ? q.open.length : 0);
+    rows.push(hRow('Kolejka tras', (act ? act + ' w pracy' : 'nic nie pracuje') + (qd ? ' · ' + qd + ' czeka' : ''), stl ? 'bad' : act ? 'wait' : 'ok'));
+    if (stl) rows.push(hRow('Zatrzymane przebiegi', plForm(stl, 'stoi', 'stoją', 'stoi') + ' ≥ 15 min', 'bad'));
+    if (cron) {
+      var age = cron.last_run ? (Date.now() - Date.parse(cron.last_run)) / 60000 : null;
+      rows.push(hRow('Cron (kolejka)', cron.last_run ? 'przebiegł ' + ago(cron.last_run) : '—', age == null ? null : age > 30 ? 'bad' : 'ok'));
+      var locks = ['gemini_queue_lock', 'repo_jobs_lock', 'watch_lock'].filter(function (k) { return cron[k]; });
+      if (locks.length) rows.push(hRow('Blokady', locks.map(function (k) { return k.replace(/_lock$/, '').replace(/_/g, ' '); }).join(', '), 'wait'));
+    }
+    if (q) {
+      if (Array.isArray(q.failed_7d) && q.failed_7d.length) rows.push(hRow('Zlecenia z błędem (7 dni)', String(q.failed_7d.length), 'bad'));
+      if (q.agyQuotaOut && Date.parse(q.agyQuotaOut) > Date.now()) rows.push(hRow('Limit Antigravity', 'wyczerpany do ' + when(q.agyQuotaOut), 'warn'));
+    }
+    return '<section class="ad-card ad-card--h" aria-labelledby="srvH"><header class="ad-card__h"><h2 id="srvH">Serwer</h2><a class="ad-card__more" href="#/postep">Postęp prac →</a></header>' +
+      '<ul class="ad-hrows">' + rows.join('') + '</ul>' +
+      (lastDep && lastDep.txt ? '<p class="ad-note">' + esc(lastDep.txt) + '</p>' : '') +
+      (cron ? '' : '<p class="ad-note">Cron i blokady pojawią się, gdy panel dostanie podgląd serwera (<code>ops_status</code> w schemacie admin).</p>') + '</section>';
+  }
+  function watchCard(I) {
+    var w = I && I.watch.ok, rows = [], body;
+    if (!I || I.watch.err) body = '<p class="ad-note">Strażnicy niedostępni' + (I && I.watch.err ? ' (' + esc(I.watch.err) + ')' : '') + '.</p>';
+    else if (!w || !w.ready) body = '<p class="ad-note">Strażnicy jeszcze nie działają (SQL 2026-10-30-straznicy.sql).</p>';
+    else {
+      var by = {}; (w.rows || []).forEach(function (r) { by[r.kind] = (by[r.kind] || 0) + 1; });
+      var ks = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
+      rows.push(hRow('Otwarte ustalenia', String((w.rows || []).length), (w.rows || []).length ? 'warn' : 'ok'));
+      ks.forEach(function (k) { rows.push(hRow(WKIND[k] || k, String(by[k]))); });
+      var st = snap('watch'), last = st && st.state && st.state.last, newest = null;
+      if (last) Object.keys(last).forEach(function (k) { var a = last[k] && last[k].at; if (a && (!newest || a > newest)) newest = a; });
+      if (newest) rows.push(hRow('Ostatni przebieg', ago(newest), (Date.now() - Date.parse(newest)) / 3600000 > 30 ? 'bad' : 'ok'));
+      body = '<ul class="ad-hrows">' + rows.join('') + '</ul>';
+    }
+    return '<section class="ad-card ad-card--h" aria-labelledby="wH"><header class="ad-card__h"><h2 id="wH">Strażnicy</h2><a class="ad-card__more" href="#/straznicy">Ustalenia →</a></header>' + body + '</section>';
+  }
+  function costCard(U, I) {
+    var body = '';
+    if (U.err) body += '<p class="ad-note">Dziennik kosztów niedostępny (' + esc(U.err) + ').</p>';
+    else {
+      var today = new Date().toISOString().slice(0, 10), d = zero(), w = zero();
+      (U.ok || []).forEach(function (r) { add(w, r); if (r.day === today) add(d, r); });
+      body += '<dl class="ad-cost"><div><dt>Dziś</dt><dd>' + usd(d.usd) + '</dd><p>ekw. ' + usd(d.eq) + ' · ' + tok(d.tok) + ' tok.</p></div>' +
+        '<div><dt>7 dni</dt><dd>' + usd(w.usd) + '</dd><p>ekw. ' + usd(w.eq) + ' · ' + tok(w.tok) + ' tok.</p></div></dl>';
+    }
+    var b = I && I.budget.ok && I.budget.ok[0];
+    if (b) {
+      var used = +b.usd_api || 0, cap = +b.budget_usd || 0, pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0;
+      var tone = cap && used >= cap ? 'bad' : pct >= 70 ? 'warn' : 'ok';
+      body += '<p class="ad-budget__t">Budżet miesiąca: <b>' + usdPl(used) + '</b> z ' + usdPl(cap) + ' (' + pct + '%)</p>' +
+        '<div class="dec-bar dec-bar--' + tone + '" role="img" aria-label="Zużyto ' + pct + '% progu miesięcznego"><span style="width:' + pct + '%"></span></div>';
+    }
+    body += '<p class="ad-note">„Zapłacone” to płatne API; abonamenty (Claude, AI Pro) liczą się jako ekwiwalent.</p>';
+    return '<section class="ad-card ad-card--h" aria-labelledby="cH"><header class="ad-card__h"><h2 id="cH">Koszty AI</h2><a class="ad-card__more" href="#/koszty">Szczegóły →</a></header>' + body + '</section>';
+  }
 
   // ── baza wiedzy redakcji: reguły z uwag (JP 2026-10-17, docs/BAZA-WIEDZY.md) ──
   var $kb = document.getElementById('kbOpen');
@@ -2794,7 +3211,7 @@
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję bazę wiedzy…</p></div>';
     loadRules().then(function () {
       var R = state.rules, by = function (st) { return R.filter(function (r) { return r.status === st; }); };
-      var html = '<div class="adm-trip__bar"><a class="qc-btn qc-btn--sm adm-back" href="#/">← Wszystkie wycieczki</a></div><article class="adm-sheet adm-kb"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Baza wiedzy redakcji</p>' +
+      var html = '<article class="adm-sheet adm-kb"><header class="adm-sheet__head"><div><p class="label" style="color:inherit;opacity:.8">Baza wiedzy redakcji</p>' +
         '<h2 class="adm-sheet__title">Reguły z uwag</h2><p class="adm-sheet__sub">Hermes zamienia powtarzalne uwagi w reguły. Zatwierdzone reguły dostaje każde pisanie, poprawka, tłumaczenie i walidacja wycieczek — ten sam błąd nie wraca w kolejnych miastach.</p></div></header>';
       if (state.rulesApi === false) html += '<p class="adm-cmwarn">Baza nie ma jeszcze tabeli reguł (' + esc(state.rulesErr || '') + '). Pojawi się po approve SQL 2026-10-17-draft-send-kb-v2.sql.</p>';
       [['proposed', 'Do zatwierdzenia'], ['active', 'Obowiązują'], ['retired', 'Wyłączone']].forEach(function (g) {
