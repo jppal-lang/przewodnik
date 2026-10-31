@@ -84,6 +84,16 @@ function failWhy(msg) {
 
 // ── tryb „po przycisku” ─────────────────────────────────────────────────────────────────────────
 async function requests() {
+  // jednorazowa naprawa (JP 2026-10-31): prośby, które przepadły przez błąd serwera „Brak GOOGLE_API_KEY” (gemini-draft wymagał klucza
+  // na starcie, choć poprawki idą przez Antigravity) — wracają do kolejki z uwagami, bez udziału JP. Błąd naprawiony w aadd5f1.
+  const healed = await q(`UPDATE public.draft_revision_requests SET status = 'new', attempts = 0,
+                                 hermes_reply = 'Przywrócone po naprawie błędu serwera (2026-10-31).', updated_at = now()
+                           WHERE status = 'failed' AND hermes_reply LIKE '%Brak GOOGLE_API_KEY%' RETURNING id, comment_ids`);
+  for (const h of healed) {
+    await q(`UPDATE public.draft_comments SET status = 'sent', hermes_reply = NULL, updated_at = now()
+              WHERE id = ANY($1::bigint[]) AND status = 'rejected'`, [h.comment_ids]);
+    log(`prośba #${h.id} przywrócona po błędzie klucza Google`);
+  }
   // prośby porzucone przez martwy przebieg
   await q(`UPDATE public.draft_revision_requests SET status = 'new', updated_at = now()
             WHERE status = 'working' AND updated_at < now() - interval '60 minutes'`);
