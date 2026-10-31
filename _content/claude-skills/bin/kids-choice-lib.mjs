@@ -94,6 +94,24 @@ export function choiceOnlyDiff(before, after, max = 20) {
   walk(stripChoices(before), stripChoices(after), '');
   return out;
 }
+// Porównanie wartości JSON bez kolejności kluczy obiektu — tak, jak oddaje je jsonb (klucze posortowane: długość, potem bajty).
+// Wpadka Spello v3k (2026-10-31): zapisane {"options", "correct"} wróciło z bazy jako {"correct", "options"}; porównanie
+// JSON.stringify uznało pytania za „zmienione” i przebieg wycofał poprawny szkic. Stąd kanoniczna postać.
+export function canonJson(v) {
+  if (Array.isArray(v)) return `[${v.map(canonJson).join(',')}]`;
+  if (v && typeof v === 'object') return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${canonJson(v[k])}`).join(',')}}`;
+  return JSON.stringify(v === undefined ? null : v);
+}
+export const sameJson = (a, b) => canonJson(a) === canonJson(b);
+// po zapisie: które z zachowanych pytań baza oddała inaczej (brak, null, inna treść) — kolejność kluczy nie jest różnicą
+export function choicesLost(keep, stopsFromDb) {
+  return Object.entries(keep ?? {}).filter(([k, ch]) => !sameJson(stopsFromDb?.[k]?.kids_choice ?? null, ch)).map(([k]) => k);
+}
+// Wersja wyjściowa przebiegu --choices: najnowszy SZKIC; gdy go nie ma (trasa zatwierdzona, jak Frasassi v13) — najnowsza
+// OPUBLIKOWANA wersja z plikami szkicu (trip). Zapis tworzy wtedy NOWY szkic do zatwierdzenia w panelu; nic nie publikuje się samo.
+export const BASE_VERSION_SQL = `SELECT id, version, status, trip, content, review FROM public.city_versions
+   WHERE city_slug = $1 AND (status = 'draft' OR (status = 'published' AND trip IS NOT NULL))
+   ORDER BY (status = 'draft') DESC, version DESC LIMIT 1`;
 // przystanki, którym wolno dopisać pytanie: zwiedzanie (nie parking/restauracja/lody/słodycze), z misją, bez poprawnego pytania
 export function choiceTargets(content, meta) {
   const cat = Object.fromEntries((meta?.stops ?? []).map(s => [s.stop_key, s.category]));

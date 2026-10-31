@@ -27,7 +27,7 @@ import { sourceCheck } from './source-check.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
 import { whoIs, namesFromProblem } from './kimbyl.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
-import { CHOICE_RULE, CHOICE_MAX, cleanChoices, choiceOk, choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
+import { CHOICE_RULE, CHOICE_MAX, cleanChoices, choiceOk, choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER, choicesLost, BASE_VERSION_SQL } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
 import { SKILLS } from './lib.mjs';
 import { createLive } from './live-status.mjs';   // praca AI na żywo dla panelu (ops.status_snapshot 'live', JP 2026-10-31)
 
@@ -1060,12 +1060,14 @@ async function reviseMain() {
 }
 
 // ── przebieg „tylko misje” (--choices, zgoda JP 2026-10-31 „tak dopisz”): pytania z wyborem do istniejącego szkicu ──────────
-// 1) najnowszy szkic z bazy w chwili uruchomienia; otwarta prośba o poprawkę z panelu → odłożone (kod 75), żeby nie rozwidlić wersji
+// 1) najnowszy szkic z bazy w chwili uruchomienia; bez szkicu (trasa zatwierdzona) → najnowsza OPUBLIKOWANA wersja z plikami szkicu,
+//    a wynik jest NOWYM szkicem do zatwierdzenia w panelu (nic nie publikuje się samo). Otwarta prośba o poprawkę → odłożone (kod 75)
 // 2) JEDNO wywołanie Antigravity: propozycje kids_choice dla przystanków zwiedzania z misją (najwyżej jedno pytanie na przystanek — pole jest jedno)
 // 3) source-check TYLKO nowych pytań (≤12 faktów = najwyżej 1 wywołanie AI); sprzeczne ze źródłem → pytanie znika
 // 4) walidator validate_trip.py: żadnych nowych błędów względem wersji wyjściowej
 // 5) asercja: szkic różni się WYŁĄCZNIE polami content.stops.*.kids_choice (meta, reszta treści, bloki bajt w bajt) — inaczej przerwanie
 // 6) zapis nowej wersji (vNx) z notatką „…: pytania z wyborem (tylko misje)”, po zapisie ponowne porównanie z bazą (niezgodność → wycofanie)
+//    — porównanie bez kolejności kluczy obiektu (jsonb oddaje {"correct","options"} zamiast {"options","correct"}; wpadka Spello v3k 2026-10-31)
 // Bez limitu Antigravity: NIE przechodzi na Claude ani klucz API (droższe, bez zgody JP) — kod 75, zlecenie wraca do kolejki.
 // Twardy limit kosztu: --max-usd (domyślnie 0,50 $, równowartość cennika API z tokenów).
 const later = (m) => Object.assign(new Error(m), { later: true });
@@ -1086,9 +1088,10 @@ async function choicesMain() {
   if (agyQuotaOut()) throw later(`limit Antigravity (AI Pro) wyczerpany do ${agyQuotaOut()}`);
   const open = await openRevisionRequests(q, slug);
   if (open.length) throw later(`otwarta prośba o poprawkę z panelu (#${open.map(r => `${r.id} ${r.status}`).join(', ')}) — przebieg odłożony, żeby nie rozwidlić wersji`);
-  const latest = async () => (await q(`SELECT id, version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]))[0];
+  const latest = async () => (await q(BASE_VERSION_SQL, [slug]))[0];
   const cur = await latest();
-  if (!cur?.trip?.meta || !cur.trip.content?.stops) throw new Error(`${slug}: brak szkicu`);
+  if (!cur?.trip?.meta || !cur.trip.content?.stops) throw new Error(`${slug}: brak szkicu ani opublikowanej wersji z plikami szkicu`);
+  const fromPublished = cur.status !== 'draft';
   if (!channel) channel = (await q('SELECT discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(() => []))[0]?.discord_thread_id ?? null;
   const orig = { meta: cur.trip.meta, content: cur.trip.content };
   const origJson = JSON.stringify(orig);
@@ -1096,7 +1099,7 @@ async function choicesMain() {
   const curLabel = String(cur.content?.label ?? `v${cur.version}`);
   name = orig.content.city?.title ?? slug; STOPS_N = orig.meta.stops.length; WORK_LABEL = curLabel;
   const targets = choiceTargets(orig.content, orig.meta);
-  log(`${slug}: pytania z wyborem — szkic ${curLabel} (id ${cur.id}, wersja ${cur.version}), przystanki do sprawdzenia: ${targets.length}`);
+  log(`${slug}: pytania z wyborem — ${fromPublished ? 'brak szkicu, wersja wyjściowa = opublikowana' : 'szkic'} ${curLabel} (id ${cur.id}, wersja ${cur.version}), przystanki do sprawdzenia: ${targets.length}`);
   if (!targets.length) { log(`${slug}: brak przystanków zwiedzania bez pytania — nic do dopisania`); return; }
 
   // ② jedno wywołanie: propozycje
@@ -1204,14 +1207,16 @@ Odpowiedz JSON-em: {"choices": {"<stop_key>": null | {"options": [...], "correct
   // po zapisie: baza ma oddać to samo (jsonb) — inaczej wycofanie: nowa wersja do archiwum, wyjściowa wraca jako szkic
   const [row] = await q(`SELECT trip, content FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, saved.version]);
   const d2 = choiceOnlyDiff(orig, { meta: row?.trip?.meta, content: row?.trip?.content }), d3 = choiceOnlyDiff(blocks, row?.content?.stop_blocks_v2 ?? null);
-  const lost = Object.entries(keep).filter(([k, ch]) => JSON.stringify(row?.trip?.content?.stops?.[k]?.kids_choice) !== JSON.stringify(ch)).map(([k]) => k);
+  const lost = choicesLost(keep, row?.trip?.content?.stops);
   if (d2.length || d3.length || lost.length) {
-    await q(`UPDATE public.city_versions SET status = 'archived', review_note = 'wycofane: przebieg --choices zmienił coś poza pytaniami z wyborem' WHERE city_slug = $1 AND version = $2`, [slug, saved.version]);
-    await q(`UPDATE public.city_versions SET status = 'draft' WHERE id = $1`, [cur.id]);
-    throw new Error(`po zapisie ${label} różni się od ${curLabel} poza pytaniami (${[...d2, ...d3.map(x => 'bloki.' + x), ...lost.map(x => x + ' (pytanie)')].slice(0, 6).join(', ')}) — wycofane, ${curLabel} znów szkicem`);
+    const what = [...d2, ...d3.map(x => 'bloki.' + x), ...lost.map(x => x + ' (pytanie)')].slice(0, 6).join(', ');
+    await q(`UPDATE public.city_versions SET status = 'archived', review_note = $3 WHERE city_slug = $1 AND version = $2`,
+      [slug, saved.version, `wycofane: po zapisie ${label} różni się od ${curLabel} poza pytaniami z wyborem (${what}); wersja wyjściowa ${curLabel} ${fromPublished ? 'pozostaje opublikowana' : 'znów szkicem'}`]);
+    if (!fromPublished) await q(`UPDATE public.city_versions SET status = 'draft' WHERE id = $1`, [cur.id]);   // zapis zarchiwizował szkic wyjściowy; opublikowanej nie ruszał
+    throw new Error(`po zapisie ${label} różni się od ${curLabel} poza pytaniami (${what}) — wycofane, ${curLabel} ${fromPublished ? 'pozostaje opublikowana' : 'znów szkicem'}`);
   }
   event(`gotowe: szkic ${label} · pytania z wyborem ${Object.keys(keep).length} (z ${curLabel})`, { stage: 7, status: 'done' });
-  await notify(channel, `🧩 **${name} — szkic ${label}**: pytania z wyborem odpowiedzi przy ${Object.keys(keep).length} misjach (reszta treści bez zmian względem ${curLabel}). Tłumaczenia po publikacji.\nPanel: https://admin.quolino.com/_admin/#/${slug}`);
+  await notify(channel, `🧩 **${name} — szkic ${label}**: pytania z wyborem odpowiedzi przy ${Object.keys(keep).length} misjach (reszta treści bez zmian względem ${fromPublished ? 'opublikowanej ' : ''}${curLabel}). ${fromPublished ? 'Do zatwierdzenia w panelu. ' : ''}Tłumaczenia po publikacji.\nPanel: https://admin.quolino.com/_admin/#/${slug}`);
   console.log(JSON.stringify({ slug, from: curLabel, label, version: saved.version, choices: Object.keys(keep), usd_equiv: +((cost.equiv ?? 0) + cost.usd).toFixed(4) }, null, 2));
 }
 

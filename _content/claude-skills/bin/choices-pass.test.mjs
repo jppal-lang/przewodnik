@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER } from './kids-choice-lib.mjs';
+import { choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER, canonJson, sameJson, choicesLost, BASE_VERSION_SQL } from './kids-choice-lib.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLD = JSON.parse(readFileSync(join(HERE, '..', 'test', 'golden', 'frasassi.trip.json'), 'utf8'));
@@ -87,6 +87,56 @@ test('bramka prośby o poprawkę: new/working dla tej trasy blokuje, inne status
   assert.deepEqual((await openRevisionRequests(q(), 'frasassi')).map(r => r.id), [4]);
   assert.deepEqual(await openRevisionRequests(q(false), 'spello'), []);
   assert.equal(EXIT_LATER, 75);
+});
+
+// jsonb oddaje klucze obiektu posortowane (długość, potem bajty) — tak wróciło z bazy Spello v3k (2026-10-31)
+const jsonbLike = (v) => Array.isArray(v) ? v.map(jsonbLike) : v && typeof v === 'object'
+  ? Object.fromEntries(Object.keys(v).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0)).map(k => [k, jsonbLike(v[k])])) : v;
+
+test('wpadka Spello v3k: pytanie zapisane {options, correct} wraca z bazy jako {correct, options} — to NIE jest utrata pytania', () => {
+  const keep = { 'porta-consolare': GOOD, 'porta-venere-torri-di-properzio': { options: ['2', '3', '4', '5'], correct: 2 } };
+  const saved = clone(GOLD);
+  for (const [k, ch] of Object.entries(keep)) saved.content.stops[k] = { ...(saved.content.stops[sightKey]), kids_choice: ch };
+  const fromDb = jsonbLike(saved);
+  assert.equal(Object.keys(fromDb.content.stops['porta-consolare'].kids_choice).join(','), 'correct,options', 'atrapa jsonb przestawia klucze');
+  assert.notEqual(JSON.stringify(fromDb.content.stops['porta-consolare'].kids_choice), JSON.stringify(GOOD), 'stare porównanie (JSON.stringify) widziało tu różnicę');
+  assert.deepEqual(choicesLost(keep, fromDb.content.stops), []);
+  assert.deepEqual(choiceOnlyDiff(saved, fromDb), []);
+  // prawdziwa utrata: pytanie zniknęło, jest null, inna opcja, inny indeks, przystanek bez wiersza
+  const bad = clone(fromDb.content.stops);
+  delete bad['porta-consolare'].kids_choice;
+  assert.deepEqual(choicesLost(keep, bad), ['porta-consolare']);
+  bad['porta-consolare'].kids_choice = null;
+  assert.deepEqual(choicesLost(keep, bad), ['porta-consolare']);
+  bad['porta-consolare'].kids_choice = jsonbLike({ ...GOOD, options: [...GOOD.options.slice(0, 3), 'Byk'] });
+  assert.deepEqual(choicesLost(keep, bad), ['porta-consolare']);
+  bad['porta-consolare'].kids_choice = jsonbLike({ ...GOOD, correct: 0 });
+  assert.deepEqual(choicesLost(keep, bad), ['porta-consolare']);
+  assert.deepEqual(choicesLost(keep, {}), ['porta-consolare', 'porta-venere-torri-di-properzio']);
+});
+
+test('canonJson / sameJson: kolejność kluczy nieistotna, kolejność tablic istotna, typy istotne', () => {
+  assert.equal(canonJson({ b: [1, { d: 1, c: 2 }], a: null }), '{"a":null,"b":[1,{"c":2,"d":1}]}');
+  assert.ok(sameJson({ options: ['a'], correct: 1 }, { correct: 1, options: ['a'] }));
+  assert.ok(!sameJson({ correct: 1 }, { correct: '1' }));
+  assert.ok(!sameJson(['a', 'b'], ['b', 'a']));
+  assert.ok(sameJson(undefined, null));
+});
+
+test('Frasassi bez szkicu: wersja wyjściowa = najnowsza opublikowana z plikami szkicu, szkic ma pierwszeństwo', () => {
+  assert.match(BASE_VERSION_SQL, /status = 'draft' OR \(status = 'published' AND trip IS NOT NULL\)/);
+  assert.match(BASE_VERSION_SQL, /ORDER BY \(status = 'draft'\) DESC, version DESC LIMIT 1/);
+  assert.match(BASE_VERSION_SQL, /SELECT id, version, status, trip, content, review/);
+  const src = readFileSync(join(HERE, 'gemini-draft.mjs'), 'utf8');
+  const body = src.slice(src.indexOf('async function choicesMain'), src.indexOf('try { await (CHOICES'));
+  assert.match(body, /await q\(BASE_VERSION_SQL, \[slug\]\)/);
+  assert.match(body, /const fromPublished = cur\.status !== 'draft'/);
+  assert.match(body, /if \(!fromPublished\) await q\(`UPDATE public\.city_versions SET status = 'draft' WHERE id = \$1`/, 'opublikowanej wersji wycofanie nie zmienia w szkic');
+  assert.doesNotMatch(body, /status = 'published'/, 'przebieg niczego nie publikuje');
+  assert.match(body, /choicesLost\(keep, row\?\.trip\?\.content\?\.stops\)/, 'porównanie po zapisie bez kolejności kluczy');
+  assert.doesNotMatch(body, /JSON\.stringify\(row\?\.trip/, 'bez porównania JSON.stringify z wierszem z bazy');
+  assert.match(body, /review_note = \$3/);
+  assert.match(body, /`wycofane: po zapisie \$\{label\} różni się od/, 'notatka wersji archiwalnej mówi wprost „wycofane: …powód”');
 });
 
 test('gemini-draft.mjs: tryb --choices odkłada przy limicie/prośbie (kod 75), nie przełącza na Claude, asercja przed zapisem, zapis raw', () => {
