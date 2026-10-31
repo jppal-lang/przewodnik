@@ -566,6 +566,13 @@ mark.adm-fl--auto{background:var(--ad-auto-bg);border-bottom:2px dashed var(--mu
 .adm-icref__bar .qc-btn,.adm-icref__bar .adm-linkbtn{min-height:44px}
 .adm-icref__auto.is-on{box-shadow:0 0 0 3px var(--verde)}
 .adm-icref__st{font-size:18px;color:var(--ink2)}
+/* opublikowana ikona miejsca (JP 2026-10-31): podpięta do przystanku albo czeka na sync */
+.adm-icref__pub{display:flex;align-items:center;gap:10px;margin:6px 0 10px;padding:8px 10px;border-radius:10px;background:var(--azzurro-50,#EAF0F8)}
+.adm-icref__pub img{flex:none;width:40px;height:40px;object-fit:contain}
+.adm-icref__pub.is-ready{background:#FFF4D6}
+.adm-icpub{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.adm-icpub__it{display:flex;align-items:center;gap:10px;font-size:18px}
+.adm-icpub__it img{flex:none;width:40px;height:40px;object-fit:contain;border-radius:8px;background:var(--azzurro-50,#EAF0F8)}
 @media(max-width:620px){.adm-icref__it{width:calc(50% - 6px)}.adm-icref__pick{width:100%}.adm-icref__lnk{white-space:normal}}
 
 /* ── Skrzynka decyzji (#/decyzje, 2026-10-30) ── */
@@ -1646,3 +1653,7 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 body.has-walk .ad-content,body.has-phone .ad-content{max-width:none}
 .tv-ro{margin:0 0 12px;padding:10px 14px;border:1px solid var(--rule);border-left:4px solid var(--warn,#f9ab00);border-radius:8px;background:var(--card);font-size:16px;color:var(--ink2)}
 .tv-ro a{color:var(--azzurro);font-weight:600}
+.tv-walk__send{display:flex;flex-direction:column;gap:6px;padding:10px 14px 12px;border-top:1px solid var(--rule);background:var(--card)}
+.tv-walk__send .adm-btn-send{width:100%;min-height:44px}
+.tv-walk__send .adm-btn-send:disabled{opacity:.55}
+.tv-walk__sendnote{font-size:14px;color:var(--muted);line-height:1.35}

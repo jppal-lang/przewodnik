@@ -280,6 +280,18 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) > 165;
   }
   function icon(cat) { var f = QUE[cat || 'monument'] || 'monument'; return ICONS + 'icon-' + f + '-128.webp'; }
+  // ikona przystanku: ikona miejsca (stops.icon = 'place-…', stop-icon.js) ma pierwszeństwo przed ikoną kategorii; brak pliku → onerror cofa do kategorii
+  function stopIconImg(s, cls, px, big) {
+    var SI = window.QStopIcon, sizes = big ? [128, 256] : [64, 128];
+    if (SI && SI.placeName(s)) return '<img ' + SI.imgAttrs(SI.pick(s, sizes), 'class="' + cls + '" width="' + px + '" height="' + px + '" loading="lazy"') + '>';
+    return '<img class="' + cls + '" src="' + icon(s && s.category) + '" alt="" width="' + px + '" height="' + px + '" loading="lazy">';
+  }
+  // status ikony miejsca przystanku: null (brak w place-sources.json) | 'linked' (stops.icon podpięty) | 'ready' (plik jest, sync jeszcze nie podpiął)
+  function placeIconState(slug, s) {
+    var pub = state.icref && state.icref.pub, key = s && s.stop_key, rec = pub && key ? pub[slug + '/' + key] : null;
+    if (!rec) return null;
+    return s.icon === 'place-' + slug + '-' + key ? 'linked' : 'ready';
+  }
   function num(n) { return n < 10 ? '0' + n : String(n); }
   function slug(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -1443,10 +1455,10 @@
 
     // ─ spis przystanków (lewa kolumna) ─
     var KIND = { first: ['same', 'pierwsza wersja'], same: ['same', 'bez zmian'], 'new': ['new', 'nowy'], chg: ['chg', 'zmieniony'], del: ['del', 'usunięty'] };
-    var tocLi = function (key, no, name, cat, kind) {
+    var tocLi = function (key, no, name, cat, kind, stopRow) {
       var k = KIND[kind] || KIND.same;
       return '<li class="tv-toc__it is-' + k[0] + '"><a href="#st-' + esc(key) + '" data-to="' + esc(key) + '"><span class="tv-toc__no">' + no + '</span>' +
-        (cat ? '<img class="tv-toc__ic" src="' + icon(cat) + '" alt="" width="32" height="32" loading="lazy">' : '<span class="tv-toc__ic tv-toc__ic--star" aria-hidden="true">' + (key === '_sum' ? PIN : '★') + '</span>') +
+        (cat ? stopIconImg(stopRow || { category: cat }, 'tv-toc__ic', 32) : '<span class="tv-toc__ic tv-toc__ic--star" aria-hidden="true">' + (key === '_sum' ? PIN : '★') + '</span>') +
         '<span class="tv-toc__t"><span class="adm-toc__nm">' + esc(name) + '</span><span class="tv-toc__k"><i class="tv-dot tv-dot--' + k[0] + '" aria-hidden="true"></i>' + esc(k[1]) + '</span></span>' +
         '<span class="tv-toc__c"><b class="adm-qdot" data-qleft="' + esc(key) + '" hidden></b><b class="adm-n is-zero" data-count="' + esc(key) + '">0</b></span></a></li>';
     };
@@ -1454,7 +1466,7 @@
       '<span class="tv-toc__all">uwagi <b class="adm-n is-zero" data-count="_all">0</b></span>' + CHEV + '</summary><ol>' +
       tocLi('_sum', '', 'Trasa w skrócie i mapa', null, 'same').replace(/<span class="tv-toc__c">[\s\S]*?<\/span><\/a>/, '</a>').replace(/<span class="tv-toc__k">[\s\S]*?<\/span><\/span>/, '</span>') +
       tocLi('_city', '', 'Opis miasta', null, 'same') +
-      stops.map(function (x) { return tocLi(x.key, num(x.s.stop_number), x.t.name || '(bez nazwy)', x.s.category, x.kind); }).join('') + '</ol></details></nav>';
+      stops.map(function (x) { return tocLi(x.key, num(x.s.stop_number), x.t.name || '(bez nazwy)', x.s.category, x.kind, x.s); }).join('') + '</ol></details></nav>';
 
     // ─ główna kolumna ─
     var tools = '<div class="tv-tools"><span class="tv-tools__l" aria-hidden="true">Widok</span><div class="tv-seg" role="group" aria-label="Widok treści">' +
@@ -1498,10 +1510,13 @@
       '<div class="tv-walk__bar" aria-hidden="true"><span id="walkBar"></span></div><div class="tv-drawer__b">' +
       '<div class="tv-walk__intro adm-flagbar">' + (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') +
       '<span class="adm-flagbar__sum" data-qsum></span></div>' + (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy uwag naraz</summary>' + grp + '</details>' : '') +
-      '<div class="tv-walk__ctx" id="walkCtx" aria-live="polite"></div><ol class="tv-walk__slot" id="walkSlot"></ol><p class="tv-walk__fin" id="walkFin" hidden>Wszystkie flagi rozstrzygnięte ✓ — teraz „Twoje uwagi” → „Wyślij uwagi do poprawki”.</p></div>' +
+      '<div class="tv-walk__ctx" id="walkCtx" aria-live="polite"></div><ol class="tv-walk__slot" id="walkSlot"></ol><p class="tv-walk__fin" id="walkFin" hidden>Wszystkie flagi rozstrzygnięte ✓ — wyślij odpowiedzi do poprawki przyciskiem poniżej.</p></div>' +
       '<footer class="tv-walk__nav"><button type="button" class="qc-btn qc-btn--sm" data-walk-step="-1">← Wstecz</button>' +
       '<button type="button" class="adm-linkbtn" data-walk-show>Przewiń jeszcze raz</button>' +
       '<button type="button" class="qc-btn qc-btn--sm qc-btn--primary" data-walk-step="1">Dalej →</button></footer>' +
+      // wysyłka prosto z panelu flag (JP 2026-10-31: „nie mam przycisku wyślij do poprawy”) — ten sam mechanizm co w „Twoje uwagi”
+      (state.readOnly ? '' : '<div class="tv-walk__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
+        '<span class="tv-walk__sendnote">Hermes naniesie każdą odpowiedź w nowej wersji szkicu, a sprawdzający zamelduje, co weszło.</span></div>') +
       '<p class="tv-walk__keys">Skróty: <kbd>J</kbd>/<kbd>K</kbd> następna / poprzednia · <kbd>1</kbd>–<kbd>4</kbd> wybór · <kbd>Enter</kbd> zatwierdź · <kbd>Esc</kbd> zamknij</p></aside></div>';
 
     var $p = document.getElementById('tabPanel') || $d;
@@ -1536,7 +1551,7 @@
           esc(h.isNew ? 'dodany' : 'zmieniono: ' + h.changed.join(', ')) + '</li>';
       }).join('') + '</ol>') : '';
     var head = '<header class="adm-stopx__head"><span class="adm-stop__no">' + num(s.stop_number) + '</span>' +
-      '<img class="adm-stop__ic" src="' + icon(s.category) + '" alt="" width="48" height="48" loading="lazy">' +
+      stopIconImg(s, 'adm-stop__ic', 48) +
       '<span class="adm-stop__name">' + esc(t.name || '(bez nazwy PL)') + '<small>' + esc([s.category, s.time_label, s.visit_duration ? minLabel(s.visit_duration) : ''].filter(Boolean).join(' · ')) + '</small></span>' +
       '<span class="adm-stopx__tags">' + chip + histHtml + '</span></header>';
     var fl = function (f) { return { box: x.key, field: f }; };
@@ -1544,7 +1559,7 @@
       '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) + '</div></section>';
     var gw = state.cmpM && state.cmpM.by[x.key] ? state.cmpM.by[x.key].g.why : [];
     if (gw.length) head += '<div class="tv-why">' + cmpWhyHtml(gw) + '</div>';
-    head += iconRefHtml(x.key, s.category);
+    head += iconRefHtml(x.key, s.category, s);
     var shown = shownSet('stop.', STOP_TR.concat(STOP_FIELDS, state.blocks && state.blocks[x.key] ? BLK.concat([['sources']]) : []));
     var rows = STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
       blockRows(x.key, ver) +
@@ -1876,13 +1891,17 @@
   var PRACTICAL = { parking: 1, restaurant: 1, icecream: 1, sweets: 1 };
   var IC_THUMB = /^https:\/\/(upload|thumb)\.wikimedia\.org\/wikipedia\/commons\//, IC_PAGE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File(:|%3A)/i;
   function loadIconRefs(slug) {
-    var ir = state.icref = { slug: slug, cand: null, sel: {}, selApi: false, msg: {} };
+    var ir = state.icref = { slug: slug, cand: null, sel: {}, selApi: false, msg: {}, pub: null };
+    // opublikowane ikony miejsc (place-icons.mjs ok): media/icons/place-sources.json — status „podpięta” liczy się ze stops.icon w wersji
+    var pub = DEMO ? Promise.resolve(null) : fetch('../media/icons/place-sources.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
+      .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    pub.then(function (j) { ir.pub = j && typeof j === 'object' ? j : null; });
     var cand = DEMO ? api('/admin_queue').then(function () { return demoCandidates(slug); }) :
       fetch('../media/icons/place-candidates/' + encodeURIComponent(slug) + '.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
         .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
     var sel = api('/icon_refs?trip=eq.' + encodeURIComponent(slug) + '&select=stop_key,mode,files,updated_at')
       .then(function (rows) { ir.selApi = true; return rows || []; }, function (e) { ir.selErr = e.message; return []; });
-    return Promise.all([cand, sel]).then(function (res) {
+    return Promise.all([cand, sel, pub]).then(function (res) {
       ir.cand = res[0] && res[0].stops ? res[0] : null;
       res[1].forEach(function (r) { ir.sel[r.stop_key] = { mode: r.mode, files: Array.isArray(r.files) ? r.files : [] }; });
     });
@@ -1906,12 +1925,22 @@
     var dl = icDeadline();
     return 'Brak wyboru — generowanie tej ikony czeka na Ciebie' + (dl ? ' do ' + when(dl.toISOString()) : '') + ', potem automat.';
   }
-  function iconRefHtml(key, cat) {
+  // ikona miejsca już opublikowana (place-sources.json): „podpięta” = stops.icon w tej wersji wskazuje plik; inaczej czeka na sync (kolejka co 30 min)
+  function iconPubHtml(key, s) {
+    var ir = state.icref, st = placeIconState(ir.slug, s || { stop_key: key });
+    if (!st) return '';
+    var rec = ir.pub[ir.slug + '/' + key], name = 'place-' + ir.slug + '-' + key;
+    return '<p class="adm-icref__pub adm-icref__st is-' + st + '" role="status"><img src="' + ICONS + name + '-64.webp" srcset="' + ICONS + name + '-64.webp 1x, ' + ICONS + name + '-128.webp 2x" alt="" width="40" height="40" loading="lazy" onerror="this.remove()"> ' +
+      (st === 'linked' ? '<b>Ikona miejsca opublikowana · podpięta</b> do przystanku (stops.icon = ' + esc(name) + ')'
+        : '<b>Ikona miejsca gotowa, niepodpięta</b> — pliki są w repo, przystanek dostanie ją przy najbliższym <code>place-icons.mjs sync</code> (kolejka co 30 min)') +
+      (rec && rec.accepted_at ? ' · zaakceptowana ' + esc(when(rec.accepted_at)) + (rec.icon_version ? ', wersja ikony ' + esc(String(rec.icon_version)) : '') : '') + '</p>';
+  }
+  function iconRefHtml(key, cat, s) {
     var ir = state.icref;
     if (!ir || PRACTICAL[cat]) return '';
     var list = icCands(key), sel = ir.sel[key] || null, files = sel && sel.mode === 'pick' ? sel.files : [];
     var h = '<div class="adm-icref" data-icref="' + esc(key) + '"><p class="adm-icref__h">Zdjęcie do ikony Quo' +
-      '<small>1–2 zdjęcia zabytku bez ludzi; bez wyboru — automat</small></p>';
+      '<small>1–2 zdjęcia zabytku bez ludzi; bez wyboru — automat</small></p>' + iconPubHtml(key, s);
     var off = !ir.selApi;
     if (!ir.cand || !list.length) {
       var own0 = files.length ? icOwnHtml(key, files, off) : '';
@@ -2894,6 +2923,41 @@
     return '<section class="dec-sec" id="dec-' + id + '" aria-labelledby="dech-' + id + '"><h3 class="pg-h3" id="dech-' + id + '">' + esc(title) + ' <b class="adm-n' + (n ? '' : ' is-zero') + '">' + n + '</b></h3>' + body + '</section>';
   }
   // only: null = cała skrzynka (#/decyzje); 'straznicy' / 'ikony' = jedna sekcja z własnej pozycji w nawigacji
+  // zakładka Ikony: opublikowane ikony miejsc (place-sources.json) × stops.icon z wersji opublikowanej (admin_versions.content->stops)
+  function loadPubIcons() {
+    var src = DEMO ? Promise.resolve({}) : fetch('../media/icons/place-sources.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
+      .then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
+    return src.then(function (j) {
+      var recs = Object.keys(j || {}).map(function (k) { return j[k]; }).filter(function (r) { return r && r.trip && r.stop_key; });
+      var trips = []; recs.forEach(function (r) { if (trips.indexOf(r.trip) < 0) trips.push(r.trip); });
+      if (!trips.length) return { list: [], n: 0 };
+      return api('/admin_versions?status=eq.published&city_slug=in.(' + trips.map(encodeURIComponent).join(',') + ')&select=city_slug,version,stops:content->stops')
+        .then(function (rows) { return rows || []; }, function () { return null; })
+        .then(function (rows) {
+          var live = {};
+          (rows || []).forEach(function (v) { (v.stops || []).forEach(function (s) { if (s && s.stop_key) live[v.city_slug + '/' + s.stop_key] = { icon: s.icon, version: v.version }; }); });
+          var list = recs.map(function (r) {
+            var k = r.trip + '/' + r.stop_key, l = live[k], name = 'place-' + r.trip + '-' + r.stop_key;
+            return { trip: r.trip, key: r.stop_key, n: r.n, name: r.name, icon: name, at: r.accepted_at, v: r.icon_version,
+              st: rows == null ? 'unknown' : !l ? 'missing' : l.icon === name ? 'linked' : 'ready', version: l && l.version };
+          }).sort(function (a, b) { return a.trip < b.trip ? -1 : a.trip > b.trip ? 1 : (a.n || 0) - (b.n || 0); });
+          return { list: list, n: list.length, noApi: rows == null };
+        });
+    });
+  }
+  function pubIconsHtml(d) {
+    if (!d.list.length) return '<p class="adm-empty dec-empty">Jeszcze żadnej zaakceptowanej ikony miejsca (Discord #ikony-miejsc → „ok N”).</p>';
+    var ST = { linked: ['ok', 'opublikowana · podpięta'], ready: ['warn', 'gotowa, niepodpięta — czeka na sync (kolejka co 30 min)'], missing: ['bad', 'brak przystanku o tym kluczu w wersji opublikowanej'], unknown: ['', 'stan podpięcia nieznany (brak admin_versions)'] };
+    var byTrip = {}; d.list.forEach(function (x) { (byTrip[x.trip] = byTrip[x.trip] || []).push(x); });
+    return (d.noApi ? '<p class="adm-cmwarn">Nie udało się odczytać wersji opublikowanych — status podpięcia nieznany.</p>' : '') + Object.keys(byTrip).map(function (t) {
+      return '<article class="pg-card dec-item dec-item--iconpub"><p class="dec-kind">Ikony miejsc · ' + esc(titleCase(t)) + '</p><ul class="adm-icpub">' + byTrip[t].map(function (x) {
+        var st = ST[x.st] || ST.unknown;
+        return '<li class="adm-icpub__it is-' + esc(x.st) + '"><img src="' + ICONS + x.icon + '-64.webp" srcset="' + ICONS + x.icon + '-64.webp 1x, ' + ICONS + x.icon + '-128.webp 2x" alt="" width="40" height="40" loading="lazy" onerror="this.remove()">' +
+          '<span><b>' + (x.n ? num(x.n) + ' · ' : '') + esc(x.name || x.key) + '</b><br><span class="pg-pill pg-pill--' + (st[0] || 'running') + '">' + esc(st[1]) + '</span>' +
+          (x.at ? ' <span class="adm-cm__meta">zaakceptowana ' + esc(when(x.at)) + (x.version ? ' · trasa v' + esc(String(x.version)) : '') + '</span>' : '') + '</span></li>';
+      }).join('') + '</ul><div class="dec-acts"><a class="qc-btn qc-btn--sm" href="#/' + esc(encodeURIComponent(t)) + '">Otwórz trasę →</a></div></article>';
+    }).join('');
+  }
   function openDecisions(only) {
     state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
     var myHash = location.hash;
@@ -2928,12 +2992,13 @@
       if (!only) h += decSection('szkice', 'Szkice tras do zatwierdzenia', C.draft, d.drafts.err ? errBox(d.drafts, 'Szkice') : d.drafts.ok.length ? d.drafts.ok.map(draftHtml).join('') : none('Żaden szkic nie czeka.'));
       // ikony
       if (!only || only === 'ikony') h += decSection('ikony', 'Zdjęcia do ikon', C.icon, d.icons.err ? errBox(d.icons, 'Wybór zdjęć') : d.icons.ok.length ? d.icons.ok.map(iconHtml).join('') : none('Wszystkie przystanki z kandydatami mają decyzję.'));
+      if (only === 'ikony') h += decSection('ikony-pub', 'Opublikowane ikony miejsc', d.pubIcons ? d.pubIcons.n : 0, d.pubIcons ? pubIconsHtml(d.pubIcons) : none('Ładuję opublikowane ikony…'));
       if (!only) h += histHtml(d);
       $d.innerHTML = h + '</section>';
       [].forEach.call($d.querySelectorAll('details[data-k]'), function (x) { if (keep[x.getAttribute('data-k')]) x.open = true; });
     }
     function reload() {
-      return Promise.all([loadInbox(), only === 'straznicy' ? loadOps().catch(function () { return null; }) : null]).then(function (r) { draw(r[0]); }).catch(function (e) {
+      return Promise.all([loadInbox(), only === 'straznicy' ? loadOps().catch(function () { return null; }) : null, only === 'ikony' ? loadPubIcons().catch(function (e) { return { err: e.message, list: [], n: 0 }; }) : null]).then(function (r) { if (r[2]) r[0].pubIcons = r[2]; draw(r[0]); }).catch(function (e) {
         $d.innerHTML = '<p class="adm-empty">Skrzynka decyzji niedostępna: ' + esc(e.message) + '</p>';
       });
     }
@@ -3043,6 +3108,15 @@
       });
       if (tot) items.push({ k: 'icon', key: first, tone: ch < tot ? 'warn' : 'ok', t: 'Zdjęcia do ikon', v: ch + ' z ' + tot + ' przystanków z decyzją' });
     }
+    if (ir && ir.pub) {   // opublikowane ikony miejsc: podpięte do przystanków czy czekają na sync
+      var li = 0, rd = 0, firstR = null;
+      (state.tvStops || []).forEach(function (x) {
+        if (x.kind === 'del') return;
+        var st = placeIconState(ir.slug, x.s);
+        if (st === 'linked') li++; else if (st === 'ready') { rd++; if (!firstR) firstR = x.key; }
+      });
+      if (li || rd) items.push({ k: 'icon', key: firstR, tone: rd ? 'warn' : 'ok', t: 'Ikony miejsc', v: li + ' podpięt' + (li === 1 ? 'a' : 'e') + (rd ? ' · ' + rd + ' gotow' + (rd === 1 ? 'a' : 'e') + ', niepodpięt' + (rd === 1 ? 'a' : 'e') + ' (sync)' : '') });
+    }
     var D = state.tvDraft, S = (D && D.stops) || [], L = langsOf(D && D.stop_translations);
     if (S.length) {
       var noEn = S.filter(function (x) { return !trOf(D.stop_translations, 'en', 'stop_id', x.id).name; }).length;
@@ -3070,7 +3144,7 @@
       (!kid ? '<p class="tv-pv__meta">' + esc([durLabel(c.duration_type), S.length + ' przystanków'].filter(Boolean).join(' · ')) + '</p>' : '') + '</header><ol class="tv-pv__list">';
     S.forEach(function (s) {
       var t = trOf(D.stop_translations, 'pl', 'stop_id', s.id);
-      h += '<li class="tv-pv__stop"><span class="adm-stop__no">' + num(s.stop_number) + '</span><img class="adm-stop__ic" src="' + icon(s.category) + '" alt="" width="48" height="48" loading="lazy"><div class="tv-pv__b">' +
+      h += '<li class="tv-pv__stop"><span class="adm-stop__no">' + num(s.stop_number) + '</span>' + stopIconImg(s, 'adm-stop__ic', 48) + '<div class="tv-pv__b">' +
         '<h3>' + esc(t.name || '') + '</h3>';
       if (kid) {
         h += (t.kids_box ? '<div class="tv-pv__mission"><b>Misja</b>' + paras(t.kids_box) + '</div>' : '') +
