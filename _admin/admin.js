@@ -1499,6 +1499,7 @@
     var more = '<details class="tv-more"><summary class="ad-btn ad-btn--ghost tv-more__s"><span aria-hidden="true">⋯</span><span class="adm-sr">Więcej akcji</span></summary><div class="tv-more__p">' +
       (route ? '<a class="tv-more__a" href="' + esc(route) + '" target="_blank" rel="noopener">' + PIN + ' Cała trasa w Google Maps ↗</a>' : '') +
       (T.published != null ? '<a class="tv-more__a" href="' + SITE + '/city.html?c=' + encodeURIComponent(T.slug) + '" target="_blank" rel="noopener">Otwórz na stronie (v' + esc(T.published) + ') ↗</a>' : '') +
+      '<a class="tv-more__a" href="' + SITE + '/gra/?trasa=' + encodeURIComponent(T.slug) + '&test=1" target="_blank" rel="noopener">Gra: Quo: Wyprawa dla tej trasy (test) ↗</a>' +
       (state.token ? '<p class="tv-more__l">Podgląd ' + esc(it.label || 'v' + it.version) + ' na stronie</p>' + previewLinks(state.token, it.version) : '') +
       (state.readOnly ? '' : '<label class="tv-more__l" for="note">Notatka do wersji (opcjonalnie)</label><textarea id="note" name="note" rows="2" placeholder="trafi do historii wersji"></textarea>' +
         '<button type="button" class="qc-btn qc-btn--sm adm-btn-no" data-act="reject">Odrzuć szkic</button>') +
