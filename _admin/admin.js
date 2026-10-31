@@ -1291,7 +1291,8 @@
     var M = state.cmpM, dr = null;
     if (M && fl && fl.field) { var gb = M.by[fl.box]; dr = gb ? gb.rows[String(fl.field).replace(/^(stop|city)\./, '')] || null : null; }
     var diff = !!M && (dr ? dr.changed : changed);
-    var hl = qs.length && !(diff && dr) ? qaHighlight(show(newV, fmt), qs) : { html: esc(show(newV, fmt)), rest: diff && dr ? qs : [] };
+    var hl = fl && fl.html ? { html: fl.html, rest: qs } : qs.length && !(diff && dr) ? qaHighlight(show(newV, fmt), qs) : { html: esc(show(newV, fmt)), rest: diff && dr ? qs : [] };
+    if (!(fl && fl.html)) hl.html = hl.html.replace(/\[(\d{1,2})\]/g, '<sup class="adm-fn">[$1]</sup>');   // przypisy [n] małe, jak w druku (JP 2026-10-31)
     var val = diff && dr ? '<span class="adm-val adm-diff">' + diffHtml2(wordDiff(dr.a, dr.b)) + '</span>' + cmpWhyHtml(dr.why)
       : diff ? '<span class="adm-old">' + esc(show(oldV, fmt)) + '</span><span class="adm-new">' + hl.html + '</span>'
       : '<span class="adm-val">' + hl.html + '</span>';
@@ -2030,8 +2031,16 @@
       var s = st[f[0]] || {}, txt = s.state === 'found' ? blockText(f[0], m[f[0]]) : 'brak — sprawdzono: ' + (s.checked || '(nie podano)');
       return cell(f[1], null, txt, null, false, commentBox(key, 'stop.' + f[0], f[1], ver), { box: key, field: 'stop.' + f[0] });
     }).join('');
-    var src = (b.sources || []).map(function (x) { return '[' + x.n + '] ' + (x.title || '') + ' — ' + x.url; }).join('\n');
-    rows += cell('Źródła (przypisy [n])', null, src || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver), { box: key, field: 'stop.sources' });
+    // źródła: mała lista jak przypisy w druku — numer, tytuł jako link, sama domena zamiast pełnego adresu (JP 2026-10-31: „linki do źródeł mniejsze”)
+    var srcTxt = (b.sources || []).map(function (x) { return '[' + x.n + '] ' + (x.title || '') + ' — ' + x.url; }).join('\n');
+    var srcHtml = (b.sources || []).length ? '<ol class="adm-src">' + b.sources.map(function (x) {
+      var u = /^https?:\/\//i.test(String(x.url || '')) ? String(x.url) : null, host = '';
+      try { host = u ? new URL(u).hostname.replace(/^www\./, '') : ''; } catch (e) {}
+      var t = esc(x.title || host || u || 'źródło');
+      return '<li><span class="adm-src__n">[' + esc(x.n) + ']</span> ' + (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + t + '</a>' : t) +
+        (host && x.title ? ' <span class="adm-src__host">' + esc(host) + '</span>' : '') + '</li>';
+    }).join('') + '</ol>' : '<span class="adm-val adm-src__none">brak źródeł</span>';
+    rows += cell('Źródła', null, srcTxt || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver), { box: key, field: 'stop.sources', html: srcHtml });
     var ck = b.check, va = b.validator, out = [];
     if (ck) out.push('Claude: ' + (ck.verdict === 'ok' ? 'ok' : 'do poprawy') + (ck.summary ? ' — ' + ck.summary : '') +
       (ck.errors || []).map(function (e) { return '\n• ' + (e.block ? e.block + ': ' : '') + e.problem + (e.fix ? ' → ' + e.fix : ''); }).join(''));

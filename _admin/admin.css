@@ -1551,8 +1551,6 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm .tv .adm-row.is-chg .adm-row__k{color:var(--ink)}
 .adm .tv .adm-row.is-chg .adm-row__k::before{width:8px;height:8px;align-self:center;border-radius:50%;background:var(--warn-dot)}
 .adm .tv .adm-row.is-walk-target{margin:0 -12px;padding:12px;border-radius:8px;background:var(--azzurro-50);box-shadow:inset 0 0 0 1px var(--azzurro)}
-.adm .tv .adm-cm__form textarea{border-style:solid!important}
-.adm .tv .adm-cm__form textarea::placeholder{color:var(--azzurro);font-weight:500}
 .adm .adm-cm__it{background:var(--page);border-radius:8px}
 .adm .adm-cm__send{border-radius:50%;background:var(--azzurro);color:var(--ad-on-acc)}
 .adm .tv .adm-cm__send{background:var(--azzurro-50);color:var(--azzurro)}
@@ -1599,3 +1597,18 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm .tv-walk__nav{gap:6px}
 .adm .tv-walk__nav .qc-btn,.adm .tv-walk__nav .adm-linkbtn{white-space:nowrap;font-size:15px;padding-left:12px;padding-right:12px}
 .adm .tv-tools .qc-btn{white-space:nowrap;font-size:15px;padding-left:14px;padding-right:14px}
+
+/* źródła i przypisy małe, drugorzędne; pole uwagi jako dyskretny wiersz do kliknięcia (JP 2026-10-31) */
+.adm-fn{font-size:12px;line-height:0;color:var(--muted);vertical-align:super;margin-left:1px}
+.adm-src{list-style:none;margin:0;padding:0;font-size:15px;line-height:1.4;color:var(--muted)}
+.adm-src li{display:flex;flex-wrap:wrap;align-items:center;gap:0 6px;min-height:44px;border-bottom:1px solid var(--rule)}
+.adm-src li:last-child{border-bottom:0}
+.adm-src__n{font-variant-numeric:tabular-nums;color:var(--muted)}
+.adm-src a{font-size:15px;color:var(--azzurro);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.adm-src__host{font-size:14px;color:var(--muted)}
+.adm-src__none{font-size:15px;color:var(--muted)}
+.adm .tv .adm-cm__form textarea{border:0!important;background:transparent;font-size:15px;color:var(--muted);padding:10px 0;min-height:44px;border-radius:0;font-weight:400;box-shadow:none}
+.adm .tv .adm-cm__form textarea::placeholder{color:var(--muted);font-weight:400}
+.adm .tv .adm-cm__form textarea:focus,.adm .tv .adm-cm__form textarea:not(:placeholder-shown){border:2px solid var(--azzurro)!important;background:var(--card);padding:10px 12px;font-size:17px;color:inherit;border-radius:10px}
+.tv .adm-cm__form .adm-cm__send{display:none}
+.tv .adm-cm__form:focus-within .adm-cm__send,.tv .adm-cm__form:has(textarea:not(:placeholder-shown)) .adm-cm__send{display:inline-flex}
