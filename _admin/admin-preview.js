@@ -1,6 +1,6 @@
 /* ============================================================
    Panel admina — „telefon obok pól” (JP 2026-10-31)
-   Podgląd na żywo wersji trasy w ramce telefonu obok pól szkicu.
+   Podgląd na żywo wersji trasy — szuflada z prawej krawędzi (v55), nad treścią.
    - Strona: PRAWDZIWA strona miasta w wersji szkicu — ten sam mechanizm co
      „Podgląd wersji” w menu ⋯: quolino.com/city.html?draft=<klucz>&v=N
      (klucz z rpc/admin_preview_token, który panel i tak pobiera przy otwarciu trasy).
@@ -16,10 +16,9 @@
   var MARK = 'quolino-preview';
   var SITE = A.SITE, SITE_ORIGIN = '';
   try { SITE_ORIGIN = new URL(SITE).origin; } catch (e) { SITE_ORIGIN = ''; }
-  var WIDE = window.matchMedia('(min-width:1200px)');
   var esc = A.esc;
   var P = { el: null, frame: null, msg: null, note: null, view: 'parent', ready: false, loaded: false, key: '', url: '', srcdoc: '', demo: false,
-    on: true, sheet: false, pending: null, loadT: null, bridgeT: null, flashT: null, it: null, lastFocus: null, lastFocusAt: 0 };
+    on: false, sheet: false, pending: null, loadT: null, bridgeT: null, flashT: null, it: null, lastFocus: null, lastFocusAt: 0 };
   var TRIP_RE = /^#\/([^/]+)(?:\/v(\d+))?$/, SECTIONS = /^#\/(trasy|decyzje|straznicy|ikony|postep|zgloszenia|koszty|baza-wiedzy|pulpit)$/;
   var ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M10.5 5.5h3M11 18.5h2"/></svg>';
 
@@ -44,7 +43,7 @@
     P.frame.addEventListener('load', onLoad);
     el.addEventListener('click', function (e) {
       var v = e.target.closest('[data-pv-view]'); if (v) { setView(v.getAttribute('data-pv-view')); return; }
-      if (e.target.closest('[data-pv-close]')) { P.sheet ? sheetClose() : dockHide(); return; }
+      if (e.target.closest('[data-pv-close]')) { sheetClose(); return; }
       if (e.target.closest('[data-pv-retry]')) { load(true); }
     });
   }
@@ -213,89 +212,62 @@
     clearTimeout(P.flashT); P.flashT = setTimeout(function () { target.classList.remove('is-pv-target'); sec.classList.remove('is-pv-target'); }, 1500);
   }
 
-  // ── układ (poprawka JP 2026-10-31: telefon NIGDY nie leży na treści) ──
-  //   bez panelu flag: dok po prawej (≥ 1200 px); z panelem flag: ≥ 1700 px obok panelu, 1300–1699 px prawa kolumna
-  //   (panel flag u góry, telefon pod nim, kolumna przewijana), < 1300 px pigułka „Podgląd” → arkusz na żądanie.
-  var COL_MIN = 1300, SIDE_MIN = 1700, pill = null;
+  // ── układ v55 (JP 2026-10-31): „widok telefonu jako panel wysuwany z prawej” ──
+  //   Szuflada z prawej krawędzi nad treścią (ok. 440 px), własny nagłówek, treść pod spodem przewijalna.
+  //   Z panelem flag: ≥ 1500 px szuflada staje po jego LEWEJ; poniżej panele się wymieniają (otwarcie jednego chowa drugi do pigułki).
+  //   Stan szuflady (otwarta) pamiętany na czas sesji — w pamięci skryptu, bez localStorage.
+  var SIDE_MIN = 1500, pill = null, walkPill = null, pushedWalk = false;
   function tripOpen() { return TRIP_RE.test(location.hash) && !SECTIONS.test(location.hash) && !!A.state.trip; }
   function walkOn() { return document.body.classList.contains('has-walk'); }
   function paintToggle() {
     [].forEach.call(document.querySelectorAll('[data-pv-toggle]'), function (b) { b.setAttribute('aria-pressed', String(!!P.el && !P.el.hidden)); });
   }
-  function ensurePill() {
-    if (pill && document.body.contains(pill)) return;
-    pill = document.createElement('button'); pill.type = 'button'; pill.className = 'qc-btn qc-btn--sm tv-phone__pill'; pill.hidden = true;
-    pill.setAttribute('aria-controls', 'tvPhone'); pill.title = 'Podgląd na telefonie (arkusz)'; pill.innerHTML = ICON + '<span class="adm-sr">Podgląd na telefonie</span>';
-    pill.addEventListener('click', sheetOpen);
-    document.body.appendChild(pill);
+  function mkPill(id, title, html, onClick) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'qc-btn qc-btn--sm tv-phone__pill'; b.id = id; b.hidden = true;
+    b.title = title; b.innerHTML = html; b.addEventListener('click', onClick); document.body.appendChild(b); return b;
   }
+  function ensurePills() {
+    if (!pill || !document.body.contains(pill)) pill = mkPill('pvPill', 'Podgląd na telefonie', ICON + '<span class="adm-sr">Podgląd na telefonie</span>', function () { P.on = true; apply(); load(); focusX(); });
+    if (!walkPill || !P.el.contains(walkPill)) walkPill = mkPill('walkPill', 'Wróć do flag', '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 2.5a1 1 0 0 1 1 1V4h11.2a1 1 0 0 1 .8 1.6L15.6 9l2.4 3.4a1 1 0 0 1-.8 1.6H6v7a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1z"/></svg><span class="adm-sr">Wróć do flag</span>',
+      function () { P.on = false; pushedWalk = false; apply(); A.walkOpen(); pill.hidden = false; });
+    walkPill.classList.add('tv-phone__pill--walk');
+    var bar = P.el.querySelector('.tv-phone__bar'); if (bar && walkPill.parentNode !== bar) bar.insertBefore(walkPill, bar.querySelector('.tv-phone__x'));
+  }
+  function focusX() { var x = P.el && P.el.querySelector('.tv-phone__x'); if (x) x.focus(); }
   function layoutMode() {
-    if (!tripOpen() || !P.it) return 'off';
-    if (P.sheet) return 'sheet';
-    if (!WIDE.matches || !P.on) return 'hidden';
-    if (!walkOn()) return 'dock';
-    var w = window.innerWidth;
-    return w >= SIDE_MIN ? 'dock' : w >= COL_MIN ? 'col' : 'parked';
-  }
-  // przenosiny ramki = przeładowanie strony w niej (raz) — stan „gotowa” od nowa
-  function relocate(parent) {
-    if (!P.el || P.el.parentNode === parent) return;
-    var live = !!P.key;
-    parent.appendChild(P.el);
-    if (live) { P.ready = false; P.loaded = false; clearTimeout(P.loadT); clearTimeout(P.bridgeT); showMsg('<p class="tv-phone__load"><span class="ad-spin" aria-hidden="true"></span> Ładuję podgląd…</p>');
-      P.loadT = setTimeout(function () { if (!P.loaded) { P.key = ''; load(); } }, 12000); }
-  }
-  // prawa kolumna: #walk + telefon w jednym przewijanym pojemniku wewnątrz .tv (admin.js nasłuchuje kliknięć w #walk na #detail)
-  function colEnter() {
-    var walk = document.getElementById('walk'), tv = document.querySelector('#detail .tv'); if (!walk || !tv) return false;
-    var col = document.getElementById('tvRcol');
-    if (!col) { col = document.createElement('div'); col.className = 'tv-rcol'; col.id = 'tvRcol'; tv.appendChild(col); }
-    if (walk.parentNode !== col) { P.walkPh = document.createComment('walk'); walk.parentNode.insertBefore(P.walkPh, walk); col.appendChild(walk); }
-    relocate(col);
-    return true;
-  }
-  function colLeave() {
-    var col = document.getElementById('tvRcol'); if (!col) return;
-    var walk = document.getElementById('walk');
-    if (walk && walk.parentNode === col && P.walkPh && P.walkPh.parentNode) P.walkPh.parentNode.insertBefore(walk, P.walkPh);
-    if (P.walkPh && P.walkPh.parentNode) P.walkPh.parentNode.removeChild(P.walkPh);
-    P.walkPh = null;
-    if (P.el && P.el.parentNode === col) relocate(document.body);
-    if (col.parentNode) col.parentNode.removeChild(col);
+    if (!tripOpen() || !P.it || !P.on) return 'off';
+    return window.innerWidth < 900 ? 'sheet' : 'drawer';
   }
   function apply() {
     if (!P.el) return;
-    ensurePill();
-    var m = layoutMode();
-    if (m === 'col' && !colEnter()) m = 'dock';
-    if (m !== 'col') colLeave();
-    if (m !== 'col' && P.el.parentNode !== document.body) relocate(document.body);
-    var B = document.body.classList;
-    B.toggle('has-phone', m === 'dock'); B.toggle('has-phone-col', m === 'col'); B.toggle('has-phone-sheet', m === 'sheet'); B.toggle('has-phone-pill', m === 'parked');
+    ensurePills();
+    var m = layoutMode(), B = document.body.classList, narrow = window.innerWidth < SIDE_MIN;
+    // wymiana paneli poniżej 1500 px: szuflada otwarta → panel flag do pigułki; zamknięcie szuflady → panel flag wraca
+    if (m !== 'off' && walkOn() && narrow) { pushedWalk = true; A.walkClose(true); }
+    else if (m === 'off' && pushedWalk) { pushedWalk = false; if (tripOpen() && A.walk && A.walk.ids && A.walk.ids.length) A.walkOpen(); }
+    walkPill.hidden = !(m !== 'off' && pushedWalk);
+    B.toggle('has-phone', m === 'drawer'); B.toggle('has-phone-sheet', m === 'sheet'); B.toggle('has-phone-side', m === 'drawer' && walkOn() && !narrow);
+    B.remove('has-phone-col'); B.remove('has-phone-pill');
     P.el.classList.toggle('is-sheet', m === 'sheet');
-    P.el.hidden = !(m === 'dock' || m === 'col' || m === 'sheet');
-    pill.hidden = m !== 'parked';
+    P.el.hidden = m === 'off';
+    if (walkOn() && A.walk && A.walk.on) setTimeout(function () { if (A.walkScroll) A.walkScroll(); }, 60);
+    if (m !== 'off' || !tripOpen()) pill.hidden = true;
     paintToggle();
   }
-  function dockHide() { P.on = false; apply(); var b = document.querySelector('[data-pv-toggle]'); if (b) b.focus(); }
-  function sheetOpen() { P.sheet = true; apply(); load(); var x = P.el.querySelector('.tv-phone__x'); if (x) x.focus(); }
-  function sheetClose() { P.sheet = false; apply(); var b = (pill && !pill.hidden) ? pill : document.querySelector('[data-pv-toggle]'); if (b) b.focus(); }
-  function toggle() {
-    if (P.sheet) { sheetClose(); return; }
-    if (!WIDE.matches || (walkOn() && window.innerWidth < COL_MIN)) { sheetOpen(); return; }
-    P.on = !P.on; apply(); if (P.on) load();
-  }
+  function sheetOpen() { P.on = true; apply(); load(); focusX(); }
+  function sheetClose() { P.on = false; apply(); var b = document.querySelector('[data-pv-toggle]'); if (b) b.focus(); }
+  function dockHide() { sheetClose(); }
+  function toggle() { if (P.on) { sheetClose(); return; } P.on = true; apply(); load(); focusX(); }
   function ensureButton() {
     var r = document.querySelector('#detail .tv-tools__r'); if (!r || r.querySelector('[data-pv-toggle]')) return;
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'qc-btn qc-btn--sm tv-pvbtn'; b.setAttribute('data-pv-toggle', ''); b.setAttribute('aria-controls', 'tvPhone'); b.setAttribute('aria-pressed', 'false');
-    b.title = 'Podgląd wersji na telefonie obok pól';
+    b.title = 'Podgląd wersji na telefonie (szuflada z prawej)';
     b.innerHTML = ICON + ' Podgląd';
     r.insertBefore(b, r.firstChild);
   }
   document.addEventListener('adm:render', function (e) {
-    P.walkPh = null;                      // nowy #walk po przerysowaniu; stara kolumna (jeśli była) zginęła razem z treścią
-    if (P.el && !document.body.contains(P.el)) { P.el = null; P.key = ''; }   // ramka była w kolumnie w #detail → od nowa
+    if (P.el && !document.body.contains(P.el)) { P.el = null; P.key = ''; }
     build();
     P.it = e.detail && e.detail.it || A.state.current || null;
     var v = P.el.querySelector('#tvPhoneV'); if (v && P.it) v.textContent = (P.it.label || 'v' + P.it.version) + ' · ' + (A.VST[P.it.status] || P.it.status);
@@ -305,22 +277,27 @@
   });
   document.addEventListener('adm:route', function () {
     if (tripOpen()) return;
-    P.it = null; P.key = ''; P.sheet = false;
+    P.it = null; P.key = ''; pushedWalk = false;
     if (P.el && !document.body.contains(P.el)) P.el = null;
     if (P.frame && P.el) { P.frame.removeAttribute('srcdoc'); P.frame.src = 'about:blank'; }
     apply();
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && P.sheet) { e.preventDefault(); sheetClose(); } });
-  if (WIDE.addEventListener) WIDE.addEventListener('change', function () { apply(); if (P.el && !P.el.hidden) load(); });
+  // panel flag otwarty ręcznie przy otwartej szufladzie poniżej 1500 px → szuflada chowa się do pigułki
+  document.addEventListener('adm:walk', function (e) {
+    if (!P.el || !e.detail) return;
+    if (e.detail.on && P.on && window.innerWidth < SIDE_MIN && window.innerWidth >= 900) { P.on = false; pushedWalk = false; apply(); pill.hidden = false; }
+    else if (e.detail.on) { pushedWalk = false; apply(); }
+    else if (!e.detail.on && !P.on && pill && !pill.hidden) { /* pigułka zostaje — użytkownik sam wraca do podglądu */ }
+    else apply();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && P.el && !P.el.hidden && !walkOn()) { e.preventDefault(); sheetClose(); } });
   var rsT = null;
-  window.addEventListener('resize', function () { clearTimeout(rsT); rsT = setTimeout(function () { if (P.el) { apply(); if (!P.el.hidden) load(); } }, 120); });
-  // panel flag otwiera się / zamyka bez zdarzenia — patrzymy na klasę has-walk na <body>
-  if (window.MutationObserver) new MutationObserver(function () { if (P.el && walkOn() !== P.walkWas) { P.walkWas = walkOn(); apply(); if (!P.el.hidden) load(); } }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', function () { clearTimeout(rsT); rsT = setTimeout(function () { if (P.el) { apply(); } }, 120); });
 
   window.AdmPreview = {
     open: function (view) {
       build(); if (view) paintView(view === 'kid' ? 'kid' : 'parent');
-      if (WIDE.matches) { P.on = true; P.sheet = false; apply(); load(); } else sheetOpen();
+      P.on = true; apply(); load(); focusX();
       if (view && P.ready) post({ type: 'qp:view', view: P.view });
     },
     setView: setView, isOpen: function () { return !!P.el && !P.el.hidden; }, view: function () { return P.view; }

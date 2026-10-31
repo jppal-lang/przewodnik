@@ -1038,7 +1038,17 @@
     [].forEach.call($d.querySelectorAll('[data-flag="' + li.getAttribute('data-qid') + '"]'), function (f) { f.classList.remove('is-on'); if (f.tagName === 'BUTTON') f.setAttribute('aria-expanded', 'false'); });
     var fl = flagAnchor(li.getAttribute('data-qid')); if (focusFlag && fl) fl.focus();
   }
-  function popOpen(id) {
+  // v55 (JP 2026-10-31): notatka flagi zawsze w prawym panelu (ten sam co „Przejdź przez flagi”), ustawionym na tę flagę.
+  // Stary popover pod polem (popOpenInline) zostaje tylko jako zapas, gdy panelu nie ma w DOM (np. tryb tylko do odczytu bez flag).
+  function popOpen(id) { if (document.getElementById('walk') && walkOpenAt(id)) return; popOpenInline(id); }
+  function walkOpenAt(id) {
+    if (!walk.on) walkOpen(id);
+    var i = walk.ids.indexOf(id);
+    if (i < 0) return false;
+    if (walk.on && i === walk.i && walk.li) { walkScroll(); var f0 = walk.li.querySelector('.adm-qo.is-rec') || walk.li.querySelector('.adm-qo'); if (f0) f0.focus({ preventScroll: true }); return true; }
+    walkShow(i); return true;
+  }
+  function popOpenInline(id) {
     var li = document.getElementById('q-' + id); if (!li) return;
     if (state.popLi === li) { popClose(true); return; }
     popClose();
@@ -1501,11 +1511,12 @@
     var chip = { first: '', new: '<span class="adm-chip adm-chip--new">nowy</span>', chg: '<span class="adm-chip adm-chip--chg">zmieniony</span>',
       del: '<span class="adm-chip adm-chip--del">usunięty</span>', same: '<span class="adm-chip">bez zmian</span>' }[x.kind];
     var hasOld = !!pub && !!x.ot && x.kind !== 'del';
-    var histHtml = '<details class="adm-hist"><summary><span class="adm-pv" title="wersja tego przystanku">punkt v' + ver + '</span>' + CHEV + '</summary><ol>' +
+    var histHtml = '<span class="adm-pv" title="wersja tego przystanku">punkt v' + ver + '</span>';
+    var histAcc = x.hist.length ? accRow('hist', 'Historia punktu', plForm(x.hist.length, 'wersja', 'wersje', 'wersji'), '<ol class="adm-hist__l">' +
       x.hist.slice().reverse().map(function (h) {
         return '<li><b>v' + h.version + '</b> <span class="adm-cm__meta">' + esc(VST[h.status] || h.status) + ' · ' + esc(when(h.created_at)) + '</span><br>' +
           esc(h.isNew ? 'dodany' : 'zmieniono: ' + h.changed.join(', ')) + '</li>';
-      }).join('') + '</ol></details>';
+      }).join('') + '</ol>') : '';
     var head = '<header class="adm-stopx__head"><span class="adm-stop__no">' + num(s.stop_number) + '</span>' +
       '<img class="adm-stop__ic" src="' + icon(s.category) + '" alt="" width="48" height="48" loading="lazy">' +
       '<span class="adm-stop__name">' + esc(t.name || '(bez nazwy PL)') + '<small>' + esc([s.category, s.time_label, s.visit_duration ? minLabel(s.visit_duration) : ''].filter(Boolean).join(' · ')) + '</small></span>' +
@@ -1520,7 +1531,7 @@
     var rows = STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
       blockRows(x.key, ver) +
       STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
-      qaExtraRows(x.key, shown, ver) +
+      qaExtraRows(x.key, shown, ver) + histAcc +
       cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)).replace('class="adm-row', 'class="adm-row adm-row--all');
     return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" data-cat="' + esc(s.category || '') + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + rows + '</div></section>';
@@ -2062,6 +2073,14 @@
   // bloki nowych wytycznych (docs/TRESC-PRZYSTANKU.md): wersja z przypisami [n], źródła i wynik kontroli — tylko dla redakcji
   var BLK = RW.BLOCKS.map(function (k) { return F_(k); });
   var blockText = RW.blockText;   // ten sam tekst, w którym kontrola szuka cytatu
+  // wiersz pomocniczy jako akordeon (JP 2026-10-31): nagłówek 15 px z liczbą, zwinięty domyślnie, stan per typ w pamięci sesji
+  var accState = {};
+  function accRow(type, title, count, inner) {
+    var open = accState[type] === true;
+    return '<details class="adm-acc" data-acc="' + esc(type) + '"' + (open ? ' open' : '') + '><summary class="adm-acc__s"><span class="adm-acc__t">' + esc(title) +
+      (count != null ? ' <span class="adm-acc__n">(' + esc(count) + ')</span>' : '') + '</span>' + CHEV + '</summary><div class="adm-acc__b">' + inner + '</div></details>';
+  }
+  $d.addEventListener('toggle', function (e) { var d = e.target; if (d.matches && d.matches('details.adm-acc')) accState[d.getAttribute('data-acc')] = d.open; }, true);
   function blockRows(key, ver) {
     var b = state.blocks && state.blocks[key]; if (!b) return '';
     var m = b.marked || {}, st = b.state || {};
@@ -2082,13 +2101,16 @@
       return '<li><span class="adm-src__n">[' + esc(x.n) + ']</span> ' + (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + t + '</a>' : t) +
         (host && x.title ? ' <span class="adm-src__host">' + esc(host) + '</span>' : '') + '</li>';
     }).join('') + '</ol>' : '<span class="adm-val adm-src__none">brak źródeł</span>';
-    rows += cell('Źródła', null, srcTxt || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver), { box: key, field: 'stop.sources', html: srcHtml });
+    var nSrc = (b.sources || []).length, srcCell = cell('Źródła', null, srcTxt || 'brak źródeł', null, false, commentBox(key, 'stop.sources', 'Źródła', ver), { box: key, field: 'stop.sources', html: srcHtml });
+    var srcFl = qaFor(key, 'stop.sources').filter(function (x) { return !x.auto; }).length;
+    rows += accRow('sources', 'Źródła', nSrc + (srcFl ? ' · ' + plForm(srcFl, 'flaga', 'flagi', 'flag') : ''), srcCell);
     var ck = b.check, va = b.validator, out = [];
     if (ck) out.push('Claude: ' + (ck.verdict === 'ok' ? 'ok' : 'do poprawy') + (ck.summary ? ' — ' + ck.summary : '') +
       (ck.errors || []).map(function (e) { return '\n• ' + (e.block ? e.block + ': ' : '') + e.problem + (e.fix ? ' → ' + e.fix : ''); }).join(''));
     if (va && va.errors && va.errors.length) out.push('Walidator: ' + va.errors.map(function (e) { return '\n• ' + (e.block ? e.block + ': ' : '') + e.problem; }).join(''));
     if (b.gap) out.push('Luka w researchu: ' + b.gap);
-    if (out.length) rows += cell('Kontrola', null, out.join('\n\n'), null, false, '');
+    var nChk = (ck && ck.errors ? ck.errors.length : 0) + (va && va.errors ? va.errors.length : 0) + (b.gap ? 1 : 0);
+    if (out.length) rows += accRow('check', 'Kontrola', nChk ? plForm(nChk, 'uwaga', 'uwagi', 'uwag') : 'ok', cell('Kontrola', null, out.join('\n\n'), null, false, ''));
     return rows;
   }
 
@@ -3083,15 +3105,18 @@
     walk.li = null; walk.ph = null;
   }
   function walkDone(id) { var li = document.getElementById('q-' + id); return !li || li.classList.contains('is-done'); }
-  function walkOpen() {
+  function walkOpen(startId) {
     var w = document.getElementById('walk'); if (!w) return;
     popClose(); drawerClose(true);
     walk.ids = [].map.call($d.querySelectorAll('#tvFields .adm-q__it:not(.is-auto)'), function (li) { return li.getAttribute('data-qid'); });
     if (!walk.ids.length) return;
+    if (startId && walk.ids.indexOf(startId) < 0) return;
     if ((state.tvView || 'fields') !== 'fields') { state.tvView = 'fields'; viewApply(); }
     if (state.cmpOnly) { state.cmpOnly = false; var tv = $d.querySelector('.tv'); if (tv) tv.classList.remove('is-only'); }
     walk.on = true; w.hidden = false; document.body.classList.add('has-panel', 'has-walk'); fitActbar();
     [].forEach.call($d.querySelectorAll('[data-walk]'), function (b) { b.setAttribute('aria-expanded', 'true'); });
+    emit('adm:walk', { on: true });
+    if (startId) { walkShow(walk.ids.indexOf(startId)); return; }
     var i = 0; while (i < walk.ids.length && walkDone(walk.ids[i])) i++;
     walkShow(i < walk.ids.length ? i : 0);
   }
@@ -3102,6 +3127,7 @@
     if (!li || !slot) return;
     walk.ph = document.createComment('flaga'); li.parentNode.insertBefore(walk.ph, li);
     slot.appendChild(li); li.classList.add('is-walk'); walk.li = li;
+    var acc = walk.ph.parentNode.closest('details.adm-acc'); if (acc && !acc.open) acc.open = true;
     walkMark(walk.ids[walk.i]);
     walkCtx(walk.ids[walk.i]);
     walkPaint();
@@ -3176,6 +3202,7 @@
     if (!walk.on) return;
     walkMark(null);
     walk.on = false; if (w) w.hidden = true; document.body.classList.remove('has-panel', 'has-walk'); fitActbar();
+    emit('adm:walk', { on: false });
     [].forEach.call($d.querySelectorAll('[data-walk]'), function (b) { b.setAttribute('aria-expanded', 'false'); if (!silent) b.focus(); });
   }
   $d.addEventListener('click', function (e) {
@@ -3655,7 +3682,7 @@
   // ── haki dla modułów panelu (admin-preview.js, admin-palette.js; JP 2026-10-31): odczyt stanu i istniejące funkcje, nic więcej ──
   function emit(name, detail) { try { document.dispatchEvent(new CustomEvent(name, { detail: detail || {} })); } catch (e) { /* stare przeglądarki */ } }
   window.ADM = { state: state, inbox: inbox, DEMO: DEMO, SITE: SITE, api: api, esc: esc, fold: fold, countryName: countryName, regionName: regionName, titleCase: titleCase,
-    VST: VST, vlab: vlab, num: num, qaId: qaId, cmpOptions: cmpOptions, showTab: showTab, rerender: rerender, walk: walk, walkOpen: walkOpen, walkClose: walkClose, walkShow: walkShow,
+    VST: VST, vlab: vlab, num: num, qaId: qaId, cmpOptions: cmpOptions, showTab: showTab, rerender: rerender, walk: walk, walkOpen: walkOpen, walkClose: walkClose, walkShow: walkShow, walkScroll: walkScroll,
     drawerOpen: drawerOpen, viewApply: viewApply, recOpen: recOpen, loadInbox: loadInbox, loadTrips: loadTrips };
   var tripsReady = loadTrips();
   route();

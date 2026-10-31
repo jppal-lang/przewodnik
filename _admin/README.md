@@ -449,3 +449,15 @@ Zgoda JP 2026-10-31. Plik `admin-map.js` (style w `admin-ext.css`); w `admin.js`
   parking = kwadrat, lokale = romb; klik → karta przystanku (godzina, czas na miejscu, cena, rok, współrzędne) z linkiem „Przejdź do pól przystanku”. Bez km i czasów dojazdu.
   Podkład: biała siatka (bez kafli, bez CDN); „Otwórz w Google Maps” dla całej trasy (ten sam link co w menu ⋯). Gdy < 2 przystanki mają współrzędne — schemat kolejności z wyraźną informacją.
 - Tryb demo: współrzędne miast i przystanków Spello w `admin-map.js` (`DEMO_CITY`, `DEMO_STOPS`); Zakopane celowo bez współrzędnych.
+
+## v55 (2026-10-31): notatka flagi po prawej, telefon jako szuflada, akordeony
+
+- **Klik flagi w treści** otwiera prawy panel flag ustawiony na tę flagę (`popOpen → walkOpenAt(id)`): ten sam kontekst, opcje,
+  rekomendacja, Wstecz/Dalej i skróty; pole w treści obramowane, fragment zaznaczony. Stary popover pod polem (`.adm-pop`) wyłączony
+  z użycia; zapis odpowiedzi bez zmian. Esc zamyka panel; na telefonie dolny arkusz jak w trybie przechodzenia.
+- **Telefon jako szuflada z prawej** (`admin-preview.js`): przycisk „Podgląd” w pasku narzędzi i w palecie; 440 px nad treścią,
+  własny nagłówek (Rodzic/Dziecko, wersja, ×), treść pod spodem przewijalna. Z panelem flag ≥ 1500 px szuflada staje po jego lewej
+  (treść zwęża się, spis znika); poniżej panele się wymieniają — otwarcie jednego chowa drugi do pigułki („Wróć do flag” w nagłówku
+  szuflady, „Podgląd” w rogu). Stan szuflady pamiętany w pamięci skryptu na czas sesji (bez localStorage).
+- **Akordeony** w karcie przystanku: Źródła (n), Kontrola (n uwag), Historia punktu — `<details>`, nagłówek 15 px, cel ≥ 44 px,
+  zwinięte domyślnie, stan per typ na czas sesji; flaga w zwiniętym wierszu rozwija go automatycznie w trybie przechodzenia.

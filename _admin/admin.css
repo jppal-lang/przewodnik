@@ -1624,3 +1624,19 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm-langs{font-size:15px;color:var(--muted);white-space:nowrap}
 .adm-langs.is-full{color:var(--verde)}
 .adm-langs.is-weak{color:var(--warn,#b06000)}
+
+/* ── v55 (JP 2026-10-31): akordeony pomocnicze w karcie przystanku; notatka flagi w prawym panelu ── */
+.adm-acc{border-bottom:1px solid var(--rule)}
+.adm-acc__s{list-style:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 0;cursor:pointer;font-size:15px;font-weight:500;color:var(--muted)}
+.adm-acc__s::-webkit-details-marker{display:none}
+.adm-acc__s:hover{color:var(--ink)}
+.adm-acc__s .adm-chev{margin-left:auto;width:18px;height:18px}
+.adm-acc[open] > .adm-acc__s .adm-chev{transform:rotate(180deg)}
+.adm-acc__n{font-weight:400}
+.adm-acc__b > .adm-row{border-bottom:0;padding-top:4px}
+.adm-acc__b > .adm-row > .adm-row__k{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.adm-acc__b > .adm-row > .adm-row__k .adm-row__flags{position:static;width:auto;height:auto;clip:auto}
+.adm-acc__b > .adm-row.has-flags > .adm-row__k{position:static;width:auto;height:auto;clip:auto;overflow:visible}
+.adm-hist__l{list-style:none;display:flex;flex-direction:column;gap:6px;padding:4px 0 8px;font-size:16px;line-height:1.4}
+.tv .adm-pop:not(.is-walk){display:none!important}
+.tv .adm-row.has-pop{z-index:auto}
