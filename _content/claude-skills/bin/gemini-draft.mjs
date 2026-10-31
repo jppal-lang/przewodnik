@@ -20,6 +20,7 @@ import { agyQuotaHit, agyQuotaOut } from './lib.mjs';
 import { claude, claudeUsage, claudeJson, extractJson, repairJson, JSON_QUOTE_RULE, env, log as rawLog, db, DAILY_USD, aiUsage } from './lib.mjs';
 import { WORK, DEPTH_TEXT, fullReview, saveDraft, previewUrl, notify, verdictLine } from './draft-lib.mjs';
 import './review-where.mjs';   // uwagi z kontroli przy polach: rozbicie zbiorczych, ścieżki (wspólne z panelem)
+import { stopsOf, remapComments, UNPLACED_REPLY, MOVED_NOTE } from './verify-revision-lib.mjs';   // uwagi do przystanków ze starymi kluczami (JP 2026-10-31)
 const RW = globalThis.ReviewWhere;
 import { loadRules, rulesText, learn } from './quality-lib.mjs';
 import { triageErrors, gateErrors } from './jev.mjs';
@@ -996,7 +997,7 @@ async function reviseMain() {
   };
   const keyOf = (e) => `${e.stop_key ?? ''}|${e.problem}`;
   const quoteOf = (body) => body.match(/^✂[^„"]*[„"]([\s\S]+)[”"]\s*$/)?.[1] ?? null;
-  const lit = [], ask = [], answered = new Set();
+  const lit = [], answered = new Set(); let ask = [];
   for (const c of comments) {
     if (!isQ(c)) { ask.push(c); continue; }
     const it = itemOf(c), body = c.body.trim(); if (it) answered.add(keyOf(it));
@@ -1027,8 +1028,22 @@ async function reviseMain() {
     }
     log(`${slug}: pytania z kontroli — ${lit.length} zgód, ${litChanges.length} podmian`);
   }
+  // uwagi do przystanków, których nie ma w szkicu (stare klucze „frasassi-01” z wcześniejszej wersji, przypadek #21 Frasassi, JP 2026-10-31):
+  // dopasowanie BEZ AI (ta sama nazwa w wersji uwagi → przystanek o tej nazwie; wzorzec „-NN” → numer przystanku); bez dopasowania
+  // uwaga NIE idzie do modelu — wraca w wyniku jako `unplaced` (draft-comments.mjs nadaje status needs_jp, JP wskazuje przystanek w panelu)
+  const curStops = stopsOf(trip), oldStops = {};
+  for (const v of new Set(ask.filter(c => c.stop_key && !curStops.some(s => s.key === c.stop_key)).map(c => +(c.city_version ?? cur.version)))) {
+    const [row] = v === +cur.version ? [cur] : await q(`SELECT trip FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, v]);
+    oldStops[v] = row?.trip?.meta ? stopsOf(row.trip) : null;
+  }
+  const rm = remapComments(ask, curStops, v => oldStops[+v] ?? null);
+  ask = rm.rows;
+  if (rm.moved.length) log(`${slug}: uwagi przeniesione na bieżące klucze — ${rm.moved.map(m => `#${m.id} ${m.from} → ${m.to} (${m.how})`).join(', ')}`);
+  if (rm.unplaced.length) log(`${slug}: uwagi bez przystanku w szkicu — ${rm.unplaced.map(c => `#${c.id} ${c.stop_key}`).join(', ')} (nie idą do modelu)`);
+  if (!ask.length && !lit.length && rm.unplaced.length) throw new Error(`BŁĄD: żadna uwaga nie wskazuje przystanku z bieżącego szkicu (${rm.unplaced.map(c => `#${c.id} ${c.stop_key}`).join(', ')}) — wskaż przystanek w panelu`);
   const ap = ask.length ? await applyComments(trip, blocks, ask, cityTitle, argv.includes('--no-learn') ? 'Claude' : 'JP') : { changes: [], summaries: [] };
-  const changes = [...litChanges, ...ap.changes], summaries = [...(lit.length ? [`pytania z kontroli: ${lit.length} poprawek wg propozycji`] : []), ...ap.summaries];
+  const changes = [...litChanges, ...ap.changes], summaries = [...(lit.length ? [`pytania z kontroli: ${lit.length} poprawek wg propozycji`] : []),
+    ...rm.moved.map(m => `uwaga #${m.id} ${MOVED_NOTE(m.from, m.to, m.how)}`), ...ap.summaries, ...rm.unplaced.map(c => `uwaga #${c.id}: ${UNPLACED_REPLY(c.stop_key)}`)];
   if (!changes.length && !answered.size) throw new Error('Gemini nie zaproponował żadnej zmiany — uwagi nie wskazują konkretnej poprawki');
   const fails = Object.values(blocks).filter(x => x?.check?.verdict === 'fix').length;
   // poprzednia kontrola przechodzi dalej bez pytań, na które JP już odpowiedział (każda nowa pełna kontrola znajdowała „nowe” drobiazgi)
@@ -1053,7 +1068,8 @@ async function reviseMain() {
   if (!argv.includes('--no-learn') && ask.some(x => !/^Pytanie z kontroli/.test(x.body))) try { learned = await learn(q, { slug, version: saved.version, say: ask.filter(x => !/^Pytanie z kontroli/.test(x.body)).map(x => x.body).join('\n'), context, changes, trip }); }
   catch (e) { log(`zasady: ${e.message.slice(0, 160)}`); }
   event(`gotowe: szkic v${saved.version} po poprawkach (${changes.length} zmian) · wytyczne ${gl ?? '?'}`, { stage: 7, status: 'done' });
-  const out = { slug, version: saved.version, from: cur.version, changes: changes.length, summary: rv.summary, verdict: rv.verdict, learned, preview: previewUrl(saved.token) };
+  const out = { slug, version: saved.version, from: cur.version, changes: changes.length, summary: rv.summary, verdict: rv.verdict, learned, preview: previewUrl(saved.token),
+    moved: rm.moved, unplaced: rm.unplaced.map(c => ({ id: c.id, stop_key: c.stop_key })) };
   await notify(channel, `✅ **${cityTitle} — szkic v${saved.version} · wytyczne ${gl ?? '?'}** po ${argv.includes('--no-learn') ? 'poprawkach z kontroli Claude' : 'Twoich poprawkach'} (${changes.length} zmian${fails ? `, kontrola Claude zgłasza uwagi przy ${fails} przystankach` : ''}).\n` +
     `${rv.summary}\n${learned?.length ? `Zapamiętane zasady: ${learned.length}\n` : ''}Panel: https://admin.quolino.com/_admin/#/${slug}`);
   console.log(JSON.stringify(out, null, 2));

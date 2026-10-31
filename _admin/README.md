@@ -161,6 +161,18 @@ Po stronie Hermesa (`bin/draft-comments.mjs`, cron co 3 min): prośba `new` → 
 przy polu. Panel pokazuje statusy: wysłana do poprawki → Hermes poprawia → poprawione (v N). Chwilowy błąd modelu =
 prośba wraca do kolejki; trwały = uwagi „odrzucona” z powodem.
 
+**Uwaga do przystanku, którego nie ma w szkicu** (od 2026-10-31, przypadek #21 Frasassi: uwaga napisana do v2 z kluczem
+`frasassi-01`, a w v16 przystanek 1 to `parking-la-cuna`). Serwer (`draft-comments.mjs` → `verify-revision-lib.mjs
+remapComments`) dopasowuje przystanek bez AI: ta sama nazwa w wersji uwagi → przystanek o tej samej/najbliższej nazwie,
+a zapasowo wzorzec `<slug>-NN` → przystanek numer NN. Dopasowana uwaga dostaje nowy `stop_key` i notatkę „przeniesiona z …”.
+Bez dopasowania uwaga NIE idzie do modelu, dostaje status **`needs_jp`** („wskaż przystanek”; przed SQL
+`2026-10-31-uwagi-przystanek.sql` — `rejected` z powodem „nie istnieje w aktualnym szkicu”) i nie uruchamia ponownej rundy
+weryfikacji. W szufladzie „Twoje uwagi” (sekcja „Wskaż przystanek”) i przy uwadze jest pomarańczowy znacznik, wybór
+przystanka bieżącego szkicu (albo „Opis miasta”) i **„Przypisz i wyślij ponownie”** → `POST /api/rpc/admin_comment_move
+{p_id, p_stop_key, p_field, p_field_label, p_version}` (panel nie ma UPDATE na widoku, stąd RPC) → uwaga wraca do `new`
+w bieżącej wersji i od razu idzie zwykłą wysyłką. Dawne „odrzucone” z mylącym powodem „nie wynika konkretna poprawka”
+serwer przepisuje sam (jednorazowe samouzdrowienie), gdy da się je dopasować.
+
 Reguły w bazie wiedzy to istniejąca tabela Hermesa `public.editorial_rules` (zakresy: quest, opis, fakty, praktyczne,
 plan-dnia, ton, struktura, inne). Reguły, które Hermes zapamiętuje z poprawek, od razu obowiązują (tak działał od 11.10);
 w panelu można je wyłączyć albo poprawić. `status` i `active` są zsynchronizowane wyzwalaczem.

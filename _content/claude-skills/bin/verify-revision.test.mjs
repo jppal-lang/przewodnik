@@ -203,3 +203,72 @@ test('draft-comments.mjs: weryfikacja po sukcesie, meldunek błędu na #admin, p
   const vr = readFileSync(join(HERE, 'verify-revision.mjs'), 'utf8');
   assert.doesNotMatch(vr, /openrouter|claude\(|claudeJson|generativelanguage/, 'weryfikacja nie może wołać płatnego modelu');
 });
+
+// ── uwaga do przystanku ze starym kluczem (przypadek #21 Frasassi, JP 2026-10-31): dopasowanie (a) numer, (b) nazwa, (c) brak ──
+const CUR = [{ key: 'parking-la-cuna', n: 1, name: 'Parcheggio La Cuna' }, { key: 'grotte-frasassi', n: 2, name: 'Grotte di Frasassi' },
+  { key: 'abbazia-san-vittore', n: 3, name: 'San Vittore alle Chiuse' }, { key: 'tempio-valadier', n: 4, name: 'Tempio del Valadier' }];
+const OLD = [{ key: 'frasassi-01', n: 1, name: 'Parking La Cuna' }, { key: 'frasassi-02', n: 2, name: 'Jaskinie Frasassi' },
+  { key: 'frasassi-03', n: 3, name: 'Opactwo San Vittore' }, { key: 'frasassi-04', n: 4, name: 'Punkt widokowy' }];
+
+test('mapowanie (a): wzorzec „<slug>-NN” → przystanek numer NN w bieżącym szkicu (bez wersji uwagi)', () => {
+  assert.deepEqual(V.remapStop('frasassi-01', CUR), { key: 'parking-la-cuna', how: 'number' });
+  assert.deepEqual(V.remapStop('frasassi-3', CUR), { key: 'abbazia-san-vittore', how: 'number' });
+  assert.equal(V.remapStop('frasassi-09', CUR), null);                       // nie ma przystanku 9
+  assert.deepEqual(V.remapStop('grotte-frasassi', CUR), { key: 'grotte-frasassi', how: 'same' });   // klucz istnieje — bez zmian
+});
+
+test('mapowanie (b): ten sam klucz w wersji uwagi → nazwa → przystanek o tej samej / najbliższej nazwie (ma pierwszeństwo przed numerem)', () => {
+  assert.deepEqual(V.remapStop('frasassi-01', CUR, OLD), { key: 'parking-la-cuna', how: 'name' });   // „Parking La Cuna” ~ „Parcheggio La Cuna” (wspólne rdzenie)
+  assert.deepEqual(V.remapStop('frasassi-02', CUR, OLD), { key: 'grotte-frasassi', how: 'name' });   // „Jaskinie Frasassi” ~ „Grotte di Frasassi”
+  assert.deepEqual(V.remapStop('frasassi-03', CUR, OLD), { key: 'abbazia-san-vittore', how: 'name' });
+  // nazwa z wersji uwagi bez odpowiednika → zapasowo numer (a)
+  assert.deepEqual(V.remapStop('frasassi-04', CUR, OLD), { key: 'tempio-valadier', how: 'number' });
+  // nazwa po zmianie kolejności wygrywa z numerem
+  const re = [CUR[1], CUR[0], CUR[2], CUR[3]].map((s, i) => ({ ...s, n: i + 1 }));
+  assert.deepEqual(V.remapStop('frasassi-01', re, OLD), { key: 'parking-la-cuna', how: 'name' });
+  assert.equal(V.matchStopName('Grotte di Frasassi', CUR), 'grotte-frasassi');
+  assert.equal(V.matchStopName('Valadier', CUR), 'tempio-valadier');           // zawieranie
+  assert.equal(V.matchStopName('Kawiarnia', CUR), null);
+  assert.equal(V.matchStopName('San', CUR), null);                               // za krótko
+  assert.equal(V.matchStopName('Piazza Grande', [{ key: 'piazza-popolo', n: 1, name: 'Piazza del Popolo' }]), null);   // sam ogólnik „piazza” to za mało
+  assert.equal(V.matchStopName('Piazza Grande', [{ key: 'piazza-grande', n: 1, name: 'Piazza Grande (rynek)' }, { key: 'piazza-popolo', n: 2, name: 'Piazza del Popolo' }]), 'piazza-grande');
+});
+
+test('mapowanie (c): brak dopasowania → uwaga poza modelem (unplaced), reszta z nowym stop_key i notatką', () => {
+  const comments = [
+    { id: 21, city_version: 2, stop_key: 'frasassi-01', field: 'stop.desc_paragraphs', field_label: 'Opis', body: 'Jest kilka parkingów…' },
+    { id: 22, city_version: 2, stop_key: 'stary-mlyn', field: null, body: 'Dopisz o młynie' },
+    { id: 23, city_version: 16, stop_key: 'grotte-frasassi', field: 'stop.hint', body: 'Krócej' },
+    { id: 24, city_version: 16, stop_key: null, field: 'city.lead', body: 'Wstęp' }
+  ];
+  const rm = V.remapComments(comments, CUR, (v) => v === 2 ? OLD : null);
+  assert.deepEqual(rm.moved, [{ id: 21, from: 'frasassi-01', to: 'parking-la-cuna', how: 'name' }]);
+  assert.deepEqual(rm.unplaced.map(c => c.id), [22]);
+  assert.deepEqual(rm.rows.map(c => [c.id, c.stop_key, c.moved_from ?? null]), [[21, 'parking-la-cuna', 'frasassi-01'], [23, 'grotte-frasassi', null], [24, null, null]]);
+  assert.equal(V.UNPLACED_REPLY('stary-mlyn'), 'Przystanek „stary-mlyn” nie istnieje w aktualnym szkicu — wskaż przystanek w panelu i wyślij ponownie');
+  assert.match(V.MOVED_NOTE('frasassi-01', 'parking-la-cuna', 'name'), /^przeniesiona z frasassi-01 na parking-la-cuna \(automat/);
+  assert.equal(V.unplacedLine(rm.unplaced), '1 uwaga dotyczy przystanku, którego nie ma w szkicu (stary-mlyn → ?) — wskaż w panelu');
+  assert.match(V.unplacedLine([{ stop_key: 'a-1' }, { stop_key: 'b-2' }]), /^2 uwagi dotyczą/);
+  assert.ok(V.UNPLACED_RE.test('Nie wprowadziłem zmiany: z uwag nie wynika konkretna poprawka — doprecyzuj, co i gdzie.'));
+  // bez wersji uwagi: numer (a); bez niczego: brak
+  assert.deepEqual(V.remapComments([comments[0]], CUR).moved, [{ id: 21, from: 'frasassi-01', to: 'parking-la-cuna', how: 'number' }]);
+  assert.equal(V.remapComments([comments[1]], CUR).unplaced.length, 1);
+});
+
+test('stopsOf: lista przystanków z trip i z wiersza city_versions; unplaced w podsumowaniu i meldunku, bez ponownej rundy', () => {
+  const r = row(16, 'v16');
+  assert.deepEqual(V.stopsOf(r).slice(0, 2), [{ key: 'parking-san-vittore', n: 1, name: 'Parking przy kasach (San Vittore)' }, { key: 'grotte-frasassi', n: 2, name: 'Grotte di Frasassi' }]);
+  assert.equal(V.stopsOf(r.trip).length, 5);
+  const u = V.unplacedItem({ id: 21, stop_key: 'frasassi-01', field: 'stop.desc_paragraphs', field_label: 'Opis', body: 'x' });
+  assert.equal(u.status, 'unplaced'); assert.equal(u.ai, false); assert.equal(u.where, 'frasassi-01 · Opis'); assert.equal(u.stop_key, 'frasassi-01');
+  const v = V.summarize([u, { id: 1, status: 'applied', where: 'a', note: 'ok', quote: '' }], { label: 'v16', version: 16 });
+  assert.equal(v.unplaced, 1); assert.equal(v.missing, 0); assert.equal(v.ready, false);
+  const msg = V.report({ title: 'Frasassi', slug: 'frasassi', verify: v });
+  assert.match(msg, /nie gotowa: 1 bez przystanku \(wskaż w panelu\)/);
+  assert.match(msg, /1 uwaga dotyczy przystanku, którego nie ma w szkicu \(frasassi-01 → \?\) — wskaż w panelu/);
+  assert.equal(V.STATUS_PL.unplaced, 'bez przystanku');
+  // kolumny CHECK: przed migracją needs_jp/unplaced niedostępne
+  assert.deepEqual(V.checksFrom([{ conname: 'draft_comments_status_check', def: "CHECK ((status = ANY (ARRAY['new'::text, 'rejected'::text])))" }]), { needsJp: false, unplaced: false });
+  assert.deepEqual(V.checksFrom([{ conname: 'draft_comments_status_check', def: "CHECK ((status = ANY (ARRAY['new'::text, 'needs_jp'::text])))" },
+    { conname: 'draft_comments_verify_status_check', def: "CHECK (verify_status IN ('applied', 'unplaced'))" }]), { needsJp: true, unplaced: true });
+});

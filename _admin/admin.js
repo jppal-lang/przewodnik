@@ -25,7 +25,7 @@
     castle: 'castle', synagogue: 'synagogue' };
   var SRC = { manual: 'ręcznie', import: 'import', pipeline: 'Hermes', restore: 'przywrócenie', migration: 'migracja' };
   var VST = { draft: 'szkic', published: 'opublikowana', archived: 'archiwum', rejected: 'odrzucona' };
-  var CST = { 'new': 'zapisana — do wysłania', sent: 'wysłana do poprawki', seen: 'Hermes poprawia', done: 'poprawione', rejected: 'odrzucona', local: 'czeka na połączenie' };
+  var CST = { 'new': 'zapisana — do wysłania', sent: 'wysłana do poprawki', seen: 'Hermes poprawia', done: 'poprawione', rejected: 'odrzucona', needs_jp: 'wskaż przystanek', local: 'czeka na połączenie' };
   var RST = { proposed: 'do zatwierdzenia', active: 'obowiązuje', retired: 'wyłączona' };
   var RSCOPE = { quest: 'misje dzieci', opis: 'opisy', fakty: 'fakty', praktyczne: 'informacje praktyczne', 'plan-dnia': 'plan dnia', ton: 'ton i styl', struktura: 'struktura wycieczki', inne: 'inne' };
   var DUR = { half_day: 'pół dnia', full_day: 'cały dzień' };
@@ -116,6 +116,11 @@
         var row = Object.assign({ id: Date.now(), status: 'new', hermes_reply: null, created_at: new Date().toISOString() }, opts.body);
         d.comments.push(row);
         return new Promise(function (res) { setTimeout(function () { res([row]); }, 250); });
+      }
+      if (path === '/rpc/admin_comment_move') {
+        var mb = opts.body;
+        d.comments.forEach(function (c) { if (c.id === mb.p_id) { c.stop_key = mb.p_stop_key; c.field = mb.p_field; c.field_label = mb.p_field_label || (mb.p_stop_key ? 'Cały przystanek' : 'Cała wycieczka'); if (mb.p_version != null) c.city_version = mb.p_version; c.status = 'new'; c.request_id = null; c.verify_status = null; c.hermes_reply = 'Przeniesiona przez JP na „' + (mb.p_stop_key || 'opis miasta') + '”.'; } });
+        return new Promise(function (res) { setTimeout(function () { res({ id: mb.p_id, status: 'new' }); }, 200); });
       }
       if (path === '/rpc/admin_send_comments') {
         var n = 0;
@@ -819,18 +824,70 @@
   function commentsFor(stop, field) {
     return state.comments.filter(function (c) { return +c.city_version === +state.tabVersion && ck(c.stop_key, c.field) === ck(stop, field); });
   }
-  function isOpen(c) { return c.status === 'new' || c.status === 'sent' || c.status === 'seen' || c.status === 'local'; }
+  function isOpen(c) { return c.status === 'new' || c.status === 'sent' || c.status === 'seen' || c.status === 'local' || c.status === 'needs_jp'; }
   function unsent() { return state.comments.filter(function (c) { return c.status === 'new' || c.status === 'local'; }); }
+  // ── uwaga do przystanku, którego nie ma w szkicu (stary klucz, np. „frasassi-01”; przypadek #21 Frasassi, JP 2026-10-31) ──
+  // Serwer (draft-comments.mjs) próbuje dopasować przystanek sam (nazwa / numer); gdy się nie da — status needs_jp (po SQL
+  // 2026-10-31-uwagi-przystanek.sql; wcześniej rejected z powodem „nie istnieje w aktualnym szkicu”). Tu: pomarańczowy znacznik,
+  // wybór przystanka bieżącego szkicu (albo opisu miasta) i „Przypisz i wyślij ponownie” → RPC admin_comment_move → status new → zwykła wysyłka.
+  var UNPLACED_RE = /nie istnieje w aktualnym szkicu|nie ma takiego przystanku|nie wynika konkretna poprawka/;
+  function curStopList() {
+    var cv = state.current && state.versions ? state.versions.filter(function (r) { return r.version === state.current.version; })[0] : null;
+    var c = cv && cv.content || {};
+    return (c.stops || []).slice().sort(function (a, b) { return a.stop_number - b.stop_number; }).map(function (st) {
+      return { key: stopKey(st, c.stop_translations), n: st.stop_number, name: trOf(c.stop_translations, 'pl', 'stop_id', st.id).name || st.stop_key || '' };
+    });
+  }
+  function needsPlace(c) {
+    if (c.status === 'needs_jp') return true;
+    if (c.status !== 'rejected' || !c.stop_key || !UNPLACED_RE.test(c.hermes_reply || '')) return false;
+    return !curStopList().some(function (st) { return st.key === c.stop_key; });
+  }
+  function toPlace() { return state.comments.filter(needsPlace); }
+  function moveForm(c) {
+    if (state.readOnly || !state.current) return '';
+    var stops = curStopList();
+    return '<form class="adm-cm__move" data-cm-move="' + esc(c.id) + '" autocomplete="off"><label><span class="adm-sr">Przystanek dla uwagi</span>' +
+      '<select name="stop" aria-label="Przystanek, którego dotyczy uwaga"><option value="">— wybierz przystanek —</option>' +
+      stops.map(function (st) { return '<option value="' + esc(st.key) + '">' + esc(num(st.n) + ' ' + (st.name || st.key)) + '</option>'; }).join('') +
+      '<option value="_city">Opis miasta</option></select></label>' +
+      '<button type="submit" class="qc-btn qc-btn--sm" disabled>Przypisz i wyślij ponownie</button><span class="adm-cm__movemsg" role="status"></span></form>';
+  }
+  function placeChip(c) { return needsPlace(c) ? '<span class="adm-cm__place">wskaż przystanek' + (c.stop_key ? ' <small>(' + esc(c.stop_key) + ' → ?)</small>' : '') + '</span>' : ''; }
+  function moveComment(form) {
+    var id = form.getAttribute('data-cm-move'), sel = form.querySelector('select'), v = sel.value, c = state.comments.filter(function (x) { return String(x.id) === id; })[0];
+    var msg = form.querySelector('.adm-cm__movemsg'), btn = form.querySelector('button');
+    if (!v || !c || !state.current) return Promise.resolve();
+    var city = v === '_city', keep = c.field && (city ? /^city\./ : /^stop\./).test(c.field);
+    var body = { p_id: c.id, p_stop_key: city ? null : v, p_field: keep ? c.field : null, p_field_label: keep ? (c.field_label || null) : (city ? 'Cała wycieczka' : 'Cały przystanek'), p_version: state.current.version };
+    btn.disabled = true; form.classList.add('is-busy'); msg.textContent = 'Przypisuję…';
+    return api('/rpc/admin_comment_move', { method: 'POST', body: body }).then(function () {
+      return loadComments(state.current.city_slug);
+    }).then(function () {
+      updateCommentUi();
+      sendNote('Uwaga przypisana do „' + (city ? 'Opis miasta' : (stopName(v) || v)) + '” — wysyłam do poprawki.', true);
+      var b = document.querySelector('[data-send]'); if (b) sendAll(b);
+    }).catch(function (e) {
+      form.classList.remove('is-busy'); btn.disabled = false;
+      var t = e && e.message || 'Nieznany błąd';
+      if (/admin_comment_move|not find|404|schema cache/i.test(t)) t = 'Baza nie ma jeszcze funkcji admin_comment_move (SQL 2026-10-31-uwagi-przystanek.sql czeka na zatwierdzenie).';
+      msg.textContent = 'Nie przypisano. ' + t;
+      sendNote('Nie przypisano uwagi. ' + t, false);
+    });
+  }
+  $d.addEventListener('submit', function (e) { var f = e.target.closest('.adm-cm__move'); if (f) { e.preventDefault(); moveComment(f); } });
+  $d.addEventListener('change', function (e) { if (e.target.matches('.adm-cm__move select')) e.target.form.querySelector('button').disabled = !e.target.value; });
 
-  var VERST = { applied: ['ok', 'naniesiona'], partial: ['warn', 'częściowo'], missing: ['bad', 'nie naniesiona'], stale: ['wait', 'nieaktualna'] };
+  var VERST = { applied: ['ok', 'naniesiona'], partial: ['warn', 'częściowo'], missing: ['bad', 'nie naniesiona'], stale: ['wait', 'nieaktualna'], unplaced: ['warn', 'bez przystanku'] };
   function commentItem(c) {
     var other = state.tabVersion != null && +c.city_version !== +state.tabVersion;
-    return '<li class="adm-cm__it adm-cm__it--' + esc(c.status) + '"><p>' + esc(c.body) + '</p>' +
-      '<span class="adm-cm__meta"><span class="adm-cm__st">' + esc(CST[c.status] || c.status) + '</span>' +
+    var place = needsPlace(c);
+    return '<li class="adm-cm__it adm-cm__it--' + esc(c.status) + (place ? ' adm-cm__it--place' : '') + '"><p>' + esc(c.body) + '</p>' +
+      '<span class="adm-cm__meta"><span class="adm-cm__st">' + esc(CST[c.status] || c.status) + '</span>' + placeChip(c) +
       (other ? '<span>do v' + esc(c.city_version) + '</span>' : '') + '<span>' + esc(when(c.created_at)) + '</span></span>' +
       (c.hermes_reply ? '<p class="adm-cm__reply"><b>Hermes:</b> ' + esc(c.hermes_reply) + (c.resolved_in_version ? ' <span class="adm-cm__meta">→ v' + esc(c.resolved_in_version) + '</span>' : '') + '</p>' : '') +
       (VERST[c.verify_status] ? '<p class="adm-cm__ver">' + stChip(VERST[c.verify_status][0], 'sprawdzenie: ' + VERST[c.verify_status][1] + (c.verified_in_version ? ' w v' + c.verified_in_version : '')) +
-        (c.verify_note ? ' <span>' + esc(c.verify_note) + '</span>' : '') + '</p>' : '') + '</li>';
+        (c.verify_note ? ' <span>' + esc(c.verify_note) + '</span>' : '') + '</p>' : '') + (place ? moveForm(c) : '') + '</li>';
   }
   function commentBox(stop, field, label, stopVer) {
     var list = commentsFor(stop, field);
@@ -1217,10 +1274,20 @@
   }
 
   // ── „Wyślij uwagi do poprawki” — lista zapisanych uwag i jeden przycisk (JP 2026-10-17) ──
+  function placeList() {
+    var list = toPlace();
+    if (!list.length) return '';
+    return '<div class="adm-place"><h4 class="adm-place__h">Wskaż przystanek <b class="adm-n">' + list.length + '</b></h4>' +
+      '<p class="adm-send__sub">' + (list.length === 1 ? 'Ta uwaga dotyczy' : 'Te uwagi dotyczą') + ' przystanku, którego nie ma już w szkicu (klucz z wcześniejszej wersji). Wybierz przystanek bieżącego szkicu — uwaga wróci do kolejki i pójdzie od razu.</p>' +
+      '<ol class="adm-send__list">' + list.map(function (c) {
+        return '<li><span class="adm-send__where">' + esc((c.stop_key || 'opis miasta') + ' → ? · ' + (c.field_label || 'całość') + ' · napisana do v' + c.city_version) + '</span>' +
+          '<p>' + esc(c.body) + '</p>' + moveForm(c) + '</li>';
+      }).join('') + '</ol></div>';
+  }
   function sendList() {
-    var list = unsent();
-    if (!list.length) return '<p class="adm-empty">Brak nowych uwag. Wpisz uwagę przy polu i naciśnij Enter — zapisze się tutaj.</p>';
-    return '<ol class="adm-send__list">' + list.map(function (c) {
+    var list = unsent(), head = placeList();
+    if (!list.length) return head + '<p class="adm-empty">Brak nowych uwag. Wpisz uwagę przy polu i naciśnij Enter — zapisze się tutaj.</p>';
+    return head + '<ol class="adm-send__list">' + list.map(function (c) {
       var where = (c.stop_key ? (stopName(c.stop_key) || c.stop_key) : 'Opis miasta') + ' · ' + (c.field_label || 'całość') +
         (state.current && +c.city_version !== +state.current.version ? ' · napisana do v' + c.city_version : '');
       return '<li><a href="#st-' + esc(c.stop_key || '_city') + '" class="adm-send__where">' + esc(where) + '</a><p>' + esc(c.body) + '</p></li>';
@@ -1236,7 +1303,8 @@
       b.disabled = !n;
       b.textContent = n ? 'Wyślij uwagi do poprawki (' + n + ')' : 'Brak uwag do wysłania';
     });
-    var cn = document.getElementById('cmN'); if (cn) { cn.textContent = n; cn.classList.toggle('is-zero', !n); }
+    var np = n + toPlace().length;   // znaczek przy „Twoje uwagi”: do wysłania + do wskazania przystanku
+    var cn = document.getElementById('cmN'); if (cn) { cn.textContent = np; cn.classList.toggle('is-zero', !np); }
     readyRefresh();
     var hint = document.getElementById('sendHint');
     if (hint) hint.textContent = local ? 'Tylko w tej przeglądarce: ' + plUwagi(local) + '. Przycisk najpierw przeniesie je do bazy.' : '';

@@ -19,6 +19,10 @@
 //      w wątku miasta (+ jedna linia na #admin, gdy gotowa). Nie naniesione → JEDNA ponowna runda tylko dla nich, potem meldunek końcowy.
 //      Ocena treści tylko przez Antigravity (abonament); bez limitu — ocena wstępna, dokończenie w kolejnym przebiegu (resumePending).
 //   Prośba failed → meldunek od razu w wątku i na #admin (nic nie przepada po cichu).
+//   5. uwaga do przystanku, którego nie ma w szkicu (stary klucz „frasassi-01”, JP 2026-10-31): przed poprawką dopasowanie po nazwie
+//      z wersji uwagi albo po numerze (placeComments, bez AI); bez dopasowania → status needs_jp (SQL 2026-10-31-uwagi-przystanek.sql;
+//      przed nim rejected z czytelnym powodem), poza modelem, bez ponownej rundy. Samouzdrowienie (healUnplaced): dawne „rejected”
+//      z mylącym powodem wracają do kolejki własną prośbą, gdy da się je dopasować.
 // Uwag ze statusem new skrypt NIE rusza — czekają na przycisk JP.
 // Tryb dawny (przed approve SQL, brak draft_revision_requests): new → seen, poprawka po 5 min ciszy.
 import { writeFileSync, existsSync, readFileSync, unlinkSync, mkdirSync } from 'node:fs';
@@ -28,7 +32,7 @@ import { promisify } from 'node:util';
 import { db, log, agyQuotaOut } from './lib.mjs';
 import { WORK, notify } from './draft-lib.mjs';
 import { verifyRequest, resumePending } from './verify-revision.mjs';
-import { failedLine, parentOf } from './verify-revision-lib.mjs';
+import { failedLine, parentOf, stopsOf, remapComments, unplacedLine, checksFrom, CHECKS_SQL, UNPLACED_REPLY, MOVED_NOTE, UNPLACED_RE } from './verify-revision-lib.mjs';
 
 const sh = promisify(execFile);
 const argv = process.argv.slice(2);
@@ -84,9 +88,76 @@ function replyOf(out) {
 }
 
 function failWhy(msg) {
+  if (/wskaż przystanek w panelu/.test(msg)) { const i = msg.search(/żadna uwaga/i); return 'Nie wprowadziłem zmiany: ' + short(i >= 0 ? msg.slice(i) : msg, 300); }
   return /nie zaproponował/.test(msg)
     ? 'Nie wprowadziłem zmiany: z uwag nie wynika konkretna poprawka — doprecyzuj, co i gdzie.'
     : `Nie udało się poprawić automatycznie: ${short(msg.replace(/BŁĄD:\s*/, ''), 200)}`;
+}
+
+// ── uwagi do przystanków, których nie ma w szkicu (stare klucze „frasassi-01”; przypadek #21 Frasassi, JP 2026-10-31) ─────
+// Przed poprawką: klucz uwagi spoza bieżącego szkicu → dopasowanie po nazwie z wersji uwagi albo po numerze („-NN”), bez AI.
+// Dopasowane: nowy stop_key w bazie + notatka „przeniesiona z …”, idą normalnie. Bez dopasowania: NIE idą do modelu, status needs_jp
+// (po migracji 2026-10-31-uwagi-przystanek.sql; wcześniej rejected z tym samym czytelnym powodem) — JP wskazuje przystanek w panelu.
+async function currentStops(slug) {
+  const [v] = await q(`SELECT version, trip FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
+  return v?.trip?.meta ? { version: +v.version, stops: stopsOf(v.trip) } : null;
+}
+async function oldStopsOf(slug, cache) {
+  return async (v) => {
+    if (!(v in cache)) { const [row] = await q(`SELECT trip FROM public.city_versions WHERE city_slug = $1 AND version = $2`, [slug, +v]); cache[v] = row?.trip?.meta ? stopsOf(row.trip) : null; }
+    return cache[v];
+  };
+}
+async function placeComments(slug, rows) {
+  const cur = await currentStops(slug);
+  if (!cur) return { rows, moved: [], unplaced: [] };
+  const cache = {}, oldOf = await oldStopsOf(slug, cache);
+  for (const c of rows) if (c.stop_key && !cur.stops.some(s => s.key === c.stop_key)) await oldOf(+(c.city_version ?? cur.version));
+  const rm = remapComments(rows, cur.stops, v => cache[+v] ?? null);
+  if (DRY) return rm;
+  for (const m of rm.moved) await q(`UPDATE public.draft_comments SET stop_key = $2, hermes_reply = $3, updated_at = now() WHERE id = $1`, [m.id, m.to, MOVED_NOTE(m.from, m.to, m.how)]);
+  if (rm.unplaced.length) {
+    const st = await needsJpStatus();
+    for (const c of rm.unplaced) await q(`UPDATE public.draft_comments SET status = $2, hermes_reply = $3, updated_at = now() WHERE id = $1`, [c.id, st, UNPLACED_REPLY(c.stop_key)]);
+  }
+  return rm;
+}
+let checksCache = null;
+async function needsJpStatus() {
+  checksCache ??= checksFrom(await q(CHECKS_SQL).catch(() => []));
+  return checksCache.needsJp ? 'needs_jp' : 'rejected';
+}
+// jednorazowe samouzdrowienie (jak przy błędzie klucza Google): uwagi odrzucone z mylącym „nie wynika konkretna poprawka”, których
+// przystanek zniknął ze szkicu — dopasowane wracają do kolejki własną prośbą (bez klikania JP; #21 Frasassi), reszta dostaje needs_jp.
+async function healUnplaced() {
+  const cands = await q(`SELECT * FROM public.draft_comments WHERE status = 'rejected' AND stop_key IS NOT NULL AND hermes_reply ~ $1 ORDER BY id`, [UNPLACED_RE.source]);
+  if (!cands.length) return;
+  const bySlug = {};
+  for (const c of cands) (bySlug[c.city_slug] ??= []).push(c);
+  for (const [slug, list] of Object.entries(bySlug)) {
+    const cur = await currentStops(slug); if (!cur) continue;
+    const lost = list.filter(c => !cur.stops.some(s => s.key === c.stop_key)); if (!lost.length) continue;
+    const cache = {}, oldOf = await oldStopsOf(slug, cache);
+    for (const c of lost) await oldOf(+(c.city_version ?? cur.version));
+    const rm = remapComments(lost, cur.stops, v => cache[+v] ?? null);
+    if (DRY) { rm.moved.forEach(m => console.log(`samouzdrowienie ${slug}: #${m.id} ${m.from} → ${m.to} (${m.how})`)); rm.unplaced.forEach(c => console.log(`samouzdrowienie ${slug}: #${c.id} ${c.stop_key} → ? (needs_jp)`)); continue; }
+    if (rm.moved.length) {
+      const ids = rm.moved.map(m => m.id);
+      for (const m of rm.moved) await q(`UPDATE public.draft_comments SET stop_key = $2, status = 'new', hermes_reply = $3, verify_status = NULL, verify_note = NULL, verify_quote = NULL, updated_at = now() WHERE id = $1`, [m.id, m.to, MOVED_NOTE(m.from, m.to, m.how)])
+        .catch(() => q(`UPDATE public.draft_comments SET stop_key = $2, status = 'new', hermes_reply = $3, updated_at = now() WHERE id = $1`, [m.id, m.to, MOVED_NOTE(m.from, m.to, m.how)]));
+      // prośba jak z admin_send_comments, ale TYLKO z tymi uwagami (nie zabiera uwag, których JP jeszcze nie wysłał)
+      const [nr] = await q(`INSERT INTO public.draft_revision_requests (city_slug, city_version, comment_ids, hermes_reply) VALUES ($1, $2, $3::bigint[], $4) RETURNING id`,
+        [slug, cur.version, ids, `Automat (2026-10-31): uwagi przeniesione na bieżące klucze przystanków — ${rm.moved.map(m => `#${m.id} ${m.from} → ${m.to}`).join(', ')}.`]);
+      await q(`UPDATE public.draft_comments SET status = 'sent', request_id = $2, updated_at = now() WHERE id = ANY($1::bigint[])`, [ids, nr.id]);
+      log(`${slug}: samouzdrowienie — prośba #${nr.id} z ${ids.length} ${uwag(ids.length)} (${rm.moved.map(m => `#${m.id} ${m.from} → ${m.to}`).join(', ')})`);
+    }
+    const st = await needsJpStatus();
+    const fresh = rm.unplaced.filter(c => c.status !== st || c.hermes_reply !== UNPLACED_REPLY(c.stop_key));   // bez migracji zostaje rejected — bez powtarzania co 3 min
+    if (fresh.length) {
+      for (const c of fresh) await q(`UPDATE public.draft_comments SET status = $2, hermes_reply = $3, updated_at = now() WHERE id = $1`, [c.id, st, UNPLACED_REPLY(c.stop_key)]);
+      log(`${slug}: samouzdrowienie — ${unplacedLine(fresh)}`);
+    }
+  }
 }
 
 // ── tryb „po przycisku” ─────────────────────────────────────────────────────────────────────────
@@ -101,6 +172,7 @@ async function requests() {
               WHERE id = ANY($1::bigint[]) AND status = 'rejected'`, [h.comment_ids]);
     log(`prośba #${h.id} przywrócona po błędzie klucza Google`);
   }
+  try { await healUnplaced(); } catch (e) { log(`samouzdrowienie uwag bez przystanku: ${short(e.message, 160)}`); }
   // ocena odłożona przez limit Antigravity — dokończ (jedna na przebieg), zanim ruszy następna prośba
   if (!DRY) {
     try { if (await resumePending({ q, notify, log, threadOf })) return; }
@@ -124,24 +196,36 @@ async function requests() {
   const parent = parentOf(r, await q('SELECT * FROM public.draft_revision_requests WHERE city_slug = $1 AND id <> $2', [slug, r.id]));
   if (parent) rows = rows.map(x => /^review\./.test(x.field ?? '') ? x : { ...x, body: `PONOWNIE — poprzednia runda (prośba #${parent.id}) tego nie naniosła: ${x.body}` });
   log(`${slug}: prośba #${r.id} — ${rows.length} ${uwag(rows.length)} (próba ${r.attempts + 1})`);
-  if (DRY) { rows.forEach(x => console.log(`#${x.id} [${where(x)}] ${x.body}`)); return; }
   if (!rows.length) {
+    if (DRY) return;
     await q(`UPDATE public.draft_revision_requests SET status = 'failed', hermes_reply = 'Brak uwag w prośbie.', updated_at = now() WHERE id = $1`, [r.id]);
     await reportFailed(r, thread, 'brak uwag w prośbie (usunięte z bazy?).', 0);
     return;
   }
+  // przystanki ze starych kluczy → bieżące; uwagi bez przystanku w szkicu zostają poza poprawką (needs_jp) i nie liczą się jako błąd
+  const placed = await placeComments(slug, rows);
+  rows = placed.rows;
+  const ids = rows.map(x => x.id);
+  if (DRY) { rows.forEach(x => console.log(`#${x.id} [${where(x)}] ${x.body}`)); placed.unplaced.forEach(x => console.log(`#${x.id} BEZ PRZYSTANKU (${x.stop_key}) — needs_jp`)); return; }
+  const unplacedMsg = placed.unplaced.length ? `\n⚠️ ${unplacedLine(placed.unplaced)}` : '';
+  if (!rows.length) {
+    const why = `Nie wprowadziłem zmiany: ${unplacedLine(placed.unplaced)}.`;
+    await q(`UPDATE public.draft_revision_requests SET status = 'failed', hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, why]);
+    await notify(thread, `⚠️ **${slug}**: prośba #${r.id} — ${unplacedLine(placed.unplaced)}. Uwagi w panelu mają znacznik „wskaż przystanek”.`);
+    return;
+  }
   await q(`UPDATE public.draft_revision_requests SET status = 'working', attempts = attempts + 1, updated_at = now() WHERE id = $1`, [r.id]);
-  await q(`UPDATE public.draft_comments SET status = 'seen', updated_at = now() WHERE id = ANY($1::bigint[]) AND status IN ('sent', 'seen')`, [r.comment_ids]);
+  await q(`UPDATE public.draft_comments SET status = 'seen', updated_at = now() WHERE id = ANY($1::bigint[]) AND status IN ('sent', 'seen')`, [ids]);
   if (r.attempts === 0) {
     await notify(thread, `📝 **${slug}**: ${rows.length} ${uwag(rows.length)} z panelu (szkic v${r.city_version})${parent ? ` — ponowna runda po prośbie #${parent.id}` : ''}. ` +
       `Nanoszę wszystkie w jednej nowej wersji, potem kontrola — dam znać tutaj z linkiem do podglądu.\n` +
-      rows.slice(0, 12).map(x => `• ${where(x)}: ${short(x.body, 140)}`).join('\n') + (rows.length > 12 ? `\n… i ${rows.length - 12} więcej` : ''));
+      rows.slice(0, 12).map(x => `• ${where(x)}${x.moved_from ? ` (przeniesiona z ${x.moved_from})` : ''}: ${short(x.body, 140)}`).join('\n') + (rows.length > 12 ? `\n… i ${rows.length - 12} więcej` : '') + unplacedMsg);
   }
   try {
     const out = await revise(slug, rows, thread);
     const reply = replyOf(out);
-    await q(`UPDATE public.draft_comments SET status = 'done', hermes_reply = $2, resolved_in_version = $3, updated_at = now()
-              WHERE id = ANY($1::bigint[])`, [r.comment_ids, reply, out.version]);
+    await q(`UPDATE public.draft_comments SET status = 'done', hermes_reply = CASE WHEN hermes_reply LIKE 'przeniesiona z %' THEN hermes_reply || ' · ' ELSE '' END || $2, resolved_in_version = $3, updated_at = now()
+              WHERE id = ANY($1::bigint[])`, [ids, reply, out.version]);
     await q(`UPDATE public.draft_revision_requests SET status = 'done', result_version = $2, hermes_reply = $3, updated_at = now() WHERE id = $1`,
       [r.id, out.version, reply]);
     log(`${slug}: prośba #${r.id} → szkic v${out.version}`);
@@ -161,9 +245,9 @@ async function requests() {
       return;
     }
     const why = failWhy(msg);
-    await q(`UPDATE public.draft_comments SET status = 'rejected', hermes_reply = $2, updated_at = now() WHERE id = ANY($1::bigint[])`, [r.comment_ids, why]);
+    await q(`UPDATE public.draft_comments SET status = 'rejected', hermes_reply = $2, updated_at = now() WHERE id = ANY($1::bigint[])`, [ids, why]);
     await q(`UPDATE public.draft_revision_requests SET status = 'failed', hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, why]);
-    await reportFailed(r, thread, why, rows.length);
+    await reportFailed(r, thread, why + unplacedMsg, rows.length);
   }
   // podgląd stanu i meldunek „Dziś” w panelu od razu po rozstrzygnięciu prośby (nie dopiero w następnym przebiegu crona kolejki)
   try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger: `draft-comments: prośba #${r.id}`, log }); } catch { /* pomocniczy */ }

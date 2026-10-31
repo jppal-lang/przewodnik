@@ -94,6 +94,21 @@
 .adm-cm__send:hover{background:var(--azzurro-ink,#083B7A)}
 .adm-cm__form.is-busy .adm-cm__send{opacity:.5;cursor:progress}
 .adm-cmwarn{margin:0;padding:12px 24px;background:var(--sun-50);color:var(--ad-warn-ink);font-size:16px}
+/* uwaga do przystanku, którego nie ma w szkicu (needs_jp): pomarańczowy znacznik + wybór przystanka + „Przypisz i wyślij ponownie” (JP 2026-10-31) */
+.adm-cm__it--needs_jp,.adm-cm__it--place{background:var(--sun-50);color:var(--ink);box-shadow:inset 3px 0 0 var(--sun)}
+.adm-cm__place{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;background:var(--sun);color:var(--sun-ink);font-size:14px;font-weight:700;letter-spacing:.02em}
+.adm-cm__place small{font-size:13px;font-weight:500;opacity:.85}
+.adm-cm__move{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.adm-cm__move label{flex:1 1 220px;min-width:0;display:block}
+.adm-cm__move select{width:100%;min-height:44px;padding:8px 12px;border-radius:10px;border:2px solid var(--rule);background:var(--card);color:var(--ink);font:inherit;font-size:16px}
+.adm-cm__move select:focus{border-color:var(--azzurro);outline:0}
+.adm-cm__move button{min-height:44px}
+.adm-cm__move.is-busy{opacity:.6;cursor:progress}
+.adm-cm__movemsg{flex:1 1 100%;font-size:15px;color:var(--ink2)}
+.adm-cm__movemsg:empty{display:none}
+.adm-place{margin:0 0 16px;padding:10px 12px;border-radius:10px;background:var(--sun-50);box-shadow:inset 3px 0 0 var(--sun)}
+.adm-place__h{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px}
+.adm-place .adm-send__list{margin-bottom:0}
 
 /* przystanek */
 .adm-stops{display:flex;flex-direction:column;gap:14px}

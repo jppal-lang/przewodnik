@@ -8,6 +8,9 @@
 // Zapis: kolumny z SQL 2026-10-31-weryfikacja-uwag.sql (draft_comments.verify_*, draft_revision_requests.verify/retry_of),
 // a przed jego zatwierdzeniem — tylko dopisek w hermes_reply i wiadomość. Zawsze także plik work/verify/<id>.json.
 // Uwagi nie naniesione → automatycznie JEDNA ponowna runda (nowa prośba tylko z nimi), potem meldunek końcowy.
+// Uwaga do przystanku, którego nie ma w szkicu (stary klucz, np. frasassi-01): dopasowanie po nazwie / numerze (verify-revision-lib
+// remapComments, bez AI); bez dopasowania → werdykt „bez przystanku” (unplaced), status needs_jp, BEZ ponownej rundy — JP wskazuje
+// przystanek w panelu (przypadek #21 Frasassi, 2026-10-31; SQL 2026-10-31-uwagi-przystanek.sql).
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { createLive } from './live-status.mjs';
 import { join } from 'node:path';
@@ -86,7 +89,18 @@ async function verifyRequestInner({ q, r, notify = async () => false, log = null
   const reviews = {};
   for (const v of new Set(comments.map(c => +(c.city_version ?? r.city_version))))
     reviews[v] = v === +base.version ? base.review : (await ver(v))?.review ?? null;
-  let items = comments.map(c => V.deterministic(c, Fb, Fn, reviews[+(c.city_version ?? r.city_version)]));
+  // uwagi do przystanków, których nie ma ani w wersji wyjściowej, ani w nowej (stare klucze „frasassi-01”, JP 2026-10-31):
+  // dopasowanie po nazwie / numerze (bez AI) → ocena pod nowym kluczem (klucz zapisany w bazie); bez dopasowania → „bez przystanku”
+  // (to nie błąd modelu: bez ponownej rundy, uwaga czeka na wskazanie przystanku w panelu — status needs_jp)
+  const checks = V.checksFrom(await q(V.CHECKS_SQL).catch(() => []));
+  const lost = comments.filter(c => c.stop_key && !/^review\./.test(c.field ?? '') && !Fn.stops.includes(c.stop_key) && !Fb.stops.includes(c.stop_key));
+  const oldStops = {};
+  for (const v of new Set(lost.map(c => +(c.city_version ?? r.city_version)))) { const row = v === +base.version ? base : v === +next.version ? next : await ver(v); oldStops[v] = row ? V.stopsOf(row) : null; }
+  const rm = V.remapComments(lost, V.stopsOf(next), v => oldStops[+v] ?? null);
+  const moved = Object.fromEntries(rm.moved.map(m => [String(m.id), m])), unplacedIds = new Set(rm.unplaced.map(c => String(c.id)));
+  if (rm.moved.length) log(`weryfikacja #${r.id}: przeniesione uwagi ${rm.moved.map(m => `#${m.id} ${m.from} → ${m.to}`).join(', ')}`);
+  let items = comments.map(c => unplacedIds.has(String(c.id)) ? V.unplacedItem(c)
+    : V.deterministic(moved[String(c.id)] ? { ...c, stop_key: moved[String(c.id)].to } : c, Fb, Fn, reviews[+(c.city_version ?? r.city_version)]));
 
   // ocena semantyczna — tylko Antigravity (abonament), jedno wywołanie na prośbę
   const st = readState(r.id) ?? { tries: 0 };
@@ -133,14 +147,24 @@ async function verifyRequestInner({ q, r, notify = async () => false, log = null
 
   // zapis: kolumny (po SQL) albo tylko hermes_reply
   for (const x of items) {
+    const c0 = comments.find(c => +c.id === +x.id), mv = moved[String(x.id)];
+    if (x.status === 'unplaced') {   // bez przystanku: status dla JP (needs_jp, a przed migracją rejected z czytelnym powodem), bez ponownej rundy
+      const st = c0?.status === 'new' ? 'new' : checks.needsJp ? 'needs_jp' : 'rejected';
+      if (cols.comments)
+        await q(`UPDATE public.draft_comments SET status = $2, hermes_reply = $3, verify_status = $4, verify_note = $5, verify_quote = NULL, verified_in_version = $6, verified_at = now(), updated_at = now() WHERE id = $1`,
+          [x.id, st, V.UNPLACED_REPLY(x.stop_key), checks.unplaced ? 'unplaced' : null, x.note, next.version]);
+      else await q(`UPDATE public.draft_comments SET status = $2, hermes_reply = $3, updated_at = now() WHERE id = $1`, [x.id, st, V.UNPLACED_REPLY(x.stop_key)]);
+      continue;
+    }
     const text = V.commentVerifyText(x, !cols.comments) + (retryId && x.status === 'missing' && !x.ai ? ` — ponowna runda #${retryId}` : '');
+    const reply0 = mv ? V.MOVED_NOTE(mv.from, mv.to, mv.how) : c0?.hermes_reply;   // przeniesiona: notatka zastępuje dawny (mylący) powód
     if (cols.comments)
       await q(`UPDATE public.draft_comments SET verify_status = $2, verify_note = $3, verify_quote = nullif($4, ''), verified_in_version = $5, verified_at = now(),
-                      hermes_reply = $6, updated_at = now() WHERE id = $1`,
-        [x.id, x.status, x.note + (x.ai ? ' (wstępnie)' : ''), x.quote, next.version, V.withVerify(comments.find(c => +c.id === +x.id)?.hermes_reply, text)]);
-    else await q(`UPDATE public.draft_comments SET hermes_reply = $2, updated_at = now() WHERE id = $1`, [x.id, V.withVerify(comments.find(c => +c.id === +x.id)?.hermes_reply, text)]);
+                      hermes_reply = $6, stop_key = coalesce($7, stop_key), updated_at = now() WHERE id = $1`,
+        [x.id, x.status, x.note + (x.ai ? ' (wstępnie)' : ''), x.quote, next.version, V.withVerify(reply0, text), mv?.to ?? null]);
+    else await q(`UPDATE public.draft_comments SET hermes_reply = $2, stop_key = coalesce($3, stop_key), updated_at = now() WHERE id = $1`, [x.id, V.withVerify(reply0, text), mv?.to ?? null]);
   }
-  const short = `${verify.ready ? 'gotowa' : verify.pending_ai ? 'wstępnie' : 'nie gotowa'} — ${verify.applied}/${verify.total} naniesionych, ${verify.partial} częściowo, ${verify.missing} nie naniesionych, walidator: ${verify.new_errors} nowych błędów${retryId ? `, ponowna runda #${retryId}` : ''}`;
+  const short = `${verify.ready ? 'gotowa' : verify.pending_ai ? 'wstępnie' : 'nie gotowa'} — ${verify.applied}/${verify.total} naniesionych, ${verify.partial} częściowo, ${verify.missing} nie naniesionych${verify.unplaced ? `, ${verify.unplaced} bez przystanku (wskaż w panelu)` : ''}, walidator: ${verify.new_errors} nowych błędów${retryId ? `, ponowna runda #${retryId}` : ''}`;
   const [cur] = await q('SELECT hermes_reply FROM public.draft_revision_requests WHERE id = $1', [r.id]);
   if (cols.requests) await q(`UPDATE public.draft_revision_requests SET verify = $2::jsonb, hermes_reply = $3, updated_at = now() WHERE id = $1`, [r.id, JSON.stringify(verify), V.withVerify(cur?.hermes_reply, short)]);
   else await q(`UPDATE public.draft_revision_requests SET hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, V.withVerify(cur?.hermes_reply, short)]);

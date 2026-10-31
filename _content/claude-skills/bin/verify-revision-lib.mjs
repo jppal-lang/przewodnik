@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import './review-where.mjs';
 const RW = globalThis.ReviewWhere;
 
-export const STATUS_PL = { applied: 'naniesiona', partial: 'częściowo', missing: 'nie naniesiona', stale: 'nie dotyczy już' };
+export const STATUS_PL = { applied: 'naniesiona', partial: 'częściowo', missing: 'nie naniesiona', stale: 'nie dotyczy już', unplaced: 'bez przystanku' };
 export const STATUSES = Object.keys(STATUS_PL);
 export const PANEL = 'https://admin.quolino.com/_admin/#/';
 export const panelUrl = (slug, version) => `${PANEL}${encodeURIComponent(slug)}${version ? `/v${version}` : ''}`;
@@ -30,6 +30,78 @@ export function tripOf(row) {
 export function fieldsOf(row) { const { trip, blocks } = tripOf(row); return RW.fieldsFromTrip(trip, blocks); }
 export const labelOf = (row) => String(row?.content?.label ?? `v${row?.version ?? '?'}`);
 export const titleOf = (row, slug) => row?.trip?.content?.city?.title ?? slug;
+
+// ── uwaga do przystanku, którego nie ma w szkicu (stare klucze „frasassi-01”, przypadek #21 Frasassi, JP 2026-10-31) ─────
+// Uwaga napisana do starszej wersji nosi klucz przystanku z tamtej wersji; po przebudowie szkicu klucze są inne (parking-la-cuna).
+// Dopasowanie BEZ AI, w tej kolejności: (b) ten sam klucz w wersji uwagi → nazwa przystanku → przystanek o tej samej/najbliższej
+// nazwie w bieżącym szkicu (najpewniejsze); (a) wzorzec „<slug>-NN” → przystanek numer NN w bieżącym szkicu; brak → uwaga nie
+// idzie do modelu (status needs_jp, JP wskazuje przystanek w panelu). Przeniesione uwagi dostają nowy stop_key + notatkę.
+export const UNPLACED_REPLY = (key) => `Przystanek „${key}” nie istnieje w aktualnym szkicu — wskaż przystanek w panelu i wyślij ponownie`;
+export const MOVED_NOTE = (from, to, how) => `przeniesiona z ${from} na ${to} (automat${how === 'name' ? ', po nazwie przystanku' : how === 'number' ? ', po numerze przystanku' : ''})`;
+export const UNPLACED_RE = /nie istnieje w aktualnym szkicu|nie ma takiego przystanku|nie wynika konkretna poprawka/;
+// lista przystanków wersji: [{ key, n, name }] — z trip (meta.stops + content.stops) albo z wiersza city_versions
+export function stopsOf(trip) {
+  const t = trip?.trip?.meta ? trip.trip : trip;
+  const m = t?.meta?.stops ?? [], c = t?.content?.stops ?? {};
+  return m.filter(s => s?.stop_key).map((s, i) => ({ key: s.stop_key, n: Number.isFinite(+s.stop_number) ? +s.stop_number : i + 1, name: String(c[s.stop_key]?.name ?? '') }));
+}
+const GENERIC = new Set('piazz chies ponte parki parch museo muzeu palaz porta torre casa villa caste zamek duomo basil santa santo strad corso giard parco bosco monte lago fonta punkt widok rynek kosci most wieza plac ulica ogrod park katedr kated stare miast centr centro'.split(' '));
+const stemsOf = (s) => new Set(RW.norm(s).split(' ').filter(w => w.length >= 3).map(w => /^\d+$/.test(w) ? w : w.slice(0, 5)));
+// przystanek o tej samej albo najbliższej nazwie (bez AI): równość → zawieranie (≥ 4 znaki) → wspólne rdzenie słów (jednoznacznie najlepszy)
+export function matchStopName(name, stops) {
+  const n = RW.norm(name); if (n.length < 3) return null;
+  const exact = stops.filter(s => RW.norm(s.name) === n);
+  if (exact.length === 1) return exact[0].key;
+  if (n.length >= 4) {
+    const within = stops.filter(s => { const o = RW.norm(s.name); return o.length >= 4 && (o.includes(n) || n.includes(o)); });
+    if (within.length === 1) return within[0].key;
+  }
+  const a = stemsOf(name); if (!a.size) return null;
+  // wspólne rdzenie: co najmniej dwa albo jeden wyraźny (≥ 4 znaki i nie ogólnik typu „piazz”, „chies”; np. „frasa” w „Jaskinie Frasassi” /
+  // „Grotte di Frasassi”, „cuna” w „Parking La Cuna” / „Parcheggio La Cuna”)
+  const scored = stops.map(s => { const b = stemsOf(s.name), sh = [...a].filter(w => b.has(w)); return { key: s.key, score: b.size ? sh.length / Math.min(a.size, b.size) : 0, c: sh.length, strong: sh.some(w => w.length >= 4 && !GENERIC.has(w)) }; })
+    .filter(x => x.score >= 0.5 && (x.c >= 2 || (x.c === 1 && x.strong))).sort((x, y) => y.score - x.score || y.c - x.c);
+  return scored.length && (scored.length === 1 || scored[0].score > scored[1].score) ? scored[0].key : null;
+}
+// jedna uwaga: { key, how: 'name' | 'number' } albo null; cur/old = stopsOf(...) (old = wersja, do której uwaga była napisana; może być null)
+export function remapStop(key, cur, old = null) {
+  if (!key || !Array.isArray(cur)) return null;
+  if (cur.some(s => s.key === key)) return { key, how: 'same' };
+  const was = (old ?? []).find(s => s.key === key);
+  if (was?.name) { const k = matchStopName(was.name, cur); if (k) return { key: k, how: 'name' }; }
+  const m = /-(\d{1,2})$/.exec(key);
+  if (m) { const hit = cur.find(s => s.n === +m[1]); if (hit) return { key: hit.key, how: 'number' }; }
+  return null;
+}
+// cała paczka: oldOf(version) → stopsOf(wersja) | null. Zwraca { rows: uwagi do modelu (z nowym stop_key), moved: [{id, from, to, how}], unplaced: [uwagi] }
+export function remapComments(comments, cur, oldOf = () => null) {
+  const rows = [], moved = [], unplaced = [];
+  for (const c of comments ?? []) {
+    if (!c.stop_key || /^review\./.test(c.field ?? '') || cur.some(s => s.key === c.stop_key)) { rows.push(c); continue; }   // odpowiedzi na pytania z kontroli mają własne miejsce (review.e.N)
+    const r = remapStop(c.stop_key, cur, oldOf(c.city_version));
+    if (!r) { unplaced.push(c); continue; }
+    moved.push({ id: c.id, from: c.stop_key, to: r.key, how: r.how });
+    rows.push({ ...c, stop_key: r.key, moved_from: c.stop_key });
+  }
+  return { rows, moved, unplaced };
+}
+// meldunek: „1 uwaga dotyczy przystanku, którego nie ma w szkicu (frasassi-01 → ?) — wskaż w panelu”
+export function unplacedLine(list) {
+  const n = list.length; if (!n) return '';
+  return `${n} ${n === 1 ? 'uwaga dotyczy' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'uwagi dotyczą' : 'uwag dotyczy'} przystanku, którego nie ma w szkicu (${list.map(c => `${c.stop_key ?? '?'} → ?`).join(', ')}) — wskaż w panelu`;
+}
+// pozycja weryfikacji dla uwagi bez przystanku (nie idzie do AI, nie uruchamia ponownej rundy)
+export function unplacedItem(c) {
+  const f = c.field_label && !/^review\./.test(c.field ?? '') ? c.field_label : (c.field ? RW.label(String(c.field).replace(/^stop\./, '')) : 'przystanek');
+  return { id: c.id, where: `${c.stop_key} · ${f}`, stop: c.stop_key, stop_key: c.stop_key, field: c.field ?? null, status: 'unplaced',
+    note: 'przystanku nie ma w szkicu — wskaż w panelu', quote: '', before: '', after: '', ai: false };
+}
+// CHECK na kolumnach status / verify_status (migracja 2026-10-31-uwagi-przystanek.sql); kod działa też przed nią
+export const CHECKS_SQL = `SELECT conname, pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE contype = 'c' AND conrelid = 'public.draft_comments'::regclass`;
+export function checksFrom(rows) {
+  const def = (name) => String((rows ?? []).find(r => r.conname === name)?.def ?? '');
+  return { needsJp: /'needs_jp'/.test(def('draft_comments_status_check')), unplaced: /'unplaced'/.test(def('draft_comments_verify_status_check')) };
+}
 
 function entry(F, stop, field) {
   if (stop && !F.stops.includes(stop)) return null;
@@ -157,12 +229,13 @@ export function newErrors(baseErrs, nextErrs) {
 // ── podsumowanie (kolumna draft_revision_requests.verify) ───────────────────────────────────────
 export function summarize(items, { newErrs = [], validatorOk = true, pendingAi = false, aiFailed = false, label = null, version = null, from = null, round = 1, retried = null } = {}) {
   const n = (s) => items.filter(x => x.status === s).length;
-  const v = { ok: true, applied: n('applied'), partial: n('partial'), missing: n('missing'), stale: n('stale'), total: items.length,
+  const v = { ok: true, applied: n('applied'), partial: n('partial'), missing: n('missing'), stale: n('stale'), unplaced: n('unplaced'), total: items.length,
     new_errors: newErrs.length, validator_ok: validatorOk, pending_ai: !!pendingAi, ai_failed: !!aiFailed, label, version, from_version: from, round, retried,
     checked_at: new Date().toISOString() };
-  v.ready = !v.pending_ai && !v.ai_failed && v.missing === 0 && v.new_errors === 0 && validatorOk;
+  // bez przystanku (unplaced) = nie błąd modelu, ale uwaga JP nadal nie weszła → wersja nie jest gotowa, dopóki JP nie wskaże przystanku
+  v.ready = !v.pending_ai && !v.ai_failed && v.missing === 0 && v.unplaced === 0 && v.new_errors === 0 && validatorOk;
   v.new_error_lines = newErrs.slice(0, 10).map(e => cut(e, 200));
-  v.items = items.map(x => ({ id: x.id, status: x.status, where: x.where, note: x.note, quote: x.quote || '', provisional: !!x.ai }));
+  v.items = items.map(x => ({ id: x.id, status: x.status, where: x.where, note: x.note, quote: x.quote || '', provisional: !!x.ai, stop_key: x.stop_key ?? undefined }));
   return v;
 }
 
@@ -173,18 +246,21 @@ const bullets = (arr, max = 10) => arr.slice(0, max).map(x => `• ${x}`).join('
 export function report({ title, slug, verify: v, quotaUntil = null }) {
   const url = panelUrl(slug, v.version), name = `${title} ${v.label ?? `v${v.version}`}`;
   const counts = [`${v.applied}/${v.total} uwag naniesionych`, v.partial ? `${v.partial} częściowo` : '', v.missing ? `${v.missing} nie ${pl(v.missing, 'naniesiona', 'naniesione', 'naniesionych')}` : '',
-    v.stale ? `${v.stale} nie dotyczy już` : ''].filter(Boolean).join(', ');
+    v.stale ? `${v.stale} nie dotyczy już` : '', v.unplaced ? `${v.unplaced} bez przystanku` : ''].filter(Boolean).join(', ');
   const val = v.validator_ok ? `walidator: ${errWord(v.new_errors)}` : 'walidator: nie ruszył';
   const items = v.items ?? [];
   const lack = (s) => items.filter(x => x.status === s).map(x => `${x.where} → ${x.note}`);
+  const unplaced = items.filter(x => x.status === 'unplaced');
   const parts = [];
   if (v.partial) parts.push(`Częściowo:\n${bullets(lack('partial'))}`);
   if (v.missing) parts.push(`Nie naniesione:\n${bullets(lack('missing'))}`);
+  if (unplaced.length) parts.push(`⚠️ ${unplacedLine(unplaced)}`);
   if (v.new_errors) parts.push(`Nowe błędy walidatora:\n${bullets(v.new_error_lines ?? [], 6)}`);
   const tail = parts.length ? '\n' + parts.join('\n') : '';
   if (v.pending_ai) return `⏳ ${name} — ocena wstępna (bez AI): ${counts}, ${val}. Pełna ocena po odnowieniu limitu Antigravity${quotaUntil ? ` (${String(quotaUntil).slice(0, 16).replace('T', ' ')} UTC)` : ''} — dokończę sam.${tail}\nPodgląd: ${url}`;
   if (v.ready) return `✅ ${name} gotowa do akceptacji: ${counts}, ${val}.${tail}\nPodgląd: ${url}`;
-  const why = [v.missing ? `${v.missing} ${pl(v.missing, 'uwaga nie naniesiona', 'uwagi nie naniesione', 'uwag nie naniesionych')}` : '', v.new_errors ? `walidator: ${errWord(v.new_errors)}` : '', v.validator_ok ? '' : 'walidator nie ruszył', v.ai_failed ? 'ocena treści przez AI nie powiodła się — sprawdź ręcznie pola oznaczone jako wstępne' : ''].filter(Boolean).join(', ');
+  const why = [v.missing ? `${v.missing} ${pl(v.missing, 'uwaga nie naniesiona', 'uwagi nie naniesione', 'uwag nie naniesionych')}` : '', unplaced.length ? `${unplaced.length} bez przystanku (wskaż w panelu)` : '',
+    v.new_errors ? `walidator: ${errWord(v.new_errors)}` : '', v.validator_ok ? '' : 'walidator nie ruszył', v.ai_failed ? 'ocena treści przez AI nie powiodła się — sprawdź ręcznie pola oznaczone jako wstępne' : ''].filter(Boolean).join(', ');
   return `⚠️ ${name} nie gotowa: ${why} (${counts}).${tail}\nPodgląd: ${url}`;
 }
 export function adminLine({ title, slug, verify: v }) {
