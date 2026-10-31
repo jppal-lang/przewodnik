@@ -552,6 +552,7 @@
   function route() {
     var h = location.hash;
     moreClose();
+    emit('adm:route', { hash: h });
     document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
@@ -1446,6 +1447,7 @@
     spy();
     viewApply();
     fitActbar();
+    emit('adm:render', { it: it });
   }
 
   function sheetLabel(it) {
@@ -3050,6 +3052,7 @@
     walkCtx(walk.ids[walk.i]);
     walkPaint();
     walkScroll();
+    emit('adm:walk', { id: walk.ids[walk.i], i: walk.i });
     var f = li.querySelector('.adm-qo.is-rec') || li.querySelector('.adm-qo') || li.querySelector('[data-qa-change]'); if (f) f.focus({ preventScroll: true });
     var cx = document.getElementById('walkCtx'), bd = cx && cx.parentNode; if (bd && bd.scrollTo) bd.scrollTo({ top: Math.max(0, cx.offsetTop - bd.offsetTop - 8) });
   }
@@ -3587,6 +3590,11 @@
   fitFilters();
   if (wide.addEventListener) wide.addEventListener('change', fitFilters);
   $fBox.addEventListener('toggle', function () { if (wide.matches && !$fBox.open) $fBox.open = true; });
+  // ── haki dla modułów panelu (admin-preview.js, admin-palette.js; JP 2026-10-31): odczyt stanu i istniejące funkcje, nic więcej ──
+  function emit(name, detail) { try { document.dispatchEvent(new CustomEvent(name, { detail: detail || {} })); } catch (e) { /* stare przeglądarki */ } }
+  window.ADM = { state: state, inbox: inbox, DEMO: DEMO, SITE: SITE, api: api, esc: esc, fold: fold, countryName: countryName, regionName: regionName, titleCase: titleCase,
+    VST: VST, vlab: vlab, num: num, qaId: qaId, cmpOptions: cmpOptions, showTab: showTab, rerender: rerender, walk: walk, walkOpen: walkOpen, walkClose: walkClose, walkShow: walkShow,
+    drawerOpen: drawerOpen, viewApply: viewApply, recOpen: recOpen, loadInbox: loadInbox, loadTrips: loadTrips };
   var tripsReady = loadTrips();
   route();
   loadRules();

@@ -370,3 +370,23 @@ Jasnoszare tło, białe karty z ramką 1 px, jeden akcent niebieski, jasny pasek
 chipy z ikoną i tekstem. Krój: **Inter** (OFL, lokalnie `media/fonts/inter-latin*-wght-normal.woff2`, licencja `OFL-Inter.txt`), wagi 400/500/600.
 Pulpit: KPI z podpisem, wiersze zamiast kolorowych kafli, sortowanie tabeli tras (Trasa, Etap, Zmiana), wykres ekwiwalentu kosztów 7 dni.
 Widok trasy: „Gotowość” jako lista wierszy z „Przejdź →”, pola jako „etykieta nad treścią”, panel flag dokowany (v46: przewija treść do pola).
+
+## Telefon obok pól (od v48, 2026-10-31) — `admin-preview.js` / `admin-preview.css`
+
+Zgoda JP 2026-10-31. W widoku trasy (`#/<miasto>[/vN]`) po prawej (≥ 1200 px) stoi ramka telefonu 390 × ~720 px z **prawdziwą stroną
+miasta w wersji szkicu** — ten sam mechanizm co „Podgląd wersji” w menu ⋯: `https://quolino.com/city.html?draft=<klucz>&v=N`
+(klucz z `rpc/admin_preview_token`, który panel i tak pobiera przy otwarciu trasy; bez funkcji w bazie ramka pokazuje komunikat i link).
+Strona quolino.com nie wysyła `X-Frame-Options` ani CSP, więc osadzenie nie wymaga zmian w ops (sprawdzone `curl -sI` 2026-10-31).
+
+- **Rodzic / Dziecko** nad telefonem: przełącza `#city[data-view]` na stronie bez przeładowania (ten sam przycisk co `#qcKidToggle`);
+  gdy strona nie ma jeszcze mostka — przeładowanie z `&view=kid`.
+- **Sprzężenie dwukierunkowe** (`postMessage`, źródła sprawdzane po obu stronach — tylko `https://admin.quolino.com` ↔ `https://quolino.com`,
+  w demo ta sama domena): klik pola / spisu przystanków / krok „Przejdź przez flagi” → strona przewija do przystanku i pola (`data-stop-key`
+  w `.qc-stop`, pola po klasach `city.html`) i podświetla 1,5 s (cytat flagi przez CSS Highlight API); klik w przystanek / fragment na telefonie →
+  panel przewija do pola i podświetla. Odbiornik na stronie: `preview-bridge.js` (ładowany zawsze, **działa tylko w ramce z dozwolonego źródła**,
+  nic nie zapisuje, nie zmienia treści). Protokół opisany w nagłówku tego pliku.
+- Tryb demo (`?demo=1`): strona zastępcza składana z migawki wersji (`srcdoc`, klasy `city.html` + `styles.css`), działa bez sieci; mostek ten sam.
+- Układ: dok po prawej (spis przystanków zwija się do numerów); przy otwartym panelu flag < 1700 px telefon zmniejszony (×0,72) w lewym dolnym
+  rogu; ≥ 1700 px obok panelu flag. Poniżej 1200 px przycisk „Podgląd” w pasku widoku otwiera telefon jako arkusz; ≤ 480 px pełny ekran z „← Wróć do pól”.
+- Ograniczenia: panel otwarty tunelem na `http://localhost:8088` ma inne źródło niż `admin.quolino.com` — strona wczyta się, ale mostek milczy
+  (notka pod ekranem telefonu). Klucz podglądu i tak jest w adresie ramki (jak w linkach „Podgląd vN”).

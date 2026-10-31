@@ -1,0 +1,72 @@
+/* ── Telefon obok pól (JP 2026-10-31): podgląd wersji trasy na żywo — admin-preview.js ──
+   Tokeny wyłącznie z styles.css / admin.css. Dok po prawej ≥ 1200 px, arkusz na mniejszych ekranach,
+   pełny ekran ≤ 480 px. Przy otwartym panelu flag (< 1700 px) telefon zmniejszony w lewym dolnym rogu treści. */
+.adm{--pv-bezel:#3C4043}
+@media (prefers-color-scheme:dark){.adm:not([data-theme="light"]){--pv-bezel:#5F6368}}
+.adm[data-theme="dark"]{--pv-bezel:#5F6368}
+.tv-phone{position:fixed;z-index:41;top:calc(var(--ad-top-h) + 8px);right:16px;width:414px;max-height:calc(100vh - var(--ad-top-h) - 16px);display:flex;flex-direction:column;gap:8px}
+.tv-phone[hidden]{display:none}
+.tv-phone__bar{display:flex;align-items:center;gap:8px;min-height:48px;padding:4px 6px 4px 8px;border-radius:14px;background:var(--card);box-shadow:var(--ad-ring),var(--ad-shadow)}
+.tv-phone__seg{flex:none}
+.tv-phone__seg button{min-height:40px;padding:6px 12px;font-size:16px}
+.tv-phone__v{margin-left:auto;font-size:15px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-phone__open{flex:none;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:10px;font-size:20px;text-decoration:none;color:var(--azzurro)}
+.tv-phone__open:hover{background:var(--page)}
+.tv-phone__x{position:static;flex:none}
+.tv-phone__back{display:none}
+.tv-phone__dev{position:relative;flex:none;box-sizing:border-box;width:414px;height:744px;max-height:calc(100vh - var(--ad-top-h) - 88px);padding:12px;border-radius:40px;background:var(--pv-bezel);box-shadow:var(--lift-2),inset 0 0 0 1px rgba(255,255,255,.12)}
+.tv-phone__screen{position:relative;width:390px;height:100%;border-radius:28px;overflow:hidden;background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.tv-phone__screen iframe{display:block;width:390px;height:100%;border:0;background:#FFFFFF}
+.tv-phone__msg{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:28px 22px;background:var(--card);color:var(--ink);font-size:17px;line-height:1.45;text-align:center}
+.tv-phone__msg[hidden]{display:none}
+.tv-phone__msg p{margin:0}
+.tv-phone__msg code{font-size:15px}
+.tv-phone__msg .qc-btn{min-height:44px}
+.tv-phone__load{display:inline-flex;align-items:center;justify-content:center;gap:10px;color:var(--muted)}
+.tv-phone__note{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;margin:0;padding:8px 12px;border-radius:0 0 28px 28px;background:var(--sun-50);color:var(--ad-warn-ink);font-size:14px;line-height:1.35}
+.tv-phone__note[hidden]{display:none}
+/* przycisk „Podgląd” w pasku narzędzi trasy */
+.tv-pvbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.tv-pvbtn[aria-pressed="true"]{background:var(--azzurro-50);box-shadow:inset 0 0 0 2px var(--azzurro)}
+/* pole wskazane z telefonu: błysk 1,5 s */
+.tv .adm-row.is-pv-target{margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:12px;box-shadow:0 0 0 3px var(--sun);background:var(--sun-50);transition:box-shadow .4s,background .4s}
+.tv .adm-stopx.is-pv-target,.tv .tv-card.is-pv-target{box-shadow:0 0 0 2px var(--sun),var(--lift-1);transition:box-shadow .4s}
+/* dok po prawej: treść trasy robi miejsce */
+@media(min-width:1200px){
+  body.has-phone .tv{margin-right:446px}
+  body.has-phone .tv-body{grid-template-columns:64px minmax(0,1fr)}
+  body.has-phone .tv-toc{padding:6px 4px}
+  body.has-phone .tv-toc__s{justify-content:center;padding:4px 0;font-size:0;min-height:36px}
+  body.has-phone .tv-toc__s > *{display:none}
+  body.has-phone .tv-toc__s::before{content:"Spis";font-size:15px;font-weight:600;color:var(--muted)}
+  body.has-phone .tv-toc a{grid-template-columns:1fr;justify-items:center;gap:2px;min-height:48px;padding:6px 2px}
+  body.has-phone .tv-toc__t,body.has-phone .tv-toc img.tv-toc__ic,body.has-phone .tv-toc .adm-n{display:none}
+  body.has-phone .tv-toc__no:empty{display:none}
+}
+/* dok + panel flag: na szerokim ekranie obok siebie, poniżej 1700 px telefon zmniejszony w lewym dolnym rogu treści */
+@media(min-width:1700px){
+  body.has-phone.has-walk .tv-phone{right:452px}
+  body.has-phone.has-walk .tv{margin-right:882px}
+}
+@media(min-width:1200px) and (max-width:1699px){
+  body.has-phone.has-walk .tv-phone{top:auto;right:auto;left:calc(var(--ad-side-w) + 36px);bottom:12px;transform:scale(.72);transform-origin:left bottom}
+  body.has-phone.has-walk .tv{margin-right:436px}
+}
+/* arkusz (telefon, tablet): przycisk „Podgląd” otwiera telefon nad treścią */
+@media(max-width:1199px){
+  .tv-phone:not(.is-sheet){display:none}
+}
+.tv-phone.is-sheet{position:fixed;inset:0;top:0;right:0;z-index:60;width:auto;max-height:none;align-items:center;justify-content:center;gap:10px;padding:16px;background:rgba(6,42,88,.55)}
+.tv-phone.is-sheet .tv-phone__bar{width:min(414px,100%);box-sizing:border-box}
+.tv-phone.is-sheet .tv-phone__dev{max-height:calc(100vh - 110px)}
+@media(max-width:480px){
+  .tv-phone.is-sheet{padding:0;background:var(--ad-bg);justify-content:flex-start;gap:0}
+  .tv-phone.is-sheet .tv-phone__bar{width:100%;border-radius:0;flex-wrap:wrap}
+  .tv-phone.is-sheet .tv-phone__back{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;order:-1;flex:1 1 100%}
+  .tv-phone.is-sheet .tv-phone__x{display:none}
+  .tv-phone.is-sheet .tv-phone__dev{width:100%;height:auto;flex:1;min-height:0;max-height:none;padding:0;border-radius:0;box-shadow:none}
+  .tv-phone.is-sheet .tv-phone__screen{width:100%;border-radius:0;box-shadow:none}
+  .tv-phone.is-sheet .tv-phone__screen iframe{width:100%}
+  .tv-phone.is-sheet .tv-phone__note{left:0;right:0;bottom:0;border-radius:0}
+}
+@media(prefers-reduced-motion:reduce){.tv .adm-row.is-pv-target,.tv .adm-stopx.is-pv-target,.tv .tv-card.is-pv-target{transition:none}}

@@ -24,6 +24,8 @@
 <!-- podgląd szkicu: bez indeksowania (statystyki: Umami, patrz docs/STATYSTYKI.md) -->
 <script>if (/[?&]draft=/.test(location.search)) { document.write('<meta name="robots" content="noindex,nofollow">'); }</script>
 <script src="draft-preview.js?v=3"></script>
+<!-- mostek podglądu w panelu admina: działa tylko w ramce z admin.quolino.com (telefon obok pól) -->
+<script src="preview-bridge.js?v=1" defer></script>
 </head>
 <body>
 
@@ -767,7 +769,7 @@ function render(d) {
     var full = !d.locked || !!s.sample;   // próbka (B1): gość widzi ten przystanek w całości
     // fakty: tłumaczenie, gdy jest; inaczej polski z tabeli stops
     var f = function(k) { return t[k] || s[k]; };
-    html += '<details class="qc-stop' + (isDinner ? ' qc-stop--dinner' : '') + '" id="p' + s.stop_number + '" data-stop-num="' + s.stop_number + '"' + (collectable ? ' data-collectable' : '') + openAttr + '>';
+    html += '<details class="qc-stop' + (isDinner ? ' qc-stop--dinner' : '') + '" id="p' + s.stop_number + '" data-stop-num="' + s.stop_number + '"' + (s.stop_key ? ' data-stop-key="' + esc(s.stop_key) + '"' : '') + (collectable ? ' data-collectable' : '') + openAttr + '>';
     html += '<summary class="qc-stop__head">';
     // Parent toggle switch (visible only in parent view)
     if (!d.locked) {
