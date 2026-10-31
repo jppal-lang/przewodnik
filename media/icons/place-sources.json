@@ -1,0 +1,36 @@
+{
+ "spello/villa-dei-mosaici": {
+  "trip": "spello",
+  "stop_key": "villa-dei-mosaici",
+  "n": 2,
+  "name": "Villa dei Mosaici",
+  "trip_version": 1,
+  "icon_version": 1,
+  "accepted_at": "2026-10-31T17:24:11.253Z",
+  "icons": {
+   "64": "media/icons/place-spello-villa-dei-mosaici-64.webp",
+   "128": "media/icons/place-spello-villa-dei-mosaici-128.webp",
+   "256": "media/icons/place-spello-villa-dei-mosaici-256.webp",
+   "512": "media/icons/place-spello-villa-dei-mosaici-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "title": "File:Spello - Mosaici di Villa S. Anna - 008.JPG",
+    "url": "https://commons.wikimedia.org/wiki/File:Spello_-_Mosaici_di_Villa_S._Anna_-_008.JPG",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Spello_-_Mosaici_di_Villa_S._Anna_-_008.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Diego Baglieri",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   },
+   {
+    "title": "File:Spello - Mosaici di Villa S. Anna - 010.JPG",
+    "url": "https://commons.wikimedia.org/wiki/File:Spello_-_Mosaici_di_Villa_S._Anna_-_010.JPG",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Spello_-_Mosaici_di_Villa_S._Anna_-_010.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Diego Baglieri",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   }
+  ]
+ }
+}
