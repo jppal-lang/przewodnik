@@ -1644,3 +1644,5 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm-url__full{display:block;font-size:13px;color:var(--muted);overflow-wrap:anywhere;line-height:1.3}
 /* szeroki ekran z otwartym panelem flag / szufladą telefonu: treść rozciąga się do paneli zamiast zostawiać pustą dziurę (JP 2026-10-31) */
 body.has-walk .ad-content,body.has-phone .ad-content{max-width:none}
+.tv-ro{margin:0 0 12px;padding:10px 14px;border:1px solid var(--rule);border-left:4px solid var(--warn,#f9ab00);border-radius:8px;background:var(--card);font-size:16px;color:var(--ink2)}
+.tv-ro a{color:var(--azzurro);font-weight:600}

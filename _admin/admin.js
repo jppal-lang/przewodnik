@@ -663,12 +663,15 @@
       var all = (res[0] || []).filter(function (r) { return r.content; }).sort(function (a, b) { return a.version - b.version; });
       if (!all.length) throw new Error('brak wersji tej wycieczki');
       var newest = all[all.length - 1], pub = all.filter(function (r) { return r.status === 'published'; }).pop() || null;
+      // wersja robocza = najnowszy SZKIC (nie najnowsza wersja w ogóle): po wycofanej próbie automatu najnowsza bywa archiwalna,
+      // a wtedy panel otwierał ją jako tylko do odczytu i flagi nie miały opcji (JP 2026-10-31, Spello flaga 39)
+      var work = all.filter(function (r) { return r.status === 'draft'; }).pop() || newest;
       var c = newest.content.city || {};
       var name = trOf(newest.content.city_translations, 'pl').title || (known && known.name) || titleCase(slug);
       state.versions = all; state.token = res[2];
       state.trip = { slug: slug, name: name, country: String(c.country || (known && known.country) || '').toLowerCase(), region: c.region_slug || '',
-        newest: newest.version, published: pub ? pub.version : null };
-      state.current = { city_slug: slug, version: newest.version, status: newest.status, city_name: name,
+        newest: newest.version, work: work.version, published: pub ? pub.version : null };
+      state.current = { city_slug: slug, version: work.version, status: work.status, city_name: name,
         published_version: pub ? pub.version : null, bandana_color: c.bandana_color };
       document.title = name + ' · Quolino admin';
       tripHead(name, state.trip.country, state.trip.region);
@@ -715,10 +718,10 @@
   function showTab(ver) {
     var all = state.versions, T = state.trip;
     if (!all) return;
-    var row = all.filter(function (r) { return r.version === ver; })[0] || all[all.length - 1];
+    var row = all.filter(function (r) { return r.version === ver; })[0] || all.filter(function (r) { return r.version === (T.work != null ? T.work : T.newest); })[0] || all[all.length - 1];
     keepDrafts();
     state.tabVersion = row.version;
-    var isNewest = row.version === T.newest;
+    var isNewest = row.version === (T.work != null ? T.work : T.newest);
     try { history.replaceState(null, '', '#/' + encodeURIComponent(T.slug) + (isNewest ? '' : '/v' + row.version)); } catch (e) { /* file:// */ }
     // porównanie: najnowszy szkic → z wersją na stronie (co się zmieni po zatwierdzeniu); pozostałe → z poprzednią wersją
     var base = null;
@@ -740,6 +743,13 @@
     }
     render(it, row.content, base ? base.content : null, all);
     if (!state.readOnly) restoreDrafts();
+    else {
+      var wrow = all.filter(function (r) { return r.status === 'draft'; }).pop();
+      var why = row.status === 'published' ? 'Ta wersja jest opublikowana na stronie.' : row.status === 'archived' ? 'Ta wersja jest archiwalna' + (/wycofan|różni się/i.test(String(row.note || '')) ? ' (próba automatu wycofana)' : '') + '.' : 'Ta wersja jest tylko do odczytu.';
+      var ro = document.createElement('p'); ro.className = 'tv-ro'; ro.setAttribute('role', 'status');
+      ro.innerHTML = '<b>Tylko do odczytu.</b> ' + esc(why) + (wrow && wrow.version !== row.version ? ' Flagi i uwagi rozstrzygasz w szkicu <a href="#/' + encodeURIComponent(T.slug) + '/v' + wrow.version + '">' + esc(vlab(wrow)) + ' →</a>' : wrow ? '' : ' Ta trasa nie ma teraz szkicu.');
+      var host = $d.querySelector('.tv-head') || $d.querySelector('.tv') || $d; host.parentNode.insertBefore(ro, host.nextSibling);
+    }
   }
   $d.addEventListener('click', function (e) {
     var b = e.target.closest('.adm-tab'); if (b) { showTab(+b.getAttribute('data-ver')); return; }
