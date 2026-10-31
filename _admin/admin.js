@@ -35,7 +35,8 @@
   function F_(k, fmt) { return fmt ? [k, RW.label(k), fmt] : [k, RW.label(k)]; }
   var CITY_FIELDS = [F_('duration_type', durLabel), F_('duration_hours'), F_('bandana_color'), F_('hero_image'), F_('route_url'), F_('travel_mode'), F_('region_slug')];
   var CITY_TR = [F_('title'), F_('subtitle'), F_('lead'), F_('good_to_know'), F_('local_food')];
-  var STOP_TR = [F_('name'), F_('desc_paragraphs'), F_('kids_box'), F_('hint'), F_('local_flavor')];
+  // kids_choice (JP 2026-10-31): opcje jedna pod drugą, poprawna z „✓” — tekst z review-where (flagi kontroli wskazują ten sam fragment)
+  var STOP_TR = [F_('name'), F_('desc_paragraphs'), F_('kids_box'), F_('kids_choice', function (v) { return RW.choiceText(v); }), F_('hint'), F_('local_flavor')];
   var STOP_FIELDS = [F_('category'), F_('time_label'), F_('visit_duration', minLabel), F_('price'), F_('year_built'), F_('maps_query'),
     F_('optional', yesNo), F_('sunset_spot', yesNo), F_('lat'), F_('lon')];
   var VER_FIELDS = [['stop_number', 'Numer']].concat(STOP_FIELDS);   // do liczenia wersji punktu liczy się też numer
@@ -184,6 +185,9 @@
       tv3(59).desc_paragraphs = [tv3(59).desc_paragraphs[0], 'Odsłonięta część rezydencji pokazuje, jak bogato mieszkano w rzymskim Hispellum — mozaiki zajmują kilkanaście pomieszczeń.'];
       tv3(65).kids_box = 'Rodzinna lornetka bez lornetki. Każdy wybiera jeden szczegół widoku — wzgórze, wieżę albo drogę — i opisuje go tak, żeby reszta go znalazła.';
       tv3(58).kids_box = 'Czy wiecie, że wielkie odkrycia bywają dziełem przypadku? Zanim wejdziemy do willi, zgadnijcie: co koparka odsłoniła jako pierwsze?';
+      tv3(58).kids_choice = { options: ['Złote monety', 'Kolorowe mozaiki', 'Rzymski miecz', 'Marmurowy posąg'], correct: 1 };   // pytanie z wyborem (demo)
+      v3.review.warnings.push({ stop_key: 'parking-villa-dei-mosaici', path: 'content.stops.parking-villa-dei-mosaici.kids_choice', quote: 'Rzymski miecz',
+        problem: '[nie blokuje] Odpowiedzi do wyboru: „Rzymski miecz” — sprawdź, czy w willi nie znaleziono też broni (dystraktor ma być jednoznacznie błędny).' });
       v3.changes = [
         { path: 'content.stops.villa-dei-mosaici.desc_paragraphs', before: 'Około 500 m² odsłoniętej części rezydencji', after: 'Odsłonięta część rezydencji', auto: true,
           why: 'source-check: złagodzone — „około 500 m²” bez potwierdzenia w źródle https://it.wikipedia.org/wiki/Villa_romana_di_Spello' },

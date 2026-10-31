@@ -104,6 +104,11 @@ bez nowych kluczy). Strona kraju używa tego samego atlasu (`QuoAtlas.render({st
   nawigacji, BMC (także w nagłówku), panelu bocznego — egzekwuje to CSS `.qc[data-view="kid"]`.
 - Dziecko widzi: naklejki (puste → wklejone po zaliczeniu misji), misje, licznik.
 - Quo może występować w obu widokach (decyzja JP 2026-10-06).
+- **Pytanie z wyborem** (`kid-choice.js`, JP 2026-10-31): gdy przystanek ma `kids_choice`, pod misją 4 duże przyciski
+  (kolejność tasowana raz na wejście). Zła odpowiedź: ta opcja przekreślona na stałe, wszystkie przyciski `aria-disabled` przez 3 s,
+  Quo „myśli” (`pose-05` + „?” w CSS, docelowo `quo-mysli-*` — kolejka `bin/quo-icons-data.mjs` nr 31), pasek i licznik sekund
+  (przy reduced-motion bez paska i bez kołysania). Dobra: pochwała Quo i odhaczenie misji tym samym `qc.task.<klucz>-mission`
+  (naklejka). Bez nowych kluczy localStorage; stan prób tylko w pamięci strony. Widok rodzica pytania nie pokazuje, „Podaj dziecku” — tak.
 
 ---
 

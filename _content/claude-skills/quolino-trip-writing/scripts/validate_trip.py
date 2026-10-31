@@ -10,7 +10,9 @@ Bazuje na _content/validate.py; reguły zaktualizowane wg TRIP-WRITING-SKILL.md 
   - parking_cost ≠ price,
   - struktura _notes: {stop_key, field a–g, note},
   - quest (kids_box) i wskazówka (hint) przy punktach zwiedzania; wskazówka ≠ quest,
-  - kolejność tłumaczeń: najpierw en, kolejne języki z angielskiego.
+  - kolejność tłumaczeń: najpierw en, kolejne języki z angielskiego,
+  - kids_choice (opcjonalne pytanie z wyborem, JP 2026-10-31): dokładnie 4 różne niepuste opcje, correct 0..3,
+    bez „—”, najwyżej ~40 znaków na opcję (tłumaczenia ~56), tylko przy misji; brak pola = misja bez wyboru.
 
     python3 validate.py                        # wszystkie miasta
     python3 validate.py cities/umbria/spello   # jedno
@@ -88,6 +90,37 @@ SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+")
 STOPWORDS = set("które który która których tylko także przez jednak bardzo można miasta miasto jeszcze kiedy gdzie wtedy dzisiaj potem właśnie".split())
 
 VAGUE = re.compile(r"\b(kilk\w*|parę|paru|chwil\w*)\b(?!.*\d)", re.I)
+CHOICE_MAX, CHOICE_MAX_TR = 40, 56   # znaki na opcję pytania z wyborem: PL / tłumaczenie (to samo co bin/kids-choice-lib.mjs)
+
+
+def choice_problems(ch, max_len=CHOICE_MAX):
+    """Problemy pytania z wyborem (kids_choice); pusta lista = poprawne. Te same reguły: bin/kids-choice-lib.mjs, SQL kids_choice_ok."""
+    if ch is None:
+        return []
+    if not isinstance(ch, dict):
+        return ['ma być obiektem {"options": [4 teksty], "correct": 0..3}']
+    out = []
+    o = ch.get("options")
+    if not isinstance(o, list) or len(o) != 4:
+        out.append(f"ma mieć dokładnie 4 opcje (jest {len(o) if isinstance(o, list) else 'brak listy'})")
+    else:
+        for i, x in enumerate(o, 1):
+            if not isinstance(x, str) or not x.strip():
+                out.append(f"opcja {i} pusta albo nie jest tekstem")
+                continue
+            if re.search("[—–]", x):
+                out.append(f"opcja {i} ma długą pauzę „—”/„–”")
+            if len(x.strip()) > max_len:
+                out.append(f"opcja {i} ma {len(x.strip())} znaków (najwyżej ~{max_len}): „{x.strip()[:60]}”")
+        txt = [x.strip().lower() for x in o if isinstance(x, str)]
+        if len(set(txt)) != len(txt):
+            out.append("opcje się powtarzają (muszą być 4 różne)")
+    c = ch.get("correct")
+    if isinstance(c, bool) or not isinstance(c, int) or not 0 <= c <= 3:
+        out.append(f"„correct” = {json.dumps(c, ensure_ascii=False)} — ma być numerem poprawnej opcji 0..3")
+    return out
+
+
 errors, warnings = [], []
 def err(c, m):  errors.append(f"  [BŁĄD] {c}: {m}")
 def warn(c, m): warnings.append(f"  [uwaga] {c}: {m}")
@@ -449,6 +482,21 @@ def validate_city(folder: Path):
                         err(slug, f"{code}: {key} — brak wskazówki (hint) do questu")
                     elif st.get("kids_box") and st["hint"].strip() == st["kids_box"].strip():
                         err(slug, f"{code}: {key} — wskazówka powtarza quest; ma mówić, gdzie patrzeć")
+            ch = st.get("kids_choice")
+            if ch is not None:
+                for p in choice_problems(ch, CHOICE_MAX if code == "pl" else CHOICE_MAX_TR):
+                    err(slug, f"{code}: {key}.kids_choice — {p}")
+                if not st.get("kids_box"):
+                    err(slug, f"{code}: {key}.kids_choice — pytanie z wyborem bez misji (kids_box); usuń je albo dopisz misję")
+                elif cat_of.get(key) in NO_QUEST:
+                    err(slug, f"{code}: {key}.kids_choice — przystanek praktyczny ({cat_of.get(key)}) nie ma pytania z wyborem")
+                elif code == "pl" and not choice_problems(ch):
+                    good = ch["options"][ch["correct"]].strip()
+                    tell = f"{st.get('kids_box') or ''} {st.get('hint') or ''}".lower()
+                    if len(good) >= 4 and good.lower() in tell:
+                        warn(slug, f"{code}: {key}.kids_choice — poprawna odpowiedź „{good}” stoi w misji albo wskazówce (zdradza odpowiedź)")
+                    for i, x in enumerate(ch["options"]):
+                        check_banned(slug, f"{key}.kids_choice[{i}]", x)
             dp = st.get("desc_paragraphs")
             if dp is not None and not isinstance(dp, list):
                 err(slug, f"{code}: {key} — desc_paragraphs musi być listą")

@@ -148,6 +148,13 @@ export default {
    "slug": "qr",
    "place": "Kod QR dla dziecka",
    "prompt": "Keep the character exactly as in the first reference image, including his neckerchief. He holds out a smartphone towards the viewer; the screen shows a simple black-and-white square pattern like a QR code, with no letters. He looks excited. Same soft 3D render, lighting and colours as the reference images. Square 1:1 image, the character with the phone centred and filling about 80% of the frame, on a clean pure white #FFFFFF background with no shadow under the character; the image shows only the character and the phone."
+  },
+  {
+   "n": 31,
+   "slug": "mysli",
+   "place": "Widok dziecka: pytanie z wyborem, zła odpowiedź — Quo się zastanawia (kid-choice.js, pauza 3 s). Do czasu grafiki: pose-05 + „?” w CSS",
+   "hold": "czeka na zgodę JP (2026-10-31) — generowanie tylko: node quo-icons.mjs gen --only 31",
+   "prompt": "Keep the character exactly as in the first reference image, including his neckerchief. He sits calmly, tapping his chin with one paw and looking slightly upwards with a gentle, thoughtful smile, as if carefully considering an answer; a small yellow question mark floats above his head. Friendly and encouraging, not sad or worried. Same soft 3D render, lighting and colours as the reference images. Square 1:1 image, the character centred and filling about 80% of the frame, on a clean pure white #FFFFFF background with no shadow under the character; the image shows only the character and the question mark."
   }
  ]
 };

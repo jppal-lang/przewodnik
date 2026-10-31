@@ -27,6 +27,7 @@ import { sourceCheck } from './source-check.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
 import { whoIs, namesFromProblem } from './kimbyl.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
+import { CHOICE_RULE, cleanChoices } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -316,7 +317,7 @@ content = {
  "lang": "pl",
  "city": {"title": "…", "region_label": "<sama nazwa regionu>", "subtitle": "…", "lead": "1–2 zdania z pazurem", "good_to_know": "…", "hero_note": null, "local_food": "…"},
  "stops": { "<stop_key>": {"name": "…", "desc_paragraphs": ["…", "…"], "kids_box": "misja dla dziecka: zaczyna się od czasownika, wykonalna na miejscu bez kupowania biletu",
-            "hint": "podpowiedź do misji", "local_flavor": null, "practical_note": null, "dress_code": null, "photo_task": "zadanie foto"}, … },
+            "hint": "podpowiedź do misji", "kids_choice": null | {"options": ["…", "…", "…", "…"], "correct": 0}, "local_flavor": null, "practical_note": null, "dress_code": null, "photo_task": "zadanie foto"}, … },
  "day_plan": { "<stop_key>": "HH:MM — co się dzieje na miejscu", … },
  "emergency": { "1": {"label": "…", "description": "…"}, … },
  "_notes": [ {"stop_key": "…", "field": "a|b|c|d|e|f|g", "note": "czego zabrakło w researchu"} ]   (field: a dane, b opis, c misja, d wskazówka, e lokalny smak, f źródła, g uwaga)
@@ -331,6 +332,7 @@ Rodzic dostaje plan dnia od parkingu po finał, dziecko — misję i zadanie fot
 ${RULES}
 ${DEPTH_TEXT}
 Legenda, ciekawostka, popkultura i fun fact NIE wchodzą do desc_paragraphs — powstaną w następnym kroku jako osobne bloki.
+${CHOICE_RULE}
 ${rulesText()}
 ${SKELETON()}
 Odpowiedz wyłącznie poprawnym JSON-em. ${JSON_QUOTE_RULE}
@@ -549,6 +551,7 @@ async function main() {
     field: /^[a-g]$/.test(n.field) ? n.field : NOTE_FIELD[n.field] ?? (/hour|price|cost|ztl|phone|website|time|rating|reserv|lat|lon|maps/i.test(n.field ?? '') ? 'a' : 'g') }));
   // bez „—” i „–” (JP 2026-10-25) — mechanicznie, w całej treści i w blokach
   trip.content = noDash(trip.content); for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
+  cleanChoices(trip.content, trip.meta, log);   // pytanie z wyborem: zły kształt / bez misji → null (misja zostaje)
   const saved = await saveDraft(q, trip, { note: `nowe wytyczne (Gemini ${MODEL})${brief ? ': ' + brief.slice(0, 120) : ''}`, source: 'draft', changes: sc.changes ?? [], review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`,
@@ -861,6 +864,7 @@ async function recheckMain() {
     log(`${slug}: ⑤ zapis ${label} (runda ${round})`);
     if (round > 0) { const scr = await sourceCheckStep(trip, blocks, rvr); ap.changes = [...(ap.changes ?? []), ...(scr.changes ?? [])]; }
     const t = { meta: trip.meta, content: noDash(trip.content) };
+    cleanChoices(t.content, t.meta, log);
     for (const k of Object.keys(blocks)) if (blocks[k]?.marked) blocks[k].marked = noDash(blocks[k].marked);
     saved = await saveDraft(q, t, { note: round === 0 ? `${label}: poprawki ręczne i kontrola całej trasy (błędy ${rvr.errors?.length ?? 0})` : `${label}: poprawki po kontroli całej trasy, runda ${round} (błędy ${rvr.rounds.map(x => x.errors).join(' → ')})`, source: 'revise', changes: ap.changes ?? [], review: rvr });
     await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
@@ -921,6 +925,8 @@ ${list(cs)}
 OBECNY PRZYSTANEK:
 ${JSON.stringify({ meta: m, pl, record: b ? { marked: b.marked, state: b.state, sources: b.sources } : null })}
 ${existsSync(fr) ? `RESEARCH PRZYSTANKU:\n${readFileSync(fr, 'utf8')}` : ''}
+Pytanie z wyborem (kids_choice): gdy zmieniasz misję (kids_box), popraw też kids_choice albo ustaw null; nowe pytanie tylko według zasady:
+${CHOICE_RULE}
 Odpowiedz JSON-em: {"meta": {…tylko zmienione pola…}, "pl": {…tylko zmienione pola (bez desc_paragraphs, jeśli zmieniasz rekord)…},
  "record": null | {"marked": …, "state": …, "sources": …} (cały rekord, gdy zmieniasz opis albo bloki), "summary": "1 zdanie po polsku, co zmieniłeś"}. ${JSON_QUOTE_RULE}`, `poprawki ${m.stop_number}`);
     for (const [k, v] of Object.entries(out.meta ?? {})) if (k !== 'stop_key') { changes.push({ path: `meta.stops.${key}.${k}`, before: m[k] ?? null, after: v, why: list(cs) }); m[k] = v; }
@@ -1017,6 +1023,7 @@ async function reviseMain() {
   const [nl] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
   const label = `v${base}${String.fromCharCode(97 + nl.n)}`;
   { const scv = await sourceCheckStep(trip, blocks, rv); changes.push(...(scv.changes ?? [])); }
+  cleanChoices(trip.content, trip.meta, log);
   const saved = await saveDraft(q, trip, { note: `${label}: poprawki JP (${comments.length} uwag${answered.size ? `, w tym ${answered.size} odpowiedzi na pytania z kontroli` : ''})`, source: 'revise', changes, review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
              trip = trip || jsonb_build_object('stop_blocks_v2', $4::jsonb) WHERE city_slug = $1 AND version = $2`, [slug, saved.version, MODEL, JSON.stringify(blocks), label]);

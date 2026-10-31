@@ -57,6 +57,34 @@ def text(where, a, b, long_check=True):
             same += 1
 
 
+CHOICE_MAX_TR = 56   # opcja pytania z wyborem w tłumaczeniu (PL ~40, DE/NL/HU dłuższe)
+
+
+def choice(k, a, b):
+    """Pytanie z wyborem (kids_choice, JP 2026-10-31): te same 4 opcje przetłumaczone, ten sam numer poprawnej."""
+    if "kids_choice" not in a:
+        return                                   # stare źródło bez pola
+    ca, cb = a.get("kids_choice"), b.get("kids_choice")
+    if ca is None:
+        if cb is not None:
+            errors.append(f"{k}.kids_choice: źródło bez pytania z wyborem, tłumaczenie ma — null zostaje null")
+        return
+    if not isinstance(cb, dict) or not isinstance(cb.get("options"), list) or len(cb["options"]) != 4:
+        errors.append(f"{k}.kids_choice: ma być {{\"options\": [4 teksty], \"correct\": {ca.get('correct')}}} — 4 opcje przetłumaczone w tej samej kolejności")
+        return
+    if cb.get("correct") != ca.get("correct"):
+        errors.append(f"{k}.kids_choice.correct: {cb.get('correct')} ≠ {ca.get('correct')} — numer poprawnej odpowiedzi bez zmian")
+    seen = set()
+    for i, (x, y) in enumerate(zip(ca.get("options") or [], cb["options"])):
+        text(f"{k}.kids_choice.options[{i}]", x, y, False)
+        if isinstance(y, str):
+            if len(y.strip()) > CHOICE_MAX_TR:
+                errors.append(f"{k}.kids_choice.options[{i}]: {len(y.strip())} znaków (najwyżej {CHOICE_MAX_TR}) — krótsza forma")
+            seen.add(y.strip().lower())
+    if len(seen) != 4:
+        errors.append(f"{k}.kids_choice: opcje w tłumaczeniu się powtarzają — muszą być 4 różne")
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     as_json = "--json" in sys.argv
@@ -97,6 +125,7 @@ def main():
                     errors.append(f"{k}.{f}: brak klucza")
                 else:
                     text(f"{k}.{f}", a.get(f), b.get(f), False)
+        choice(k, a, b)
         pa, pb = a.get("desc_paragraphs") or [], b.get("desc_paragraphs") or []
         if not isinstance(pb, list):
             errors.append(f"{k}.desc_paragraphs: musi być listą")

@@ -40,6 +40,13 @@ function parts(src) {
   return out;
 }
 const keep = (src, dst, fields) => (dst ?? []).forEach((d, k) => { if (src?.[k]) for (const f of fields) d[f] = src[k][f]; });
+// pytanie z wyborem (JP 2026-10-31): opcje tłumaczone razem z misją, numer poprawnej zawsze ze źródła; źródło bez pytania = null
+const keepChoice = (src, dst) => (dst ?? []).forEach((d, k) => {
+  const a = src?.[k]?.kids_choice;
+  if (!src?.[k] || !('kids_choice' in src[k])) return;
+  if (a == null) { d.kids_choice = null; return; }
+  if (d.kids_choice && typeof d.kids_choice === 'object') d.kids_choice = { options: d.kids_choice.options, correct: a.correct };
+});
 
 async function translate(src, lang, ref, feedback, task) {
   const result = { ...src, lang, stops: [] };
@@ -66,6 +73,7 @@ ${JSON.stringify(part)}`;
     if (Array.isArray(t._translator_notes)) notes.push(...t._translator_notes);
     // pola niezmienne przepisujemy ze źródła po pozycji — model ma tłumaczyć tekst, nie dane
     keep(part.stops, t.stops, ['stop_key', 'stop_number', 'category']);
+    keepChoice(part.stops, t.stops);
     keep(part.day_plan, t.day_plan, ['sort_order', 'stop_key']);
     keep(part.emergency_points, t.emergency_points, ['sort_order', 'type', 'maps_query']);
     if (i === 0) { result.city = t.city; result.day_plan = t.day_plan ?? []; result.emergency_points = t.emergency_points ?? []; }
@@ -141,7 +149,7 @@ ${JSON.stringify(dst)}`;
 function sample(obj, keys) {
   return { city: { title: obj.city?.title, subtitle: obj.city?.subtitle, lead: obj.city?.lead },
     stops: obj.stops.filter(s => keys.includes(s.stop_key)).map(s => ({ stop_key: s.stop_key, name: s.name,
-      desc_paragraphs: (s.desc_paragraphs ?? []).slice(0, 2), kids_box: s.kids_box, hint: s.hint })) };
+      desc_paragraphs: (s.desc_paragraphs ?? []).slice(0, 2), kids_box: s.kids_box, kids_choice: s.kids_choice ?? null, hint: s.hint })) };
 }
 
 async function reviewSample(pl, en, dst, lang) {
@@ -178,7 +186,7 @@ async function saveQuality(lang, r, models) {
 // uruchomieniu porównujemy je z bieżącym źródłem: bez zmian → język pomijamy; zmienione pola → model
 // tłumaczy tylko je, reszta zostaje z poprzedniego tłumaczenia; zmiana układu (inne przystanki, inna liczba
 // punktów planu dnia) → pełne tłumaczenie tego języka.
-const INVARIANT = new Set(['stop_key', 'stop_number', 'category', 'sort_order', 'type', 'maps_query', 'lang', 'city_slug', 'id', 'stop_id']);
+const INVARIANT = new Set(['stop_key', 'stop_number', 'category', 'sort_order', 'type', 'maps_query', 'lang', 'city_slug', 'id', 'stop_id', 'correct']);
 function flatten(o, prefix = '', out = {}) {
   if (typeof o === 'string') { if (o.trim()) out[prefix] = o; return out; }
   if (Array.isArray(o)) {

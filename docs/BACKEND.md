@@ -19,6 +19,10 @@ treść to pliki, baza potrzebna WYŁĄCZNIE do interakcji między użytkownikam
 
 ## 2. SUPABASE — SCHEMAT
 
+> 2026-10-31: `stop_translations.kids_choice jsonb` (opcjonalne pytanie z wyborem: `{"options": [4], "correct": 0..3}`,
+> CHECK `kids_choice_ok`). Szkic: `trip_draft_save` dopisuje pole po `import_city`; tłumaczenia: `trip_export` / `trip_apply_translation`
+> (indeks poprawnej z PL); `trip_sample` na liście dozwolonych. SQL z samokontrolą migawki: `_content/claude-skills/sql/2026-10-31-misja-wybor.sql`.
+
 ```sql
 CREATE TABLE ratings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

@@ -25,7 +25,7 @@ Dostajesz i oddajesz ten sam JSON (eksport `trip_export(slug, lang)`):
 ```json
 {"city_slug": "spello", "lang": "en",
  "city": {"title", "region_label", "subtitle", "lead", "good_to_know", "hero_note", "local_food"},
- "stops": [{"stop_key", "stop_number", "category", "name", "desc_paragraphs": [], "kids_box",
+ "stops": [{"stop_key", "stop_number", "category", "name", "desc_paragraphs": [], "kids_box", "kids_choice",
             "photo_task", "hint", "local_flavor", "dress_code", "practical_note",
             "year_built", "price", "visit_duration", "opening_hours"}],
  "day_plan": [{"sort_order", "time_label", "stop_key", "description"}],
@@ -68,6 +68,10 @@ Odpowiadasz **wyłącznie JSON-em** w tym kształcie, z `lang` ustawionym na ję
   9-latka i nieinfantylnie dla 15-latka. **Zadanie ma być to samo** — co policzyć, znaleźć,
   sfotografować; zmieniasz język, nie mechanikę questu.
 - Liczby mnogie, formy grzecznościowe i cudzysłowy według zasad danego języka.
+- **Pytanie z wyborem** (`kids_choice`, od 2026-10-31): `{"options": [4 teksty], "correct": N}` albo `null`.
+  Tłumaczysz 4 opcje razem z misją, w tej samej kolejności i krótko (najwyżej ok. 56 znaków);
+  `correct` kopiujesz bez zmian (skrypt i tak bierze go ze źródła). `null` zostaje `null`.
+  Opcje mają zostać 4 różne i jednoznaczne w języku docelowym; nazwy własne w oryginale.
 
 ## Kontrola
 

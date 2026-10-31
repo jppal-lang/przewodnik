@@ -17,7 +17,7 @@
     hero_note: 'Notka pod zdjęciem', region_label: 'Region (etykieta)', duration_type: 'Czas', duration_hours: 'Godziny',
     bandana_color: 'Kolor drużyny', hero_image: 'Grafika hero', route_url: 'Trasa (link)', travel_mode: 'Tryb trasy', region_slug: 'Region',
     // przystanek — tekst
-    name: 'Nazwa', desc_paragraphs: 'Opis', kids_box: 'Misja dla dzieci', hint: 'Podpowiedź',
+    name: 'Nazwa', desc_paragraphs: 'Opis', kids_box: 'Misja dla dzieci', kids_choice: 'Odpowiedzi do wyboru', hint: 'Podpowiedź',
     local_flavor: 'Lokalny smaczek (tradycja, święto)', photo_task: 'Zadanie foto', practical_note: 'Informacje praktyczne', dress_code: 'Strój',
     // przystanek — bloki z przypisami
     legend: 'Legenda', curiosity: 'Ciekawostka', pop_culture: 'W popkulturze', fun_fact: 'Fun fact (dziecko)', sources: 'Źródła',
@@ -29,7 +29,7 @@
   };
   var CITY_TEXT = ['title', 'subtitle', 'lead', 'good_to_know', 'local_food', 'hero_note', 'region_label'];
   var CITY_META = ['duration_type', 'duration_hours', 'bandana_color', 'hero_image', 'route_url', 'travel_mode', 'region_slug'];
-  var STOP_TEXT = ['name', 'desc_paragraphs', 'kids_box', 'hint', 'local_flavor', 'photo_task', 'practical_note', 'dress_code'];
+  var STOP_TEXT = ['name', 'desc_paragraphs', 'kids_box', 'kids_choice', 'hint', 'local_flavor', 'photo_task', 'practical_note', 'dress_code'];
   var BLOCKS = ['legend', 'curiosity', 'pop_culture', 'fun_fact'];
   var STOP_META = ['category', 'time_label', 'visit_duration', 'price', 'year_built', 'maps_query', 'opening_hours', 'optional', 'sunset_spot',
     'lat', 'lon', 'rating', 'reviews_count', 'website'];
@@ -57,8 +57,14 @@
     if (k === 'pop_culture') return (v.items || []).map(function (i) { return [i.title, i.year].filter(Boolean).join(' (') + (i.year ? ')' : '') + ' — ' + (i.text || ''); }).join('\n\n');
     return v.text || '';
   }
+  // pytanie z wyborem (JP 2026-10-31): {options[4], correct} → 4 linie, poprawna z „✓”, pozostałe z „·” (to samo pokazuje panel)
+  function choiceText(v) {
+    if (!v || typeof v !== 'object' || !Array.isArray(v.options)) return '';
+    return v.options.map(function (o, i) { return (i === v.correct ? '✓ ' : '· ') + String(o == null ? '' : o); }).join('\n');
+  }
   function txt(v) {
     if (v == null) return '';
+    if (v && typeof v === 'object' && Array.isArray(v.options)) return choiceText(v);
     if (Array.isArray(v)) return v.map(txt).filter(Boolean).join('\n\n');
     if (typeof v === 'object') return '';
     return String(v);
@@ -201,6 +207,7 @@
     var lo = t.toLowerCase(), keys = Object.keys(FIELD_PL).sort(function (a, b) { return FIELD_PL[b].length - FIELD_PL[a].length; });
     for (i = 0; i < keys.length; i++) { var l = FIELD_PL[keys[i]].toLowerCase(); if (l.length >= 5 && lo.indexOf(l) >= 0) return keys[i]; }
     if (/\bwstęp\b/i.test(t)) return 'lead';
+    if (/odpowiedzi? do wyboru|pytani\w* z wyborem|\bdystraktor|\bopcj\w* odpowiedzi/i.test(t)) return 'kids_choice';
     if (/\bmisj/i.test(t)) return 'kids_box';
     return null;
   }
@@ -303,6 +310,6 @@
   }
 
   return { FIELD_PL: FIELD_PL, CITY_TEXT: CITY_TEXT, CITY_META: CITY_META, STOP_TEXT: STOP_TEXT, BLOCKS: BLOCKS, STOP_META: STOP_META,
-    label: label, humanize: humanize, blockText: blockText, fieldsFromTrip: fieldsFromTrip, fieldsFromContent: fieldsFromContent,
+    label: label, humanize: humanize, blockText: blockText, choiceText: choiceText, fieldsFromTrip: fieldsFromTrip, fieldsFromContent: fieldsFromContent,
     parsePath: parsePath, locate: locate, splitAggregate: splitAggregate, expand: expand, itemId: itemId, annotate: annotate, norm: norm, exactIn: exactIn };
 });

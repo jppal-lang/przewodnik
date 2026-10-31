@@ -18,6 +18,10 @@ Nie ruszasz: CSS, JS, Supabase, marketingu, maskotki.
 - Misje konkretne i wykonalne na miejscu ("policz przęsła mostu", nie "poczuj atmosferę")
 - Boks "Dla dzieci": 2 punkty ciekawostek na poziomie 8–12 lat
 - Boks "Zadanie foto": jedno konkretne ujęcie z instrukcją
+- **Pytanie z wyborem** (`kids_choice`, opcjonalne, JP 2026-10-31): przy 1–2 przystankach, gdy misja jest pytaniem
+  obserwacyjnym, a odpowiedź wynika ze źródła lub treści przystanku: `{"options": [4 krótkie teksty, ≤ ~40 znaków], "correct": 0..3}`.
+  Dystraktory z tej samej kategorii, wiarygodne, jednoznacznie błędne. Brak pewności, pytanie otwarte, przystanek praktyczny → `null`.
+  Misja i wskazówka nie zdradzają odpowiedzi. Kontrola źródeł: odpowiedź sprzeczna ze źródłem → znika samo pytanie, misja zostaje.
 
 ### BEZWZGLĘDNY ZAKAZ (naruszenie = poprawka całego pliku)
 - ŻADNYCH odległości (km) i czasów dojazdu ("ok. 1h05", "25 km")

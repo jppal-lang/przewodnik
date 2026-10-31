@@ -19,11 +19,15 @@
 //    Rozstrzygnięte uwagi zostają w ostrzeżeniach z polem `resolved` (panel: szara flaga do wglądu, bez pytania; błąd → ostrzeżenie), licznik w rv.source_check.
 // 4. AI: Antigravity (Gemini, AI Pro), gdy limit nie jest wyczerpany (agyQuotaOut), inaczej Claude CLI. Każde wywołanie w dzienniku
 //    kosztów (aiUsage → ai_usage, usage-summary.mjs), rola „source-check”. Najwyżej 2 wywołania na przebieg (po 12 faktów).
+// 5. Pytanie z wyborem w misji (kids_choice, JP 2026-10-31): poprawna odpowiedź = fakt do sprawdzenia (rodzaj „odpowiedz”).
+//    Potwierdzona → źródło dopisane; sprzeczna ze źródłem (albo któraś błędna opcja też jest prawdziwa) → usuwamy SAMO pytanie z wyborem
+//    (misja zostaje); bez źródła → zostaje z notatką redakcyjną (nie idzie do JP).
 // Testy: source-check.test.mjs (sztuczne dane, wstrzykiwany fetch i AI, bez sieci).
 import { readFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { noDash } from './stop-content-lib.mjs';
+import { choiceFact } from './kids-choice-lib.mjs';
 
 // ── rozpoznanie uwag ─────────────────────────────────────────────────────────────────────────────
 const ADD_RE = /dodaj\p{L}*[^.]{0,40}po potwierdzeniu|po potwierdzeniu w źródle|dopisz\p{L}*[^.]{0,40}po potwierdzeniu/iu;
@@ -295,6 +299,12 @@ export async function sourceCheck({ trip, blocks = {}, review, workDir = null, f
     const sk = locateStop(trip, blocks, { stop: f.stop ?? null, city: !!f.city, fact: f.fact });
     items.push({ kind: f.kind ?? 'verify', fact: f.fact, note: f.note ?? '', sk, field: f.kind === 'add' ? (f.field ?? 'local_flavor') : null, hintUrls: f.urls ?? [], quote: f.quote ?? null, from: null, explicit: true });
   }
+  // pytania z wyborem: poprawna odpowiedź to fakt (misja zostaje, najwyżej znika samo pytanie)
+  for (const [sk, st] of Object.entries(trip.content?.stops ?? {})) {
+    const cf = choiceFact(st); if (!cf) continue;
+    items.push({ kind: 'choice', fact: `${st.name ? `${st.name}. ` : ''}${cf.question ? `Pytanie dla dziecka: „${cf.question.slice(0, 200)}” ` : ''}Poprawna odpowiedź: ${cf.answer}`,
+      answer: cf.answer, wrong: cf.wrong, sk, field: 'kids_choice', hintUrls: [], quote: null, from: null });
+  }
   if (!items.length) return { changes, stats, review: rv };
   stats.facts = items.length;
   log(`source-check: ${items.length} faktów z ${stats.issues} uwag${facts?.length ? ` + ${facts.length} z polecenia` : ''} — szukam źródeł (Wikipedia, Wikidata, materiał trasy)`);
@@ -303,7 +313,7 @@ export async function sourceCheck({ trip, blocks = {}, review, workDir = null, f
   for (const it of items) {
     const g = await gather(it.fact, { trip, sk: it.sk, workDir, hintUrls: it.hintUrls, note: it.note }, deps, net);
     it.g = g;
-    if (g.code && it.kind === 'verify') { it.res = { potwierdza: true, src: g.code, cytat: g.code.sn[0].text.slice(0, 200), byCode: true }; stats.by_code++; }
+    if (g.code && (it.kind === 'verify' || it.kind === 'choice')) { it.res = { potwierdza: true, src: g.code, cytat: g.code.sn[0].text.slice(0, 200), byCode: true }; stats.by_code++; }
   }
   // 3) jedno krótkie zapytanie AI dla reszty (paczki po 12) — tylko wycinki pobranych stron
   const ask = items.filter(it => !it.res);
@@ -311,11 +321,13 @@ export async function sourceCheck({ trip, blocks = {}, review, workDir = null, f
     const part = ask.slice(i, i + 12);
     const payload = part.map((it, j) => {
       const srcs = it.g.found.filter(s => s.sn.length).sort((a, b) => b.sn[0].hits - a.sn[0].hits).slice(0, 4);
-      if (!srcs.length) srcs.push(...it.g.found.filter(s => s.kind === 'wikipedia').slice(0, 1).map(s => ({ ...s, sn: [{ text: s.text.slice(0, 900) }] })));
+      // bez trafionych wycinków: początek artykułu Wikipedii; przy pytaniu z wyborem także strony przystanku (odpowiedź po polsku, źródło po włosku)
+      if (!srcs.length) srcs.push(...it.g.found.filter(s => s.kind === 'wikipedia' || it.kind === 'choice').slice(0, it.kind === 'choice' ? 2 : 1).map(s => ({ ...s, sn: [{ text: s.text.slice(0, 900) }] })));
       it.srcs = srcs;
       const texts = textsOf(trip, blocks, it.sk), kw = [...it.g.keys, ...anchors(it.fact).weak];
       const rel = Object.fromEntries(Object.entries(texts).filter(([, v]) => kw.some(k => has(v, k))).slice(0, 6).map(([k, v]) => [k, v.slice(0, 1500)]));
-      return { id: j, rodzaj: it.kind === 'add' ? 'dodaj' : it.kind === 'soften' ? 'zlagodz' : 'sprawdz', fakt: it.fact, ...(it.note ? { uwaga: it.note } : {}),
+      return { id: j, rodzaj: it.kind === 'add' ? 'dodaj' : it.kind === 'soften' ? 'zlagodz' : it.kind === 'choice' ? 'odpowiedz' : 'sprawdz', fakt: it.fact, ...(it.note ? { uwaga: it.note } : {}),
+        ...(it.kind === 'choice' ? { bledne_opcje: it.wrong } : {}),
         ...(it.kind === 'add' ? { pole: it.field, obecna_tresc_pola: (it.sk ? trip.content.stops?.[it.sk]?.[it.field] : trip.content.city?.[it.field]) ?? null }
           : { tekst_trasy: Object.keys(rel).length ? rel : Object.fromEntries(Object.entries(texts).slice(0, 6).map(([k, v]) => [k, v.slice(0, 1500)])) }),
         zrodla: srcs.map((s, n) => ({ n, url: s.url, fragmenty: s.sn.map(x => x.text) })) };
@@ -326,6 +338,7 @@ Dla każdej pozycji:
 - rodzaj "dodaj" i potwierdzone: "zdanie" = jedno krótkie zdanie po polsku do pola (styl rodzinny, prosto, tylko fakt ze źródła, bez długich myślników „—” i „–”, bez przymiotników-wypełniaczy). Jeśli pole ma już treść, zdanie ma ją uzupełniać, nie powtarzać.
 - FAKTY PRAKTYCZNE (cena, bilet, parking, ZTL, godziny otwarcia, dni zamknięcia, telefon, adres, rezerwacja, długość zwiedzania) NIGDY nie łagodzimy słowami „podobno”, „mówi się”, „według tradycji”. Bez potwierdzenia: "replace" = to samo miejsce bez konkretnej liczby/danej, z odesłaniem „sprawdź na miejscu” albo „aktualne ceny/godziny na stronie atrakcji” (np. „Parking jest płatny, aktualną cenę sprawdź na miejscu.”). Ostrożne słowa wolno tylko w historii, legendach i ciekawostkach.
 - "sprzeczne": true tylko wtedy, gdy fragment źródła mówi co innego niż fakt (np. inna data, inna osoba). Brak informacji w źródle to NIE sprzeczność.
+- rodzaj "odpowiedz" (pytanie z wyborem dla dziecka): fakt = poprawna odpowiedź. "potwierdza" jak wyżej; "sprzeczne": true, gdy źródło podaje inną odpowiedź ALBO gdy według źródła któraś z "bledne_opcje" też jest prawdziwa. Bez "quote" i "replace".
 - rodzaj "sprawdz" bez potwierdzenia albo rodzaj "zlagodz": "quote" = fragment TEKSTU TRASY (z pola tekst_trasy) skopiowany znak w znak, który zawiera fakt; "replace" = to samo miejsce złagodzone: ogólniej i PRAWDZIWIE według fragmentów źródeł (wtedy "zrodlo" = numer źródła) albo z ostrożnym słowem („według tradycji”, „podobno”, „mówi się, że”), albo skrócone do części pewnej. "replace" = "" (usunięcie) WYŁĄCZNIE gdy "sprzeczne": true. Zmieniaj najmniej, jak się da; zdanie po zmianie ma być poprawne po polsku. "kluczowy": true tylko, gdy bez tego faktu przystanek traci sens (np. główna atrakcja).
 Odpowiedz wyłącznie JSON-em: {"items": [{"id": 0, "potwierdza": false, "sprzeczne": false, "zrodlo": null, "cytat": "", "zdanie": "", "quote": "", "replace": "…", "kluczowy": false}]}. W tekstach używaj cudzysłowów „…”, nigdy prostego ".
 
@@ -341,6 +354,14 @@ ${JSON.stringify(payload)}`;
   const notes = (trip.content._notes = Array.isArray(trip.content._notes) ? trip.content._notes : []);
   for (const it of items) {
     const r = it.res ?? {}; const src = r.byCode ? r.src : it.srcs?.[r.zrodlo];
+    if (it.kind === 'choice' && r.potwierdza !== true && r.sprzeczne === true && !r.byCode) {
+      // odpowiedź sprzeczna ze źródłem → usuwamy SAMO pytanie z wyborem; misja (kids_box) i wskazówka zostają
+      const st = trip.content.stops?.[it.sk]; const before = st?.kids_choice ?? null;
+      if (st) st.kids_choice = null;
+      notes.push({ stop_key: it.sk, field: 'c', note: `Pytanie z wyborem usunięte: odpowiedź „${it.answer}” niezgodna ze źródłem${src?.url ? ` ${src.url}` : ''}` });
+      changes.push({ path: `content.stops.${it.sk}.kids_choice`, before, after: null, why: `source-check: odpowiedź „${it.answer}” sprzeczna ze źródłem — pytanie z wyborem usunięte, misja zostaje`, auto: true });
+      it.resolved = { action: 'choice_removed', ...(src?.url ? { url: src.url } : {}) }; stats.removed++; continue;
+    }
     // cytat musi stać dosłownie w pobranym wycinku — inaczej to „pamięć” modelu, nie źródło
     const quoteOk = !!(src && r.cytat && String(r.cytat).split(/…|\.\.\./).map(norm).filter(x => x.length >= 12).every(x => norm(src.sn.map(s => s.text).join(' ')).includes(x)) && norm(r.cytat).length >= 12);
     const confirmed = r.potwierdza === true && quoteOk && it.kind !== 'soften';
@@ -363,6 +384,11 @@ ${JSON.stringify(payload)}`;
       if (rv.facts && typeof rv.facts === 'object') (rv.facts.sources ??= []).push({ stop_key: it.sk, kind: src.kind, title: src.title, url: src.url });
       changes.push({ path: it.sk ? `meta.stops.${it.sk}.sources` : 'content._notes', before: null, after: src.url, why: `source-check: źródło faktu „${String(it.fact).slice(0, 120)}”`, auto: true });
       it.resolved = { action: 'source_added', url: src.url, quote: String(r.cytat).slice(0, 200), ...(r.byCode ? { by: 'kod' } : {}) }; stats.confirmed++; continue;
+    }
+    if (it.kind === 'choice') {
+      notes.push({ stop_key: it.sk, field: 'f', note: `Pytanie z wyborem: odpowiedź „${it.answer}” bez potwierdzenia w źródłach (zostawione, do weryfikacji redakcji)` });
+      it.resolved = { action: 'kept', why: 'odpowiedź bez źródła i bez sprzeczności — pytanie zostaje, notatka redakcyjna', checked: (it.g?.found ?? []).map(s => s.url).slice(0, 6) };
+      stats.kept = (stats.kept ?? 0) + 1; continue;
     }
     if (it.kind === 'add') { it.resolved = { action: 'dropped', why: 'brak potwierdzenia w źródłach — propozycja porzucona', checked: (it.g?.found ?? []).map(s => s.url).slice(0, 6) }; stats.dropped++; continue; }
     // niepotwierdzone → złagodzenie albo usunięcie fragmentu (podmiana kodem)
@@ -398,7 +424,7 @@ ${JSON.stringify(payload)}`;
 
   // 5) uwagi: rozstrzygnięte zostają na liście ostrzeżeń z polem `resolved` (panel: szara flaga „rozstrzygnięte automatycznie”, bez pytania),
   //    rozstrzygnięty błąd przechodzi do ostrzeżeń (nie blokuje); fakt kluczowy bez źródła zostaje pytaniem z opcjami i rekomendacją
-  const WHAT = { source_added: 'źródło dopisane', added: 'dodane po potwierdzeniu w źródle', softened: 'złagodzone według źródła', removed: 'usunięte (sprzeczne ze źródłem)', kept: 'zostawione bez zmian (brak źródła, notatka dla redakcji)', dropped: 'porzucone (brak źródła)', multi: 'rozstrzygnięte automatycznie' };
+  const WHAT = { choice_removed: 'pytanie z wyborem usunięte (odpowiedź sprzeczna ze źródłem), misja zostaje', source_added: 'źródło dopisane', added: 'dodane po potwierdzeniu w źródle', softened: 'złagodzone według źródła', removed: 'usunięte (sprzeczne ze źródłem)', kept: 'zostawione bez zmian (brak źródła, notatka dla redakcji)', dropped: 'porzucone (brak źródła)', multi: 'rozstrzygnięte automatycznie' };
   const withWhat = (r) => ({ ...r, what: `${WHAT[r.action] ?? r.action}${r.action === 'multi' ? `: ${r.items.map(x => WHAT[x.action] ?? x.action).join(', ')}` : ''}` });
   const byIssue = new Map();
   for (const it of items) if (it.from) { const k = `${it.from.list}:${it.from.idx}`; if (!byIssue.has(k)) byIssue.set(k, []); byIssue.get(k).push(it); }
@@ -419,8 +445,9 @@ ${JSON.stringify(payload)}`;
   if (moved.size) rv.errors = rv.errors.filter((_, i) => !moved.has(i));
   rv.warnings = [...(rv.warnings ?? []), ...add];
   for (const it of items) if (!it.from) {
+    if (it.kind === 'choice' && it.resolved?.action === 'source_added') continue;   // potwierdzona odpowiedź: tylko źródło i notatka, bez flagi
     if (it.toJp) (rv.warnings ??= []).push(it.toJp);
-    else { const w = { stop_key: it.sk, problem: `Do sprawdzenia: ${String(it.fact).slice(0, 200)}`, resolved: withWhat(it.resolved) }; rv.warnings.push(w); resolvedOut.push(w); }
+    else { const w = { stop_key: it.sk, ...(it.kind === 'choice' ? { path: `content.stops.${it.sk}.kids_choice` } : {}), problem: `Do sprawdzenia: ${String(it.fact).slice(0, 200)}`, resolved: withWhat(it.resolved) }; (rv.warnings ??= []).push(w); resolvedOut.push(w); }
   }
   rv.source_check = { at: new Date().toISOString(), ...stats };
   if (rv.verdict && !(rv.errors ?? []).length) rv.verdict = 'ok';

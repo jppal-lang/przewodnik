@@ -292,6 +292,7 @@
         '<div class="qk-hand__label">' + esc(lbl.trim()) + '</div>' +
         paras.map(function (p) { return '<p>' + esc(p.textContent) + '</p>'; }).join('') +
         (hint ? '<p class="qc-task__hint">' + esc(hint.textContent) + '</p>' : '') +
+        choiceHtml(task) +
         tinyHtml(inp.getAttribute('data-qc-task'), inp.checked) + '</div>';
     });
     h += '</div><p class="qk-hand__state" data-hand-state role="status" aria-live="polite"></p>' +
@@ -299,6 +300,7 @@
       '<div class="qk-hand__back"><button type="button" class="qk-hold" data-hand-back><span>' + esc(PT('page.trip.kid.give_back', 'Oddaj rodzicowi')) + '</span></button>' +
       '<p class="qk-hand__tip">' + esc(PT('page.trip.kid.give_back_tip', 'Przytrzymaj przycisk, żeby wrócić do rodzica.')) + '</p></div>';
     el.innerHTML = h;
+    if (window.QChoice) window.QChoice.decorate(el);   // pytanie z wyborem: ten sam stan (kolejność, blokada) co na karcie przystanku
     $$('.qk-hand__task', el).forEach(function (task) { if (taskParas(task).length > 1) task.querySelector('[data-tiny="more"]').hidden = false; });
     holdable(el.querySelector('[data-hand-back]'), 1000, closeHand, el.querySelector('.qk-hand__tip'));
     el.onclick = function (e) {
@@ -311,6 +313,11 @@
     };
     applySmall();
     paintHandState();
+  }
+  // pytanie z wyborem odpowiedzi (kid-choice.js, JP 2026-10-31) — kopia znacznika z karteczki misji
+  function choiceHtml(task) {
+    var c = task.querySelector('.qk-choice[data-choice]');
+    return c ? '<div class="qk-choice" hidden data-task-key="' + esc(c.getAttribute('data-task-key')) + '" data-choice="' + esc(c.getAttribute('data-choice')) + '"></div>' : '';
   }
   function paintHandState() {
     if (!H.el) return;

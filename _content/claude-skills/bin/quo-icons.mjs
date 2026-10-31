@@ -186,7 +186,7 @@ async function one(ic, notes = null) {
 try {
   if (cmd === 'gen') {
     const only = opt('--only')?.split(',').map(Number);
-    let list = CFG.icons.filter(ic => only ? only.includes(ic.n) : (process.argv.includes('--force') || !state[ic.n]?.v));
+    let list = CFG.icons.filter(ic => only ? only.includes(ic.n) : (!ic.hold && (process.argv.includes('--force') || !state[ic.n]?.v)));   // hold = czeka na zgodę JP
     if (process.argv.includes('--next')) list = list.slice(0, 1);   // po jednej: JP ocenia, „ok” uruchamia następną
     for (const ic of list) {
       try { await one(ic); } catch (e) { log(`ikona ${ic.n}: ${e.message}`); await upload(`⚠️ Quo #${ic.n} (${ic.place}) nie wygenerował się: ${e.message}. Napisz **następne**, żeby spróbować jeszcze raz.`, null); if (/429|quota|RESOURCE_EXHAUSTED|403/.test(e.message)) { console.log(`STOP: ${e.message}`); break; } }
@@ -246,6 +246,6 @@ try {
       }
     } finally { try { (await import('node:fs')).unlinkSync(LOCK); } catch {} }
   } else {
-    for (const ic of CFG.icons) console.log(`${String(ic.n).padStart(2)} ${ic.slug.padEnd(20)} ${state[ic.n]?.status ?? 'nie było'}${state[ic.n]?.v ? ' v' + state[ic.n].v : ''}`);
+    for (const ic of CFG.icons) console.log(`${String(ic.n).padStart(2)} ${ic.slug.padEnd(20)} ${state[ic.n]?.status ?? (ic.hold ? 'wstrzymana (zgoda JP)' : 'nie było')}${state[ic.n]?.v ? ' v' + state[ic.n].v : ''}`);
   }
 } catch (e) { console.error('BŁĄD:', e.message); process.exitCode = 1; }
