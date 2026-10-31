@@ -989,11 +989,9 @@
   function flagAnchor(id) { return $d.querySelector('button.adm-flag[data-flag="' + id + '"]'); }
   function popPlace(li) {
     var row = li.closest('.adm-row'), fl = flagAnchor(li.getAttribute('data-qid')); if (!row || !fl) return;
-    var rr = row.getBoundingClientRect(), fr = fl.getBoundingClientRect(), w = Math.min(600, rr.width);
-    li.style.width = w + 'px';
-    li.style.left = Math.max(0, Math.min(fr.left - rr.left - 20, rr.width - w)) + 'px';
-    li.style.top = (fr.bottom - rr.top + 8) + 'px';
-    li.style.setProperty('--tip', Math.max(16, Math.min(fr.left - rr.left - parseFloat(li.style.left) + fr.width / 2, w - 16)) + 'px');
+    // notatka stoi POD całym polem, w zwykłym przepływie (rozsuwa treść zamiast ją zasłaniać — JP 2026-10-31: „popup czasem zasłania opis”)
+    var rr = row.getBoundingClientRect(), w = Math.min(600, rr.width);
+    li.style.width = w + 'px'; li.style.left = ''; li.style.top = ''; li.style.removeProperty('--tip');
   }
   function popClose(focusFlag) {
     var li = state.popLi; if (!li) return;
@@ -1010,9 +1008,11 @@
     var row = li.closest('.adm-row'); if (row) row.classList.add('has-pop');
     [].forEach.call($d.querySelectorAll('[data-flag="' + id + '"]'), function (f) { f.classList.add('is-on'); if (f.tagName === 'BUTTON') f.setAttribute('aria-expanded', 'true'); });
     popPlace(li);
-    var r = li.getBoundingClientRect();
+    // przewijanie: najpierw ma być widoczne POLE (treść nad notatką), dopiero potem jak najwięcej notatki — nigdy nie chowamy pola nad krawędzią
+    var r = li.getBoundingClientRect(), rt = (row || li).getBoundingClientRect();
     var st = stickyTop();
-    if (r.bottom > window.innerHeight - 90 || r.top < st) window.scrollBy({ top: r.top < st ? r.top - st - 50 : Math.min(r.bottom - window.innerHeight + 110, r.top - st - 50) });
+    if (rt.top < st + 12) window.scrollBy({ top: rt.top - st - 16 });
+    else if (r.bottom > window.innerHeight - 24) window.scrollBy({ top: Math.max(0, Math.min(r.bottom - window.innerHeight + 24, rt.top - st - 16)) });
     var first = li.querySelector('.adm-qo.is-rec') || li.querySelector('.adm-qo') || li.querySelector('[data-pop-close]');
     if (first) first.focus({ preventScroll: true });
   }

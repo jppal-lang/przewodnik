@@ -1618,3 +1618,6 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm-blk-chk summary{display:inline;cursor:pointer;list-style:none;text-decoration:underline dotted;text-underline-offset:3px;padding:12px 0}
 .adm-blk-chk summary::-webkit-details-marker{display:none}
 .adm-blk-chk details[open] summary{display:none}
+.adm-row.has-pop .adm-pops{height:auto;margin-top:8px}
+.adm-pop.is-open{position:relative;left:auto;top:auto}
+.adm-pop::before,.adm-pop::after{display:none}
