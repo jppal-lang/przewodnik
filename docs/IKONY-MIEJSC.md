@@ -112,3 +112,29 @@ Pliki robocze: `/opt/data/quolino/work/place-icons/<trasa>/<stop_key>/`.
    kolejki (razem 3 próby — na wypadek chwilowej awarii serwisu), potem `iconGate` zwraca `{ wait: true, jp: true }` i przystanek czeka bez terminu
    (także przy `--no-wait`, `fix` i „następne”). Nowy wybór w panelu (inny link, Commons albo „Automat”) zeruje licznik.
    `status` pokazuje „link JP: …”. Zły plik z Commons (licencja, format) działa jak dotąd: odpada, a gdy nic nie zostanie — automat.
+
+## 8. Po akceptacji ikona sama trafia na stronę (JP 2026-10-31)
+
+**Decyzja JP:** „wygenerowane grafiki i zaakceptowane punkty nie pojawiły się przy przystankach, po akceptacji to musi lecieć automatem”.
+
+1. **Baza** — `stops.icon = 'place-<trasa>-<stop_key>'` (kolumna istniała, była pusta). Ustawia ją `place-icons.mjs ok` zaraz po publikacji
+   WebP (idempotentnie, log + wpis w #ikony-miejsc „🔗 ikona podpięta do przystanku”), a `place-icons.mjs sync` uzupełnia dla WSZYSTKICH
+   wpisów z `media/icons/place-sources.json`, których pliki są w repo (bez AI, 0 kosztów; na białej liście `repo-jobs.mjs`, zlecenie
+   `_content/jobs/2026-10-31-ikony-sync.json`; dodatkowo `queue` co 30 min woła `sync` przed generowaniem). Oba zapisują ten sam `icon`
+   także w migawkach `city_versions.content` (wersja opublikowana i bieżący szkic), żeby panel widział status, a zatwierdzenie szkicu nie zgubiło ikony.
+2. **Strona** — `stop-icon.js` (wspólny dla `city.html`, panelu i SSR): `stop.icon` zaczynające się od `place-` → `/media/icons/<icon>-<rozmiar>.webp`
+   (karta 256/512, pasek naklejek 128/256, panel 64/128), srcset 1x/2x, lazy; brak pliku → `onerror` cofa do ikony kategorii, potem do SVG.
+   `public_stops` i SSR pobierają kolumnę `icon` (`trip_full`/`trip_member`/`trip_kid` niosą ją same). Naklejki dziecka (kids-view/kid-play)
+   używają tych samych elementów karty i paska — nic osobnego. SSR dodaje obrazek i `image` w schema.org przy ikonie miejsca.
+   `sw.js` v3: pliki mają unikalne nazwy, więc cache-first obrazków wystarcza; lista (API) nie przechodzi przez SW. Offline: `cacheTripMedia`
+   zbiera wszystkie `img` strony, więc ikony miejsc idą do pamięci razem z ikonami kategorii.
+3. **Migawki wersji** — SQL `_content/claude-skills/sql/2026-10-31-ikony-przystankow.sql` (do zatwierdzenia w panelu, Decyzje):
+   `trip_draft_save` przepisuje ikony z przystanków na żywo do migawki szkicu (import_city nie zna pola), `admin_approve` zapamiętuje ikony
+   przed `city_load_snapshot` i przywraca tam, gdzie migawka ich nie ma (`stops_icons_of` / `stops_icons_restore`, po `stop_key`, NULL = uzupełnij,
+   inna wartość = zostaje). Samokontrola na prawdziwej trasie w wycofywanej podtransakcji. Bez tego SQL ikony wracają po zatwierdzeniu
+   przy najbliższym `sync` (do 30 min przerwy).
+4. **Panel** — spis przystanków, karty i podgląd używają `stop.icon`; w karcie przystanku pod „Zdjęcie do ikony Quo” status
+   „Ikona miejsca opublikowana · podpięta” / „gotowa, niepodpięta (sync)”; zakładka **Ikony** ma sekcję „Opublikowane ikony miejsc”
+   (place-sources.json × `admin_versions.content->stops`); „Gotowe” liczy podpięte i czekające.
+5. **Testy** — `bin/stop-icon.test.mjs` (wybór ikony, zapas, biała lista), przeglądarkowy `test/ikony-miejsca-pw.mjs` (Playwright, lokalna
+   `city.html` z mockiem API: karta i pasek pokazują ikonę miejsca, inny przystanek ikonę kategorii, brak pliku → zapas).

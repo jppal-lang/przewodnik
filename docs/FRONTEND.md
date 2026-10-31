@@ -21,6 +21,7 @@ naklejkę, gdy zaliczy misje przystanku.
 | `legacy.css` | stare statyczne strony `/wlochy/` (paleta przemapowana na v4) |
 | `motion.js` | ruch: wklejanie przy przewijaniu, pauza filmu, łagodny tryb przy „ograniczonych animacjach” |
 | `i18n-ui.js` | słownik interfejsu (17 języków) + łańcuch języków dla danych — patrz §5 |
+| `stop-icon.js` | obrazek przystanku: ikona miejsca (`stops.icon = place-…`, media/icons/place-*.webp) przed ikoną kategorii, zapas przy braku pliku — `docs/IKONY-MIEJSC.md` §8 |
 
 ### Tokeny (styles.css → :root)
 | Token | Hex | Użycie |

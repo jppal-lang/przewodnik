@@ -4,13 +4,16 @@
    - HTML, JS, CSS, manifest: najpierw sieć (świeża wersja po wdrożeniu), z pamięci tylko bez sieci
      albo gdy sieć nie odpowiada 6 s i mamy zapisaną kopię.
    - Zdjęcia i ikony (/media/…, flagi i czcionki — wszystko lokalne): najpierw z pamięci, w tle odświeżane z sieci.
+     Ikony miejsc (media/icons/place-*.webp, JP 2026-10-31) też: plik ma unikalną nazwę, a listę (stops.icon) niesie odpowiedź API,
+     której SW nie dotyka — po podpięciu nowej ikony strona pokazuje ją bez czyszczenia pamięci.
    - API (api.quolino.com) NIE przechodzi przez SW: odpowiedzi RPC (POST) zapisuje strona w IndexedDB (offline.js).
    - Strona może poprosić o zapis listy adresów: postMessage({type:'cache', urls:[…]}) — tak trafiają do pamięci
      pliki pobrane przy pierwszym wejściu (zanim SW przejął stronę) i zdjęcia przystanków, których jeszcze nie widać.
    Nowe wydanie, które zmienia zasady zapisu: podbij V (stare pamięci znikają przy aktywacji).
    ===================================================================== */
 'use strict';
-var V = 'v2';   // v2 (grupa A 2026-10-30): bez CDN — czcionki i flagi są lokalne, stare wpisy z flagcdn/Google Fonts wylatują
+var V = 'v3';   // v3 (2026-10-31): ikony miejsc /media/icons/place-<trasa>-<stop_key>-<rozmiar>.webp — nazwy unikalne, cache-first jak inne
+                //   obrazki (strategia „img” niżej obejmuje je bez wyjątków); v2 (grupa A 2026-10-30): bez CDN — czcionki i flagi lokalne
 var STATIC = 'quolino-static-' + V;
 var IMG = 'quolino-img-' + V;
 var IMG_MAX = 500;                 // najwięcej zdjęć w pamięci (najstarsze wylatują)

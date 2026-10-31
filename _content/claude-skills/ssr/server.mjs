@@ -138,7 +138,7 @@ async function cityData(slug, lang) {
     const [cities, ct, rows] = await Promise.all([
       api(`cities?slug=eq.${q}&status=eq.published&select=slug,country,region,region_slug,duration_type,duration_hours,hero_image,url_slug,bandana_color`),
       api(`city_translations?city_slug=eq.${q}&lang=${L}&select=city_slug,lang,title,region_label,subtitle,lead`),
-      api(`public_stops?city_slug=eq.${q}&lang=${L}&select=stop_id,stop_number,stop_key,sort_order,lang,name,desc_paragraphs&order=sort_order`),
+      api(`public_stops?city_slug=eq.${q}&lang=${L}&select=stop_id,stop_number,stop_key,sort_order,category,icon,lang,name,desc_paragraphs&order=sort_order`),
     ]);
     if (!cities.length) return null;
     const byStop = new Map();
@@ -196,6 +196,9 @@ const SPEED_TAG = '<script src="/speed.js?v=1"></script>\n';
 // stats.js od v=3 liczy odsłonę dopiero po pokazaniu strony przygotowanej w tle; starszy adres w szablonie → v=3 (tylko podbicie w górę)
 const statsUp = (html) => html.replace(/\/stats\.js\?v=[0-2]"/, '/stats.js?v=3"');
 
+// stops.icon = 'place-<trasa>-<stop_key>' → /media/icons/<nazwa> (bez rozmiaru); inaczej null. Reguła jak w stop-icon.js (QStopIcon.placeName).
+const PLACE_ICON_RE = /^place-[a-z0-9]+(?:-[a-z0-9]+)+$/;
+const placeIcon = (s) => (typeof s?.icon === 'string' && s.icon.length <= 160 && PLACE_ICON_RE.test(s.icon) ? `/media/icons/${s.icon}` : null);
 function publicLayer(d, lang, ui) {
   const u = (k, f) => ui[k] ?? f;
   const { tr, stops, city } = d;
@@ -209,7 +212,9 @@ function publicLayer(d, lang, ui) {
   if (tr.lead) h += paras(tr.lead);
   h += `<section><h2>${esc(u('label.route_stops', 'Trasa punkt po punkcie'))}</h2><ol class="ssr-stops">`;
   for (const { s, t } of stops) {
-    h += `<li id="p${esc(s.stop_number)}"><h3>${esc(t.name ?? s.stop_key)}</h3>`;
+    // ikona miejsca (stops.icon = 'place-…', ta sama reguła co stop-icon.js na stronie); ikon kategorii SSR nie rysuje — jak dotąd
+    const ic = placeIcon(s);
+    h += `<li id="p${esc(s.stop_number)}"><h3>${ic ? `<img class="ssr-ic" src="${esc(ic)}-128.webp" srcset="${esc(ic)}-128.webp 1x, ${esc(ic)}-256.webp 2x" alt="" width="40" height="40" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${esc(t.name ?? s.stop_key)}</h3>`;
     for (const p of (t.desc_paragraphs ?? []).slice(0, 2)) h += `<p>${esc(p)}</p>`;
     h += '</li>';
   }
@@ -235,6 +240,7 @@ function headExtra(d, lang, langs, ui, loc, names) {
     itinerary: { '@type': 'ItemList', itemListElement: stops.map(({ s, t }, i) => ({
       '@type': 'ListItem', position: i + 1,
       item: { '@type': 'TouristAttraction', name: t.name ?? s.stop_key,
+        ...(placeIcon(s) ? { image: `${SITE}${placeIcon(s)}-512.webp` } : {}),
         ...(t.desc_paragraphs?.[0] ? { description: t.desc_paragraphs[0] } : {}),
         ...(s.lat && s.lon ? { geo: { '@type': 'GeoCoordinates', latitude: +s.lat, longitude: +s.lon } } : {}) } })) },
   };
@@ -243,7 +249,7 @@ function headExtra(d, lang, langs, ui, loc, names) {
   const bc = { '@context': 'https://schema.org', '@type': 'BreadcrumbList',
     itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c[0], item: c[1] })) };
   let h = `<link rel="canonical" href="${esc(url)}">\n` +
-    `<style>.ssr-public{max-width:760px;margin:0 auto;padding:24px 20px 48px;line-height:1.55}.ssr-public h1{font-size:clamp(40px,9vw,88px);line-height:1;margin:.2em 0}.ssr-public h2{margin-top:1.4em;font-size:clamp(22px,4vw,30px)}.ssr-public h3{margin:1.2em 0 .3em}.ssr-facts{color:#5D6B82;font-size:.92em}.ssr-plan,.ssr-stops{padding-left:1.2em}</style>\n`;
+    `<style>.ssr-public{max-width:760px;margin:0 auto;padding:24px 20px 48px;line-height:1.55}.ssr-public h1{font-size:clamp(40px,9vw,88px);line-height:1;margin:.2em 0}.ssr-public h2{margin-top:1.4em;font-size:clamp(22px,4vw,30px)}.ssr-public h3{margin:1.2em 0 .3em}.ssr-facts{color:#5D6B82;font-size:.92em}.ssr-plan,.ssr-stops{padding-left:1.2em}.ssr-ic{width:40px;height:40px;vertical-align:middle;margin-right:8px;object-fit:contain}</style>\n`;
   for (const l of langs) h += `<link rel="alternate" hreflang="${esc(l)}" href="${esc(cityUrl(l, loc))}">\n`;
   h += `<link rel="alternate" hreflang="x-default" href="${esc(cityUrl(FALLBACK, loc))}">\n`;
   h += `<meta name="description" content="${esc(desc)}">\n<meta property="og:type" content="article">\n` +

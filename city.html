@@ -13,6 +13,7 @@
 <script src="/lang-pick.js?v=2"></script>
 <script src="i18n-ui.js?v=8"></script>
 <script src="trip-ui.js?v=14"></script>
+<script src="stop-icon.js?v=1"></script>
 <script src="trip-tools.js?v=2"></script>
 <script src="kid-reward.js?v=5"></script>
 <script src="haptic.js?v=2"></script>
@@ -155,16 +156,27 @@ var CAT_SVGS = {
 };
 
 // Build icon HTML — large 112px container with Que image + SVG fallback
-function ikonaQc(cat, num) {
+// Ikona miejsca (stop.icon = 'place-<trasa>-<stop_key>', stop-icon.js) ma pierwszeństwo przed ikoną kategorii;
+// brak pliku → onerror cofa do ikony kategorii, potem do SVG. Układ karty bez zmian — tylko obrazek.
+function ikonaQc(cat, num, stop) {
   var svg = CAT_SVGS[cat] || CAT_SVGS.monument;
   var plik = QUE_IKONY[cat];
-  var img = plik
-    ? '<img src="' + QUE_DIR + 'icon-' + plik + '-256.webp" alt=""' +
+  var img = '';
+  if (window.QStopIcon) {
+    img = QStopIcon.img({ category: cat, icon: stop && stop.icon }, [256, 512], 'width="256" height="256" loading="lazy"', 'this.parentNode.classList.add(\'has-img\')');
+  } else if (plik) {
+    img = '<img src="' + QUE_DIR + 'icon-' + plik + '-256.webp" alt=""' +
       ' width="256" height="256" loading="lazy" decoding="async"' +
-      ' onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">'
-    : '';
+      ' onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">';
+  }
   return '<span class="qc-icon">' + img + svg +
          '<span class="qc-icon__no">' + num + '</span></span>';
+}
+// naklejka w pasku (66 px): ikona miejsca 128/256, inaczej ikona kategorii
+function ikonaPaska(st) {
+  var plik = QUE_IKONY[st.category || 'monument'];
+  if (window.QStopIcon) return QStopIcon.img({ category: st.category || 'monument', icon: st.icon }, [128, 256], 'width="66" height="66"');
+  return plik ? '<img src="' + QUE_DIR + 'icon-' + plik + '-128.webp" srcset="' + QUE_DIR + 'icon-' + plik + '-128.webp 1x, ' + QUE_DIR + 'icon-' + plik + '-256.webp 2x" alt="" width="66" height="66" decoding="async">' : '';
 }
 
 var NAV_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
@@ -203,7 +215,7 @@ function guestData(lang) {
   return Promise.all([
     sb('cities', 'slug=eq.' + q + '&select=slug,country,region,region_slug,lat,lon,bandana_color,duration_type,duration_hours,hero_image,url_slug,status'),
     sb('city_translations', 'city_slug=eq.' + q + '&lang=' + L + '&select=city_slug,lang,title,region_label,subtitle,lead'),
-    sb('public_stops', 'city_slug=eq.' + q + '&lang=' + L + '&select=stop_id,stop_number,sort_order,stop_key,category,hero_image,lang,name,desc_paragraphs,paragraphs_total,has_mission,blocks&order=sort_order'),
+    sb('public_stops', 'city_slug=eq.' + q + '&lang=' + L + '&select=stop_id,stop_number,sort_order,stop_key,category,icon,hero_image,lang,name,desc_paragraphs,paragraphs_total,has_mission,blocks&order=sort_order'),
     // B1 (JP 2026-10-28): pierwszy przystanek, który nie jest praktyczny, gość widzi w całości (RPC trip_sample; bez wdrożonej funkcji — po staremu)
     rpc('trip_sample', { p_slug: citySlug, p_lang: lang }).catch(function() { return null; })
   ]).then(function(r) {
@@ -212,7 +224,7 @@ function guestData(lang) {
       var g = by[row.stop_id];
       if (!g) {
         g = by[row.stop_id] = { id: row.stop_id, stop_number: row.stop_number, sort_order: row.sort_order, stop_key: row.stop_key,
-                                category: row.category, hero_image: row.hero_image, stop_translations: [] };
+                                category: row.category, icon: row.icon || null, hero_image: row.hero_image, stop_translations: [] };
         order.push(row.stop_id);
       }
       g.stop_translations.push({ lang: row.lang, name: row.name, desc_paragraphs: row.desc_paragraphs || [],
@@ -223,6 +235,7 @@ function guestData(lang) {
     if (smp && by[smp.id] && smp.stop_translations && smp.stop_translations.length) {
       smp.sample = true;
       smp.stop_number = by[smp.id].stop_number; smp.sort_order = by[smp.id].sort_order;
+      if (!smp.icon && by[smp.id].icon) smp.icon = by[smp.id].icon;
       by[smp.id] = smp;
     }
     return { city: r[0][0], cityTrRows: r[1], stops: order.map(function(id) { return by[id]; }), emergency: [], locked: true };
@@ -730,10 +743,10 @@ function render(d) {
   // ── Pasek naklejek: cała strona albumu w jednym rzędzie ──
   html += '<nav class="qc-strip" aria-label="' + esc(ui('label.route_stops', 'Trasa punkt po punkcie')) + '">';
   stops.forEach(function(item, idx) {
-    var st = item.stop, plik = QUE_IKONY[st.category || 'monument'];
+    var st = item.stop;
     var dinner = idx === stops.length - 1 && (st.category === 'restaurant' || st.category === 'icecream');
     html += '<a class="qc-strip__stk' + (dinner ? ' is-foil' : '') + '" href="#p' + st.stop_number + '" data-strip-num="' + st.stop_number + '" title="' + esc((item.tr || {}).name || '') + '">' +
-            (plik ? '<img src="' + QUE_DIR + 'icon-' + plik + '-128.webp" srcset="' + QUE_DIR + 'icon-' + plik + '-128.webp 1x, ' + QUE_DIR + 'icon-' + plik + '-256.webp 2x" alt="" width="66" height="66" decoding="async">' : '') +
+            ikonaPaska(st) +
             '<span>' + num(st.stop_number) + '</span></a>';
   });
   html += '</nav>';
@@ -780,7 +793,7 @@ function render(d) {
     }
 
     // Icon 112px
-    html += ikonaQc(cat, id);
+    html += ikonaQc(cat, id, s);
 
     // Title block
     html += '<span class="qc-stop__title">';

@@ -10,6 +10,8 @@
 // Przystanek z kandydatami bez wyboru JP i bez „automatu” czeka do 48 h od wygenerowania kandydatów (--no-wait: automat od razu).
 //   node place-icons.mjs fix <trasa> <N> "uwagi"                                    poprawka z uwagami JP (przy wyczerpanym limicie: czeka w kolejce)
 //   node place-icons.mjs ok <trasa> <N>                                             publikacja WebP 64/128/256/512 + media/icons/place-sources.json
+//                                                                                   + stops.icon = 'place-<trasa>-<stop_key>' w bazie (strona pokazuje ikonę miejsca od razu)
+//   node place-icons.mjs sync                                                       uzupełnia stops.icon dla WSZYSTKICH ikon z place-sources.json (bez AI, bez kosztów; także co 30 min z queue)
 //   node place-icons.mjs status [trasa]
 //   node place-icons.mjs watch                                                      cron co 2 min: odpowiedzi JP w #ikony-miejsc
 //   node place-icons.mjs queue [--max 3]                                            cron co 30 min: refs + gen dla tras z place-icons-data.mjs
@@ -549,11 +551,70 @@ async function cmdOk(trip, n) {
   if (pub.code !== 0 || /BŁĄD/.test(pub.out)) throw new Error(`publikacja: ${(pub.err || pub.out).slice(-300)}`);
   patchStop(trip, key, x => { x.status = 'ok'; x.accepted_at = at; x.accepted_v = s.v; });
   await say(`✅ ${trip} #${stop.n} (${stop.name}) zaakceptowana: media/icons/place-${trip}-${key}-{${L.SIZES.join(',')}}.webp + źródła w media/icons/place-sources.json.`);
+  // JP 2026-10-31: „po akceptacji to musi lecieć automatem” — ikona od razu podpięta do przystanku w bazie (strona, SSR, panel)
+  let link;
+  try { link = await linkIcons([{ trip, stop_key: key, n: stop.n, name: stop.name }]); }
+  catch (e) { link = { err: e.message }; }
+  if (link.err) { log(`${trip}/${key}: ikona NIE podpięta do przystanku: ${link.err}`); await say(`⚠️ ${trip} #${stop.n}: ikona opublikowana, ale nie podpięta do przystanku w bazie (${String(link.err).slice(0, 200)}). Naprawi: node place-icons.mjs sync (kolejka co 30 min).`); }
+  else if (link.missing.length) { log(`${trip}/${key}: w bazie nie ma przystanku ${key} — ikona czeka na sync`); await say(`⚠️ ${trip} #${stop.n}: w bazie nie ma przystanku „${key}” — ikona podpięta zostanie, gdy się pojawi (sync).`); }
+  else await say(`🔗 ikona podpięta do przystanku: ${trip} #${stop.n} (${stop.name}) → stops.icon = place-${trip}-${key}${link.linked.length ? '' : ' (już była)'}. Na stronie: karta i pasek naklejek${link.versions ? `, w panelu: ${link.versions} wersj${link.versions === 1 ? 'a' : 'e'}` : ''}.`);
+}
+// ── podpięcie ikon do przystanków w bazie (JP 2026-10-31) ───────────────────────────────────────
+// stops.icon = 'place-<trasa>-<stop_key>' — idempotentnie (zmiana tylko, gdy inna wartość); ten sam wpis w migawkach
+// city_versions.content (wersja opublikowana i bieżący szkic), żeby panel i zatwierdzenie szkicu nie zgubiły ikony.
+// Strona (city.html + stop-icon.js, SSR) czyta stops.icon przez public_stops / trip_full. Zwraca { linked, same, missing, versions }.
+const iconName = (trip, key) => `place-${trip}-${key}`;
+async function linkIcons(items, { c = null } = {}) {
+  const own = !c; if (own) c = await db();
+  const out = { linked: [], same: [], missing: [], versions: 0 };
+  try {
+    for (const it of items) {
+      if (!/^[a-z0-9-]+$/.test(it.trip) || !L.safeKey(it.stop_key)) { out.missing.push(it); continue; }
+      const name = iconName(it.trip, it.stop_key);
+      const { rows } = await c.query(`SELECT id, icon FROM public.stops WHERE city_slug = $1 AND stop_key = $2`, [it.trip, it.stop_key]);
+      if (!rows.length) { out.missing.push(it); continue; }
+      if (rows.every(r => r.icon === name)) out.same.push(it);
+      else { await c.query(`UPDATE public.stops SET icon = $1 WHERE city_slug = $2 AND stop_key = $3 AND icon IS DISTINCT FROM $1`, [name, it.trip, it.stop_key]); out.linked.push(it); }
+      // migawki wersji (panel admina czyta content; admin_approve ładuje content szkicu do tabel)
+      try {
+        const v = await c.query(`UPDATE public.city_versions SET content = jsonb_set(content, '{stops}',
+            (SELECT jsonb_agg(CASE WHEN s->>'stop_key' = $3 THEN s || jsonb_build_object('icon', $1::text) ELSE s END ORDER BY o)
+               FROM jsonb_array_elements(content->'stops') WITH ORDINALITY t(s, o)))
+          WHERE city_slug = $2 AND status IN ('published', 'draft')
+            AND EXISTS (SELECT 1 FROM jsonb_array_elements(content->'stops') s WHERE s->>'stop_key' = $3 AND s->>'icon' IS DISTINCT FROM $1)`, [name, it.trip, it.stop_key]);
+        out.versions += v.rowCount ?? 0;
+      } catch (e) { log(`${it.trip}/${it.stop_key}: migawki wersji bez ikony (${String(e.message).slice(0, 120)}) — przystanek na żywo podpięty`); }
+    }
+  } finally { if (own) await c.end(); }
+  return out;
+}
+// sync: wszystkie wpisy z media/icons/place-sources.json (tylko te, których pliki WebP są w repo) → stops.icon; brakujące uzupełnia, resztę zostawia
+async function cmdSync({ quiet = false } = {}) {
+  const pull = await run('sh', [REPO_SH, 'pull'], { timeout: 120_000 });
+  if (pull.code !== 0) log(`repo pull: ${(pull.err || pull.out).slice(-200)} — liczę z tego, co jest w klonie`);
+  const src = readJson(SOURCES) ?? {};
+  const items = [], noFile = [];
+  for (const e of Object.values(src)) {
+    if (!e?.trip || !e?.stop_key) continue;
+    if (!existsSync(join(REPO, L.iconPath(e.trip, e.stop_key, 128)))) { noFile.push(`${e.trip}/${e.stop_key}`); continue; }
+    items.push({ trip: e.trip, stop_key: e.stop_key, n: e.n, name: e.name });
+  }
+  const r = await linkIcons(items);
+  const line = (x) => `${x.trip} #${x.n ?? '?'} ${x.name ?? x.stop_key}`;
+  log(`sync ikon miejsc: ${items.length} w place-sources.json; podpięte teraz ${r.linked.length}, już były ${r.same.length}, bez przystanku w bazie ${r.missing.length}${noFile.length ? `, bez pliku WebP ${noFile.length} (${noFile.join(', ')})` : ''}; migawki wersji: ${r.versions}`);
+  for (const x of r.linked) log(`  🔗 ${line(x)} → ${iconName(x.trip, x.stop_key)}`);
+  for (const x of r.missing) log(`  ✗ ${line(x)}: nie ma przystanku ${x.stop_key} w bazie (inny klucz w nowej wersji?)`);
+  if (!quiet && (r.linked.length || r.missing.length)) {
+    await say(`🔗 ikona podpięta do przystanku (sync): ${r.linked.length ? r.linked.map(line).join('; ') : 'nic nowego'}${r.same.length ? ` · już podpięte: ${r.same.length}` : ''}` +
+      `${r.missing.length ? `\n⚠️ bez przystanku w bazie: ${r.missing.map(line).join('; ')}` : ''}`);
+  }
+  return r;
 }
 async function cmdQueue() {
   const max = +(opt('--max') ?? CFG.max ?? 3), maxPending = CFG.maxPending ?? 6;
   if (agyQuotaOut()) { log(`kolejka ikon miejsc: ${quotaMsg(agyQuotaOut())} — czekam`); return; }
   if (!lock()) { log('kolejka ikon miejsc: inny proces generuje — pomijam'); return; }
+  try { await cmdSync(); } catch (e) { log(`sync ikon miejsc: ${e.message}`); }   // bez kosztów: zaakceptowane ikony zawsze podpięte do przystanków
   log(`kolejka ikon miejsc: do ${max} przystanków; Antigravity w ostatnich 7 dniach: ${agyWeekCalls()} wywołań`);
   let budget = max;
   const listed = CFG.trips.map(t => t.slug);
@@ -657,8 +718,9 @@ try {
   else if (cmd === 'fix') await cmdFix(a1, a2, a3);
   else if (cmd === 'refs-again') await cmdRefsAgain(a1, a2);
   else if (cmd === 'ok') await cmdOk(a1, a2);
+  else if (cmd === 'sync') await cmdSync({ quiet: flag('--quiet') });
   else if (cmd === 'queue') await cmdQueue();
   else if (cmd === 'watch') await cmdWatch();
   else if (cmd === 'status') cmdStatus(a1);
-  else { console.error('komendy: refs | gen | fix | ok | status | watch | queue (opis na początku place-icons.mjs)'); process.exitCode = 2; }
+  else { console.error('komendy: refs | gen | fix | ok | sync | status | watch | queue (opis na początku place-icons.mjs)'); process.exitCode = 2; }
 } catch (e) { console.error('BŁĄD:', e.message); process.exitCode = 1; }

@@ -1,0 +1,8 @@
+{
+ "script": "place-icons.mjs",
+ "args": ["sync"],
+ "why": "JP 2026-10-31: „wygenerowane grafiki i zaakceptowane punkty nie pojawiły się przy przystankach, po akceptacji to musi lecieć automatem” — zaakceptowane ikony miejsc (frasassi #3–#6, spello #2, media/icons/place-sources.json) dostają stops.icon = place-<trasa>-<stop_key>, strona i panel pokazują je od razu; od teraz robi to samo komenda ok po każdej akceptacji i kolejka co 30 min. Bez AI, 0 kosztów.",
+ "title": "Ikony miejsc: podpięcie do przystanków (sync)",
+ "by": "Claude",
+ "timeout_min": 10
+}

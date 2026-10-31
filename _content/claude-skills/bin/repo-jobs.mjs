@@ -34,6 +34,8 @@ export const ALLOWED = {
   // ponowienie tłumaczenia opublikowanej trasy (te same kontrole jakości co w kolejce; bez --dry/--job z zewnątrz)
   // kandydaci zdjęć do ikon miejsc (tylko odczyt Commons + plik JSON w repo): dokładnie jeden argument — slug trasy
   'place-candidates.mjs': (a) => a.length === 1 && /^[a-z0-9][a-z0-9-]{0,62}$/.test(a[0]),
+  // podpięcie zaakceptowanych ikon miejsc do przystanków (stops.icon z place-sources.json; JP 2026-10-31) — tylko baza, 0 kosztów
+  'place-icons.mjs': (a) => a.length === 1 && a[0] === 'sync',
   // strażnicy aktualności tras (JP 2026-10-30): jeden strażnik na żądanie, zawsze bez AI (0 kosztów); opcjonalnie --city <slug> i --dry
   'watch.mjs': (a) => a.includes('--no-ai') && /^(prices|closures|track|recheck|links|venues|season|site|costs|apply)$/.test(a[0] ?? '') &&
     a.slice(1).every((x, i, r) => x === '--no-ai' || x === '--dry' || x === '--city' || (r[i - 1] === '--city' && /^[a-z0-9][a-z0-9-]{0,62}$/.test(x))),
