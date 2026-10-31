@@ -1400,7 +1400,7 @@
       stat('Języki', sLangsNew.length || cLangsNew.length, pub ? (sLangsOld.length || cLangsOld.length) : null) +
       '</div>' + warn.map(function (w) { return '<p class="adm-warn' + (w[0] ? ' adm-warn--' + w[0] : '') + '">' + esc(w[1]) + '</p>'; }).join('') +
       langChips(sLangsOld.length ? sLangsOld : cLangsOld, sLangsNew.length ? sLangsNew : cLangsNew) + '<div id="admMap" class="tv-map"></div></section>';
-    var city = '<section class="adm-stopx tv-city adm-anchor" data-kind="same" id="st-_city" data-spy="_city"><header class="adm-stopx__head"><span class="adm-stop__no">★</span><span class="adm-stop__ic tv-city__ic" aria-hidden="true">' + PIN + '</span><span class="adm-stop__name">Opis miasta<small>' + esc(title) + '</small></span></header>' +
+    var city = '<section class="adm-stopx tv-city adm-anchor" data-kind="same" id="st-_city" data-spy="_city"><header class="adm-stopx__head"><span class="adm-stop__no">★</span><span class="adm-stop__name">Opis miasta<small>' + esc(title) + '</small></span></header>' +
       '<div class="adm-rows">' +
       CITY_TR.map(function (f) { return cell(f[1], pctr ? pctr[f[0]] : null, ctr[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1]), { box: '_city', field: 'city.' + f[0] }); }).join('') +
       CITY_FIELDS.map(function (f) { return cell(f[1], pc ? pc[f[0]] : null, c[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1]), { box: '_city', field: 'city.' + f[0] }); }).join('') +
@@ -1428,9 +1428,9 @@
       '<div class="tv-walk__bar" aria-hidden="true"><span id="walkBar"></span></div><div class="tv-drawer__b">' +
       '<div class="tv-walk__intro adm-flagbar">' + (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') +
       '<span class="adm-flagbar__sum" data-qsum></span></div>' + (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy uwag naraz</summary>' + grp + '</details>' : '') +
-      '<ol class="tv-walk__slot" id="walkSlot"></ol><p class="tv-walk__fin" id="walkFin" hidden>Wszystkie flagi rozstrzygnięte ✓ — teraz „Twoje uwagi” → „Wyślij uwagi do poprawki”.</p></div>' +
+      '<div class="tv-walk__ctx" id="walkCtx" aria-live="polite"></div><ol class="tv-walk__slot" id="walkSlot"></ol><p class="tv-walk__fin" id="walkFin" hidden>Wszystkie flagi rozstrzygnięte ✓ — teraz „Twoje uwagi” → „Wyślij uwagi do poprawki”.</p></div>' +
       '<footer class="tv-walk__nav"><button type="button" class="qc-btn qc-btn--sm" data-walk-step="-1">← Wstecz</button>' +
-      '<button type="button" class="adm-linkbtn" data-walk-show>Pokaż w treści</button>' +
+      '<button type="button" class="adm-linkbtn" data-walk-show>Przewiń jeszcze raz</button>' +
       '<button type="button" class="qc-btn qc-btn--sm qc-btn--primary" data-walk-step="1">Dalej →</button></footer>' +
       '<p class="tv-walk__keys">Skróty: <kbd>J</kbd>/<kbd>K</kbd> następna / poprzednia · <kbd>1</kbd>–<kbd>4</kbd> wybór · <kbd>Enter</kbd> zatwierdź · <kbd>Esc</kbd> zamknij</p></aside></div>';
 
@@ -3031,7 +3031,9 @@
     popClose(); drawerClose(true);
     walk.ids = [].map.call($d.querySelectorAll('#tvFields .adm-q__it:not(.is-auto)'), function (li) { return li.getAttribute('data-qid'); });
     if (!walk.ids.length) return;
-    walk.on = true; w.hidden = false; document.body.classList.add('has-panel');
+    if ((state.tvView || 'fields') !== 'fields') { state.tvView = 'fields'; viewApply(); }
+    if (state.cmpOnly) { state.cmpOnly = false; var tv = $d.querySelector('.tv'); if (tv) tv.classList.remove('is-only'); }
+    walk.on = true; w.hidden = false; document.body.classList.add('has-panel', 'has-walk'); fitActbar();
     [].forEach.call($d.querySelectorAll('[data-walk]'), function (b) { b.setAttribute('aria-expanded', 'true'); });
     var i = 0; while (i < walk.ids.length && walkDone(walk.ids[i])) i++;
     walkShow(i < walk.ids.length ? i : 0);
@@ -3043,10 +3045,59 @@
     if (!li || !slot) return;
     walk.ph = document.createComment('flaga'); li.parentNode.insertBefore(walk.ph, li);
     slot.appendChild(li); li.classList.add('is-walk'); walk.li = li;
+    walkMark(walk.ids[walk.i]);
+    walkCtx(walk.ids[walk.i]);
     walkPaint();
+    walkScroll();
     var f = li.querySelector('.adm-qo.is-rec') || li.querySelector('.adm-qo') || li.querySelector('[data-qa-change]'); if (f) f.focus({ preventScroll: true });
-    slot.scrollIntoView && slot.parentNode.scrollTo && slot.parentNode.scrollTo({ top: Math.max(0, slot.offsetTop - 12) });
+    var cx = document.getElementById('walkCtx'), bd = cx && cx.parentNode; if (bd && bd.scrollTo) bd.scrollTo({ top: Math.max(0, cx.offsetTop - bd.offsetTop - 8) });
   }
+  // pole, którego dotyczy flaga: wiersz w treści (miejsce po przeniesionej notatce), obramowanie + zaznaczony fragment
+  function walkRow() { return walk.ph && walk.ph.parentNode ? walk.ph.parentNode.closest('.adm-row') : null; }
+  function walkMark(id) {
+    [].forEach.call($d.querySelectorAll('.is-walk-target, .is-walk-on'), function (el) { el.classList.remove('is-walk-target', 'is-walk-on'); });
+    if (!id) return;
+    var row = walkRow(); if (row) row.classList.add('is-walk-target');
+    var card = row && row.closest('.adm-stopx'); if (card) card.classList.add('is-walk-target');
+    [].forEach.call($d.querySelectorAll('#tvFields [data-flag="' + id + '"]'), function (f) { f.classList.add('is-walk-on'); });
+  }
+  // przewinięcie treści do pola flagi — w wolnym obszarze: pod przyklejonym nagłówkiem, nad dolnym arkuszem
+  function walkCover() {
+    var w = document.getElementById('walk'); if (!w || w.hidden) return 0;
+    var r = w.getBoundingClientRect();
+    return r.left < 40 ? Math.max(0, window.innerHeight - r.top) : 0;   // dolny arkusz (telefon) zasłania dół ekranu
+  }
+  function walkScroll() {
+    var row = walkRow(); if (!row) return;
+    var target = row.querySelector('.is-walk-on') || row, r = row.getBoundingClientRect(), tr = target.getBoundingClientRect();
+    var top = stickyTop() + 10, bottom = window.innerHeight - walkCover() - 10, area = bottom - top;
+    var y = r.height <= area ? r.top - top - (area - r.height) / 2 : (tr.top - r.top < area - 60 ? r.top - top : tr.top - top - 40);
+    var card = row.closest('.adm-stopx');
+    if (card) { var cr = card.getBoundingClientRect(); if (cr.height <= area && cr.top - y < top) y = cr.top - top; }   // cała karta, gdy się mieści
+    window.scrollBy({ top: Math.round(y), behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' });
+  }
+  // kontekst w panelu: przystanek · pole, cytat z jednym zdaniem przed i po, fragment zaznaczony
+  function walkCtx(id) {
+    var el = document.getElementById('walkCtx'); if (!el) return;
+    var x = (state.qa ? state.qa.list : []).filter(function (y) { return qaId(y) === id; })[0], row = walkRow();
+    var val = row ? row.querySelector('.adm-row__v') : null, text = '';
+    if (val) { var cl = val.cloneNode(true); [].forEach.call(cl.querySelectorAll('.adm-flag, .adm-row__flags, .adm-df__whys'), function (n) { n.parentNode.removeChild(n); }); text = cl.textContent.replace(/[ \t]+\n/g, '\n').replace(/ +([,.;:!?])/g, '$1').trim(); }
+    var where = x ? x.where : '', q = x && x.quote ? String(x.quote) : '', body;
+    if (!x || (x.field == null && !q)) {
+      body = '<p class="tv-walk__all">' + (x && x.box !== '_city' ? 'Uwaga do całego przystanku — bez wskazanego pola.' : 'Uwaga do całej trasy — bez wskazanego pola. Treść: opis miasta i „Trasa w skrócie”.') + '</p>';
+    } else {
+      var i = q ? text.indexOf(q) : -1;
+      if (i < 0 && q) { var lo = text.toLowerCase(); i = lo.indexOf(q.toLowerCase()); }
+      if (i < 0) body = '<p class="tv-walk__txt">' + esc(text.length > 320 ? text.slice(0, 320) + '…' : text || '— puste —') + '</p>' + (q ? '<p class="tv-walk__q">Fragment: „' + esc(q) + '”</p>' : '');
+      else {
+        var st = sentStart(text, i), a = st > 0 ? sentStart(text, st - 2) : 0, e0 = sentEnd(text, i + q.length), b = e0 < text.length ? sentEnd(text, e0 + 1) : e0;
+        body = '<p class="tv-walk__txt">' + (a > 0 ? '… ' : '') + esc(text.slice(a, i)) + '<mark class="adm-fl is-walk-on">' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length, b)) + (b < text.length ? ' …' : '') + '</p>';
+      }
+    }
+    el.innerHTML = '<p class="tv-walk__where">' + esc(where) + '</p>' + body;
+  }
+  function sentStart(t, p) { for (var k = Math.min(p, t.length) - 1; k > 0; k--) if (/[.!?…\n]/.test(t.charAt(k - 1)) && /\s/.test(t.charAt(k))) return k + 1; return 0; }
+  function sentEnd(t, p) { for (var k = Math.max(p, 0); k < t.length; k++) if (/[.!?…]/.test(t.charAt(k)) && (k + 1 >= t.length || /\s/.test(t.charAt(k + 1)))) return k + 1; return t.length; }
   function walkPaint() {
     if (!walk.on) return;
     var n = walk.ids.length, d = walk.ids.filter(walkDone).length, pos = document.getElementById('walkPos'), bar = document.getElementById('walkBar'), fin = document.getElementById('walkFin');
@@ -3065,7 +3116,8 @@
     var w = document.getElementById('walk');
     walkPut();
     if (!walk.on) return;
-    walk.on = false; if (w) w.hidden = true; document.body.classList.remove('has-panel');
+    walkMark(null);
+    walk.on = false; if (w) w.hidden = true; document.body.classList.remove('has-panel', 'has-walk'); fitActbar();
     [].forEach.call($d.querySelectorAll('[data-walk]'), function (b) { b.setAttribute('aria-expanded', 'false'); if (!silent) b.focus(); });
   }
   $d.addEventListener('click', function (e) {
@@ -3073,11 +3125,7 @@
     if (t.closest('[data-walk]')) { walk.on ? walkClose() : walkOpen(); return; }
     if (t.closest('[data-walk-close]')) { walkClose(); return; }
     var st = t.closest('[data-walk-step]'); if (st) { walkStep(+st.getAttribute('data-walk-step')); return; }
-    if (t.closest('[data-walk-show]')) {
-      var id = walk.ids[walk.i]; walkClose(true);
-      var fl = flagAnchor(id); if (fl) fl.scrollIntoView({ block: 'center' });
-      popOpen(id); return;
-    }
+    if (t.closest('[data-walk-show]')) { walkScroll(); return; }
     var q = t.closest('#walkSlot [data-qa]');
     if (q && q.getAttribute('data-qa') !== 'own') { setTimeout(walkNextOpen, 450); return; }
     if (t.closest('[data-drawer]')) { var dd = document.getElementById('cmDrawer'); dd && !dd.hidden ? drawerClose() : drawerOpen(); return; }
