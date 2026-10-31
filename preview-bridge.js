@@ -99,7 +99,9 @@
       if (!target) return false;
     }
     var box = target.closest && target.closest('.qc-note, .qc-task, .qc-block, .qc-prose, .qc-box, .qc-stop__head') || target;
-    try { box.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); } catch (e) { box.scrollIntoView(); }
+    // własne przewinięcie (nie scrollIntoView) — scrollIntoView przewija też dokument nadrzędny (panel), a ma ruszyć tylko telefon
+    var r = box.getBoundingClientRect(), y = window.pageYOffset + r.top - Math.max(16, (window.innerHeight - Math.min(r.height, window.innerHeight)) / 2);
+    try { window.scrollTo({ top: Math.max(0, y), behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); } catch (e) { window.scrollTo(0, Math.max(0, y)); }
     highlight(box, m.quote);
     return true;
   }
