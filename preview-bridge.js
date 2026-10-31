@@ -11,6 +11,11 @@
      panel → strona:  qp:focus {stop, num, field, quote}  przewiń i podświetl 1,5 s
                       qp:view  {view: 'kid' | 'parent'}   przełącz widok
                       qp:ping                            odpowiedz qp:ready, jeśli gotowa
+   Symulator „Zagraj jak dziecko” (JP 2026-10-31, panel: _admin/admin-play.js):
+     strona → panel:  qp:progress {kind, stop, num, key, ok, total, done}  kind: stop (otwarty), task (odhaczona/odznaczona),
+                      sticker (zdobyta), choice (ok: true/false), lock (ok: true=start, false=koniec blokady 3 s), state (migawka)
+     panel → strona:  qp:cmd {cmd: 'goto', num} | {cmd: 'reset'} | {cmd: 'view', view} | {cmd: 'state'}
+     reset czyści TYLKO tę ramkę: odznacza misje tej trasy (qc.task.* tej strony, jak ręczne odznaczenie) — nigdy konto rodziny.
    Zero śledzenia, zero zapisu w przeglądarce. Nic nie zmienia treści strony.
    ============================================================ */
 (function () {
@@ -130,7 +135,58 @@
     if (m.type === 'qp:ping') { if (ready) announce(); return; }
     if (m.type === 'qp:view') { setView(m.view); return; }
     if (m.type === 'qp:focus') { focus(m); return; }
+    if (m.type === 'qp:cmd') { cmd(m); return; }
   });
+
+  // ── postęp gry (tylko w ramce z dozwolonego źródła — ten sam warunek co cały mostek) ──
+  function stopOf(el) { var st = el && el.closest ? el.closest('.qc-stop') : null; return st ? { stop: st.getAttribute('data-stop-key') || '', num: +st.getAttribute('data-stop-num') || null } : { stop: '', num: null }; }
+  function snapshot() {
+    var stops = Array.prototype.slice.call(document.querySelectorAll('#trasa > .qc-stop, .qc-stops > .qc-stop'));
+    var tasks = Array.prototype.slice.call(document.querySelectorAll('input[data-qc-task]'));
+    return { type: 'qp:progress', kind: 'state', total: stops.length, stops: stops.map(function (el) {
+        var ins = Array.prototype.slice.call(el.querySelectorAll('input[data-qc-task]'));
+        return { stop: el.getAttribute('data-stop-key') || '', num: +el.getAttribute('data-stop-num') || null, name: (el.querySelector('.qc-stop__name') || {}).textContent || '',
+          tasks: ins.length, done: ins.filter(function (i) { return i.checked; }).length, sticker: el.classList.contains('is-collected'), collectable: el.hasAttribute('data-collectable'),
+          choice: !!el.querySelector('.qk-choice[data-choice]'), open: el.open !== false,
+          icon: (function () { var im = el.querySelector('.qc-icon img, .qc-stop__head img'); return im ? (im.currentSrc || im.src) : ''; })(),
+          words: (function () { var t = el.querySelector('.qc-task:not(.qc-task--photo)'); if (!t) return 0; var c = t.cloneNode(true); Array.prototype.forEach.call(c.querySelectorAll('.qk-tiny, .qk-choice, label, .qc-task__hint'), function (x) { x.parentNode.removeChild(x); }); return (c.textContent.trim().match(/\S+/g) || []).length; })() };
+      }), tasksTotal: tasks.length, tasksDone: tasks.filter(function (i) { return i.checked; }).length, view: view() };
+  }
+  function progress(kind, el, extra) { var o = stopOf(el); o.kind = kind; for (var k in extra) o[k] = extra[k]; o.type = 'qp:progress'; send(o); }
+  document.addEventListener('change', function (e) {
+    var t = e.target; if (!t || !t.matches || !t.matches('input[data-qc-task]')) return;
+    progress('task', t, { key: t.getAttribute('data-qc-task'), ok: !!t.checked });
+    setTimeout(function () { send(snapshot()); }, 60);
+  }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.qk-choice__opt'); if (!b || b.getAttribute('aria-disabled') === 'true') return;
+    var box = b.closest('.qk-choice'), c = null; try { c = JSON.parse(box.getAttribute('data-choice') || 'null'); } catch (x) { c = null; }
+    if (!c || box.classList.contains('is-locked')) return;
+    var ok = +b.getAttribute('data-opt') === c.correct;
+    progress('choice', b, { key: box.getAttribute('data-task-key'), ok: ok });
+    if (!ok) { progress('lock', b, { ok: true, ms: (window.QChoice && window.QChoice.LOCK_MS) || 3000 }); setTimeout(function () { progress('lock', b, { ok: false }); }, (window.QChoice && window.QChoice.LOCK_MS) || 3000); }
+  }, true);
+  document.addEventListener('toggle', function (e) { var d = e.target; if (d && d.matches && d.matches('.qc-stop') && d.open) progress('stop', d, {}); }, true);
+  var stkObs = window.MutationObserver ? new MutationObserver(function (ms) {
+    ms.forEach(function (m) { var el = m.target; if (el.classList && el.classList.contains('qc-stop') && el.classList.contains('is-collected') && !el._qpStk) { el._qpStk = 1; progress('sticker', el, { ok: true }); } });
+  }) : null;
+  if (stkObs && document.getElementById('mainContent')) stkObs.observe(document.getElementById('mainContent'), { attributes: true, attributeFilter: ['class'], subtree: true });
+  function cmd(m) {
+    if (m.cmd === 'state') { send(snapshot()); return; }
+    if (m.cmd === 'view') { setView(m.view); return; }
+    if (m.cmd === 'goto' && m.num != null) {
+      var el = document.getElementById('p' + m.num) || document.querySelector('.qc-stop[data-stop-num="' + m.num + '"]'); if (!el) return;
+      if (el.tagName === 'DETAILS' && !el.open) el.open = true;
+      var go = document.querySelector('[data-go="' + m.num + '"]'); if (go && go.click) go.click();
+      var r = el.getBoundingClientRect(); try { window.scrollTo({ top: Math.max(0, window.pageYOffset + r.top - 16), behavior: 'auto' }); } catch (e) { window.scrollTo(0, Math.max(0, window.pageYOffset + r.top - 16)); }
+      progress('stop', el, {}); return;
+    }
+    if (m.cmd === 'reset') {   // tylko ta ramka: odznaczenie każdej odhaczonej misji tej trasy (zapis „0” jak przy ręcznym odznaczeniu)
+      Array.prototype.forEach.call(document.querySelectorAll('input[data-qc-task]'), function (i) { if (i.checked) { i.checked = false; i.dispatchEvent(new Event('change', { bubbles: true })); } });
+      Array.prototype.forEach.call(document.querySelectorAll('.qc-stop.is-collected'), function (el) { el.classList.remove('is-collected'); el._qpStk = 0; });
+      setTimeout(function () { send(snapshot()); }, 120);
+    }
+  }
   document.addEventListener('click', function (e) {
     var t = e.target; if (!t || !t.closest) return;
     var st = t.closest('.qc-stop');

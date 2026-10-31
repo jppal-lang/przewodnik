@@ -113,6 +113,7 @@
       if (window.AdmPreview) {
         add({ id: 'act:pv-parent', group: 'Akcje', icon: IC.phone, label: 'Podgląd na telefonie: rodzic', hint: 'wersja ' + vl + ' na żywo', kw: 'telefon podglad rodzic', run: function () { window.AdmPreview.open('parent'); } });
         add({ id: 'act:pv-kid', group: 'Akcje', icon: IC.phone, label: 'Podgląd na telefonie: dziecko', hint: 'wersja ' + vl + ' na żywo', kw: 'telefon podglad dziecko', run: function () { window.AdmPreview.open('kid'); } });
+        if (window.AdmPlay) add({ id: 'act:play', group: 'Akcje', icon: IC.phone, label: 'Zagraj jak dziecko', hint: 'symulator gry dla ' + vl, kw: 'zagraj gra dziecko symulator misje naklejki', run: function () { window.AdmPlay.open(); } });
       }
       // przystanki bieżącej trasy
       (A.state.tvStops || []).forEach(function (x) {

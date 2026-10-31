@@ -461,3 +461,13 @@ Zgoda JP 2026-10-31. Plik `admin-map.js` (style w `admin-ext.css`); w `admin.js`
   szuflady, „Podgląd” w rogu). Stan szuflady pamiętany w pamięci skryptu na czas sesji (bez localStorage).
 - **Akordeony** w karcie przystanku: Źródła (n), Kontrola (n uwag), Historia punktu — `<details>`, nagłówek 15 px, cel ≥ 44 px,
   zwinięte domyślnie, stan per typ na czas sesji; flaga w zwiniętym wierszu rozwija go automatycznie w trybie przechodzenia.
+
+## „Zagraj jak dziecko” (2026-10-31, „efekt WOW”) — `admin-play.js`, `admin-play.css`
+
+Symulator gry dla szkicu: przycisk w pasku narzędzi trasy i w palecie. Scena pełnoekranowa (Esc/× wraca): telefon (ta sama ramka co
+„Podgląd”, widok dziecka), HUD gracza (przystanki, misje x/y, naklejki z grafikami ze strony, pytania trafione/pomyłki, blokada 3 s, czas),
+oko redaktora (przystanek i pole, słowa w misji, trudność, „Oflaguj to” → istniejące pole uwagi przy misji bez wysyłania, „Następny przystanek”,
+„Resetuj postęp” tylko w ramce). Mostek `preview-bridge.js` v2: `qp:progress` (stop, task, sticker, choice, lock, state) i `qp:cmd`
+(goto, reset, view, state) — tylko w ramce z dozwolonego źródła. Tryb demo: strona zastępcza z misjami, naklejkami i pytaniem (`kid-choice.js`).
+Koniec trasy: ekran z podsumowaniem i liczbą flag dodanych w trakcie — po komplecie misji albo po „Zakończ trasę ✓” na ostatnim przystanku (np. 6/7 misji).
+Postęp z telefonu przyjmowany tylko z ramki `#tvPhoneFrame` i dozwolonego źródła; szuflada „Podgląd” otwarta przed grą wraca po Esc. Telefon 390: sam telefon + HUD jako rozwijany arkusz u dołu.

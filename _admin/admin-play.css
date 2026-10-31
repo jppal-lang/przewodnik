@@ -1,0 +1,103 @@
+/* ── „Zagraj jak dziecko” (JP 2026-10-31): scena pełnoekranowa nad panelem — admin-play.js.
+   Ciemne spokojne tło (oba motywy), telefon w środku, HUD gracza po lewej, oko redaktora po prawej.
+   Tokeny z admin.css; ≥ 18 px treść, pomocnicze 15 px, cele ≥ 44 px. ── */
+.play{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;overflow:hidden;background:#1B1D21;color:#E8EAED;--play-card:#26292E;--play-rule:#3A3E45;--play-mute:#BDC1C6;--play-acc:#8AB4F8;--play-ok:#81C995;--play-bad:#F28B82;--play-warn:#FDD663}
+.play[hidden]{display:none}
+.play *{font-family:var(--ad-font)}
+.play__top{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 16px;border-bottom:1px solid var(--play-rule);background:#202226}
+.play__title{display:flex;align-items:center;gap:10px;margin:0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:20px;font-weight:500;color:#fff;text-transform:none;letter-spacing:0}
+.play__title svg{flex:none;color:var(--play-acc)}
+.play__trip{font-weight:400;color:var(--play-mute);font-size:17px}
+.play__clock{margin-left:auto;font-size:18px;font-variant-numeric:tabular-nums;color:var(--play-mute)}
+.play__x{position:static;color:#fff;width:44px;height:44px}
+.play__x:hover{background:var(--play-card)}
+.play__hudbtn{display:none;min-height:44px;padding:0 14px;border:1px solid var(--play-rule);border-radius:20px;background:transparent;color:#fff;font-size:16px;font-weight:500;cursor:pointer}
+.play__body{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:300px minmax(0,1fr) 320px;gap:16px;padding:16px}
+.play__hud,.play__eye{min-height:0;overflow:auto;padding:14px 16px;border-radius:12px;background:var(--play-card);border:1px solid var(--play-rule);scrollbar-width:thin}
+.play__hud h3,.play__eye h3{margin:0 0 10px;font-size:15px;font-weight:500;color:var(--play-mute);text-transform:uppercase;letter-spacing:.06em}
+.play__sec{padding:10px 0;border-top:1px solid var(--play-rule)}
+.play__sec:first-of-type{border-top:0;padding-top:0}
+.play__l{margin:0 0 6px;font-size:15px;font-weight:500;color:var(--play-mute)}
+.play__v{margin:4px 0 0;font-size:18px;line-height:1.4}
+.play__v b{color:#fff;font-weight:600}
+.play__big{margin:0;font-size:32px;font-weight:400;font-variant-numeric:tabular-nums;color:#fff}
+.play__dots{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+.play__dot{width:18px;height:18px;border-radius:50%;background:var(--play-rule);box-shadow:inset 0 0 0 2px var(--play-rule)}
+.play__dot.is-part{background:var(--play-warn)}
+.play__dot.is-done{background:var(--play-ok)}
+.play__dot.is-free{background:transparent}
+.play__dot.is-cur{box-shadow:0 0 0 3px var(--play-acc)}
+.play__stk{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+.play__stkit{width:52px;height:52px;display:grid;place-items:center;border-radius:12px;background:#fff;opacity:.25;filter:grayscale(1);transition:opacity .3s,filter .3s,transform .3s}
+.play__stkit img{width:40px;height:40px;object-fit:contain}
+.play__stkit.is-got{opacity:1;filter:none;transform:rotate(-3deg);box-shadow:0 0 0 2px var(--play-ok)}
+.play__stkno{font-weight:600;color:#202124}
+.play__lock{margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#3D3522;color:var(--play-warn);font-size:17px}
+.play__lock[hidden]{display:none}
+.play.is-locked .play__stage{box-shadow:0 0 0 3px var(--play-warn)}
+.play__stage{position:relative;z-index:1;isolation:isolate;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:box-shadow .2s}
+.play__slot{width:100%;height:100%;max-height:100%;display:flex;align-items:center;justify-content:center}
+.play__slot .tv-phone.is-play{position:static;width:430px;max-width:100%;height:100%;max-height:100%;padding:0;background:transparent;border:0;box-shadow:none;overflow:visible}
+.play__slot .tv-phone.is-play .tv-phone__bar{display:none}
+.play__slot .tv-phone.is-play .tv-phone__dev{max-height:100%;height:100%;margin:0 auto}
+.play__slot .tv-phone.is-play .tv-phone__note{display:none}
+.play__cur{font-weight:600;color:#fff}
+.play__field{color:var(--play-acc);font-size:16px}
+.play__meta{margin:0;display:flex;flex-direction:column;gap:6px}
+.play__meta div{display:flex;justify-content:space-between;gap:10px;font-size:17px}
+.play__meta dt{color:var(--play-mute)}
+.play__meta dd{margin:0;color:#fff;font-weight:500}
+.play__diff{padding:2px 10px;border-radius:999px;font-size:15px;background:var(--play-rule)}
+.play__diff--1{color:var(--play-ok)}.play__diff--2{color:var(--play-warn)}.play__diff--3{color:var(--play-bad)}
+.play__acts{display:flex;flex-direction:column;gap:8px}
+.play .qc-btn{background:transparent;color:#fff;box-shadow:inset 0 0 0 1px var(--play-rule);min-height:44px}
+.play .qc-btn:hover{background:var(--play-rule);box-shadow:inset 0 0 0 1px var(--play-rule)}
+.play .qc-btn--primary{background:var(--play-acc);color:#202124;box-shadow:none}
+.play .qc-btn:disabled{opacity:.45;cursor:default}
+.play__flag{color:var(--play-bad)!important}
+.play__flag svg{color:var(--play-bad)}
+.play__reset{color:var(--play-mute);font-size:16px;min-height:44px;text-align:left}
+.play__note{margin:0;font-size:15px;color:var(--play-mute);line-height:1.4}
+.play :focus-visible{outline:3px solid var(--play-acc);outline-offset:2px}
+/* ekran końcowy */
+.play__end{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(27,29,33,.86)}
+.play__end[hidden]{display:none}
+.play__endbox{width:min(520px,calc(100vw - 32px));padding:28px;border-radius:16px;background:var(--play-card);border:1px solid var(--play-rule);text-align:center}
+.play__endk{margin:0 0 6px;font-size:15px;color:var(--play-mute);text-transform:uppercase;letter-spacing:.06em}
+.play__endbox h3{margin:0 0 14px;font-size:26px;font-weight:500;color:#fff;text-transform:none;letter-spacing:0}
+.play__endlist{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px;padding:0}
+.play__endlist li{padding:12px;border-radius:10px;background:#1B1D21;font-size:17px;color:var(--play-mute)}
+.play__endlist b{display:block;font-size:28px;font-weight:400;color:#fff}
+.play__endacts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:14px 0 0}
+/* pole wskazane z gry */
+.tv .adm-row.is-play-flag{box-shadow:inset 0 0 0 2px var(--rosso);border-radius:8px;transition:box-shadow .3s}
+/* przycisk w pasku narzędzi */
+.play__btn svg{color:var(--azzurro)}
+.play__btn[aria-pressed="true"]{background:var(--azzurro-50)}
+/* wąski ekran: sam telefon, HUD jako pasek u dołu, rozwijany; oko w HUD */
+@media(max-width:1199px){
+  .play__body{grid-template-columns:minmax(0,1fr) 300px}
+  .play__hud{grid-column:1 / -1;grid-row:2;max-height:34vh}
+  .play__body{grid-template-rows:minmax(0,1fr) auto}
+}
+@media(max-width:899px){
+  .play__hudbtn{display:inline-flex;align-items:center}
+  .play__body{display:block;padding:0;position:relative}
+  .play__stage{height:100%}
+  .play__slot .tv-phone.is-play{width:100%;height:100%}
+  .play__slot .tv-phone.is-play .tv-phone__dev{width:100%;height:100%;padding:0;border-radius:0;box-shadow:none}
+  .play__slot .tv-phone.is-play .tv-phone__screen{width:100%;height:100%;border-radius:0}
+  .play__slot .tv-phone.is-play .tv-phone__screen iframe{width:100%;height:100%}
+  .play__hud,.play__eye{position:absolute;left:0;right:0;bottom:0;z-index:75;max-height:62vh;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .25s;box-shadow:0 -8px 24px rgba(0,0,0,.4)}
+  .play__eye{display:none}
+  .play.is-hud .play__hud{transform:none}
+  .play__hud .play__eye{display:block;position:static;transform:none;max-height:none;border-radius:0;box-shadow:none;border:0;border-bottom:1px solid var(--play-rule);margin:-14px -16px 10px;padding-top:14px}
+  .play__hud .play__eye .play__acts{flex-direction:row;flex-wrap:wrap}
+  .play__hud .play__eye .play__acts .qc-btn{flex:1 1 150px}
+  .play__hud .play__eye .play__note{flex-basis:100%}
+  .play__trip{display:none}
+  .play__title{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){.play__hud,.play__eye,.play__stkit,.play__stage{transition:none}}
+body.has-play{overflow:hidden}
+@media(max-width:899px){.play__hud,.play__eye{max-height:56vh}}

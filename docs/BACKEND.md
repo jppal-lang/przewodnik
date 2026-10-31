@@ -131,6 +131,9 @@ Wszystko zostaje na urządzeniu; „usuwa” = kod sam czyści klucz, inaczej kl
 | `quolino_game_treasure` | `gra/treasure.js` | znalezione skarby `{<trasa>: {at, level}}` — jeden na wycieczkę | nigdy |
 | `quolino_game_treasure_pending` | `gra/treasure.js` → `konto.html` | skarby czekające na kupon `[{trip, at}]` (brak sesji / serwer odmówił) | po `claim_game_treasure` w `konto.html`; zostają przy `not_yet`, limicie i błędzie sieci |
 
+Symulator „Zagraj jak dziecko” w panelu admina (`_admin/admin-play.js`, 2026-10-31): zero nowych kluczy. Postęp gry żyje w pamięci panelu;
+„Resetuj postęp” odznacza misje tylko w ramce podglądu (strona szkicu w iframe zapisuje `qc.task.*` we własnym origin jak przy ręcznym odznaczeniu) — nigdy konto rodziny.
+
 ### 6.3 sessionStorage, IndexedDB, Cache API
 
 | Klucz / magazyn | Gdzie | Co trzyma | Kiedy usuwany |

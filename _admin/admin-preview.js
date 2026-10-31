@@ -64,7 +64,7 @@
     var D = A.state.tvDraft || {}, c = D.city || {}, ct = trOf(D.city_translations, 'pl');
     var S = (D.stops || []).slice().sort(function (a, b) { return a.stop_number - b.stop_number; });
     var h = '<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">' +
-      '<title>Podgląd demo · ' + esc(ct.title || '') + '</title><link rel="stylesheet" href="../styles.css?v=41"><script src="../preview-bridge.js?v=1" defer></script></head>' +
+      '<title>Podgląd demo · ' + esc(ct.title || '') + '</title><link rel="stylesheet" href="../styles.css?v=41"><script src="../kid-choice.js?v=1" defer></script><script src="../preview-bridge.js?v=2" defer></script></head>' +
       '<body><main class="qc" id="city" data-view="adult"><div class="qc-wrap" id="mainContent">' +
       '<p class="qc-stat" style="margin:12px 0 0;font-size:14px;color:#5D6B82">Strona zastępcza (demo, bez sieci) · ' + esc(it.label || 'v' + it.version) + '</p>' +
       '<h1 class="qc-title">' + esc(ct.title || '') + '</h1>' + (ct.subtitle ? '<p class="qc-sub">' + esc(ct.subtitle) + '</p>' : '') +
@@ -75,8 +75,9 @@
       '<section class="qc-stops" id="trasa">';
     S.forEach(function (s, i) {
       var t = trOf(D.stop_translations, 'pl', 'stop_id', s.id), f = function (k) { return t[k] || s[k]; };
-      h += '<details class="qc-stop" id="p' + s.stop_number + '" data-stop-num="' + s.stop_number + '"' + (s.stop_key ? ' data-stop-key="' + esc(s.stop_key) + '"' : '') + (i === 0 ? ' open' : '') + '>' +
-        '<summary class="qc-stop__head"><span class="qc-stop__title"><span class="qc-stop__time">' + A.num(s.stop_number) + (s.time_label ? ' · ' + esc(s.time_label) : '') + '</span>' +
+      var qck = (s.stop_key || ('s' + s.stop_number)), choice = t.kids_choice && Array.isArray(t.kids_choice.options) && t.kids_choice.options.length >= 2 ? t.kids_choice : null;
+      h += '<details class="qc-stop" id="p' + s.stop_number + '" data-stop-num="' + s.stop_number + '"' + (s.stop_key ? ' data-stop-key="' + esc(s.stop_key) + '"' : '') + (t.kids_box ? ' data-collectable' : '') + (i === 0 ? ' open' : '') + '>' +
+        '<summary class="qc-stop__head"><span class="qc-icon"><img src="../media/icons/icon-' + esc({ parking: 'parking', monument: 'monument', church: 'church', museum: 'museum', house: 'house', viewpoint: 'viewpoint-city', restaurant: 'restaurant', icecream: 'icecream', sweets: 'sweets', photo: 'photo', street: 'street', castle: 'castle' }[s.category] || 'monument') + '-128.webp" alt="" width="48" height="48"></span><span class="qc-stop__title"><span class="qc-stop__time">' + A.num(s.stop_number) + (s.time_label ? ' · ' + esc(s.time_label) : '') + '</span>' +
         '<span class="qc-stop__name">' + esc(t.name || 'Przystanek') + '</span></span><span class="qc-stop__meta">' +
         (f('price') ? '<span class="qc-pill"><small>Bilet</small>' + esc(f('price')) + '</span>' : '') +
         (f('visit_duration') ? '<span class="qc-pill"><small>Czas</small>' + esc(f('visit_duration')) + '</span>' : '') + '</span><span class="qc-chev" aria-hidden="true">&#x25BC;</span></summary>' +
@@ -87,12 +88,15 @@
         (t.dress_code ? '<p class="qc-note qc-note--dress"><b>Strój</b><span>' + esc(t.dress_code) + '</span></p>' : '') +
         (t.local_flavor ? '<p class="qc-note qc-note--flavor"><b>Lokalny smak</b><span>' + esc(t.local_flavor) + '</span></p>' : '') +
         (t.kids_box || t.photo_task ? '<div class="qc-tasks">' +
-          (t.kids_box ? '<div class="qc-task"><label class="qc-task__label"><input type="checkbox">Misja</label>' + paras(t.kids_box) + (t.hint ? '<p class="qc-task__hint">Wskazówka: ' + esc(t.hint) + '</p>' : '') + '</div>' : '') +
-          (t.photo_task ? '<div class="qc-task qc-task--photo"><label class="qc-task__label"><input type="checkbox">Zadanie foto</label><p>' + esc(t.photo_task) + '</p></div>' : '') + '</div>' : '') +
+          (t.kids_box ? '<div class="qc-task"><label class="qc-task__label"><input type="checkbox" data-qc-task="' + esc(qck) + '-mission">Misja</label>' + paras(t.kids_box) + (t.hint ? '<p class="qc-task__hint">Wskazówka: ' + esc(t.hint) + '</p>' : '') +
+            (choice ? '<div class="qk-choice" data-task-key="' + esc(qck) + '-mission" data-choice="' + esc(JSON.stringify(choice)) + '"></div>' : '') + '</div>' : '') +
+          (t.photo_task ? '<div class="qc-task qc-task--photo"><label class="qc-task__label"><input type="checkbox" data-qc-task="' + esc(qck) + '-photo">Zadanie foto</label><p>' + esc(t.photo_task) + '</p></div>' : '') + '</div>' : '') +
         '</div></details>';
     });
     h += '</section></div></main><script>document.addEventListener("click",function(e){var b=e.target.closest("#qcKidToggle");if(!b)return;var r=document.getElementById("city"),k=r.dataset.view==="kid";' +
-      'r.dataset.view=k?"adult":"kid";b.setAttribute("aria-pressed",String(!k));b.textContent=k?"👁 Widok dziecka":"👁 Widok rodzica";});</script></body></html>';
+      'r.dataset.view=k?"adult":"kid";b.setAttribute("aria-pressed",String(!k));b.textContent=k?"👁 Widok dziecka":"👁 Widok rodzica";});' +
+      'document.addEventListener("change",function(e){var i=e.target;if(!i.matches||!i.matches("input[data-qc-task]"))return;var st=i.closest(".qc-stop");if(st&&/-mission$/.test(i.getAttribute("data-qc-task")))st.classList.toggle("is-collected",i.checked);});' +
+      'document.addEventListener("DOMContentLoaded",function(){if(window.QChoice)window.QChoice.decorate(document);});</script></body></html>';
     return h;
   }
 
@@ -150,7 +154,7 @@
       return;
     }
     if (m.type === 'qp:view') { paintView(m.view === 'kid' ? 'kid' : 'parent'); return; }
-    if (m.type === 'qp:click') { panelFocus(m); return; }
+    if (m.type === 'qp:click') { if (window.AdmPlay && window.AdmPlay.isOn()) return; panelFocus(m); return; }   // w grze: pola pod sceną nie przewijamy
   });
 
   // ── widok rodzic / dziecko ──
