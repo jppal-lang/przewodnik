@@ -27,15 +27,19 @@ import { sourceCheck } from './source-check.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
 import { whoIs, namesFromProblem } from './kimbyl.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
-import { CHOICE_RULE, cleanChoices } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
+import { CHOICE_RULE, CHOICE_MAX, cleanChoices, choiceOk, choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
+import { SKILLS } from './lib.mjs';
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
 const opt = (n) => { const i = argv.indexOf(n); return i > -1 ? argv[i + 1] : undefined; };
 // --revise --comments <plik.json> [--context <plik>]: poprawki JP z panelu do szkicu nowego procesu (wywołuje draft-comments.mjs)
 const REVISE = argv.includes('--revise'), RECHECK = argv.includes('--recheck');
-let name = opt('--name') ?? (REVISE || RECHECK ? slug : undefined);
-const region = opt('--region') ?? (REVISE || RECHECK ? '-' : undefined), country = opt('--country') ?? 'it';
+// --choices [--max-usd 0.5]: przebieg „tylko misje” (zgoda JP 2026-10-31) — dopisuje pytania z wyborem (kids_choice) do NAJNOWSZEGO szkicu,
+// reszta treści bez zmian (asercja przed zapisem). Tylko Antigravity; bez limitu / przy otwartej prośbie o poprawkę → kod 75 (spróbuj później).
+const CHOICES = argv.includes('--choices');
+let name = opt('--name') ?? (REVISE || RECHECK || CHOICES ? slug : undefined);
+const region = opt('--region') ?? (REVISE || RECHECK || CHOICES ? '-' : undefined), country = opt('--country') ?? 'it';
 const duration = opt('--duration') ?? 'half_day', brief = opt('--brief') ?? '';
 let channel = opt('--notify');
 const FRESH = argv.includes('--fresh'), CHECK = !argv.includes('--no-check');
@@ -66,7 +70,7 @@ function event(msg, { stage = null, status = 'running' } = {}) {
   const q2 = globalThis.__q; if (!q2) return;
   q2(`INSERT INTO public.pipeline_events (run_id, city_slug, kind, stage, stop_k, stops_n, message, status, gemini_tokens, gemini_calls, claude_tokens, claude_calls)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-    [RUN, slug, REVISE || RECHECK ? 'revise' : 'draft', st ?? STAGE, k, STOPS_N, msg.slice(0, 400), status, cost.tokens ?? 0, cost.calls,
+    [RUN, slug, REVISE || RECHECK || CHOICES ? 'revise' : 'draft', st ?? STAGE, k, STOPS_N, msg.slice(0, 400), status, cost.tokens ?? 0, cost.calls,
      claudeUsage.input + claudeUsage.output, claudeUsage.calls]).catch(() => {});
 }
 const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); event(lastMsg); };
@@ -81,13 +85,16 @@ setInterval(() => {
 }, 60_000).unref();
 const MODEL = env('GEMINI_MODEL') || 'gemini-3-flash-preview';
 const KEY = env('GOOGLE_API_KEY') || env('GEMINI_API_KEY');
-if (!KEY) { console.error('Brak GOOGLE_API_KEY'); process.exit(2); }
+// Klucz API Google potrzebny tylko przy bezpośrednim wywołaniu API (bez Antigravity). Wcześniej brak klucza zatrzymywał na starcie
+// KAŻDY przebieg, także poprawki z panelu idące przez Antigravity (prośby 2 i 3 Spello, 2026-10-26 i 2026-10-31).
+if (!KEY) rawLog('brak GOOGLE_API_KEY — wywołania idą przez Antigravity (bezpośrednie API Gemini niedostępne)');
 // Koszt: klucz bez płatności (darmowy plan Google AI Studio) = 0 $ — Google nic nie nalicza, tylko limituje zapytania.
 // Budżet QUOLINO_DAILY_USD liczy się dopiero przy GEMINI_BILLING=1 (włączone płatności); ceny: GEMINI_PRICE_IN / GEMINI_PRICE_OUT (USD / 1 mln tokenów).
 const BILLING = env('GEMINI_BILLING') === '1';
 const PRICE_IN = BILLING ? +(env('GEMINI_PRICE_IN') ?? 0.5) : 0, PRICE_OUT = BILLING ? +(env('GEMINI_PRICE_OUT') ?? 3) : 0;
 const dir = join(WORK, slug); mkdirSync(dir, { recursive: true });
 const cost = { usd: 0, calls: 0 };
+const EQ_IN = +(env('GEMINI_PRICE_IN') || 0.5), EQ_OUT = +(env('GEMINI_PRICE_OUT') || 3);   // USD / 1 mln tokenów — tylko szacunek dla --choices
 
 // ── Gemini ───────────────────────────────────────────────────────────────────────────────────
 // ── Antigravity CLI (agy) na koncie Google AI Pro JP (JP 2026-10-24): Gemini z wyszukiwarką Google, limity planu Pro zamiast 20 zapytań/dobę.
@@ -113,7 +120,10 @@ function agy(prompt, label, { tools = true } = {}) {
       done = true; clearTimeout(t);
       try { p.kill('SIGKILL'); } catch {}
       if (j?.status === 'SUCCESS' && j.response) { cost.calls++; cost.tokens = (cost.tokens ?? 0) + (j.usage?.total_tokens ?? 0);
-        aiUsage({ provider: 'gemini', model: 'Antigravity (AI Pro)', role: geminiRole(label), billing: 'abonament', tin: j.usage?.input_tokens ?? j.usage?.prompt_tokens ?? j.usage?.total_tokens ?? 0, tout: j.usage?.output_tokens ?? j.usage?.completion_tokens ?? 0 });
+        const tin = j.usage?.input_tokens ?? j.usage?.prompt_tokens ?? j.usage?.total_tokens ?? 0, tout = j.usage?.output_tokens ?? j.usage?.completion_tokens ?? 0;
+        // --choices: równowartość cennika API (twardy limit przebiegu), abonament nie nalicza realnych $
+        const equiv = CHOICES ? (tin * EQ_IN + tout * EQ_OUT) / 1e6 : null; if (equiv != null) cost.equiv = (cost.equiv ?? 0) + equiv;
+        aiUsage({ provider: 'gemini', model: 'Antigravity (AI Pro)', role: geminiRole(label), billing: 'abonament', tin, tout, ...(equiv != null ? { usd_equiv: equiv } : {}) });
         return resolve({ text: String(j.response).trim(), web: [] }); }
       reject(new Error(`${label}: Antigravity ${j?.status ?? 'kod ' + code} ${(j?.error ?? err ?? out).toString().slice(0, 300)}`));
     };
@@ -141,6 +151,7 @@ async function gemini(prompt, { search = false, json = false, label = 'gemini' }
     return { text: String(text ?? '').trim(), web: [] };
   }
   if (search && !SEARCH) throw Object.assign(new Error('wyszukiwarka niedostępna'), { noSearch: true });
+  if (!KEY) throw new Error('limit Antigravity: brak dostępu do Gemini (Antigravity niedostępny, brak GOOGLE_API_KEY) — przerwane przed: ' + label);
   if (cost.usd >= DAILY_USD) throw new Error(`budżet ${DAILY_USD} $ wyczerpany (${cost.usd.toFixed(3)} $) — przerwane przed: ${label}`);
   const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 65536 } };
   if (search) body.tools = [{ google_search: {} }];
@@ -1039,6 +1050,7 @@ async function reviseMain() {
   console.log(JSON.stringify(out, null, 2));
 }
 
-try { await (RECHECK ? recheckMain() : REVISE ? reviseMain() : main()); }
-catch (e) { console.error('BŁĄD:', e.message); event(`błąd: ${e.message}`, { status: 'error' }); await new Promise(r => setTimeout(r, 500)); await notify(channel, `⚠️ ${name} (nowy proces): ${e.message.slice(0, 500)}`); process.exitCode = 1; }
+try { await (CHOICES ? choicesMain() : RECHECK ? recheckMain() : REVISE ? reviseMain() : main()); }
+catch (e) { if (e.later) { console.error('SPRÓBUJ PÓŹNIEJ:', e.message); event(`odłożone: ${e.message}`, { status: 'stopped' }); await new Promise(r => setTimeout(r, 500)); process.exitCode = EXIT_LATER; } else {
+  console.error('BŁĄD:', e.message); event(`błąd: ${e.message}`, { status: 'error' }); await new Promise(r => setTimeout(r, 500)); await notify(channel, `⚠️ ${name} (nowy proces): ${e.message.slice(0, 500)}`); process.exitCode = 1; } }
 finally { await c.end(); }

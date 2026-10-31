@@ -20,7 +20,7 @@ import { writeFileSync, existsSync, readFileSync, unlinkSync, mkdirSync } from '
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { db, log } from './lib.mjs';
+import { db, log, agyQuotaOut } from './lib.mjs';
 import { WORK, notify } from './draft-lib.mjs';
 
 const sh = promisify(execFile);
@@ -41,7 +41,7 @@ const q = async (sql, p) => (await c.query(sql, p)).rows;
 const short = (s, n = 160) => String(s ?? '').replace(/\s+/g, ' ').slice(0, n);
 const uwag = (n) => n === 1 ? 'uwaga' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'uwagi' : 'uwag';
 const where = (r) => `${r.stop_key ?? 'cała wycieczka'} · ${r.field_label ?? r.field ?? 'całość'}`;
-const TRANSIENT = /session limit|usage limit|rate limit|ETIMEDOUT|ECONNRESET|ENOENT|\b429\b|HTTP 5\d\d|overloaded|timeout|timed out|killed/i;
+const TRANSIENT = /limit Antigravity|session limit|usage limit|rate limit|ETIMEDOUT|ECONNRESET|ENOENT|\b429\b|HTTP 5\d\d|overloaded|timeout|timed out|killed/i;
 
 async function threadOf(slug) {
   const [r] = await q('SELECT discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(() => []);
@@ -90,6 +90,12 @@ async function requests() {
   const [r] = await q(`SELECT * FROM public.draft_revision_requests WHERE status = 'new' ORDER BY created_at LIMIT 1`);
   if (!r) return;
   const slug = r.city_slug;
+  // limit Antigravity wyczerpany → czekamy na odnowienie (bez zużywania prób i bez droższego modelu)
+  if (agyQuotaOut() && !DRY) {
+    const why = `Czeka na odnowienie limitu Antigravity (${agyQuotaOut()}) — ruszy samo.`;
+    if (r.hermes_reply !== why) await q(`UPDATE public.draft_revision_requests SET hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, why]);
+    return;
+  }
   const rows = await q('SELECT * FROM public.draft_comments WHERE id = ANY($1::bigint[]) ORDER BY id', [r.comment_ids]);
   const thread = await threadOf(slug);
   log(`${slug}: prośba #${r.id} — ${rows.length} ${uwag(rows.length)} (próba ${r.attempts + 1})`);
