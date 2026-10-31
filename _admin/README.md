@@ -386,8 +386,11 @@ Strona quolino.com nie wysyła `X-Frame-Options` ani CSP, więc osadzenie nie wy
   panel przewija do pola i podświetla. Odbiornik na stronie: `preview-bridge.js` (ładowany zawsze, **działa tylko w ramce z dozwolonego źródła**,
   nic nie zapisuje, nie zmienia treści). Protokół opisany w nagłówku tego pliku.
 - Tryb demo (`?demo=1`): strona zastępcza składana z migawki wersji (`srcdoc`, klasy `city.html` + `styles.css`), działa bez sieci; mostek ten sam.
-- Układ: dok po prawej (spis przystanków zwija się do numerów); przy otwartym panelu flag < 1700 px telefon zmniejszony (×0,72) w lewym dolnym
-  rogu; ≥ 1700 px obok panelu flag. Poniżej 1200 px przycisk „Podgląd” w pasku widoku otwiera telefon jako arkusz; ≤ 480 px pełny ekran z „← Wróć do pól”.
+- Układ (zasada JP: telefon **nigdy nie leży na treści**): dok po prawej (spis przystanków zwija się do numerów). Z otwartym panelem flag:
+  ≥ 1700 px telefon obok panelu; 1300–1699 px prawa kolumna `.tv-rcol` (panel flag u góry, telefon pod nim, kolumna przewijana — `#walk`
+  i telefon przenoszone do pojemnika w `.tv`, bo `admin.js` nasłuchuje kliknięć w `#walk` na `#detail`; przenosiny = jedno przeładowanie ramki);
+  < 1300 px pigułka „Podgląd” na dole szyny spisu otwiera telefon jako arkusz. Poniżej 1200 px przycisk „Podgląd” w pasku widoku → arkusz;
+  ≤ 480 px pełny ekran z „← Wróć do pól”. Test: pole flagi w viewport i `elementFromPoint` w środku pola = element w polu (1300/1440/1750 px).
 - Ograniczenia: panel otwarty tunelem na `http://localhost:8088` ma inne źródło niż `admin.quolino.com` — strona wczyta się, ale mostek milczy
   (notka pod ekranem telefonu). Klucz podglądu i tak jest w adresie ramki (jak w linkach „Podgląd vN”).
 

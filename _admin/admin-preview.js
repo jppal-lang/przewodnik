@@ -25,7 +25,7 @@
 
   // ── ramka telefonu (jeden węzeł na całe życie panelu — przetrwa przerysowanie pól) ──
   function build() {
-    if (P.el) return;
+    if (P.el && document.body.contains(P.el)) return;
     var el = document.createElement('aside');
     el.className = 'tv-phone'; el.id = 'tvPhone'; el.hidden = true; el.setAttribute('aria-label', 'Podgląd na telefonie');
     el.innerHTML = '<div class="tv-phone__bar">' +
@@ -213,25 +213,77 @@
     clearTimeout(P.flashT); P.flashT = setTimeout(function () { target.classList.remove('is-pv-target'); sec.classList.remove('is-pv-target'); }, 1500);
   }
 
-  // ── układ: dok (≥1200 px) / arkusz (mniejsze ekrany) ──
+  // ── układ (poprawka JP 2026-10-31: telefon NIGDY nie leży na treści) ──
+  //   bez panelu flag: dok po prawej (≥ 1200 px); z panelem flag: ≥ 1700 px obok panelu, 1300–1699 px prawa kolumna
+  //   (panel flag u góry, telefon pod nim, kolumna przewijana), < 1300 px pigułka „Podgląd” → arkusz na żądanie.
+  var COL_MIN = 1300, SIDE_MIN = 1700, pill = null;
   function tripOpen() { return TRIP_RE.test(location.hash) && !SECTIONS.test(location.hash) && !!A.state.trip; }
+  function walkOn() { return document.body.classList.contains('has-walk'); }
   function paintToggle() {
-    [].forEach.call(document.querySelectorAll('[data-pv-toggle]'), function (b) { b.setAttribute('aria-pressed', String(!P.el.hidden)); });
+    [].forEach.call(document.querySelectorAll('[data-pv-toggle]'), function (b) { b.setAttribute('aria-pressed', String(!!P.el && !P.el.hidden)); });
+  }
+  function ensurePill() {
+    if (pill && document.body.contains(pill)) return;
+    pill = document.createElement('button'); pill.type = 'button'; pill.className = 'qc-btn qc-btn--sm tv-phone__pill'; pill.hidden = true;
+    pill.setAttribute('aria-controls', 'tvPhone'); pill.title = 'Podgląd na telefonie (arkusz)'; pill.innerHTML = ICON + '<span class="adm-sr">Podgląd na telefonie</span>';
+    pill.addEventListener('click', sheetOpen);
+    document.body.appendChild(pill);
+  }
+  function layoutMode() {
+    if (!tripOpen() || !P.it) return 'off';
+    if (P.sheet) return 'sheet';
+    if (!WIDE.matches || !P.on) return 'hidden';
+    if (!walkOn()) return 'dock';
+    var w = window.innerWidth;
+    return w >= SIDE_MIN ? 'dock' : w >= COL_MIN ? 'col' : 'parked';
+  }
+  // przenosiny ramki = przeładowanie strony w niej (raz) — stan „gotowa” od nowa
+  function relocate(parent) {
+    if (!P.el || P.el.parentNode === parent) return;
+    var live = !!P.key;
+    parent.appendChild(P.el);
+    if (live) { P.ready = false; P.loaded = false; clearTimeout(P.loadT); clearTimeout(P.bridgeT); showMsg('<p class="tv-phone__load"><span class="ad-spin" aria-hidden="true"></span> Ładuję podgląd…</p>');
+      P.loadT = setTimeout(function () { if (!P.loaded) { P.key = ''; load(); } }, 12000); }
+  }
+  // prawa kolumna: #walk + telefon w jednym przewijanym pojemniku wewnątrz .tv (admin.js nasłuchuje kliknięć w #walk na #detail)
+  function colEnter() {
+    var walk = document.getElementById('walk'), tv = document.querySelector('#detail .tv'); if (!walk || !tv) return false;
+    var col = document.getElementById('tvRcol');
+    if (!col) { col = document.createElement('div'); col.className = 'tv-rcol'; col.id = 'tvRcol'; tv.appendChild(col); }
+    if (walk.parentNode !== col) { P.walkPh = document.createComment('walk'); walk.parentNode.insertBefore(P.walkPh, walk); col.appendChild(walk); }
+    relocate(col);
+    return true;
+  }
+  function colLeave() {
+    var col = document.getElementById('tvRcol'); if (!col) return;
+    var walk = document.getElementById('walk');
+    if (walk && walk.parentNode === col && P.walkPh && P.walkPh.parentNode) P.walkPh.parentNode.insertBefore(walk, P.walkPh);
+    if (P.walkPh && P.walkPh.parentNode) P.walkPh.parentNode.removeChild(P.walkPh);
+    P.walkPh = null;
+    if (P.el && P.el.parentNode === col) relocate(document.body);
+    if (col.parentNode) col.parentNode.removeChild(col);
   }
   function apply() {
     if (!P.el) return;
-    if (!tripOpen() || !P.it) { P.el.hidden = true; P.el.classList.remove('is-sheet'); document.body.classList.remove('has-phone', 'has-phone-sheet'); return; }
-    if (P.sheet) { P.el.hidden = false; P.el.classList.add('is-sheet'); document.body.classList.add('has-phone-sheet'); document.body.classList.remove('has-phone'); }
-    else if (WIDE.matches && P.on) { P.el.hidden = false; P.el.classList.remove('is-sheet'); document.body.classList.add('has-phone'); document.body.classList.remove('has-phone-sheet'); }
-    else { P.el.hidden = true; P.el.classList.remove('is-sheet'); document.body.classList.remove('has-phone', 'has-phone-sheet'); }
+    ensurePill();
+    var m = layoutMode();
+    if (m === 'col' && !colEnter()) m = 'dock';
+    if (m !== 'col') colLeave();
+    if (m !== 'col' && P.el.parentNode !== document.body) relocate(document.body);
+    var B = document.body.classList;
+    B.toggle('has-phone', m === 'dock'); B.toggle('has-phone-col', m === 'col'); B.toggle('has-phone-sheet', m === 'sheet'); B.toggle('has-phone-pill', m === 'parked');
+    P.el.classList.toggle('is-sheet', m === 'sheet');
+    P.el.hidden = !(m === 'dock' || m === 'col' || m === 'sheet');
+    pill.hidden = m !== 'parked';
     paintToggle();
   }
   function dockHide() { P.on = false; apply(); var b = document.querySelector('[data-pv-toggle]'); if (b) b.focus(); }
   function sheetOpen() { P.sheet = true; apply(); load(); var x = P.el.querySelector('.tv-phone__x'); if (x) x.focus(); }
-  function sheetClose() { P.sheet = false; apply(); var b = document.querySelector('[data-pv-toggle]'); if (b) b.focus(); }
-  function toggle(btn) {
-    if (WIDE.matches) { P.on = !P.on; apply(); if (P.on) load(); }
-    else { P.sheet ? sheetClose() : sheetOpen(); }
+  function sheetClose() { P.sheet = false; apply(); var b = (pill && !pill.hidden) ? pill : document.querySelector('[data-pv-toggle]'); if (b) b.focus(); }
+  function toggle() {
+    if (P.sheet) { sheetClose(); return; }
+    if (!WIDE.matches || (walkOn() && window.innerWidth < COL_MIN)) { sheetOpen(); return; }
+    P.on = !P.on; apply(); if (P.on) load();
   }
   function ensureButton() {
     var r = document.querySelector('#detail .tv-tools__r'); if (!r || r.querySelector('[data-pv-toggle]')) return;
@@ -242,6 +294,8 @@
     r.insertBefore(b, r.firstChild);
   }
   document.addEventListener('adm:render', function (e) {
+    P.walkPh = null;                      // nowy #walk po przerysowaniu; stara kolumna (jeśli była) zginęła razem z treścią
+    if (P.el && !document.body.contains(P.el)) { P.el = null; P.key = ''; }   // ramka była w kolumnie w #detail → od nowa
     build();
     P.it = e.detail && e.detail.it || A.state.current || null;
     var v = P.el.querySelector('#tvPhoneV'); if (v && P.it) v.textContent = (P.it.label || 'v' + P.it.version) + ' · ' + (A.VST[P.it.status] || P.it.status);
@@ -252,11 +306,16 @@
   document.addEventListener('adm:route', function () {
     if (tripOpen()) return;
     P.it = null; P.key = ''; P.sheet = false;
-    if (P.frame) { P.frame.removeAttribute('srcdoc'); P.frame.src = 'about:blank'; }
+    if (P.el && !document.body.contains(P.el)) P.el = null;
+    if (P.frame && P.el) { P.frame.removeAttribute('srcdoc'); P.frame.src = 'about:blank'; }
     apply();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && P.sheet) { e.preventDefault(); sheetClose(); } });
-  if (WIDE.addEventListener) WIDE.addEventListener('change', function () { apply(); if (!P.el.hidden) load(); });
+  if (WIDE.addEventListener) WIDE.addEventListener('change', function () { apply(); if (P.el && !P.el.hidden) load(); });
+  var rsT = null;
+  window.addEventListener('resize', function () { clearTimeout(rsT); rsT = setTimeout(function () { if (P.el) { apply(); if (!P.el.hidden) load(); } }, 120); });
+  // panel flag otwiera się / zamyka bez zdarzenia — patrzymy na klasę has-walk na <body>
+  if (window.MutationObserver) new MutationObserver(function () { if (P.el && walkOn() !== P.walkWas) { P.walkWas = walkOn(); apply(); if (!P.el.hidden) load(); } }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   window.AdmPreview = {
     open: function (view) {

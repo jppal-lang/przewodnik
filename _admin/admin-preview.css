@@ -48,10 +48,15 @@
   body.has-phone.has-walk .tv-phone{right:452px}
   body.has-phone.has-walk .tv{margin-right:882px}
 }
-@media(min-width:1200px) and (max-width:1699px){
-  body.has-phone.has-walk .tv-phone{top:auto;right:auto;left:calc(var(--ad-side-w) + 36px);bottom:12px;transform:scale(.72);transform-origin:left bottom}
-  body.has-phone.has-walk .tv{margin-right:436px}
-}
+/* 1300–1699 px z panelem flag: prawa kolumna — panel flag u góry, telefon pod nim, kolumna przewijana (nic nie leży na treści) */
+.tv-rcol{position:fixed;top:calc(var(--ad-top-h) + 8px);right:16px;bottom:16px;z-index:42;width:420px;display:flex;flex-direction:column;gap:10px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+body.has-walk .tv-rcol .tv-walk{position:static;flex:none;width:auto;height:calc(100vh - var(--ad-top-h) - 24px);max-height:none}
+body.has-phone-col .tv-rcol .tv-phone{position:static;flex:none;width:auto;max-height:none;transform:none}
+body.has-phone-col .tv-rcol .tv-phone__dev{max-height:none;margin:0 auto}
+body.has-phone-col .tv-rcol .tv-phone__bar{margin:0 3px}
+/* < 1300 px z panelem flag: pigułka na dole szyny spisu — otwiera telefon jako arkusz */
+.tv-phone__pill{position:fixed;left:calc(var(--ad-side-w) + 36px);bottom:16px;z-index:41;width:64px;min-height:48px;padding:0;justify-content:center;box-shadow:var(--lift-2)}
+.tv-phone__pill[hidden]{display:none}
 /* arkusz (telefon, tablet): przycisk „Podgląd” otwiera telefon nad treścią */
 @media(max-width:1199px){
   .tv-phone:not(.is-sheet){display:none}
