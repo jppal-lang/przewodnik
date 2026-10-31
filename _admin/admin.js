@@ -559,7 +559,7 @@
   // ── nawigacja (v43, JP 2026-10-31: panel = centrum dowodzenia) ──
   // #/ pulpit · #/trasy lista · #/<miasto> najnowsza wersja · #/<miasto>/v<N> starsza · #/decyzje · #/straznicy · #/ikony
   // #/postep · #/koszty · #/zgloszenia · #/baza-wiedzy. Boczny pasek (desktop) i dolny pasek (telefon) — index.html.
-  var SECTIONS = { pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', postep: 'Postęp prac',
+  var SECTIONS = { dzis: 'Dziś', pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', postep: 'Postęp prac',
     koszty: 'Koszty AI', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
   var $title = document.getElementById('secTitle'), $crumbs = document.getElementById('crumbs');
   // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
@@ -594,6 +594,9 @@
     document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony|pipeline|mapa)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
+    // „Dziś” (admin-today.js) jako start panelu: #/ → meldunek; Pulpit zostaje pod #/pulpit (JP 2026-10-31)
+    var today = window.AdminExt && window.AdminExt.routes && window.AdminExt.routes['#/dzis'];
+    if ((!h || h === '#' || h === '#/') && today) { today(); return; }
     if (!h || h === '#' || h === '#/' || h === '#/pulpit') { setHead('pulpit'); showDetail(); window.scrollTo(0, 0); openDashboard(); return; }
     if (h === '#/trasy') { showList(); return; }
     if (h === '#/decyzje' || h === '#/straznicy' || h === '#/ikony') { var only = h.slice(2); setHead(only); showDetail(); window.scrollTo(0, 0); openDecisions(only === 'decyzje' ? null : only); return; }
@@ -1341,6 +1344,11 @@
     var diff = !!M && (dr ? dr.changed : changed);
     var hl = fl && fl.html ? { html: fl.html, rest: qs } : qs.length && !(diff && dr) ? qaHighlight(show(newV, fmt), qs) : { html: esc(show(newV, fmt)), rest: diff && dr ? qs : [] };
     if (!(fl && fl.html)) hl.html = hl.html.replace(/\[(\d{1,2})\]/g, '<sup class="adm-fn">[$1]</sup>');   // przypisy [n] małe, jak w druku (JP 2026-10-31)
+    // wartość będąca samym adresem (np. link trasy w Mapach Google) → krótki link zamiast ściany zakodowanego URL
+    if (!(fl && fl.html) && !qs.length && !(diff && dr) && typeof newV === 'string' && /^https?:\/\/\S+$/i.test(newV.trim())) {
+      var u0 = newV.trim(), host0 = ''; try { host0 = new URL(u0).hostname.replace(/^www\./, ''); } catch (e) {}
+      hl.html = '<a class="adm-url" href="' + esc(u0) + '" target="_blank" rel="noopener noreferrer">' + esc(host0 || u0.slice(0, 40)) + ' ↗</a><span class="adm-url__full">' + esc(u0.length > 72 ? u0.slice(0, 72) + '…' : u0) + '</span>';
+    }
     var val = diff && dr ? '<span class="adm-val adm-diff">' + diffHtml2(wordDiff(dr.a, dr.b)) + '</span>' + cmpWhyHtml(dr.why)
       : diff ? '<span class="adm-old">' + esc(show(oldV, fmt)) + '</span><span class="adm-new">' + hl.html + '</span>'
       : '<span class="adm-val">' + hl.html + '</span>';
@@ -3384,13 +3392,15 @@
       soft(DEMO ? Promise.resolve(demoCosts().filter(function (r) { return r.day >= since; })) : api('/ai_usage_daily?day=gte.' + since + '&order=day.desc&limit=2000')),
       loadOps().catch(function () { return null; })
     ]).then(function (r) {
-      if (location.hash && location.hash !== '#/' && location.hash !== '#/pulpit' && location.hash !== '#') return;
+      if (!onDash()) return;
       drawDash({ inbox: r[1], revs: r[2], cms: r[3], runs: r[4], queue: r[5], usage: r[6] });
     }).catch(function (e) {
       $d.innerHTML = '<div class="adm-placeholder adm-placeholder--err" role="alert"><p>Pulpit niedostępny: ' + esc(e.message) + '</p></div>';
     });
-    state.poll = setInterval(function () { if ((!location.hash || location.hash === '#/' || location.hash === '#/pulpit') && !document.hidden) openDashboard(); }, 60000);
+    state.poll = setInterval(function () { if (onDash() && !document.hidden) openDashboard(); }, 60000);
   }
+  // pulpit jest pod #/pulpit; pod #/ tylko wtedy, gdy nie ma ekranu „Dziś” (admin-today.js)
+  function onDash() { var h = location.hash; return h === '#/pulpit' || ((!h || h === '#' || h === '#/') && !(window.AdminExt && window.AdminExt.routes && window.AdminExt.routes['#/dzis'])); }
 
   function drawDash(D) {
     var T = state.trips || [], I = D.inbox.ok || null, C = I ? I.count : null;

@@ -1640,3 +1640,7 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm-hist__l{list-style:none;display:flex;flex-direction:column;gap:6px;padding:4px 0 8px;font-size:16px;line-height:1.4}
 .tv .adm-pop:not(.is-walk){display:none!important}
 .tv .adm-row.has-pop{z-index:auto}
+.adm-url{font-size:16px;font-weight:500;color:var(--azzurro);display:inline-flex;align-items:center;min-height:44px}
+.adm-url__full{display:block;font-size:13px;color:var(--muted);overflow-wrap:anywhere;line-height:1.3}
+/* szeroki ekran z otwartym panelem flag / szufladą telefonu: treść rozciąga się do paneli zamiast zostawiać pustą dziurę (JP 2026-10-31) */
+body.has-walk .ad-content,body.has-phone .ad-content{max-width:none}
