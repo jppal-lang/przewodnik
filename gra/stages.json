@@ -4,7 +4,7 @@
   "stages": [
     {
       "slug": "frasassi",
-      "approved": false,
+      "approved": true,
       "file": "frasassi.json",
       "icon": "viewpoint-nature",
       "name": [

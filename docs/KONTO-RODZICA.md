@@ -14,7 +14,7 @@ postęp misji i zdjęcia zostają w telefonie. Na serwerze jest tylko e-mail i t
 | Rodzic zatwierdza trasę przed QR (przełączniki przystanków) | `city.html`, zakładka QR | parametr `hide=`; pod kodem: „Dziecko dostanie N przystanków z misjami — obrazek podzieli się na N kawałków” |
 | Awatar dziecka na dzień (8 póz Quo + kolor + ksywka, przycisk 🎲, podpowiedź „nie wpisuj prawdziwego imienia”) | `kid-reward.js` po `?view=kid` | `qc.kid.avatar` `{date,pose,color,nick}`, `qc.kid.nicks` (max 8) |
 | Obrazek-zagadka: hero pod N kawałkami, każda zaliczona misja odsłania kawałek | `kid-reward.js` | liczone z `is-collected` |
-| Po ostatniej misji: pobranie obrazka i kolorowanka A4 | `kid-reward.js` | kolorowanka z `<hero>-coloring.webp`, gdy jest; inaczej kontury z przeglądarki |
+| Po ostatniej misji: pobranie obrazka i nagroda — gra „Quo: Wyprawa” (`/gra/?trasa=<slug>&lang=<lang>`) | `kid-reward.js`, w albumie też `konto.html` | przycisk tylko, gdy etap trasy w `gra/stages.json` ma `approved: true` (JP 2026-10-27); etap niezatwierdzony → „Gra dla tej wycieczki jeszcze śpi”; brak etapu / offline → nic. Kolorowanka usunięta (JP 2026-10-31) |
 | Panel: zakładki Album · Wyzwania · Dzieci · Plan i kody · Prywatność | `konto.html` | `qc.album`, `qc.parent.shared` (slugi), `qc.parent.news`, `qc.parent.codes` (tylko podgląd) |
 
 Gdy album na urządzeniu jest pusty (albo `?demo=1`), `konto.html` pokazuje przykładowe dane z paskiem „Podgląd”.
@@ -69,7 +69,8 @@ Klucze localStorage do listy w `docs/BACKEND.md` §6: `qc.kid.avatar`, `qc.kid.n
 ## 5. Do decyzji JP
 
 - Progi odznak i ewentualne dodatkowe nagrody.
-- Czy kolorowanki robimy jako osobne grafiki (`-coloring.webp`) dla każdego miasta.
+- ~~Czy kolorowanki robimy jako osobne grafiki (`-coloring.webp`) dla każdego miasta.~~ Zamknięte 2026-10-31: rezygnujemy z kolorowanki,
+  nagrodą po wycieczce jest gra „Quo: Wyprawa” (§1).
 - Animacja odsłonięcia całego obrazka.
 
 ## 6. Skarb Quo z gry → kupon dla rodzica (decyzje JP 2026-10-26)

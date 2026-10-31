@@ -1152,7 +1152,7 @@ html.motion .qc-no-rv[data-rv].is-in{animation:none}
 .qc-ov__head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .qc-ov__gmaps svg{flex:none}
 
-/* ── Widok dziecka: awatar dnia, obrazek-zagadka, kolorowanka (kid-reward.js, 2026-10-16) ── */
+/* ── Widok dziecka: awatar dnia, obrazek-zagadka, nagroda: gra Quo: Wyprawa (kid-reward.js, 2026-10-16 / 2026-10-31) ── */
 .qk-card{display:none}
 .qc[data-view="kid"] .qk-card{display:block;margin:0 0 22px;padding:16px;border-radius:var(--r-stk);background:var(--card);box-shadow:var(--lift-2)}
 .qk-card__head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
@@ -1185,10 +1185,16 @@ html.motion .qc-no-rv[data-rv].is-in{animation:none}
 @keyframes qkCheer{0%{transform:scale(1)}40%{transform:scale(1.04) rotate(-1deg)}100%{transform:none}}
 .qk-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 .qk-acts .qc-btn{flex:1 1 220px;justify-content:center}
+.qk-acts .qc-btn[hidden]{display:none}
+/* nagroda po ostatniej misji: duży przycisk gry (tylko etap approved w gra/stages.json) albo „gra jeszcze śpi” */
+.qk-game{margin-top:14px}
+.qk-game[hidden]{display:none}
+.qk-play{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;font-size:22px;font-weight:900;text-decoration:none}
+.qk-sleep{margin:0;padding:12px 14px;border-radius:12px;background:var(--page);font-size:18px;font-weight:700;color:var(--ink2);text-align:center}
 .qk-back{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;min-height:48px;border-radius:12px;font-weight:800;font-size:18px;color:var(--azzurro);text-decoration:none;background:var(--azzurro-50)}
 .qk-back:hover{background:var(--azzurro);color:#fff}
 
-/* okno: wybór awatara, obrazek, kolorowanka */
+/* okno: wybór awatara, obrazek */
 html.qk-lock{overflow:hidden}
 .qk-sheet{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center;background:rgba(14,26,43,.55);padding:0}
 .qk-sheet__box{position:relative;width:min(720px,100%);max-height:94vh;overflow:auto;padding:22px 18px calc(22px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0;background:var(--card);box-shadow:var(--lift-2);outline:0;animation:qkUp .35s var(--ease)}
@@ -1219,15 +1225,7 @@ html.qk-lock{overflow:hidden}
 .qk-nicks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .qk-nicks button{min-height:44px;padding:0 16px;border:0;border-radius:var(--r-pill);background:var(--page);font-weight:800;font-size:var(--fs-min);cursor:pointer}
 .qk-go{width:100%;justify-content:center;margin-top:18px;min-height:56px;font-size:20px}
-.qk-colprev img{display:block;width:100%;max-width:420px;margin:0 auto;border-radius:6px;box-shadow:var(--lift-1)}
 .qk-qrnote{margin:0 0 12px;padding:10px 14px;border-radius:10px;background:var(--sun-50);font-size:18px;color:#5A3E00}
-#qkPrint{display:none}
-@media print{
-  body.qk-printing > *:not(#qkPrint){display:none!important}
-  body.qk-printing #qkPrint{display:block!important}
-  #qkPrint img{width:100%;height:auto}
-  @page{size:A4 portrait;margin:8mm}
-}
 .qc[data-view="kid"]:has(.qk-card) .qc-hero{display:none}
 
 /* ── Panel rodzica (konto.html, 2026-10-16) ── */

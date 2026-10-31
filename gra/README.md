@@ -8,14 +8,16 @@ Strona `gra/index.html` ma `noindex` i nie jest nigdzie podlinkowana.
 ### Tylko zatwierdzone wyprawy (decyzja JP 2026-10-27)
 
 Grę wprowadzamy wyłącznie dla tras **ukończonych i zatwierdzonych przez JP**. Każdy etap w `stages.json` ma pole
-`"approved"` (dziś `false` dla Frasassi i Spello — ich nowe wersje tras nie są jeszcze zatwierdzone).
+`"approved"` (Frasassi `true` od 2026-10-31 — trasa v13 zatwierdzona i opublikowana przez JP; Spello `false` — szkic).
 
 - Wybór wyprawy i `?trasa=` pokazują tylko etapy z `"approved": true`.
 - Etapy niezatwierdzone są dostępne tylko z `?test=1` (JP, testy, boty) — na ekranie startowym i przy przycisku wyprawy
   widać wtedy plakietkę „wersja testowa” (`page.game.html.test_badge`).
 - Gdy żaden etap nie jest zatwierdzony (i nie ma `?test=1`), zamiast gry pokazuje się ekran „Gra jeszcze śpi”
   (`page.game.locked.title|text|home`) z linkiem na stronę główną. Brak `stages.json` bez `?test=1` = ten sam ekran.
-- Zatwierdzenie etapu = zmiana `"approved": false` → `true` w `stages.json` (nic więcej).
+- Zatwierdzenie etapu = zmiana `"approved": false` → `true` w `stages.json` (nic więcej). Przycisk „Zagraj: Quo: Wyprawa”
+  w widoku dziecka (po odsłonięciu całego obrazka, `kid-reward.js`) i w albumie rodzica (`konto.html`) pojawia się wtedy automatycznie;
+  etap niezatwierdzony pokazuje dziecku tylko „Gra dla tej wycieczki jeszcze śpi”.
 - Boty testowe w `/root/pwt` otwierają grę z `?test=1`.
 
 Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Zero bibliotek, zero build stepu.

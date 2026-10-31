@@ -11,10 +11,10 @@
 <meta name="pt-title" content="page.account.title">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=41">
+<link rel="stylesheet" href="/styles.css?v=42">
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
-<script src="/kid-reward.js?v=5"></script>
+<script src="/kid-reward.js?v=6"></script>
 <script src="/auth.js?v=3"></script>
 </head>
 <body class="acc">
@@ -506,7 +506,7 @@
     return w;
   }
 
-  // ── naklejka: podgląd, pobranie, kolorowanka, udostępnienie ──
+  // ── naklejka: podgląd, pobranie, gra „Quo: Wyprawa” (tylko etap approved w gra/stages.json), udostępnienie ──
   function openSticker(slug) {
     var e = album.filter(function (x) { return x.slug === slug; })[0];
     if (!e || !window.QReward) return;
@@ -514,10 +514,12 @@
     var w = sheet('<h2 class="qk-sheet__title" id="stT">' + esc(e.city) + '</h2><p class="qk-sheet__sub">' + esc([e.nick, dateLabel(e.date), e.pieces ? e.pieces + ' ' + PT('page.account.missions', 'misji') : ''].filter(Boolean).join(' · ')) + '</p>' + oathTag(e, 'qk-oath') +
       '<div class="qk-puzzle is-done"><img src="' + esc(e.hero) + '-hero-1200.webp" alt="' + esc(e.city) + '" width="1200" height="675"></div>' +
       '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-x="share">' + esc(PT('page.account.share', 'Udostępnij')) + '</button><button type="button" class="qc-btn" data-x="dl">' + esc(PT('page.account.dl_img', 'Pobierz obrazek')) + '</button>' +
-      '<button type="button" class="qc-btn" data-x="col">' + esc(PT('page.account.coloring', 'Kolorowanka do druku')) + '</button><a class="qc-btn" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">' + esc(PT('page.account.trip', 'Wycieczka')) + '</a></div>', 'stT');
+      '<a class="qc-btn" data-x="play" href="' + esc(window.QReward.gameUrl(e.slug, LANG)) + '" hidden>' + esc(PT('page.account.play', 'Zagraj: Quo: Wyprawa')) + '</a>' +
+      '<a class="qc-btn" href="/city.html?c=' + encodeURIComponent(e.slug) + '&lang=' + LANG + '">' + esc(PT('page.account.trip', 'Wycieczka')) + '</a></div>', 'stT');
+    // JP 2026-10-31: gra zamiast druku konturów, ale tylko dla etapu zatwierdzonego (gra/stages.json approved: true); offline / brak etapu → bez przycisku
+    window.QReward.stage(e.slug).then(function (st) { var b = w.querySelector('[data-x="play"]'); if (b && st === 'approved') b.hidden = false; });
     w.addEventListener('click', function (ev) {
       if (ev.target.closest('[data-x="dl"]')) window.QReward.picture();
-      if (ev.target.closest('[data-x="col"]')) { w.close(); window.QReward.coloring(); }
       if (ev.target.closest('[data-x="share"]')) { w.close(); share([e.slug]); }
     });
   }

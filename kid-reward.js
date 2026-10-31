@@ -5,8 +5,11 @@
  *  • Obrazek-zagadka: zdjęcie hero miasta zakryte kawałkami. Liczba kawałków = liczba przystanków z misjami,
  *    które rodzic zostawił włączone przed wysłaniem QR (parametr hide=). Każdy zaliczony przystanek
  *    odsłania kawałek, ostatnia misja — cały obrazek.
- *  • Po całości: pobranie obrazka (PNG z ramką „Zdobyte: miasto”, awatarem i datą) i kolorowanka do druku
- *    (gotowy plik <hero>-coloring.webp, jeśli jest; inaczej kontury liczone z hero w przeglądarce).
+ *  • Po całości: pobranie obrazka (PNG z ramką „Zdobyte: miasto”, awatarem i datą) i nagroda — gra „Quo: Wyprawa”
+ *    (gra/?trasa=<slug>&lang=<lang>). Przycisk gry tylko, gdy etap trasy w gra/stages.json ma approved: true
+ *    (decyzja JP 2026-10-27: gra wyłącznie dla tras ukończonych i zatwierdzonych; 2026-10-31: zastępuje druk konturów do pokolorowania).
+ *    Etap jest, ale niezatwierdzony → „Gra dla tej wycieczki jeszcze śpi”; brak etapu / brak pliku (offline) → nic.
+ *    Postęp z wycieczki gra czyta sama z qc.task.* — do adresu nic więcej nie przekazujemy.
  *  • Zdobyte miejsce trafia do albumu na tym urządzeniu (qc.album) — panel rodzica (konto.html) go czyta.
  *
  * Bez zależności. Widok dziecka bez komercji: żadnych cen, partnerów, BMC.
@@ -23,26 +26,26 @@
 
   // ── słownik (17 języków) ─────────────────────────────
   var RAW = {
-    pl: 'Kim dziś jesteś?|Wybierz swojego Quo na dzisiejszą wyprawę.|Twój nick (nie musisz)|Ruszamy!|Zmień|Twój obrazek|{n} z {t} kawałków|Każda zaliczona misja odsłania kawałek obrazka.|Cały obrazek jest Twój!|Pobierz obrazek|Kolorowanka do druku|Zamknij|Nowy kawałek!|Pokoloruj: {city}|Zdobyte: {city}|Drukuj|Pobierz kolorowankę|Odkrywca|Zwiadowca|Biegacz|Sprinter|Skoczek|Akrobata|Wesołek|Mistrz|Przygotowuję kolorowankę…|Dziecko dostanie {n} przystanków z misjami — obrazek podzieli się na {n} kawałków.|Wymyśl ksywkę — nie wpisuj prawdziwego imienia.|Losuj',
-    en: 'Who are you today?|Pick your Quo for today\'s adventure.|Your nickname (optional)|Let\'s go!|Change|Your picture|{n} of {t} pieces|Every mission you finish uncovers a piece of the picture.|The whole picture is yours!|Download picture|Colouring page to print|Close|New piece!|Colour in: {city}|Conquered: {city}|Print|Download colouring page|Explorer|Scout|Runner|Sprinter|Jumper|Acrobat|Joker|Champion|Preparing the colouring page…|Your child will get {n} stops with missions — the picture splits into {n} pieces.|Make up a nickname — not your real name.|Random',
-    de: 'Wer bist du heute?|Wähle deinen Quo für das heutige Abenteuer.|Dein Spitzname (freiwillig)|Los geht\'s!|Ändern|Dein Bild|{n} von {t} Teilen|Jede erledigte Mission deckt ein Stück des Bildes auf.|Das ganze Bild gehört dir!|Bild herunterladen|Ausmalbild zum Drucken|Schließen|Neues Teil!|Male aus: {city}|Erobert: {city}|Drucken|Ausmalbild herunterladen|Entdecker|Späher|Läufer|Sprinter|Springer|Akrobat|Spaßvogel|Meister|Ausmalbild wird vorbereitet…|Ihr Kind bekommt {n} Stopps mit Missionen — das Bild teilt sich in {n} Teile.|Denk dir einen Spitznamen aus – nicht deinen echten Namen.|Zufall',
-    it: 'Chi sei oggi?|Scegli il tuo Quo per l\'avventura di oggi.|Il tuo soprannome (facoltativo)|Si parte!|Cambia|La tua immagine|{n} di {t} pezzi|Ogni missione completata scopre un pezzo dell\'immagine.|L\'immagine intera è tua!|Scarica l\'immagine|Disegno da colorare|Chiudi|Nuovo pezzo!|Colora: {city}|Conquistata: {city}|Stampa|Scarica il disegno|Esploratore|Esploratore curioso|Corridore|Velocista|Saltatore|Acrobata|Burlone|Campione|Preparo il disegno…|Il bambino avrà {n} tappe con missioni — l\'immagine si divide in {n} pezzi.|Inventa un soprannome, non il tuo vero nome.|A caso',
-    cs: 'Kým jsi dnes?|Vyber si svého Quo na dnešní výpravu.|Tvoje přezdívka (nemusíš)|Jdeme na to!|Změnit|Tvůj obrázek|{n} z {t} dílků|Každá splněná mise odkryje dílek obrázku.|Celý obrázek je tvůj!|Stáhnout obrázek|Omalovánka k tisku|Zavřít|Nový dílek!|Vybarvi: {city}|Dobyto: {city}|Tisk|Stáhnout omalovánku|Objevitel|Průzkumník|Běžec|Sprinter|Skokan|Akrobat|Vtipálek|Mistr|Připravuji omalovánku…|Dítě dostane {n} zastávek s misemi — obrázek se rozdělí na {n} dílků.|Vymysli si přezdívku – ne své skutečné jméno.|Náhodně',
-    da: 'Hvem er du i dag?|Vælg din Quo til dagens eventyr.|Dit kælenavn (frivilligt)|Af sted!|Skift|Dit billede|{n} af {t} brikker|Hver mission, du klarer, afslører en brik af billedet.|Hele billedet er dit!|Hent billedet|Tegning til at farvelægge|Luk|Ny brik!|Farvelæg: {city}|Erobret: {city}|Udskriv|Hent tegningen|Opdager|Spejder|Løber|Sprinter|Springer|Akrobat|Spøgefugl|Mester|Gør tegningen klar…|Barnet får {n} stop med missioner — billedet deles i {n} brikker.|Find på et kælenavn – ikke dit rigtige navn.|Tilfældig',
-    es: '¿Quién eres hoy?|Elige tu Quo para la aventura de hoy.|Tu apodo (opcional)|¡Vamos!|Cambiar|Tu imagen|{n} de {t} piezas|Cada misión superada descubre una pieza de la imagen.|¡La imagen entera es tuya!|Descargar imagen|Dibujo para colorear|Cerrar|¡Nueva pieza!|Colorea: {city}|Conquistada: {city}|Imprimir|Descargar dibujo|Explorador|Rastreador|Corredor|Velocista|Saltarín|Acróbata|Bromista|Campeón|Preparando el dibujo…|Tu hijo tendrá {n} paradas con misiones — la imagen se divide en {n} piezas.|Inventa un apodo, no tu nombre real.|Al azar',
-    fr: 'Qui es-tu aujourd\'hui ?|Choisis ton Quo pour l\'aventure du jour.|Ton surnom (facultatif)|C\'est parti !|Changer|Ton image|{n} sur {t} morceaux|Chaque mission réussie dévoile un morceau de l\'image.|L\'image entière est à toi !|Télécharger l\'image|Coloriage à imprimer|Fermer|Nouveau morceau !|Colorie : {city}|Conquise : {city}|Imprimer|Télécharger le coloriage|Explorateur|Éclaireur|Coureur|Sprinteur|Sauteur|Acrobate|Farceur|Champion|Préparation du coloriage…|Votre enfant aura {n} étapes avec missions — l\'image se divise en {n} morceaux.|Invente un surnom, pas ton vrai prénom.|Au hasard',
-    hr: 'Tko si danas?|Odaberi svog Quoa za današnju pustolovinu.|Tvoj nadimak (ne moraš)|Krećemo!|Promijeni|Tvoja slika|{n} od {t} dijelova|Svaka riješena misija otkriva dio slike.|Cijela slika je tvoja!|Preuzmi sliku|Bojanka za ispis|Zatvori|Novi dio!|Oboji: {city}|Osvojeno: {city}|Ispiši|Preuzmi bojanku|Istraživač|Izviđač|Trkač|Sprinter|Skakač|Akrobat|Šaljivac|Prvak|Pripremam bojanku…|Dijete dobiva {n} stajališta s misijama — slika se dijeli na {n} dijelova.|Smisli nadimak – ne svoje pravo ime.|Nasumično',
-    hu: 'Ki vagy ma?|Válaszd ki a Quódat a mai kalandhoz.|A beceneved (nem kötelező)|Indulás!|Csere|A képed|{n} / {t} darab|Minden teljesített küldetés felfed egy darabot a képből.|Az egész kép a tiéd!|Kép letöltése|Kifestő nyomtatáshoz|Bezárás|Új darab!|Színezd ki: {city}|Meghódítva: {city}|Nyomtatás|Kifestő letöltése|Felfedező|Felderítő|Futó|Sprinter|Ugró|Akrobata|Tréfamester|Bajnok|Készül a kifestő…|A gyerek {n} küldetéses megállót kap — a kép {n} darabra oszlik.|Találj ki egy becenevet – ne a valódi neved.|Véletlen',
-    nl: 'Wie ben jij vandaag?|Kies je Quo voor het avontuur van vandaag.|Je bijnaam (hoeft niet)|We gaan!|Wijzig|Jouw plaatje|{n} van {t} stukjes|Elke missie die je haalt, laat een stukje van het plaatje zien.|Het hele plaatje is van jou!|Plaatje downloaden|Kleurplaat om te printen|Sluiten|Nieuw stukje!|Kleur in: {city}|Veroverd: {city}|Printen|Kleurplaat downloaden|Ontdekker|Verkenner|Renner|Sprinter|Springer|Acrobaat|Grapjas|Kampioen|Kleurplaat wordt gemaakt…|Je kind krijgt {n} stops met missies — het plaatje wordt in {n} stukjes verdeeld.|Verzin een bijnaam – niet je echte naam.|Willekeurig',
-    no: 'Hvem er du i dag?|Velg din Quo til dagens eventyr.|Kallenavnet ditt (frivillig)|Vi drar!|Bytt|Bildet ditt|{n} av {t} biter|Hvert oppdrag du klarer, avslører en bit av bildet.|Hele bildet er ditt!|Last ned bildet|Fargelegging for utskrift|Lukk|Ny bit!|Fargelegg: {city}|Erobret: {city}|Skriv ut|Last ned fargeleggingen|Oppdager|Speider|Løper|Sprinter|Hopper|Akrobat|Spøkefugl|Mester|Lager fargeleggingen…|Barnet får {n} stopp med oppdrag — bildet deles i {n} biter.|Finn på et kallenavn – ikke ditt ekte navn.|Tilfeldig',
-    pt: 'Quem és tu hoje?|Escolhe o teu Quo para a aventura de hoje.|A tua alcunha (opcional)|Vamos!|Mudar|A tua imagem|{n} de {t} peças|Cada missão cumprida revela uma peça da imagem.|A imagem inteira é tua!|Descarregar imagem|Desenho para colorir|Fechar|Nova peça!|Pinta: {city}|Conquistada: {city}|Imprimir|Descarregar desenho|Explorador|Batedor|Corredor|Velocista|Saltador|Acrobata|Brincalhão|Campeão|A preparar o desenho…|A criança terá {n} paragens com missões — a imagem divide-se em {n} peças.|Inventa uma alcunha, não o teu nome verdadeiro.|Aleatório',
-    ro: 'Cine ești azi?|Alege-ți Quo-ul pentru aventura de azi.|Porecla ta (opțional)|Pornim!|Schimbă|Imaginea ta|{n} din {t} bucăți|Fiecare misiune reușită dezvăluie o bucată din imagine.|Toată imaginea e a ta!|Descarcă imaginea|Planșă de colorat|Închide|Bucată nouă!|Colorează: {city}|Cucerit: {city}|Tipărește|Descarcă planșa|Explorator|Cercetaș|Alergător|Sprinter|Săritor|Acrobat|Glumeț|Campion|Pregătesc planșa…|Copilul va avea {n} opriri cu misiuni — imaginea se împarte în {n} bucăți.|Inventează o poreclă, nu numele tău adevărat.|Aleatoriu',
-    sk: 'Kým si dnes?|Vyber si svojho Quo na dnešnú výpravu.|Tvoja prezývka (nemusíš)|Ideme na to!|Zmeniť|Tvoj obrázok|{n} z {t} dielikov|Každá splnená misia odkryje dielik obrázka.|Celý obrázok je tvoj!|Stiahnuť obrázok|Omaľovánka na tlač|Zavrieť|Nový dielik!|Vyfarbi: {city}|Dobyté: {city}|Tlačiť|Stiahnuť omaľovánku|Objaviteľ|Prieskumník|Bežec|Šprintér|Skokan|Akrobat|Vtipkár|Majster|Pripravujem omaľovánku…|Dieťa dostane {n} zastávok s misiami — obrázok sa rozdelí na {n} dielikov.|Vymysli si prezývku – nie svoje skutočné meno.|Náhodne',
-    sv: 'Vem är du i dag?|Välj din Quo för dagens äventyr.|Ditt smeknamn (frivilligt)|Nu kör vi!|Byt|Din bild|{n} av {t} bitar|Varje uppdrag du klarar visar en bit av bilden.|Hela bilden är din!|Ladda ner bilden|Målarbild att skriva ut|Stäng|Ny bit!|Färglägg: {city}|Erövrad: {city}|Skriv ut|Ladda ner målarbilden|Upptäckare|Spanare|Löpare|Sprinter|Hoppare|Akrobat|Skämtare|Mästare|Gör målarbilden…|Barnet får {n} stopp med uppdrag — bilden delas i {n} bitar.|Hitta på ett smeknamn – inte ditt riktiga namn.|Slumpa',
-    uk: 'Ким ти є сьогодні?|Обери свого Quo для сьогоднішньої мандрівки.|Твій нік (не обов\'язково)|Вирушаємо!|Змінити|Твоя картинка|{n} з {t} шматочків|Кожна виконана місія відкриває шматочок картинки.|Уся картинка — твоя!|Завантажити картинку|Розмальовка для друку|Закрити|Новий шматочок!|Розфарбуй: {city}|Здобуто: {city}|Друкувати|Завантажити розмальовку|Дослідник|Розвідник|Бігун|Спринтер|Стрибун|Акробат|Жартівник|Чемпіон|Готую розмальовку…|Дитина отримає {n} зупинок з місіями — картинка поділиться на {n} шматочків.|Вигадай нік — не своє справжнє ім\'я.|Випадково'
+    pl: 'Kim dziś jesteś?|Wybierz swojego Quo na dzisiejszą wyprawę.|Twój nick (nie musisz)|Ruszamy!|Zmień|Twój obrazek|{n} z {t} kawałków|Każda zaliczona misja odsłania kawałek obrazka.|Cały obrazek jest Twój!|Pobierz obrazek|Zamknij|Nowy kawałek!|Zdobyte: {city}|Odkrywca|Zwiadowca|Biegacz|Sprinter|Skoczek|Akrobata|Wesołek|Mistrz|Dziecko dostanie {n} przystanków z misjami — obrazek podzieli się na {n} kawałków.|Wymyśl ksywkę — nie wpisuj prawdziwego imienia.|Losuj',
+    en: 'Who are you today?|Pick your Quo for today\'s adventure.|Your nickname (optional)|Let\'s go!|Change|Your picture|{n} of {t} pieces|Every mission you finish uncovers a piece of the picture.|The whole picture is yours!|Download picture|Close|New piece!|Conquered: {city}|Explorer|Scout|Runner|Sprinter|Jumper|Acrobat|Joker|Champion|Your child will get {n} stops with missions — the picture splits into {n} pieces.|Make up a nickname — not your real name.|Random',
+    de: 'Wer bist du heute?|Wähle deinen Quo für das heutige Abenteuer.|Dein Spitzname (freiwillig)|Los geht\'s!|Ändern|Dein Bild|{n} von {t} Teilen|Jede erledigte Mission deckt ein Stück des Bildes auf.|Das ganze Bild gehört dir!|Bild herunterladen|Schließen|Neues Teil!|Erobert: {city}|Entdecker|Späher|Läufer|Sprinter|Springer|Akrobat|Spaßvogel|Meister|Ihr Kind bekommt {n} Stopps mit Missionen — das Bild teilt sich in {n} Teile.|Denk dir einen Spitznamen aus – nicht deinen echten Namen.|Zufall',
+    it: 'Chi sei oggi?|Scegli il tuo Quo per l\'avventura di oggi.|Il tuo soprannome (facoltativo)|Si parte!|Cambia|La tua immagine|{n} di {t} pezzi|Ogni missione completata scopre un pezzo dell\'immagine.|L\'immagine intera è tua!|Scarica l\'immagine|Chiudi|Nuovo pezzo!|Conquistata: {city}|Esploratore|Esploratore curioso|Corridore|Velocista|Saltatore|Acrobata|Burlone|Campione|Il bambino avrà {n} tappe con missioni — l\'immagine si divide in {n} pezzi.|Inventa un soprannome, non il tuo vero nome.|A caso',
+    cs: 'Kým jsi dnes?|Vyber si svého Quo na dnešní výpravu.|Tvoje přezdívka (nemusíš)|Jdeme na to!|Změnit|Tvůj obrázek|{n} z {t} dílků|Každá splněná mise odkryje dílek obrázku.|Celý obrázek je tvůj!|Stáhnout obrázek|Zavřít|Nový dílek!|Dobyto: {city}|Objevitel|Průzkumník|Běžec|Sprinter|Skokan|Akrobat|Vtipálek|Mistr|Dítě dostane {n} zastávek s misemi — obrázek se rozdělí na {n} dílků.|Vymysli si přezdívku – ne své skutečné jméno.|Náhodně',
+    da: 'Hvem er du i dag?|Vælg din Quo til dagens eventyr.|Dit kælenavn (frivilligt)|Af sted!|Skift|Dit billede|{n} af {t} brikker|Hver mission, du klarer, afslører en brik af billedet.|Hele billedet er dit!|Hent billedet|Luk|Ny brik!|Erobret: {city}|Opdager|Spejder|Løber|Sprinter|Springer|Akrobat|Spøgefugl|Mester|Barnet får {n} stop med missioner — billedet deles i {n} brikker.|Find på et kælenavn – ikke dit rigtige navn.|Tilfældig',
+    es: '¿Quién eres hoy?|Elige tu Quo para la aventura de hoy.|Tu apodo (opcional)|¡Vamos!|Cambiar|Tu imagen|{n} de {t} piezas|Cada misión superada descubre una pieza de la imagen.|¡La imagen entera es tuya!|Descargar imagen|Cerrar|¡Nueva pieza!|Conquistada: {city}|Explorador|Rastreador|Corredor|Velocista|Saltarín|Acróbata|Bromista|Campeón|Tu hijo tendrá {n} paradas con misiones — la imagen se divide en {n} piezas.|Inventa un apodo, no tu nombre real.|Al azar',
+    fr: 'Qui es-tu aujourd\'hui ?|Choisis ton Quo pour l\'aventure du jour.|Ton surnom (facultatif)|C\'est parti !|Changer|Ton image|{n} sur {t} morceaux|Chaque mission réussie dévoile un morceau de l\'image.|L\'image entière est à toi !|Télécharger l\'image|Fermer|Nouveau morceau !|Conquise : {city}|Explorateur|Éclaireur|Coureur|Sprinteur|Sauteur|Acrobate|Farceur|Champion|Votre enfant aura {n} étapes avec missions — l\'image se divise en {n} morceaux.|Invente un surnom, pas ton vrai prénom.|Au hasard',
+    hr: 'Tko si danas?|Odaberi svog Quoa za današnju pustolovinu.|Tvoj nadimak (ne moraš)|Krećemo!|Promijeni|Tvoja slika|{n} od {t} dijelova|Svaka riješena misija otkriva dio slike.|Cijela slika je tvoja!|Preuzmi sliku|Zatvori|Novi dio!|Osvojeno: {city}|Istraživač|Izviđač|Trkač|Sprinter|Skakač|Akrobat|Šaljivac|Prvak|Dijete dobiva {n} stajališta s misijama — slika se dijeli na {n} dijelova.|Smisli nadimak – ne svoje pravo ime.|Nasumično',
+    hu: 'Ki vagy ma?|Válaszd ki a Quódat a mai kalandhoz.|A beceneved (nem kötelező)|Indulás!|Csere|A képed|{n} / {t} darab|Minden teljesített küldetés felfed egy darabot a képből.|Az egész kép a tiéd!|Kép letöltése|Bezárás|Új darab!|Meghódítva: {city}|Felfedező|Felderítő|Futó|Sprinter|Ugró|Akrobata|Tréfamester|Bajnok|A gyerek {n} küldetéses megállót kap — a kép {n} darabra oszlik.|Találj ki egy becenevet – ne a valódi neved.|Véletlen',
+    nl: 'Wie ben jij vandaag?|Kies je Quo voor het avontuur van vandaag.|Je bijnaam (hoeft niet)|We gaan!|Wijzig|Jouw plaatje|{n} van {t} stukjes|Elke missie die je haalt, laat een stukje van het plaatje zien.|Het hele plaatje is van jou!|Plaatje downloaden|Sluiten|Nieuw stukje!|Veroverd: {city}|Ontdekker|Verkenner|Renner|Sprinter|Springer|Acrobaat|Grapjas|Kampioen|Je kind krijgt {n} stops met missies — het plaatje wordt in {n} stukjes verdeeld.|Verzin een bijnaam – niet je echte naam.|Willekeurig',
+    no: 'Hvem er du i dag?|Velg din Quo til dagens eventyr.|Kallenavnet ditt (frivillig)|Vi drar!|Bytt|Bildet ditt|{n} av {t} biter|Hvert oppdrag du klarer, avslører en bit av bildet.|Hele bildet er ditt!|Last ned bildet|Lukk|Ny bit!|Erobret: {city}|Oppdager|Speider|Løper|Sprinter|Hopper|Akrobat|Spøkefugl|Mester|Barnet får {n} stopp med oppdrag — bildet deles i {n} biter.|Finn på et kallenavn – ikke ditt ekte navn.|Tilfeldig',
+    pt: 'Quem és tu hoje?|Escolhe o teu Quo para a aventura de hoje.|A tua alcunha (opcional)|Vamos!|Mudar|A tua imagem|{n} de {t} peças|Cada missão cumprida revela uma peça da imagem.|A imagem inteira é tua!|Descarregar imagem|Fechar|Nova peça!|Conquistada: {city}|Explorador|Batedor|Corredor|Velocista|Saltador|Acrobata|Brincalhão|Campeão|A criança terá {n} paragens com missões — a imagem divide-se em {n} peças.|Inventa uma alcunha, não o teu nome verdadeiro.|Aleatório',
+    ro: 'Cine ești azi?|Alege-ți Quo-ul pentru aventura de azi.|Porecla ta (opțional)|Pornim!|Schimbă|Imaginea ta|{n} din {t} bucăți|Fiecare misiune reușită dezvăluie o bucată din imagine.|Toată imaginea e a ta!|Descarcă imaginea|Închide|Bucată nouă!|Cucerit: {city}|Explorator|Cercetaș|Alergător|Sprinter|Săritor|Acrobat|Glumeț|Campion|Copilul va avea {n} opriri cu misiuni — imaginea se împarte în {n} bucăți.|Inventează o poreclă, nu numele tău adevărat.|Aleatoriu',
+    sk: 'Kým si dnes?|Vyber si svojho Quo na dnešnú výpravu.|Tvoja prezývka (nemusíš)|Ideme na to!|Zmeniť|Tvoj obrázok|{n} z {t} dielikov|Každá splnená misia odkryje dielik obrázka.|Celý obrázok je tvoj!|Stiahnuť obrázok|Zavrieť|Nový dielik!|Dobyté: {city}|Objaviteľ|Prieskumník|Bežec|Šprintér|Skokan|Akrobat|Vtipkár|Majster|Dieťa dostane {n} zastávok s misiami — obrázok sa rozdelí na {n} dielikov.|Vymysli si prezývku – nie svoje skutočné meno.|Náhodne',
+    sv: 'Vem är du i dag?|Välj din Quo för dagens äventyr.|Ditt smeknamn (frivilligt)|Nu kör vi!|Byt|Din bild|{n} av {t} bitar|Varje uppdrag du klarar visar en bit av bilden.|Hela bilden är din!|Ladda ner bilden|Stäng|Ny bit!|Erövrad: {city}|Upptäckare|Spanare|Löpare|Sprinter|Hoppare|Akrobat|Skämtare|Mästare|Barnet får {n} stopp med uppdrag — bilden delas i {n} bitar.|Hitta på ett smeknamn – inte ditt riktiga namn.|Slumpa',
+    uk: 'Ким ти є сьогодні?|Обери свого Quo для сьогоднішньої мандрівки.|Твій нік (не обов\'язково)|Вирушаємо!|Змінити|Твоя картинка|{n} з {t} шматочків|Кожна виконана місія відкриває шматочок картинки.|Уся картинка — твоя!|Завантажити картинку|Закрити|Новий шматочок!|Здобуто: {city}|Дослідник|Розвідник|Бігун|Спринтер|Стрибун|Акробат|Жартівник|Чемпіон|Дитина отримає {n} зупинок з місіями — картинка поділиться на {n} шматочків.|Вигадай нік — не своє справжнє ім\'я.|Випадково'
   };
-  var KEYS = ['choose', 'choose_sub', 'nick', 'start', 'change', 'picture', 'progress', 'hint', 'done', 'download', 'coloring', 'close', 'new_piece',
-    'color_title', 'conquered', 'print', 'download_col', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'preparing', 'qr_note', 'nick_hint', 'random'];
+  var KEYS = ['choose', 'choose_sub', 'nick', 'start', 'change', 'picture', 'progress', 'hint', 'done', 'download', 'close', 'new_piece',
+    'conquered', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'qr_note', 'nick_hint', 'random'];
   var DICT = {};
   Object.keys(RAW).forEach(function (l) {
     var v = RAW[l].split('|'), d = {};
@@ -254,12 +257,47 @@
   var SND_OFF = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
   function actionsHtml() {
     var backHref = S.region ? ('/region.html?slug=' + encodeURIComponent(S.region) + '&country=' + encodeURIComponent(S.country)) : '/';
-    return '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-qk="dl">' + DL + ' ' + esc(t('download')) + '</button>' +
-      '<button type="button" class="qc-btn" data-qk="color">' + PEN + ' ' + esc(t('coloring')) + '</button></div>' +
+    return gameHtml(S.slug, S.lang) +
+      '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-qk="dl">' + DL + ' ' + esc(t('download')) + '</button></div>' +
       '<a href="' + esc(backHref) + '" class="qk-back">' + ARROW_BACK + ' ' + esc(t('back')) + '</a>';
   }
+
+  // ── gra „Quo: Wyprawa” jako nagroda (JP 2026-10-31) ──────────
+  // gra/stages.json pobierany raz (cache w pamięci strony); offline / 404 → null (bez przycisku, bez błędu).
+  var STAGES = null, stagesP = null;
+  function loadStages() {
+    if (stagesP) return stagesP;
+    stagesP = (typeof fetch === 'function' ? fetch('/gra/stages.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }) : Promise.resolve(null))
+      .then(function (j) { STAGES = j && Array.isArray(j.stages) ? j.stages : []; return STAGES; }, function () { STAGES = []; return STAGES; });
+    return stagesP;
+  }
+  // 'approved' — etap zatwierdzony; 'draft' — etap jest, ale niezatwierdzony; null — brak etapu albo brak pliku
+  function stageState(slug) {
+    return loadStages().then(function (list) {
+      var st = null;
+      list.forEach(function (x) { if (x && x.slug === slug) st = x; });
+      return st ? (st.approved === true ? 'approved' : 'draft') : null;
+    });
+  }
+  function gameUrl(slug, lang) { return '/gra/?trasa=' + encodeURIComponent(slug) + '&lang=' + encodeURIComponent(lang || 'pl'); }
+  // Wstawka w kartę / okno: pusta, dopóki stages.json nie przyjdzie; potem fillGame() uzupełnia wszystkie [data-qk-game].
+  function gameHtml(slug, lang) {
+    var inner = '';
+    if (STAGES) {
+      var st = null; STAGES.forEach(function (x) { if (x && x.slug === slug) st = x; });
+      if (st && st.approved === true) inner = '<a class="qc-btn qc-btn--primary qk-play" href="' + esc(gameUrl(slug, lang)) + '">' + PLAY + ' <span>' + esc(PT('page.trip.kid.play', 'Zagraj: Quo: Wyprawa')) + '</span></a>';
+      else if (st) inner = '<p class="qk-sleep">' + esc(PT('page.trip.kid.game_sleeps', 'Gra dla tej wycieczki jeszcze śpi')) + '</p>';
+    }
+    return '<div class="qk-game" data-qk-game="' + esc(slug) + '"' + (inner ? '' : ' hidden') + '>' + inner + '</div>';
+  }
+  function fillGame() {
+    [].forEach.call(document.querySelectorAll('[data-qk-game]'), function (el) {
+      var tmp = document.createElement('div'); tmp.innerHTML = gameHtml(el.getAttribute('data-qk-game'), S.lang);
+      el.replaceWith(tmp.firstChild);
+    });
+  }
+  var PLAY = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
   var DL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
-  var PEN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>';
   var ARROW_BACK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M5 12l6-6M5 12l6 6"/></svg>';
 
   function openPuzzle(newPiece) {
@@ -359,114 +397,6 @@
     }).catch(function () { /* brak obrazka */ });
   }
 
-  // ── kolorowanka ──────────────────────────────────────
-  function lineArt(img) {
-    var W = 1200, H = Math.round(img.naturalHeight * W / img.naturalWidth);
-    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    var x = cv.getContext('2d', { willReadFrequently: true });
-    x.drawImage(img, 0, 0, W, H);
-    var d = x.getImageData(0, 0, W, H).data, g = new Float32Array(W * H), i, j;
-    for (i = 0; i < W * H; i++) g[i] = d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114;
-    g = blur(blur(g, W, H, 2), W, H, 2);
-    var m = new Float32Array(W * H), hist = new Uint32Array(256);
-    for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
-      var k = j * W + i;
-      var gx = -g[k - W - 1] - 2 * g[k - 1] - g[k + W - 1] + g[k - W + 1] + 2 * g[k + 1] + g[k + W + 1];
-      var gy = -g[k - W - 1] - 2 * g[k - W] - g[k - W + 1] + g[k + W - 1] + 2 * g[k + W] + g[k + W + 1];
-      var v = Math.min(255, Math.sqrt(gx * gx + gy * gy) / 4); m[k] = v; hist[v | 0]++;
-    }
-    // próg: najmocniejsze ~11% krawędzi
-    var target = W * H * 0.11, acc = 0, th = 255;
-    for (th = 255; th > 0; th--) { acc += hist[th]; if (acc >= target) break; }
-    var out = x.createImageData(W, H), o = out.data;
-    for (j = 0; j < H; j++) for (i = 0; i < W; i++) {
-      var p = j * W + i, on = m[p] >= th;
-      if (!on && i > 0 && i < W - 1 && j > 0 && j < H - 1) on = (m[p - 1] >= th * 1.25 || m[p + 1] >= th * 1.25 || m[p - W] >= th * 1.25 || m[p + W] >= th * 1.25);
-      var c = on ? 30 : 255; o[p * 4] = o[p * 4 + 1] = o[p * 4 + 2] = c; o[p * 4 + 3] = 255;
-    }
-    x.putImageData(out, 0, 0);
-    return cv;
-  }
-  function blur(src, W, H, r) {
-    var tmp = new Float32Array(W * H), dst = new Float32Array(W * H), i, j, s, n = r * 2 + 1;
-    for (j = 0; j < H; j++) { s = 0; for (i = -r; i <= r; i++) s += src[j * W + Math.min(W - 1, Math.max(0, i))];
-      for (i = 0; i < W; i++) { tmp[j * W + i] = s / n; s += src[j * W + Math.min(W - 1, i + r + 1)] - src[j * W + Math.max(0, i - r)]; } }
-    for (i = 0; i < W; i++) { s = 0; for (j = -r; j <= r; j++) s += tmp[Math.min(H - 1, Math.max(0, j)) * W + i];
-      for (j = 0; j < H; j++) { dst[j * W + i] = s / n; s += tmp[Math.min(H - 1, j + r + 1) * W + i] - tmp[Math.max(0, j - r) * W + i]; } }
-    return dst;
-  }
-  function coloringPage(art, ava) {
-    // A4 pionowo, 150 dpi
-    var W = 1240, H = 1754, M = 90;
-    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    var x = cv.getContext('2d');
-    x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
-    x.fillStyle = '#0E1A2B'; x.font = font(900, 64); x.textAlign = 'center';
-    x.fillText(t('color_title', { city: S.city }), W / 2, M + 60);
-    var aw = W - M * 2, ah = Math.round(art.height * aw / art.width), top = M + 110;
-    x.drawImage(art, M, top, aw, ah);
-    x.lineWidth = 6; x.strokeStyle = '#0E1A2B'; x.strokeRect(M, top, aw, ah);
-    // pole na podpis i rysunek własny
-    var by = top + ah + 60, bh = H - by - M - 60;
-    x.setLineDash([16, 12]); x.lineWidth = 4; x.strokeStyle = '#8794A8'; x.strokeRect(M, by, aw, bh); x.setLineDash([]);
-    if (ava) {
-      // Quo jako kontur do pokolorowania
-      var qa = lineArtSmall(ava, 360); x.drawImage(qa, W - M - 380, by + bh - 380, 360, 360);
-    }
-    x.textAlign = 'left'; x.fillStyle = '#5D6B82'; x.font = font(600, 30);
-    x.fillText('quolino.com', M, H - M + 10);
-    return cv;
-  }
-  function lineArtSmall(img, size) {
-    var cv = document.createElement('canvas'); cv.width = cv.height = size;
-    var x = cv.getContext('2d', { willReadFrequently: true });
-    x.drawImage(img, 0, 0, size, size);
-    var d = x.getImageData(0, 0, size, size), p = d.data, a = new Uint8Array(size * size), i, j;
-    for (i = 0; i < size * size; i++) a[i] = p[i * 4 + 3] > 40 ? 1 : 0;
-    var lum = new Float32Array(size * size);
-    for (i = 0; i < size * size; i++) lum[i] = p[i * 4] * 0.299 + p[i * 4 + 1] * 0.587 + p[i * 4 + 2] * 0.114;
-    lum = blur(lum, size, size, 1);
-    for (j = 1; j < size - 1; j++) for (i = 1; i < size - 1; i++) {
-      var k = j * size + i, edgeA = a[k] && (!a[k - 1] || !a[k + 1] || !a[k - size] || !a[k + size]);
-      var gx = lum[k + 1] - lum[k - 1], gy = lum[k + size] - lum[k - size], edgeL = a[k] && Math.sqrt(gx * gx + gy * gy) > 34;
-      var c = edgeA || edgeL ? 30 : 255;
-      p[k * 4] = p[k * 4 + 1] = p[k * 4 + 2] = c; p[k * 4 + 3] = edgeA || edgeL ? 255 : 0;
-    }
-    x.putImageData(d, 0, 0);
-    return cv;
-  }
-  function openColoring() {
-    var dlg = sheet('qk-col', '<h2 class="qk-sheet__title" id="qkColT">' + esc(t('coloring')) + '</h2><p class="qk-sheet__sub" data-st>' + esc(t('preparing')) + '</p><div class="qk-colprev"></div>', 'qkColT');
-    var a = S.av || avatar() || lsGet(K_AVATAR) || { pose: 1 };
-    var ready = loadImg(S.hero + '-coloring.webp').then(function (img) {          // gotowa kolorowanka od redakcji
-      var cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0); return cv;
-    }).catch(function () { return loadImg(S.hero + '-hero-1200.webp').then(lineArt); });
-    Promise.all([ready, loadImg(poseUrl(a.pose, 512)).catch(function () { return null; })]).then(function (r) {
-      var page = coloringPage(r[0], r[1]), url = page.toDataURL('image/png');
-      var st = dlg.querySelector('[data-st]'); if (st) st.remove();
-      dlg.querySelector('.qk-colprev').innerHTML = '<img src="' + url + '" alt="' + esc(t('color_title', { city: S.city })) + '">' +
-        '<div class="qk-acts"><button type="button" class="qc-btn qc-btn--primary" data-qk="print">' + esc(t('print')) + '</button>' +
-        '<button type="button" class="qc-btn" data-qk="dlcol">' + DL + ' ' + esc(t('download_col')) + '</button></div>';
-      dlg.addEventListener('click', function (e) {
-        if (e.target.closest('[data-qk="dlcol"]')) saveCanvas(page, 'quolino-' + S.slug + '-kolorowanka.png');
-        if (e.target.closest('[data-qk="print"]')) printImage(url);
-      });
-    }).catch(function () { var st = dlg.querySelector('[data-st]'); if (st) st.textContent = '—'; });
-  }
-  function printImage(url) {
-    var box = document.getElementById('qkPrint');
-    if (!box) { box = document.createElement('div'); box.id = 'qkPrint'; document.body.appendChild(box); }
-    box.innerHTML = '<img src="' + url + '" alt="">';
-    var img = box.querySelector('img');
-    var go = function () {
-      document.body.classList.add('qk-printing');
-      window.addEventListener('afterprint', function done() { document.body.classList.remove('qk-printing'); window.removeEventListener('afterprint', done); });
-      window.print();
-      setTimeout(function () { document.body.classList.remove('qk-printing'); }, 1500);
-    };
-    if (img.complete) setTimeout(go, 50); else img.onload = go;
-  }
-
   // ── zdarzenia ────────────────────────────────────────
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-qk]');
@@ -476,7 +406,6 @@
     else if (k === 'snd' && window.QSound) { window.QSound.set(!window.QSound.on()); paintCard(); var sb = document.querySelector('#qkCard [data-qk="snd"]'); if (sb) sb.focus(); }
     else if (k === 'open') openPuzzle(false);
     else if (k === 'dl') downloadPicture();
-    else if (k === 'color') openColoring();
   });
   // po zmianie zadania city.html już przeliczył album (listener na checkboxie działa przed tym)
   document.addEventListener('change', function (e) {
@@ -497,17 +426,18 @@
     }
     S.prevGot = -1; S.got = 0; S.total = 0;
     sync(false);
+    loadStages().then(fillGame);
     if (kidDevice() && !avatar()) setTimeout(openPicker, 300);
   }
 
-  // panel rodzica (konto.html): obrazek i kolorowanka dla wpisu z albumu
+  // panel rodzica (konto.html): obrazek dla wpisu z albumu; stage() / gameUrl() — przycisk gry wg approved w gra/stages.json
   function use(e, lang) {
     if (lang && DICT[lang]) S.lang = lang;
     S.slug = e.slug; S.city = e.city; S.hero = e.hero; S.av = { pose: e.pose == null ? 1 : e.pose, color: e.color || 0, nick: e.nick || '' };
   }
 
   function saveAvatar(a) { lsSet(K_AVATAR, a); paintCard(); }
-  window.QReward = { init: init, count: count, use: use, picture: downloadPicture, coloring: openColoring, avatarUrl: poseUrl, colors: COLORS, poseName: function (i) { return t('a' + i); },
+  window.QReward = { init: init, count: count, use: use, picture: downloadPicture, stage: stageState, gameUrl: gameUrl, avatarUrl: poseUrl, colors: COLORS, poseName: function (i) { return t('a' + i); },
     // 2026-10-29 (kid-play.js): wybór awatara, obrazek, drużyna rodzeństwa, okno
     pick: openPicker, puzzle: function () { return openPuzzle(false); }, avatar: avatar, saveAvatar: saveAvatar, kids: kidsOf, avatarHtml: avatarHtml,
     sheet: sheet, close: closeSheet, progress: function () { return { got: S.got, total: S.total }; }, poses: POSES.length };
