@@ -9,6 +9,7 @@
 // a przed jego zatwierdzeniem — tylko dopisek w hermes_reply i wiadomość. Zawsze także plik work/verify/<id>.json.
 // Uwagi nie naniesione → automatycznie JEDNA ponowna runda (nowa prośba tylko z nimi), potem meldunek końcowy.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { createLive } from './live-status.mjs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import * as V from './verify-revision-lib.mjs';
@@ -60,7 +61,14 @@ function validatorPath(SKILLS) {
 
 // ── jedna prośba ─────────────────────────────────────────────────────────────────────────────
 // r: wiersz draft_revision_requests (status done, result_version). Zwraca { verify, retryId, message }.
-export async function verifyRequest({ q, r, notify = async () => false, log = null, thread = null, send = true, allowRetry = true, deps = null }) {
+// na żywo w panelu (live-status.mjs, klucz 'live'): etap „Weryfikacja uwag”, po zakończeniu stan idle z wynikiem
+export async function verifyRequest(a) {
+  const live = createLive({ q: a.q, trip: a.r?.city_slug, worker: 'Antigravity' });
+  live.set({ stage: 9, version_target: a.r?.result_version ? `v${a.r.result_version}` : null, message: `weryfikacja uwag prośby #${a.r?.id}` });
+  try { const out = await verifyRequestInner(a); await live.end({ status: 'done', version: a.r?.result_version ?? null, label: a.r?.result_version ? `v${a.r.result_version}` : null, message: out?.verify?.label ?? null }); return out; }
+  catch (e) { await live.end({ status: 'error', message: e.message }); throw e; }
+}
+async function verifyRequestInner({ q, r, notify = async () => false, log = null, thread = null, send = true, allowRetry = true, deps = null }) {
   const D = deps ?? await libDeps();
   log ??= D.log ?? (() => {});
   const { agyQuotaOut, agyQuotaHit, extractJson } = D;

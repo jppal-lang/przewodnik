@@ -29,6 +29,7 @@ import { whoIs, namesFromProblem } from './kimbyl.mjs';
 import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 import { CHOICE_RULE, CHOICE_MAX, cleanChoices, choiceOk, choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
 import { SKILLS } from './lib.mjs';
+import { createLive } from './live-status.mjs';   // praca AI na żywo dla panelu (ops.status_snapshot 'live', JP 2026-10-31)
 
 const argv = process.argv.slice(2);
 const slug = argv[0];
@@ -63,6 +64,7 @@ const geminiRole = (label) => /research/i.test(label) ? 'research z Google' : /s
 let STOPS_N = null, STAGE = 0;
 const STAGE_OF = (m) => /⑤ zapis/.test(m) ? 6 : /④c|cała trasa/.test(m) ? 5 : /④/.test(m) ? 4 : /③|bloki /.test(m) ? 3 : /②/.test(m) ? 2 : /①|research miasta/.test(m) ? 1 : /poprawki — /.test(m) && REVISE ? 8 : null;
 let WORK_LABEL = null;   // wersja, nad którą trwa praca (v5b) — dashboard pokazuje ją na karcie
+let LIVE = null;         // live-status.mjs: etap, przystanek, pole i końcówka tekstu na żywo (po otwarciu bazy)
 function event(msg, { stage = null, status = 'running' } = {}) {
   if (WORK_LABEL && !/^\[v\d/.test(msg)) msg = `[${WORK_LABEL}] ${msg}`;
   const st = stage ?? STAGE_OF(msg); if (st) STAGE = Math.max(STAGE, st);
@@ -72,6 +74,9 @@ function event(msg, { stage = null, status = 'running' } = {}) {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
     [RUN, slug, REVISE || RECHECK || CHOICES ? 'revise' : 'draft', st ?? STAGE, k, STOPS_N, msg.slice(0, 400), status, cost.tokens ?? 0, cost.calls,
      claudeUsage.input + claudeUsage.output, claudeUsage.calls]).catch(() => {});
+  if (!LIVE) return;
+  if (status === 'done' || status === 'error' || status === 'stopped') LIVE.end({ status, label: msg.match(/szkic (v\d+[a-z]?)/)?.[1] ?? WORK_LABEL, version: +(msg.match(/szkic v(\d+)\b/)?.[1]) || null, message: msg });
+  else LIVE.set({ stage: st ?? (STAGE || null), stop_n: k ?? undefined, stop_total: STOPS_N, message: msg.slice(0, 200), version_target: WORK_LABEL });
 }
 const log = (...a) => { lastStep = Date.now(); lastMsg = a.map(String).join(' ').slice(0, 200); rawLog(...a); event(lastMsg); };
 // zatrzymanie procesu (kill, restart) = wpis „przerwane” na dashboardzie, zamiast wiszącego „stoi ≥ 15 min” (JP 2026-10-25)
@@ -269,8 +274,8 @@ const asJson = (t) => { try { return JSON.parse(t); } catch { return extractJson
 async function geminiJson(prompt, label) {
   let { text } = await gemini(prompt, { json: true, label });
   for (let i = 0; ; i++) {
-    try { return asJson(text); } catch (e) {
-      try { const j = JSON.parse(repairJson(text)); log(`${label}: naprawa JSON w kodzie (${e.message.slice(0, 80)})`); return j; } catch {}   // bez wywołania AI
+    try { const j = asJson(text); LIVE?.text(j); return j; } catch (e) {
+      try { const j = JSON.parse(repairJson(text)); log(`${label}: naprawa JSON w kodzie (${e.message.slice(0, 80)})`); LIVE?.text(j); return j; } catch {}   // bez wywołania AI
       writeFileSync(join(dir, `v2-bad-json-${label.replace(/[^a-z0-9]+/gi, '-')}-${i}.txt`), text);
       if (i >= 2) throw new Error(`${label}: niepoprawny JSON po 2 naprawach (${e.message})`);
       log(`${label}: niepoprawny JSON (${e.message}) — naprawa ${i + 1}/2`);
@@ -361,6 +366,7 @@ async function stopBlocks(meta, pl, cityTitle) {
   const cat = meta.category;
   const tag = `${meta.stop_number} ${pl.name}`;
   const fRes = join(dir, `v2-stop-${meta.stop_number}-research.md`);
+  LIVE?.set({ stop_key: meta.stop_key, stop_n: meta.stop_number, field: null, text_tail: '' });
   // parking, restauracja, lody, słodycze (JP 2026-10-26): bez osobnego researchu i bez pisania bloków przez AI — tekst ze szkicu,
   // dane z karty miejsca (godziny, ceny z oficjalnej strony / OSM). Bloki legenda/ciekawostka/fun fact/popkultura: brak (stan none).
   if (PRACTICAL_CATS.has(cat) && !argv.includes('--practical-ai')) {
@@ -411,6 +417,7 @@ ${r.text}`, `bloki ${tag}`);
 async function fixAfterCheck(meta, pl, cityTitle, b) {
   const cat = meta.category, tag = `${meta.stop_number} ${pl.name}`;
   const fr = join(dir, `v2-stop-${meta.stop_number}-research.md`);
+  LIVE?.set({ stop_key: meta.stop_key, stop_n: meta.stop_number, field: null, text_tail: '' });
   const research = existsSync(fr) ? readFileSync(fr, 'utf8') : '';
   // JP 2026-10-24: ciekawostka i fun fact „z przymrużeniem oka” — błędy „brak drugiego źródła” w tych blokach pomijamy (kontrole sprzed zmiany zasady)
   const twoSrc = (e) => ['curiosity', 'fun_fact'].includes(e.block) && /dw(a|óch) niezależn|drugi\p{L}* źród|jedn\p{L}* (źródł|domen)/iu.test(`${e.problem} ${e.fix ?? ''}`);
@@ -472,6 +479,7 @@ ${JSON.stringify(rec)}`, { web: true, rawFile: join(dir, `v2-check-${slug}-${Dat
 const c = await db();
 const q = async (sql, p) => (await c.query(sql, p)).rows;
 globalThis.__q = q;
+LIVE = createLive({ q, trip: slug, worker: USE_AGY ? 'Antigravity' : 'automat' });
 async function main() {
   const [reg] = await q('SELECT slug FROM public.regions WHERE slug = $1', [region]);
   if (!reg) throw new Error(`nie ma regionu ${region} w bazie`);
@@ -757,7 +765,7 @@ const MAX_ROUNDS = +(opt('--rounds') ?? 1);   // JP 2026-10-25: jedna runda popr
 const SC_FACTS = (() => { const v = opt('--facts'); if (!v) return []; try { return JSON.parse(existsSync(v) ? readFileSync(v, 'utf8') : v); } catch (e) { rawLog(`--facts: niepoprawny JSON (${e.message})`); return []; } })();
 async function sourceCheckStep(trip, blocks, rv, facts = []) {
   if (!rv || argv.includes('--no-source-check')) return { changes: [], stats: null };
-  try { const r = await sourceCheck({ trip, blocks, review: rv, workDir: dir, facts, log, deps: { stopWikidata } }); return r; }
+  try { const r = await sourceCheck({ trip, blocks, review: rv, workDir: dir, facts, log, deps: { stopWikidata } }); LIVE?.flags(r?.stats?.issues); return r; }
   catch (e) { log(`${slug}: source-check nie przeszedł (${e.message.slice(0, 160)}) — uwagi zostają bez zmian`); return { changes: [], stats: null }; }
 }
 async function fixLoop(trip, blocks, cityTitle, rv, persist, onRound, labelOf) {
@@ -903,6 +911,7 @@ async function applyComments(trip, blocks, comments, cityTitle, who) {
   const kto = who === 'JP' ? 'uwag JP' : 'uwag z kontroli Claude (sprawdził źródła i całą trasę)';
   const list = (cs) => cs.map(x => `- [${x.field_label ?? x.field ?? 'całość'}] ${x.body}`).join('\n');
   for (const [key, cs] of Object.entries(by)) {
+    LIVE?.set({ stop_key: key === '_city' ? null : key, field: null, text_tail: '' });
     if (key === '_city') {
       log(`${slug}: poprawki — opis miasta (${cs.length})`);
       const out = await geminiJson(`Popraw opis wycieczki Quolino według ${kto}. Zmieniaj TYLKO to, czego dotyczą uwagi; resztę zostaw słowo w słowo.

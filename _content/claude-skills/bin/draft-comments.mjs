@@ -165,6 +165,9 @@ async function requests() {
     await q(`UPDATE public.draft_revision_requests SET status = 'failed', hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, why]);
     await reportFailed(r, thread, why, rows.length);
   }
+  // podgląd stanu i meldunek „Dziś” w panelu od razu po rozstrzygnięciu prośby (nie dopiero w następnym przebiegu crona kolejki)
+  try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger: `draft-comments: prośba #${r.id}`, log }); } catch { /* pomocniczy */ }
+  try { const { writeBrief } = await import('./today-brief.mjs'); await writeBrief({ log }); } catch { /* pomocniczy */ }
 }
 
 // prośba failed → od razu w wątku miasta i na #admin (JP 2026-10-31: uwagi nie mogą przepadać po cichu)

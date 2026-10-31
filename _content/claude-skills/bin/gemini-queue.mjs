@@ -37,7 +37,11 @@ try { const { runRepoJobs } = await import('./repo-jobs.mjs'); await runRepoJobs
 // strażnicy aktualności tras (watch.mjs, JP 2026-10-30): decyzje JP → szkic, potem najwyżej jeden zaległy strażnik (limit czasu w ustawieniach); własna blokada
 try { const { runWatch } = await import('./watch.mjs'); await runWatch({ log }); } catch (e) { log(`strażnicy: ${String(e.message).slice(0, 160)}`); }
 // podgląd stanu dla Claude (ops-status.mjs → ops.status_snapshot → rpc/ops_status): każdy przebieg crona, także w dzień i przy zajętej kolejce
-const opsStatus = async (trigger) => { try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger, log }); } catch (e) { log(`ops-status: ${String(e.message).slice(0, 160)}`); } };
+// potem meldunek „Dziś” dla panelu (today-brief.mjs → klucz 'brief'): generowany tylko przy zmianie faktów albo po ≥ 6 h, wyłącznie Antigravity / tryb auto
+const opsStatus = async (trigger) => {
+  try { const { writeOpsStatus } = await import('./ops-status.mjs'); await writeOpsStatus({ trigger, log }); } catch (e) { log(`ops-status: ${String(e.message).slice(0, 160)}`); }
+  try { const { writeBrief } = await import('./today-brief.mjs'); await writeBrief({ log }); } catch (e) { log(`meldunek: ${String(e.message).slice(0, 160)}`); }
+};
 await opsStatus('gemini-queue');
 if (argv.includes('--night')) {
   const h = +new Intl.DateTimeFormat('pl-PL', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Warsaw' }).format(new Date());
