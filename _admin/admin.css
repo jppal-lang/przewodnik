@@ -1621,3 +1621,6 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm-row.has-pop .adm-pops{height:auto;margin-top:8px}
 .adm-pop.is-open{position:relative;left:auto;top:auto}
 .adm-pop::before,.adm-pop::after{display:none}
+.adm-langs{font-size:15px;color:var(--muted);white-space:nowrap}
+.adm-langs.is-full{color:var(--verde)}
+.adm-langs.is-weak{color:var(--warn,#b06000)}

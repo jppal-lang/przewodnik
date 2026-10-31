@@ -101,6 +101,8 @@
     });
     return load.then(function (d) {
       if (/^\/admin_trips/.test(path)) return demoTrips(d);
+      if (/^\/translation_quality/.test(path)) return [{ city_slug: 'spello', lang: 'en', score: 4 }, { city_slug: 'spello', lang: 'de', score: 5 }, { city_slug: 'spello', lang: 'cs', score: 3 },
+        { city_slug: 'urbino', lang: 'en', score: 4 }, { city_slug: 'urbino', lang: 'fr', score: 4 }, { city_slug: 'urbino', lang: 'it', score: 5 }, { city_slug: 'urbino', lang: 'de', score: 4 }];
       if (path === '/rpc/admin_preview_token') return null;
       if (path === '/admin_queue') return d.queue.slice();
       if (/^\/admin_versions\?status=eq\.draft/.test(path)) return d.versions.filter(function (v) { return v.status === 'draft'; })
@@ -385,12 +387,47 @@
       return Object.keys(by).map(function (k) { var r = by[k]; r.city_name = names[k] || null; r.stops_count = stops[k] != null ? stops[k] : null; return r; });
     });
   }
+  // Gotowe języki (JP 2026-10-31: „nie widać, ile języków jest gotowych”): wynik kontroli jakości tłumaczeń (admin.translation_quality:
+  // miasto, język, ocena 0–5) — język liczy się jako gotowy od 4/5, słabszy jako „do poprawy”; polski zawsze. Liczba języków
+  // docelowych z publicznej tabeli languages (enabled). Bez tych danych lista pokazuje tylko to, co jest.
+  function loadLangs() {
+    var q = api('/translation_quality?select=city_slug,lang,score').catch(function () { return []; });
+    var pub = function (u) { return fetch('https://api.quolino.com/' + u, { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }); };
+    var all = pub('languages?select=code&enabled=eq.true');
+    var live = DEMO ? Promise.resolve([]) : pub('public_stops?select=city_slug,lang');   // języki faktycznie opublikowane na stronie (bez oceny → liczone jako gotowe)
+    return Promise.all([q, all, live]).then(function (r) {
+      var by = {};
+      (Array.isArray(r[2]) ? r[2] : []).forEach(function (x) {
+        if (!x || !x.city_slug || !x.lang || x.lang === 'pl') return;
+        var o = by[x.city_slug] = by[x.city_slug] || { ok: [], weak: [] };
+        if (o.ok.indexOf(x.lang) < 0) o.ok.push(x.lang);
+      });
+      (Array.isArray(r[0]) ? r[0] : []).forEach(function (x) {
+        if (!x || !x.city_slug || !x.lang || x.lang === 'pl') return;
+        var o = by[x.city_slug] = by[x.city_slug] || { ok: [], weak: [] };
+        var sc = +x.score;
+        if (sc >= 4) { if (o.ok.indexOf(x.lang) < 0) o.ok.push(x.lang); } else if (o.weak.indexOf(x.lang) < 0) o.weak.push(x.lang);
+      });
+      Object.keys(by).forEach(function (k) { by[k].weak = by[k].weak.filter(function (l) { return by[k].ok.indexOf(l) < 0; }); by[k].ok.sort(); by[k].weak.sort(); });
+      var codes = (Array.isArray(r[1]) ? r[1] : []).map(function (x) { return x && x.code; }).filter(function (c) { return c && c !== 'pl'; });
+      state.langsBy = by; state.langsTotal = codes.length || null;
+      return by;
+    });
+  }
+  function langsInfo(t) {
+    var l = state.langsBy && state.langsBy[t.slug];
+    var ok = l ? l.ok : (Array.isArray(t.langs) ? t.langs.filter(function (x) { return x !== 'pl'; }) : []);
+    var tot = state.langsTotal, weak = l ? l.weak : [];
+    if (!l && !ok.length) return tot && t.status === 'published' ? { ok: [], weak: [], total: tot, text: 'tylko PL', full: false, title: 'Brak tłumaczeń · docelowo ' + tot + ' języków poza PL' } : null;
+    return { ok: ok, weak: weak, total: tot, text: ok.length + (tot ? '/' + tot : '') + ' jęz.', full: tot && ok.length >= tot,
+      title: 'Gotowe: PL' + (ok.length ? ', ' + ok.join(', ').toUpperCase() : '') + (weak.length ? ' · do poprawy: ' + weak.join(', ').toUpperCase() : '') + (tot ? ' · docelowo ' + tot + ' języków poza PL' : '') };
+  }
   function loadTrips() {
-    return state.tripsP = api('/admin_trips?order=city_slug.asc').then(function (rows) { state.tripsApi = true; return rows; },
-      function (e) { if (e.session) throw e; state.tripsApi = false; return tripsFallback(); })
-      .then(function (rows) {
-        var box = outboxBy();
-        state.trips = (rows || []).map(function (r) { return tripOf(r, box); });
+    return state.tripsP = Promise.all([api('/admin_trips?order=city_slug.asc').then(function (rows) { state.tripsApi = true; return rows; },
+      function (e) { if (e.session) throw e; state.tripsApi = false; return tripsFallback(); }), loadLangs()])
+      .then(function (both) {
+        var rows = both[0], box = outboxBy();
+        state.trips = (rows || []).map(function (r) { var t = tripOf(r, box); var li = langsInfo(t); if (li) t.langs = ['pl'].concat(li.ok); return t; });
         var f = filters(), have = {};
         state.trips.forEach(function (t) { have['c:' + t.country] = 1; have['s:' + t.status] = 1; });
         f.countries = f.countries.filter(function (c) { return have['c:' + c]; });     // kraj, którego już nie ma, nie chowa wszystkiego
@@ -489,6 +526,7 @@
       '<span class="adm-tc__meta">' + chip + (byDate ? '<span>' + esc(countryName(t.country)) + '</span>' : '') +
       (t.region ? '<span>' + esc(regionName(t.region)) + '</span>' : '') +
       '<span>' + plWer(t.versions) + '</span><span title="ostatnia wersja">' + esc(byDate ? when(t.latestAt) : dayMonth(t.latestAt)) + '</span>' +
+      (function () { var li = langsInfo(t); return li ? '<span class="adm-langs' + (li.full ? ' is-full' : li.weak.length ? ' is-weak' : '') + '" title="' + esc(li.title) + '">' + esc(li.text) + (li.weak.length ? ' · ' + li.weak.length + ' do poprawy' : '') + '</span>' : ''; })() +
       '<span class="adm-std adm-std--' + (t.std === 'old' ? 'old' : t.glOk ? 'v2' : 'fix') + '" title="wersja wytycznych, z którą szkic przeszedł kontrolę i poprawki">' +
         (t.std === 'old' ? 'stare wytyczne' : 'wytyczne ' + esc(t.std) + (t.glOk ? ' ✓' : ' · uwagi')) + '</span></span>' +
       (extra ? '<span class="adm-tc__flags">' + extra + '</span>' : '') + '</span></a>';
