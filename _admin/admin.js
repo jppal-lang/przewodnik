@@ -95,6 +95,7 @@
           body: 'Zachód słońca w październiku ok. 18:30 — przesuń na 17:45.', status: 'seen', hermes_reply: null, created_at: '2026-10-16T09:02:00Z' }
       ];
       demoMore(d);
+      demoRevs(d);
       d.iconRefs = d.iconRefs || [{ trip: 'spello', stop_key: 'porta-consolare', mode: 'pick', files: ['File:Porta Consolare (Spello) 2.jpg'], updated_at: '2026-10-30T09:00:00Z' }];
       state.demo = d; return d;
     });
@@ -223,7 +224,10 @@
   function demoRevs(d) {
     if (d.revs) return d.revs;
     var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
-    d.comments.forEach(function (c) { if (c.city_slug === 'spello' && c.city_version === 2) c.request_id = 3; });
+    d.comments.forEach(function (c) {
+      if (c.city_slug === 'spello' && c.city_version === 2) { c.request_id = 3; c.verify_status = c.id === 3 ? 'partial' : 'applied'; c.verified_in_version = 3;
+        c.verify_note = c.id === 3 ? 'Wstęp ma trzy zdania zamiast dwóch.' : 'Godzina 17:45 jest w polu.'; }
+    });
     d.revs = [
       { id: 7, city_slug: 'wieliczka', city_version: 1, comment_ids: [21, 22, 23], status: 'new', result_version: null, hermes_reply: 'Czeka na odnowienie limitu Antigravity — ruszy samo.', attempts: 0, created_at: iso(40), updated_at: iso(12) },
       { id: 6, city_slug: 'ancona', city_version: 1, comment_ids: [17, 18, 19, 20], status: 'working', result_version: null, hermes_reply: null, attempts: 1, created_at: iso(30), updated_at: iso(4) },
@@ -550,6 +554,7 @@
     moreClose();
     document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
+    document.body.classList.remove('is-trip');
     if (!h || h === '#' || h === '#/' || h === '#/pulpit') { setHead('pulpit'); showDetail(); window.scrollTo(0, 0); openDashboard(); return; }
     if (h === '#/trasy') { showList(); return; }
     if (h === '#/decyzje' || h === '#/straznicy' || h === '#/ikony') { var only = h.slice(2); setHead(only); showDetail(); window.scrollTo(0, 0); openDecisions(only === 'decyzje' ? null : only); return; }
@@ -559,12 +564,13 @@
     if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
     if (m) { var known = (state.trips || []).filter(function (t) { return t.slug === decodeURIComponent(m[1]); })[0];
+      document.body.classList.add('is-trip');
       tripHead(known ? known.name : titleCase(decodeURIComponent(m[1])), known ? known.country : '', known ? known.region : '');
       openTrip(decodeURIComponent(m[1]), m[2] ? +m[2] : null); return; }
     showList();
   }
   function tripHead(name, country, region) {
-    setHead('trasy', name, [['Trasy', '#/trasy']].concat(country ? [[countryName(country), null]] : []).concat(region ? [[regionName(region), null]] : []).concat([[name, null]]));
+    setHead('trasy', name, [['Trasy', '#/trasy']].concat(country ? [[countryName(country), null]] : []).concat(region ? [[regionName(region), null]] : []));
   }
   // telefon: menu „Więcej” nad dolnym paskiem
   var $more = document.getElementById('moreMenu'), $moreBtn = document.getElementById('moreBtn');
@@ -606,7 +612,8 @@
       api(vq + ',changes&order=version.asc').catch(function (e) { if (e && e.session) throw e; return api(vq + '&order=version.asc'); }),
       loadComments(slug),
       loadToken(slug),
-      loadIconRefs(slug)
+      loadIconRefs(slug),
+      loadRevs(slug)
     ]).then(function (res) {
       if (!state.trip || state.trip.slug !== slug) return;            // JP zdążył przejść gdzie indziej
       var all = (res[0] || []).filter(function (r) { return r.content; }).sort(function (a, b) { return a.version - b.version; });
@@ -621,9 +628,7 @@
         published_version: pub ? pub.version : null, bandana_color: c.bandana_color };
       document.title = name + ' · Quolino admin';
       tripHead(name, state.trip.country, state.trip.region);
-      $d.innerHTML = '<div class="adm-trip">' +
-        '<div class="adm-tabs" role="tablist" aria-label="Wersje wycieczki ' + esc(name) + '" id="vTabs">' + tabsHtml() + '</div>' +
-        '<div id="tabPanel" role="tabpanel" tabindex="-1"></div></div>';
+      $d.innerHTML = '<div class="adm-trip"><div id="tabPanel" tabindex="-1"></div></div>';
       showTab(ver);
       flushOutbox();
       state.poll = setInterval(refreshComments, 30000);   // także w tle: zapytanie co 30 s podtrzymuje sesję panelu (30 min bez ruchu = wylogowanie)
@@ -635,21 +640,18 @@
   }
   function verComments(v) { return state.comments.filter(function (c) { return +c.city_version === +v; }); }
   function isSent(c) { return c.status !== 'new' && c.status !== 'local'; }
+  // wersje (v44): jedno menu „vN · data · status” zamiast zakładek; obok „Porównaj z”
   function tabsHtml() {
     return state.versions.slice().reverse().map(function (r) {
-      var sent = verComments(r.version).filter(isSent).length, cur = r.version === state.tabVersion, newest = r.version === state.trip.newest;
-      return '<button type="button" role="tab" class="adm-tab adm-tab--' + esc(r.status) + '" id="tab-v' + r.version + '" data-ver="' + r.version + '" aria-controls="tabPanel"' +
-        ' aria-selected="' + cur + '" tabindex="' + (cur ? 0 : -1) + '"><span class="adm-tab__v">' + esc(vlab(r)) + ' · ' + esc(dayMonth(r.created_at)) + '</span>' +
-        '<span class="adm-tab__s">' + esc(VST[r.status] || r.status) + (newest ? ' · najnowsza' : '') + '</span>' +
-        (sent ? '<b class="adm-n adm-tab__n" title="uwagi wysłane do tej wersji">' + sent + '</b>' : '') + '</button>';
+      var sent = verComments(r.version).filter(isSent).length, newest = r.version === state.trip.newest;
+      return '<option value="' + r.version + '"' + (r.version === state.tabVersion ? ' selected' : '') + '>' + esc(vlab(r) + ' · ' + dayMonth(r.created_at) + ' · ' + (VST[r.status] || r.status) +
+        (newest ? ' ★' : '') + (sent ? ' · ' + plForm(sent, 'uwaga', 'uwagi', 'uwag') : '')) + '</option>';
     }).join('');
   }
   function refreshTabs() {
     var t = document.getElementById('vTabs');
-    if (!t || !state.versions) return;
-    var had = t.contains(document.activeElement);
+    if (!t || !state.versions || t === document.activeElement) return;
     t.innerHTML = tabsHtml();
-    if (had) { var b = t.querySelector('[aria-selected="true"]'); if (b) b.focus(); }
   }
   // tekst wpisany (bez Entera) w najnowszej wersji nie ginie przy zmianie zakładki
   function keepDrafts() {
@@ -683,7 +685,15 @@
       city_name: T.name, bandana_color: c.bandana_color, published_version: base ? base.version : null,
       baseIsLive: !!(base && base.version === T.published && isNewest), isNewest: isNewest };
     state.readOnly = !(isNewest && row.status === 'draft');
-    refreshTabs();
+    // porównanie (v44): nakładka na te same karty — baza z „Porównaj z”, pola z różnicą słów
+    state.cmpM = null;
+    if (state.cmpSel && !cmpOptions(it).some(function (o) { return o[0] === state.cmpSel; })) state.cmpSel = '';
+    var cb = state.cmpSel ? cmpBaseRow(it, state.cmpSel) : null;
+    if (cb) {
+      var M = state.cmpM = cmpModel(row, cb); M.base = cb; M.by = {};
+      M.groups.forEach(function (g) { var rows = {}; g.rows.forEach(function (r) { rows[r.field] = r; }); M.by[g.key] = { g: g, rows: rows }; });
+      base = cb; it.published_version = cb.version; it.baseIsLive = false;
+    }
     render(it, row.content, base ? base.content : null, all);
     if (!state.readOnly) restoreDrafts();
   }
@@ -746,18 +756,21 @@
   function isOpen(c) { return c.status === 'new' || c.status === 'sent' || c.status === 'seen' || c.status === 'local'; }
   function unsent() { return state.comments.filter(function (c) { return c.status === 'new' || c.status === 'local'; }); }
 
+  var VERST = { applied: ['ok', 'naniesiona'], partial: ['warn', 'częściowo'], missing: ['bad', 'nie naniesiona'], stale: ['wait', 'nieaktualna'] };
   function commentItem(c) {
     var other = state.tabVersion != null && +c.city_version !== +state.tabVersion;
     return '<li class="adm-cm__it adm-cm__it--' + esc(c.status) + '"><p>' + esc(c.body) + '</p>' +
       '<span class="adm-cm__meta"><span class="adm-cm__st">' + esc(CST[c.status] || c.status) + '</span>' +
       (other ? '<span>do v' + esc(c.city_version) + '</span>' : '') + '<span>' + esc(when(c.created_at)) + '</span></span>' +
-      (c.hermes_reply ? '<p class="adm-cm__reply"><b>Hermes:</b> ' + esc(c.hermes_reply) + (c.resolved_in_version ? ' <span class="adm-cm__meta">→ v' + esc(c.resolved_in_version) + '</span>' : '') + '</p>' : '') + '</li>';
+      (c.hermes_reply ? '<p class="adm-cm__reply"><b>Hermes:</b> ' + esc(c.hermes_reply) + (c.resolved_in_version ? ' <span class="adm-cm__meta">→ v' + esc(c.resolved_in_version) + '</span>' : '') + '</p>' : '') +
+      (VERST[c.verify_status] ? '<p class="adm-cm__ver">' + stChip(VERST[c.verify_status][0], 'sprawdzenie: ' + VERST[c.verify_status][1] + (c.verified_in_version ? ' w v' + c.verified_in_version : '')) +
+        (c.verify_note ? ' <span>' + esc(c.verify_note) + '</span>' : '') + '</p>' : '') + '</li>';
   }
   function commentBox(stop, field, label, stopVer) {
     var list = commentsFor(stop, field);
     return '<div class="adm-cm" data-stop="' + esc(stop || '') + '" data-field="' + esc(field || '') + '" data-label="' + esc(label) + '"' + (stopVer ? ' data-sv="' + stopVer + '"' : '') + '>' +
       '<ul class="adm-cm__list">' + list.map(commentItem).join('') + '</ul>' +
-      (state.readOnly ? '' : '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="Uwaga dla Hermesa…"></textarea>' +
+      (state.readOnly ? '' : '<form class="adm-cm__form" autocomplete="off"><textarea rows="1" aria-label="Uwaga do pola ' + esc(label) + '" placeholder="＋ Uwaga do pola"></textarea>' +
       '<button type="submit" class="adm-cm__send" aria-label="Zapisz uwagę" title="Zapisz uwagę (Enter)">' + SEND + '</button></form>') + '</div>';
   }
   // ── Uwagi z kontroli jako FLAGI przy konkretnym fragmencie (JP 2026-10-30; wcześniej czerwone ramki przy przystanku, 2026-10-26).
@@ -905,15 +918,10 @@
       '<p class="adm-pop__next"><button type="button" class="adm-linkbtn" data-flag-next>Następna flaga →</button></p></li>';
   }
   // skrót na górze szkicu: pasek „Flagi: N — przejdź do następnej”, linki do przystanków, przyciski grupowe
+  // grupy uwag z kontroli (przyciski „dla całej grupy”) — w trybie „Przejdź przez flagi”
   function questionsHtml(it) {
-    var q = state.qa; if (!q || !q.list.length) return '';
-    var byBox = {}, boxes = [], auto = 0;
-    q.list.forEach(function (x) { if (x.auto) { auto++; return; } if (!byBox[x.box]) { byBox[x.box] = 0; boxes.push(x.box); } byBox[x.box]++; });
-    var links = boxes.map(function (k) {
-      var nm = k === '_city' ? 'Opis miasta' : (stopName(k) || k);
-      return '<li><a href="#st-' + esc(k) + '" class="adm-qs__lnk" data-qlink="' + esc(k) + '"><span>' + esc(nm) + '</span> <b class="adm-n" data-qleft="' + esc(k) + '">' + byBox[k] + '</b></a></li>';
-    }).join('');
-    var grp = state.readOnly ? '' : q.order.map(function (g) {
+    var q = state.qa; if (!q || !q.list.length || state.readOnly) return '';
+    return q.order.map(function (g) {
       var list = q.groups[g].filter(function (x) { return !x.auto; }), fixable = list.some(function (x) { return qaHasNew(x.e); });
       if (!list.length) return '';
       return '<div class="adm-q__grp" data-g="' + esc(g) + '"><p class="adm-q__gh">' + esc(RW.humanize(g)) + ' · ' + list.length + ' ' + qaPlural(list.length) + ' <small class="adm-q__gsum"></small></p>' +
@@ -921,12 +929,6 @@
         '<button type="button" class="qc-btn qc-btn--sm qc-btn--ghost" data-qa-all="keep">Zostaw wszystkie</button>' +
         '<span class="adm-q__prog" role="status" aria-live="polite"></span></div></div>';
     }).join('');
-    return '<div class="adm-q__top"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><h3>Uwagi z kontroli</h3>' +
-      '<span class="adm-flagbar__sum" data-qsum></span></div>' +
-      '<p class="adm-q__hint">Każda uwaga z kontroli stoi przy fragmencie, którego dotyczy — czerwona flaga w treści pola. Kliknij flagę, wybierz jedną z możliwości (rekomendacja jest zaznaczona); potem „Wyślij uwagi do poprawki”.' +
-      (auto ? ' Szare flagi (' + auto + ') rozstrzygnięto automatycznie — tylko do wglądu.' : '') + '</p>' +
-      '<ul class="adm-qs__stops">' + links + '</ul>' +
-      (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy uwag naraz</summary>' + grp + '</details>' : '');
   }
   function qaLastBody(li) {
     var box = li.querySelector('.adm-cm'); if (!box) return null;
@@ -976,7 +978,9 @@
         b.disabled = !its.some(function (li) { return !li.classList.contains('is-done') && (b.getAttribute('data-qa-all') !== 'fix' || li.hasAttribute('data-fixable')); });
       });
     });
+    state.qaLeft = { b: leftB, w: leftW, done: done, all: all };
     if (state.popLi) popPlace(state.popLi);
+    walkPaint(); readyRefresh();
   }
   // ── notatka przy fladze: popover w wierszu pola (nie modal); Esc / klik obok zamyka ──
   function flagAnchor(id) { return $d.querySelector('button.adm-flag[data-flag="' + id + '"]'); }
@@ -1055,8 +1059,8 @@
   document.addEventListener('click', function (e) {
     var f = e.target.closest('[data-flag]');
     if (f) { e.preventDefault(); popOpen(f.getAttribute('data-flag')); return; }
-    if (e.target.closest('[data-flag-next]')) { flagNext(); return; }
-    if (e.target.closest('[data-pop-close]')) { popClose(true); return; }
+    if (e.target.closest('[data-flag-next]')) { if (walk.on) walkStep(1); else flagNext(); return; }
+    if (e.target.closest('[data-pop-close]')) { if (walk.on) walkClose(); else popClose(true); return; }
     if (state.popLi && !e.target.closest('.adm-pop') && !e.target.closest('.adm-toast')) popClose();
     var b = e.target.closest('[data-qa]');
     if (b) {
@@ -1156,6 +1160,8 @@
       b.disabled = !n;
       b.textContent = n ? 'Wyślij uwagi do poprawki (' + n + ')' : 'Brak uwag do wysłania';
     });
+    var cn = document.getElementById('cmN'); if (cn) { cn.textContent = n; cn.classList.toggle('is-zero', !n); }
+    readyRefresh();
     var hint = document.getElementById('sendHint');
     if (hint) hint.textContent = local ? 'Tylko w tej przeglądarce: ' + plUwagi(local) + '. Przycisk najpierw przeniesie je do bazy.' : '';
   }
@@ -1205,6 +1211,7 @@
   function refreshComments() {
     if (!state.current) return;
     var focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('.adm-cm');
+    loadRevs(state.current.city_slug).then(revBoxPaint);
     loadComments(state.current.city_slug).then(function () { if (!focused || !focused.querySelector('textarea').value) updateCommentUi(); else updateCounts(); });
   }
 
@@ -1264,7 +1271,7 @@
   $d.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey && e.target.matches('.adm-cm__form textarea')) { e.preventDefault(); sendComment(e.target.form); }
   });
-  $d.addEventListener('input', function (e) { if (e.target.matches('.adm-cm__form textarea')) autosize(e.target); });
+  $d.addEventListener('input', function (e) { if (e.target.matches('.adm-cm__form textarea')) { autosize(e.target); e.target.parentNode.classList.toggle('has-text', !!e.target.value); } });
 
   // ── arkusz szkicu ────────────────────────────────────
   // podgląd wersji na stronie w trzech widokach (JP 2026-10-24): niezalogowany (as=guest), zalogowany (domyślnie), dziecko (view=kid)
@@ -1278,15 +1285,22 @@
   // fl = { box: klucz przystanku albo '_city', field: 'stop.<pole>' | 'city.<pole>' | null } — flagi uwag z kontroli przy tym polu
   function cell(label, oldV, newV, fmt, hasOld, cm, fl) {
     var changed = hasOld && !same(oldV, newV), qs = fl ? qaFor(fl.box, fl.field) : [];
-    var hl = qs.length ? qaHighlight(show(newV, fmt), qs) : { html: esc(show(newV, fmt)), rest: [] };
-    return '<div class="adm-row' + (changed ? ' is-chg' : '') + (qs.length ? ' has-flags' : '') + '"><small class="adm-row__k">' + esc(label) + (changed ? '<span class="adm-dot" title="zmienione"></span>' : '') +
+    var M = state.cmpM, dr = null;
+    if (M && fl && fl.field) { var gb = M.by[fl.box]; dr = gb ? gb.rows[String(fl.field).replace(/^(stop|city)\./, '')] || null : null; }
+    var diff = !!M && (dr ? dr.changed : changed);
+    var hl = qs.length && !(diff && dr) ? qaHighlight(show(newV, fmt), qs) : { html: esc(show(newV, fmt)), rest: diff && dr ? qs : [] };
+    var val = diff && dr ? '<span class="adm-val adm-diff">' + diffHtml2(wordDiff(dr.a, dr.b)) + '</span>' + cmpWhyHtml(dr.why)
+      : diff ? '<span class="adm-old">' + esc(show(oldV, fmt)) + '</span><span class="adm-new">' + hl.html + '</span>'
+      : '<span class="adm-val">' + hl.html + '</span>';
+    return '<div class="adm-row' + (diff ? ' is-chg' : changed ? ' is-mod' : '') + (qs.length ? ' has-flags' : '') + '"><small class="adm-row__k">' + esc(label) +
+      (changed && !M ? '<span class="adm-dot" title="zmienione względem v' + esc(state.tvBaseV) + '"></span><span class="adm-sr">(zmienione)</span>' : '') +
       (hl.rest.length ? '<span class="adm-row__flags">' + hl.rest.map(flagBtn).join('') + '</span>' : '') + '</small>' +
-      '<div class="adm-row__v">' + (changed ? '<span class="adm-old">' + esc(show(oldV, fmt)) + '</span>' : '') +
-      '<span class="' + (changed ? 'adm-new' : 'adm-val') + '">' + hl.html + '</span></div>' + cm +
+      '<div class="adm-row__v">' + val + '</div>' + cm +
       (qs.length ? '<ol class="adm-pops">' + qs.map(qaItemHtml).join('') + '</ol>' : '') + '</div>';
   }
 
   function render(it, draft, pub, all) {
+    walkClose(true); drawerClose(true);
     state.blocks = (draft && draft.stop_blocks_v2) || null;   // nowe wytyczne: bloki z przypisami (gemini-draft.mjs)
     var c = draft.city || {}, pc = pub ? (pub.city || {}) : null;
     var ctr = trOf(draft.city_translations, 'pl'), pctr = pub ? trOf(pub.city_translations, 'pl') : null;
@@ -1326,99 +1340,112 @@
     state.popLi = null;
     state.qa = qaItems(it, qkeys, draft);     // uwagi z kontroli — flagi przy polach, których dotyczą
     var title = ctr.title || it.city_name || it.city_slug;
-    var route = routeUrl(c, newStops, draft.stop_translations, title);
-    var html = '<article class="adm-sheet" style="--team:' + esc(team) + '">' +
-      '<header class="adm-sheet__head' + (isLight(team) ? ' is-light' : '') + '"><div>' +
-      '<p class="label" style="color:inherit;opacity:.8">' + esc(it.city_slug) + ' · ' + esc(sheetLabel(it)) + '</p>' +
-      '<h2 class="adm-sheet__title">' + esc(title) + '</h2>' +
-      (it.note ? '<p class="adm-sheet__sub">' + esc(it.note) + '</p>' : '') + '</div>' +
-      '<div class="adm-sheet__acts">' +
-      (route ? '<a class="qc-btn qc-btn--sm adm-route" href="' + esc(route) + '" target="_blank" rel="noopener">' + PIN + ' Cała trasa w Google Maps</a>' : '') +
-      (state.token ? previewLinks(state.token, it.version) : '') +
-      '<span class="adm-chip">' + esc(SRC[it.source] || it.source) + ' · ' + esc(when(it.created_at)) + '</span></div></header>';
+    var route = routeUrl(c, newStops, draft.stop_translations, title), T = state.trip;
+    state.tvDraft = draft; state.tvStops = stops; state.tvIt = it; state.tvBaseV = it.published_version;
+    var nFlags = state.qa ? state.qa.list.filter(function (x) { return !x.auto; }).length : 0;
+    var stx = it.status === 'draft' ? (it.isNewest ? ['warn', 'szkic · do akceptacji'] : ['wait', 'szkic (starszy)']) : it.status === 'published' ? ['ok', 'opublikowana'] : it.status === 'rejected' ? ['bad', 'odrzucona'] : ['wait', VST[it.status] || it.status];
 
+    // ─ nagłówek trasy: jeden — nazwa, status, wersja + porównanie, decyzja ─
+    var more = '<details class="tv-more"><summary class="ad-btn ad-btn--ghost tv-more__s"><span aria-hidden="true">⋯</span><span class="adm-sr">Więcej akcji</span></summary><div class="tv-more__p">' +
+      (route ? '<a class="tv-more__a" href="' + esc(route) + '" target="_blank" rel="noopener">' + PIN + ' Cała trasa w Google Maps ↗</a>' : '') +
+      (T.published != null ? '<a class="tv-more__a" href="' + SITE + '/city.html?c=' + encodeURIComponent(T.slug) + '" target="_blank" rel="noopener">Otwórz na stronie (v' + esc(T.published) + ') ↗</a>' : '') +
+      (state.token ? '<p class="tv-more__l">Podgląd ' + esc(it.label || 'v' + it.version) + ' na stronie</p>' + previewLinks(state.token, it.version) : '') +
+      (state.readOnly ? '' : '<label class="tv-more__l" for="note">Notatka do wersji (opcjonalnie)</label><textarea id="note" name="note" rows="2" placeholder="trafi do historii wersji"></textarea>' +
+        '<button type="button" class="qc-btn qc-btn--sm adm-btn-no" data-act="reject">Odrzuć szkic</button>') +
+      '<p class="tv-more__src">Źródło: ' + esc(SRC[it.source] || it.source || '—') + ' · ' + esc(when(it.created_at)) + '</p></div></details>';
+    var html = '<div class="tv' + (state.cmpOnly && state.cmpM ? ' is-only' : '') + '" style="--team:' + esc(team) + '">' +
+      '<header class="tv-head" id="actBar"><div class="tv-head__id"><h2 class="tv-name">' + esc(title) + '</h2>' +
+      '<p class="tv-where">' + esc([countryName(T.country), T.region ? regionName(T.region) : ''].filter(Boolean).join(' · ')) + ' ' + stChip(stx[0], stx[1]) + '</p></div>' +
+      '<div class="tv-ver"><span class="tv-ver__f"><label for="vTabs">Wersja</label><select id="vTabs" class="adm-cmp__sel">' + tabsHtml() + '</select></span>' +
+      '<span class="tv-ver__f">' + cmpBarHtml(it) + '</span></div>' +
+      '<div class="tv-dec">' + (state.readOnly ? '' : '<button type="button" class="qc-btn adm-btn-ok tv-approve" data-act="approve"' +
+        (newStops.length ? '' : ' disabled data-lock title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>') + more +
+      '<span class="adm-msg tv-msg" id="msg" role="status"></span></div></header>';
     if (state.readOnly) {
-      var nw = state.trip ? state.trip.newest : null;
       html += '<p class="adm-ro">' + (it.isNewest
         ? 'Ta wycieczka nie ma szkicu w toku (najnowsza wersja: ' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyła się do szkicu.'
         : 'Wersja ' + esc(it.label || 'v' + it.version) + ' (' + esc(VST[it.status] || it.status) + ') — tylko podgląd. Uwagi wysyłasz w najnowszej wersji. ' +
-          '<button type="button" class="adm-linkbtn" data-goto="' + esc(nw) + '">Przejdź do v' + esc(nw) + '</button>') + '</p>';
+          '<button type="button" class="adm-linkbtn" data-goto="' + esc(T.newest) + '">Przejdź do v' + esc(T.newest) + '</button>') + '</p>';
     }
     state.cmpIt = it;
-    html += '<section class="adm-sheet__sec adm-cmp" id="cmpSec" hidden><div id="cmpView" class="adm-cmp__view" hidden></div></section>';
-    html += '<section class="adm-sheet__sec adm-vc" id="verComments"></section>';
-    html += '<section class="adm-sheet__sec adm-q" id="revQs" hidden></section>';
+    if (state.cmpM) html += cmpSumHtml(it);
+    html += '<section class="tv-ready" id="tvReady" aria-labelledby="tvReadyH"></section>';
 
-    html += '<p class="adm-cmwarn" id="cmWarn" hidden>Baza nie przyjmuje jeszcze uwag (brak tabeli <code>admin.draft_comments</code>). Uwagi zapisują się w tej przeglądarce i wyślą się same, gdy Hermes ją doda.</p>';
+    // ─ spis przystanków (lewa kolumna) ─
+    var KIND = { first: ['same', 'pierwsza wersja'], same: ['same', 'bez zmian'], 'new': ['new', 'nowy'], chg: ['chg', 'zmieniony'], del: ['del', 'usunięty'] };
+    var tocLi = function (key, no, name, cat, kind) {
+      var k = KIND[kind] || KIND.same;
+      return '<li class="tv-toc__it is-' + k[0] + '"><a href="#st-' + esc(key) + '" data-to="' + esc(key) + '"><span class="tv-toc__no">' + no + '</span>' +
+        (cat ? '<img class="tv-toc__ic" src="' + icon(cat) + '" alt="" width="32" height="32" loading="lazy">' : '<span class="tv-toc__ic tv-toc__ic--star" aria-hidden="true">' + (key === '_sum' ? PIN : '★') + '</span>') +
+        '<span class="tv-toc__t"><span class="adm-toc__nm">' + esc(name) + '</span><span class="tv-toc__k"><i class="tv-dot tv-dot--' + k[0] + '" aria-hidden="true"></i>' + esc(k[1]) + '</span></span>' +
+        '<span class="tv-toc__c"><b class="adm-qdot" data-qleft="' + esc(key) + '" hidden></b><b class="adm-n is-zero" data-count="' + esc(key) + '">0</b></span></a></li>';
+    };
+    var toc = '<nav class="tv-toc" aria-label="Przystanki"><details class="tv-toc__d" id="tocD" open><summary class="tv-toc__s">Przystanki <b>' + stops.filter(function (x) { return x.kind !== 'del'; }).length + '</b>' +
+      '<span class="tv-toc__all">uwagi <b class="adm-n is-zero" data-count="_all">0</b></span>' + CHEV + '</summary><ol>' +
+      tocLi('_sum', '', 'Trasa w skrócie i mapa', null, 'same').replace(/<span class="tv-toc__c">[\s\S]*?<\/span><\/a>/, '</a>').replace(/<span class="tv-toc__k">[\s\S]*?<\/span><\/span>/, '</span>') +
+      tocLi('_city', '', 'Opis miasta', null, 'same') +
+      stops.map(function (x) { return tocLi(x.key, num(x.s.stop_number), x.t.name || '(bez nazwy)', x.s.category, x.kind); }).join('') + '</ol></details></nav>';
 
-    html += '<section class="adm-sheet__sec"><h3>Podsumowanie</h3><div class="adm-sum">' +
+    // ─ główna kolumna ─
+    var tools = '<div class="tv-tools"><span class="tv-tools__l" aria-hidden="true">Widok</span><div class="tv-seg" role="group" aria-label="Widok treści">' +
+      [['fields', 'Pola', 'Pola do redakcji'], ['parent', 'Rodzic', 'Jak widzi rodzic'], ['kid', 'Dziecko', 'Jak widzi dziecko']].map(function (v) {
+        return '<button type="button" data-view="' + v[0] + '" aria-pressed="' + ((state.tvView || 'fields') === v[0]) + '" title="' + v[2] + '"><span class="adm-sr">' + (v[0] === 'fields' ? '' : 'Jak widzi ') + '</span>' + v[1] + '</button>';
+      }).join('') + '</div><span class="tv-tools__r">' +
+      (nFlags ? '<button type="button" class="qc-btn qc-btn--sm tv-walkbtn" data-walk aria-controls="walk" aria-expanded="false">' + FLAG + ' Przejdź przez flagi <b class="adm-n" data-qleft-all>0</b></button>' : '') +
+      '<button type="button" class="qc-btn qc-btn--sm" data-drawer aria-controls="cmDrawer" aria-expanded="false">Twoje uwagi <b class="adm-n is-zero" id="cmN">0</b></button></span></div>';
+    var sum = '<section class="tv-card adm-anchor" id="st-_sum" data-spy="_sum"><h3 class="tv-card__h">Trasa w skrócie</h3><div class="adm-sum">' +
       stat('Przystanki', newStops.length, pub ? oldStops.length : null) +
       stat('Czas', durLabel(c.duration_type), pc ? durLabel(pc.duration_type) : null) +
       (pub ? stat('Nowe', cnt.new) + stat('Zmienione', cnt.chg) + stat('Usunięte', cnt.del) : '') +
       stat('Języki', sLangsNew.length || cLangsNew.length, pub ? (sLangsOld.length || cLangsOld.length) : null) +
       '</div>' + warn.map(function (w) { return '<p class="adm-warn' + (w[0] ? ' adm-warn--' + w[0] : '') + '">' + esc(w[1]) + '</p>'; }).join('') +
-      langChips(sLangsOld.length ? sLangsOld : cLangsOld, sLangsNew.length ? sLangsNew : cLangsNew) + '</section>';
-
-    html += '<section class="adm-sheet__sec"><h3>Mapa trasy (OpenStreetMap)</h3><div id="admMap"></div></section>';
-
-    // opis miasta — każde pole z uwagami
-    html += '<section class="adm-sheet__sec adm-anchor" id="st-_city" data-spy="_city"><h3>Opis miasta</h3>' +
-      '<div class="adm-rows">' + cell('Cała wycieczka', null, 'Uwaga ogólna do całego szkicu', null, false, commentBox(null, null, 'Cała wycieczka'), { box: '_city', field: null }) +
+      langChips(sLangsOld.length ? sLangsOld : cLangsOld, sLangsNew.length ? sLangsNew : cLangsNew) + '<div id="admMap" class="tv-map"></div></section>';
+    var city = '<section class="adm-stopx tv-city adm-anchor" data-kind="same" id="st-_city" data-spy="_city"><header class="adm-stopx__head"><span class="adm-stop__no">★</span><span class="adm-stop__ic tv-city__ic" aria-hidden="true">' + PIN + '</span><span class="adm-stop__name">Opis miasta<small>' + esc(title) + '</small></span></header>' +
+      '<div class="adm-rows">' +
       CITY_TR.map(function (f) { return cell(f[1], pctr ? pctr[f[0]] : null, ctr[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1]), { box: '_city', field: 'city.' + f[0] }); }).join('') +
       CITY_FIELDS.map(function (f) { return cell(f[1], pc ? pc[f[0]] : null, c[f[0]], f[2], !!pub, commentBox(null, 'city.' + f[0], f[1]), { box: '_city', field: 'city.' + f[0] }); }).join('') +
       qaExtraRows('_city', shownSet('city.', CITY_TR.concat(CITY_FIELDS)), null) +
+      cell('Cała wycieczka', null, 'Uwaga ogólna do całego szkicu', null, false, commentBox(null, null, 'Cała wycieczka'), { box: '_city', field: null }).replace('class="adm-row', 'class="adm-row adm-row--all') +
       '</div></section>';
+    html += '<div class="tv-body">' + toc + '<div class="tv-main">' + tools +
+      '<p class="adm-cmwarn" id="cmWarn" hidden>Baza nie przyjmuje jeszcze uwag (brak tabeli <code>admin.draft_comments</code>). Uwagi zapisują się w tej przeglądarce i wyślą się same, gdy Hermes ją doda.</p>' +
+      '<div id="tvFields" class="tv-fields">' + sum + city +
+      (stops.length ? stops.map(function (x) { return stopHtml(x, it, pub); }).join('') : '<p class="adm-empty">Brak przystanków.</p>') + '</div>' +
+      '<div id="tvPreview" class="tv-prev" hidden></div></div></div>';
 
-    html += '<section class="adm-sheet__sec"><h3>Przystanki</h3><div class="adm-stops">' +
-      (stops.length ? stops.map(function (x) { return stopHtml(x, it, pub); }).join('') : '<p class="adm-empty">Brak przystanków.</p>') + '</div></section>';
+    // ─ szuflada „Twoje uwagi” ─
+    html += '<aside class="tv-drawer" id="cmDrawer" hidden aria-labelledby="cmDH"><header class="tv-drawer__h"><h2 id="cmDH">Twoje uwagi</h2>' +
+      '<button type="button" class="adm-pop__x" data-drawer-close aria-label="Zamknij uwagi">×</button></header><div class="tv-drawer__b">' +
+      (state.readOnly ? '' : '<section class="tv-dsec adm-send" id="send"><h3>Do wysłania</h3><p class="adm-send__sub">Uwagi zapisane przy polach. Hermes poprawia je dopiero po wysłaniu — wszystkie naraz, w jednej nowej wersji szkicu.</p>' +
+        '<div id="sendList">' + sendList() + '</div><div class="adm-send__row"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button></div>' +
+        '<p class="adm-msg" id="sendMsg" role="status"></p><p class="adm-send__hint" id="sendHint"></p></section>') +
+      '<section class="tv-dsec" id="revBox"></section><section class="tv-dsec adm-vc" id="verComments"></section></div></aside>';
 
-    if (!state.readOnly) html += '<section class="adm-sheet__sec adm-send" id="send"><h3>Uwagi do wysłania</h3>' +
-      '<p class="adm-send__sub">Uwagi zapisane przy polach. Hermes zaczyna poprawki dopiero po kliknięciu przycisku — wszystkie naraz, w jednej nowej wersji szkicu.</p>' +
-      '<div id="sendList">' + sendList() + '</div>' +
-      '<div class="adm-send__row"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
-      '<span class="adm-msg" id="sendMsg" role="status"></span></div><p class="adm-send__hint" id="sendHint"></p></section>';
+    // ─ tryb „Przejdź przez flagi” ─
+    var grp = questionsHtml(it);
+    html += '<aside class="tv-walk" id="walk" hidden aria-labelledby="walkH"><header class="tv-drawer__h"><h2 id="walkH">Flagi z kontroli</h2><span class="tv-walk__pos" id="walkPos" aria-live="polite"></span>' +
+      '<button type="button" class="adm-pop__x" data-walk-close aria-label="Zamknij przechodzenie przez flagi">×</button></header>' +
+      '<div class="tv-walk__bar" aria-hidden="true"><span id="walkBar"></span></div><div class="tv-drawer__b">' +
+      '<div class="tv-walk__intro adm-flagbar">' + (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') +
+      '<span class="adm-flagbar__sum" data-qsum></span></div>' + (grp ? '<details class="adm-q__grps"><summary class="adm-q__gh">Całe grupy uwag naraz</summary>' + grp + '</details>' : '') +
+      '<ol class="tv-walk__slot" id="walkSlot"></ol><p class="tv-walk__fin" id="walkFin" hidden>Wszystkie flagi rozstrzygnięte ✓ — teraz „Twoje uwagi” → „Wyślij uwagi do poprawki”.</p></div>' +
+      '<footer class="tv-walk__nav"><button type="button" class="qc-btn qc-btn--sm" data-walk-step="-1">← Wstecz</button>' +
+      '<button type="button" class="adm-linkbtn" data-walk-show>Pokaż w treści</button>' +
+      '<button type="button" class="qc-btn qc-btn--sm qc-btn--primary" data-walk-step="1">Dalej →</button></footer>' +
+      '<p class="tv-walk__keys">Skróty: <kbd>J</kbd>/<kbd>K</kbd> następna / poprzednia · <kbd>1</kbd>–<kbd>4</kbd> wybór · <kbd>Enter</kbd> zatwierdź · <kbd>Esc</kbd> zamknij</p></aside></div>';
 
-    if (!state.readOnly) html += '<form class="adm-decide" id="decide" autocomplete="off">' +
-      '<label for="note">Notatka do historii wersji (opcjonalnie)</label>' +
-      '<textarea id="note" name="note" rows="1" placeholder="Notatka do wersji (opcjonalnie)"></textarea>' +
-      '<div class="adm-decide__row">' +
-      '<button type="button" class="qc-btn adm-btn-ok" data-act="approve"' + (newStops.length ? '' : ' disabled data-lock title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>' +
-      '<button type="button" class="qc-btn adm-btn-no" data-act="reject">Odrzuć szkic</button>' +
-      '<span class="adm-msg" id="msg" role="status"></span></div></form>';
-    html += '</article>';
-
-    // przyklejone menu przystanków z licznikami uwag
-    var toc = '<nav class="adm-toc" aria-label="Przystanki szkicu"><p class="adm-toc__h">Uwagi <b class="adm-n" data-count="_all">0</b></p><ol>' +
-      '<li><a href="#st-_city" data-to="_city"><span class="adm-toc__no">★</span><span class="adm-toc__nm">Opis miasta</span><b class="adm-n" data-count="_city">0</b></a></li>' +
-      stops.map(function (x) {
-        return '<li class="adm-toc__' + x.kind + '"><a href="#st-' + esc(x.key) + '" data-to="' + esc(x.key) + '"><span class="adm-toc__no">' + num(x.s.stop_number) + '</span>' +
-          '<span class="adm-toc__nm">' + esc(x.t.name || '(bez nazwy)') + '</span><b class="adm-qdot" data-qleft="' + esc(x.key) + '" hidden></b><b class="adm-n" data-count="' + esc(x.key) + '">0</b></a></li>';
-      }).join('') + '</ol>' + (state.readOnly ? '' : '<div class="adm-toc__send"><button type="button" class="qc-btn adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
-      '<a href="#send" class="adm-toc__all">Lista uwag ↓</a></div>') + '</nav>';
-
-    // pasek akcji wersji (v43): przyklejony u góry — wersja, porównanie, flagi, rekomendacje, wyślij, zatwierdź/odrzuć
-    var hasQ = !!(state.qa && state.qa.list.length);
-    var act = '<div class="adm-actbar" id="actBar" role="region" aria-label="Akcje wersji ' + esc(it.label || 'v' + it.version) + '">' +
-      '<span class="adm-actbar__ver"><b>' + esc(it.label || 'v' + it.version) + '</b><span>' + esc(VST[it.status] || it.status) + (it.isNewest ? '' : ' · starsza') + '</span></span>' +
-      '<span class="adm-actbar__cmp">' + cmpBarHtml(it) + '</span>' +
-      (hasQ ? '<span class="adm-flagbar adm-actbar__flags"><span class="adm-flagbar__ic" aria-hidden="true">' + FLAG + '</span><span class="adm-actbar__fl">Flagi: <b data-qleft-all>0</b></span>' +
-        '<button type="button" class="qc-btn qc-btn--sm" data-flag-next>Następna flaga</button>' +
-        (state.readOnly ? '' : '<button type="button" class="qc-btn qc-btn--sm adm-flagbar__rec" data-qa-recall aria-haspopup="dialog">Przyjmij wszystkie rekomendacje</button>') + '</span>' : '') +
-      (state.readOnly ? '' : '<span class="adm-actbar__go"><button type="button" class="qc-btn qc-btn--sm adm-btn-send" data-send>Wyślij uwagi do poprawki</button>' +
-        '<span class="adm-actbar__dec"><button type="button" class="qc-btn qc-btn--sm adm-btn-ok" data-act="approve"' + (newStops.length ? '' : ' disabled data-lock title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>' +
-        '<button type="button" class="qc-btn qc-btn--sm adm-btn-no" data-act="reject">Odrzuć szkic</button></span></span>') + '</div>';
     var $p = document.getElementById('tabPanel') || $d;
-    $p.innerHTML = act + '<div class="adm-split">' + html + toc + '</div>';
-    fitActbar();
-    $p.setAttribute('aria-labelledby', 'tab-v' + it.version);
+    $p.innerHTML = html;
     var vc = document.getElementById('verComments');
-    vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML;    // po wstawieniu menu: nazwy przystanków z menu
-    var rq = document.getElementById('revQs');
-    if (rq) { rq.innerHTML = questionsHtml(it); rq.hidden = !rq.innerHTML; qaRefresh(); }
+    vc.innerHTML = verCommentsHtml(); vc.hidden = !vc.innerHTML;
+    revBoxPaint();
+    fitToc();
     drawMap(newStops, draft.stop_translations);
     updateCounts();
+    qaRefresh();
     spy();
-    cmpApply();
+    viewApply();
+    fitActbar();
   }
 
   function sheetLabel(it) {
@@ -1442,13 +1469,15 @@
     var fl = function (f) { return { box: x.key, field: f }; };
     if (x.kind === 'del') return '<section class="adm-stopx adm-anchor" data-kind="del" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + cell('Przystanek', null, 'Usunięty w tym szkicu', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) + '</div></section>';
+    var gw = state.cmpM && state.cmpM.by[x.key] ? state.cmpM.by[x.key].g.why : [];
+    if (gw.length) head += '<div class="tv-why">' + cmpWhyHtml(gw) + '</div>';
     head += iconRefHtml(x.key, s.category);
     var shown = shownSet('stop.', STOP_TR.concat(STOP_FIELDS, state.blocks && state.blocks[x.key] ? BLK.concat([['sources']]) : []));
-    var rows = cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)) +
-      STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
+    var rows = STOP_TR.map(function (f) { return cell(f[1], x.ot ? x.ot[f[0]] : null, t[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
       blockRows(x.key, ver) +
       STOP_FIELDS.map(function (f) { return cell(f[1], x.o ? x.o[f[0]] : null, s[f[0]], f[2], hasOld, commentBox(x.key, 'stop.' + f[0], f[1], ver), fl('stop.' + f[0])); }).join('') +
-      qaExtraRows(x.key, shown, ver);
+      qaExtraRows(x.key, shown, ver) +
+      cell('Cały przystanek', null, 'Uwaga ogólna do przystanku', null, false, commentBox(x.key, null, 'Cały przystanek', ver), fl(null)).replace('class="adm-row', 'class="adm-row adm-row--all');
     return '<section class="adm-stopx adm-anchor" data-kind="' + x.kind + '" data-cat="' + esc(s.category || '') + '" id="st-' + esc(x.key) + '" data-spy="' + esc(x.key) + '">' + head +
       '<div class="adm-rows">' + rows + '</div></section>';
   }
@@ -1606,12 +1635,11 @@
   }
   function cmpBarHtml(it) {
     var opts = cmpOptions(it);
-    if (!opts.length) return '<p class="adm-cmp__none">Pierwsza wersja tej wycieczki — nie ma z czym porównać.</p>';
+    if (!opts.length) return '<span class="adm-cmp__none">Porównanie: brak wcześniejszej wersji</span>';
     if (state.cmpSel && !opts.some(function (o) { return o[0] === state.cmpSel; })) state.cmpSel = '';
-    return '<div class="adm-cmp__bar"><label for="cmpSel">Porównaj z:</label>' +
-      '<select id="cmpSel" class="adm-cmp__sel"><option value="">— bez porównania (zwykły widok) —</option>' +
-      opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (state.cmpSel === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
-      '<span class="adm-cmp__leg" aria-hidden="true"><del class="adm-df__del">usunięte</del> <ins class="adm-df__ins">dodane</ins></span></div>';
+    return '<label for="cmpSel">Porównaj z</label>' +
+      '<select id="cmpSel" class="adm-cmp__sel"><option value="">— bez porównania —</option>' +
+      opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (state.cmpSel === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
   }
   function cmpViewHtml(it) {
     var cur = (state.versions || []).filter(function (r) { return r.version === it.version; })[0], base = cmpBaseRow(it, state.cmpSel);
@@ -1652,10 +1680,28 @@
     fitActbar();
     if (state.popLi) popClose();
   }
+  function cmpApply() { /* v44: porównanie jest nakładką w render() (state.cmpM) */ }
+  function rerender() { var y = window.scrollY; showTab(state.tabVersion); window.scrollTo(0, y); }
   $d.addEventListener('change', function (e) {
-    if (e.target.id !== 'cmpSel') return;
-    state.cmpSel = e.target.value; cmpApply();
+    if (e.target.id === 'cmpSel') { state.cmpSel = e.target.value; rerender(); return; }
+    if (e.target.id === 'vTabs') { showTab(+e.target.value); var v = document.getElementById('vTabs'); if (v) v.focus(); }
   });
+  $d.addEventListener('click', function (e) {
+    if (e.target.closest('[data-cmp-off]')) { state.cmpSel = ''; rerender(); return; }
+    var o = e.target.closest('[data-cmp-only]');
+    if (o) { state.cmpOnly = !state.cmpOnly; o.setAttribute('aria-pressed', String(state.cmpOnly)); var tv = $d.querySelector('.tv'); if (tv) tv.classList.toggle('is-only', state.cmpOnly); }
+  });
+  function cmpSumHtml(it) {
+    var M = state.cmpM, cur = (state.versions || []).filter(function (r) { return r.version === it.version; })[0], base = M.base;
+    var notes = (state.versions || []).filter(function (r) { return r.version > Math.min(cur.version, base.version) && r.version <= Math.max(cur.version, base.version) && r.note; });
+    return '<section class="tv-cmp" aria-label="Porównanie wersji"><p class="tv-cmp__t"><b>' + esc(vlab(cur)) + '</b> względem <b>' + esc(vlab(base)) + '</b>: ' +
+      (M.total ? plForm(M.total, 'zmienione pole', 'zmienione pola', 'zmienionych pól') + ' w ' + plForm(M.places, 'miejscu', 'miejscach', 'miejscach') : 'brak różnic w treści') + '.</p>' +
+      '<span class="adm-cmp__leg" aria-hidden="true"><del class="adm-df__del">usunięte</del> <ins class="adm-df__ins">dodane</ins></span>' +
+      '<button type="button" class="qc-btn qc-btn--sm" data-cmp-only aria-pressed="' + !!state.cmpOnly + '">Tylko zmiany</button>' +
+      '<button type="button" class="adm-linkbtn" data-cmp-off>Zakończ porównanie</button>' +
+      (notes.length ? '<ul class="adm-cmp__notes">' + notes.map(function (r) { return '<li><span class="adm-df__wv">' + esc(vlab(r)) + '</span> ' + esc(r.note) + '</li>'; }).join('') + '</ul>' : '') +
+      (M.loose.length ? '<div class="adm-cmp__loose"><p class="adm-df__k">Zmiany bez wskazanego pola</p>' + cmpWhyHtml(M.loose) + '</div>' : '') + '</section>';
+  }
 
   // ── „Przyjmij wszystkie rekomendacje” (JP 2026-10-30) ──
   // Okno z listą czerwonych flag (bez szarych — te rozstrzygnął automat) i rekomendacją przy każdej; „Zastosuj” zapisuje
@@ -1791,8 +1837,8 @@
     var ir = state.icref;
     if (!ir || PRACTICAL[cat]) return '';
     var list = icCands(key), sel = ir.sel[key] || null, files = sel && sel.mode === 'pick' ? sel.files : [];
-    var h = '<div class="adm-icref" data-icref="' + esc(key) + '"><p class="adm-icref__h">Referencja do ikony Quo' +
-      '<small>kliknij 1–2 zdjęcia zabytku (bez ludzi); domyślnie automat</small></p>';
+    var h = '<div class="adm-icref" data-icref="' + esc(key) + '"><p class="adm-icref__h">Zdjęcie do ikony Quo' +
+      '<small>1–2 zdjęcia zabytku bez ludzi; bez wyboru — automat</small></p>';
     var off = !ir.selApi;
     if (!ir.cand || !list.length) {
       var own0 = files.length ? icOwnHtml(key, files, off) : '';
@@ -1885,12 +1931,12 @@
   }
   function icLinkHtml(key, files, off) {
     if (files.length >= 2) return '';
-    return '<form class="adm-icref__link" data-icref-link="' + esc(key) + '" novalidate>' +
+    return '<details class="adm-icref__more"><summary>Własny link do zdjęcia</summary><form class="adm-icref__link" data-icref-link="' + esc(key) + '" novalidate>' +
       '<label for="icl-' + esc(key) + '">Własny link do zdjęcia (dowolna strona lub plik)</label>' +
       '<span class="adm-icref__linkrow"><input id="icl-' + esc(key) + '" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="https://…" aria-describedby="iclh-' + esc(key) + '"' + (off ? ' disabled' : '') + '>' +
       '<button type="submit" class="qc-btn qc-btn--sm"' + (off ? ' disabled' : '') + '>Dodaj</button></span>' +
       '<small class="adm-icref__hint" id="iclh-' + esc(key) + '">Generator pobierze zdjęcie z tego linku. Strona musi być publiczna (bez logowania). ' +
-      'Link z Wikimedia Commons lub Wikipedii zapisze się jako plik Commons (z autorem i licencją). Dysk Google: „Udostępnij → każdy, kto ma link”.</small></form>';
+      'Link z Wikimedia Commons lub Wikipedii zapisze się jako plik Commons (z autorem i licencją). Dysk Google: „Udostępnij → każdy, kto ma link”.</small></form></details>';
   }
   $d.addEventListener('submit', function (e) {
     var fm = e.target.closest && e.target.closest('[data-icref-link]');
@@ -1917,6 +1963,7 @@
       var b = [].filter.call(nel.querySelectorAll('button'), function (x) { return x.getAttribute('data-file') === f || x.className === f; })[0];
       if (b) b.focus();
     }
+    readyRefresh();
   }
   function icSave(key, files) {
     var ir = state.icref, prev = ir.sel[key];
@@ -1998,13 +2045,10 @@
       es.forEach(function (e) {
         if (!e.isIntersecting) return;
         var k = e.target.getAttribute('data-spy');
-        [].forEach.call(document.querySelectorAll('.adm-toc a'), function (a) {
+        [].forEach.call(document.querySelectorAll('.tv-toc a'), function (a) {
           var on = a.getAttribute('data-to') === k;
           a.classList.toggle('is-on', on);
           if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
-          if (on && a.scrollIntoView && window.matchMedia('(max-width:1199px)').matches) {
-            var bar = a.closest('ol'); if (bar) bar.scrollLeft = a.parentNode.offsetLeft - bar.offsetLeft - 8;
-          }
         });
       });
     }, { rootMargin: '-35% 0px -60% 0px' });
@@ -2152,12 +2196,13 @@
     var b = e.target.closest('[data-act]');
     if (!b || b.disabled || !state.current) return;
     var act = b.getAttribute('data-act');
-    var label = { approve: 'Zatwierdź i opublikuj', reject: 'Odrzuć szkic' };
     if (armed !== b) {
       disarm();
+      var left = state.qaLeft ? state.qaLeft.b + state.qaLeft.w : 0;
       armed = b; b.classList.add('is-armed');
-      b.textContent = act === 'approve' ? 'Na pewno? Kliknij jeszcze raz' : 'Odrzucić? Kliknij jeszcze raz';
-      armTimer = setTimeout(disarm, 4000);
+      b.textContent = act === 'approve' ? (left ? 'Zostało ' + plForm(left, 'nierozstrzygnięta flaga', 'nierozstrzygnięte flagi', 'nierozstrzygniętych flag') + ' — kliknij, by mimo to opublikować' : 'Na pewno? Kliknij jeszcze raz')
+        : 'Odrzucić? Kliknij jeszcze raz';
+      armTimer = setTimeout(disarm, left ? 7000 : 4000);
       return;
     }
     disarm();
@@ -2176,17 +2221,24 @@
       state.trip = null; state.versions = null; state.current = null;
       loadTrips();
     }).catch(function (err) {
-      [].forEach.call($d.querySelectorAll('[data-act]'), function (x) { x.disabled = x.hasAttribute('data-lock'); x.textContent = label[x.getAttribute('data-act')]; });
+      [].forEach.call($d.querySelectorAll('[data-act]'), function (x) { x.disabled = x.hasAttribute('data-lock'); });
+      actLabels();
       $msg.className = 'adm-msg adm-msg--err'; $msg.textContent = 'Nie zapisano: ' + err.message;
     });
   });
   function disarm() {
     clearTimeout(armTimer);
-    if (armed) {
-      armed.classList.remove('is-armed');
-      armed.textContent = armed.getAttribute('data-act') === 'approve' ? 'Zatwierdź i opublikuj' : 'Odrzuć szkic';
-    }
+    if (armed) armed.classList.remove('is-armed');
     armed = null;
+    actLabels();
+  }
+  function actLabels() {
+    var left = state.qaLeft ? state.qaLeft.b + state.qaLeft.w : 0;
+    [].forEach.call($d.querySelectorAll('[data-act]'), function (x) {
+      if (x === armed) return;
+      if (x.getAttribute('data-act') === 'reject') { x.textContent = 'Odrzuć szkic'; return; }
+      x.innerHTML = 'Zatwierdź i opublikuj' + (left ? ' <b class="tv-flagn" title="nierozstrzygnięte flagi">' + left + '<span class="adm-sr"> nierozstrzygniętych flag</span></b>' : '');
+    });
   }
 
   // ── Postęp prac (JP 2026-10-25): etap każdej wycieczki, sygnatury czasu, tokeny ──
@@ -2850,6 +2902,207 @@
   // licznik w nagłówku i na stronie startowej: przy starcie, co minutę i po powrocie do karty
   setInterval(function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* licznik pomocniczy */ }); }, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* jw. */ }); });
+
+  // ── Widok trasy v44 (JP 2026-10-31: „przegląd wycieczki słaby”) — miejsce pracy redaktora ──
+  // Jeden nagłówek z decyzją, „Gotowość do publikacji”, spis przystanków z lewej, karty pól, podgląd rodzic/dziecko,
+  // tryb „Przejdź przez flagi” (te same notatki co popover — węzeł przenoszony do panelu, logika odpowiedzi bez zmian),
+  // szuflada „Twoje uwagi” z jednym przyciskiem wysyłki i wynikiem weryfikacji (draft_revision_requests.verify, draft_comments.verify_status).
+  function loadRevs(slug) {
+    return api('/draft_revision_requests?city_slug=eq.' + encodeURIComponent(slug) + '&order=id.desc&limit=6')
+      .then(function (r) { state.revs = (r || []).filter(function (x) { return x.city_slug === slug; }); }, function (e) { if (e && e.session) throw e; state.revs = null; });
+  }
+  function revBoxPaint() {
+    var el = document.getElementById('revBox'); if (!el) return;
+    var L = state.revs || [], nm = {}; nm[state.trip.slug] = 'Paczka #';
+    el.innerHTML = L.length ? '<h3>Wysłane paczki uwag</h3><ul class="ad-todos">' + L.map(function (r) {
+      return revRow(r, state.comments, {}).replace(/>[^<]*— uwagi wysłane do poprawki</, '>Paczka #' + esc(r.id) + ' — ' + plForm(Array.isArray(r.comment_ids) ? r.comment_ids.length : 0, 'uwaga', 'uwagi', 'uwag') + '<');
+    }).join('') + '</ul>' : '';
+    el.hidden = !L.length;
+    readyRefresh();
+  }
+  function readyRefresh() {
+    var box = document.getElementById('tvReady'), it = state.tvIt; if (!box || !it) return;
+    var q = state.qaLeft || { b: 0, w: 0, done: 0, all: 0 }, items = [];
+    items.push(q.all ? { k: 'walk', tone: q.b ? 'bad' : q.w ? 'warn' : 'ok', t: 'Flagi z kontroli', v: q.done + ' z ' + q.all + ' rozstrzygniętych' + (q.b ? ' · ' + plForm(q.b, 'blokująca otwarta', 'blokujące otwarte', 'blokujących otwartych') : ''), pct: q.done / q.all }
+      : { tone: 'ok', t: 'Flagi z kontroli', v: 'brak flag' });
+    var rv = it.review;
+    if (rv) {
+      var ne = Array.isArray(rv.errors) ? rv.errors.length : 0, nw = Array.isArray(rv.warnings) ? rv.warnings.length : 0;
+      items.push({ k: q.all ? 'walk' : null, tone: ne ? 'bad' : 'ok', t: 'Kontrola (walidator)', v: (rv.verdict ? rv.verdict + ' · ' : '') + plForm(ne, 'błąd', 'błędy', 'błędów') + ', ' + plForm(nw, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń') });
+    } else items.push({ tone: 'wait', t: 'Kontrola (walidator)', v: 'brak wyniku kontroli dla tej wersji' });
+    if (!state.readOnly) { var un = unsent().length; items.push({ k: 'drawer', tone: un ? 'warn' : 'ok', t: 'Twoje uwagi', v: un ? plForm(un, 'uwaga czeka', 'uwagi czekają', 'uwag czeka') + ' na wysłanie' : 'nic nie czeka na wysłanie' }); }
+    var rq = (state.revs || [])[0];
+    if (rq) {
+      var st = REQST[rq.status] || ['wait', rq.status], vf = verifyOf(rq, state.comments.filter(function (c) { return +c.request_id === +rq.id; }));
+      var tone = st[0], txt = 'paczka #' + rq.id + ': ' + (rq.status === 'done' && rq.result_version ? 'naniesione w v' + rq.result_version : st[1]);
+      if (vf) { if (vf.ready) { tone = 'ok'; txt += ' · gotowa do akceptacji'; } else if (vf.applied != null) { tone = vf.bad ? 'bad' : 'wait'; txt += ' · ' + vf.applied + ' z ' + vf.total + ' naniesionych'; } }
+      items.push({ k: 'drawer', tone: tone, t: 'Poprawki Hermesa', v: txt });
+    }
+    var ir = state.icref;
+    if (ir && ir.cand) {
+      var tot = 0, ch = 0, first = null;
+      (state.tvStops || []).forEach(function (x) {
+        if (x.kind === 'del' || PRACTICAL[x.s.category] || !icCands(x.key).length) return;
+        tot++; if (ir.sel[x.key] && ir.sel[x.key].mode) ch++; else if (!first) first = x.key;
+      });
+      if (tot) items.push({ k: 'icon', key: first, tone: ch < tot ? 'warn' : 'ok', t: 'Zdjęcia do ikon', v: ch + ' z ' + tot + ' przystanków z decyzją' });
+    }
+    var D = state.tvDraft, S = (D && D.stops) || [], L = langsOf(D && D.stop_translations);
+    if (S.length) {
+      var noEn = S.filter(function (x) { return !trOf(D.stop_translations, 'en', 'stop_id', x.id).name; }).length;
+      items.push({ k: 'sum', tone: noEn ? 'warn' : 'ok', t: 'Tłumaczenia', v: plForm(L.length, 'język', 'języki', 'języków') + (L.length ? ' (' + L.join(', ').toUpperCase() + ')' : '') + (noEn ? ' · EN brak w ' + noEn : '') });
+    }
+    var ok = items.filter(function (x) { return x.tone === 'ok'; }).length, pct = Math.round(ok / items.length * 100);
+    var od = document.getElementById('readyD'), isOpen = od ? od.open : tocWide.matches;
+    box.innerHTML = '<details class="tv-ready__d" id="readyD"' + (isOpen ? ' open' : '') + '><summary class="tv-ready__h"><h3 id="tvReadyH">Gotowość do publikacji</h3><span class="tv-ready__n">' + ok + ' z ' + items.length + ' gotowe</span>' +
+      '<span class="tv-ready__bar" role="img" aria-label="Gotowe ' + pct + '%"><span style="width:' + pct + '%"></span></span>' + CHEV + '</summary><ul class="tv-ready__list">' + items.map(function (x) {
+        var inner = '<span class="tv-ready__ic tv-ready__ic--' + x.tone + '">' + (x.tone === 'ok' ? IC.ok : x.tone === 'bad' ? IC.bad : IC.wait) + '</span>' +
+          '<span class="tv-ready__t"><b>' + esc(x.t) + '</b><span>' + esc(x.v) + '</span>' + (x.pct != null ? '<i class="tv-ready__p"><i style="width:' + Math.round(x.pct * 100) + '%"></i></i>' : '') + '</span>' +
+          '<span class="adm-sr">' + ({ ok: 'gotowe', bad: 'do zrobienia', warn: 'do zrobienia', wait: 'w toku' }[x.tone]) + '</span>';
+        return '<li>' + (x.k ? '<button type="button" class="tv-ready__it" data-ready="' + x.k + '"' + (x.key ? ' data-key="' + esc(x.key) + '"' : '') + '>' + inner + '</button>' : '<div class="tv-ready__it">' + inner + '</div>') + '</li>';
+      }).join('') + '</ul></details>';
+    if (!armed) actLabels();
+  }
+  // podgląd: uproszczona kolejność i treść tak, jak zobaczy rodzic / dziecko
+  function paras(v) { return (Array.isArray(v) ? v : String(v || '').split(/\n{2,}/)).filter(Boolean).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join(''); }
+  function previewHtml(mode) {
+    var D = state.tvDraft || {}, c = D.city || {}, ct = trOf(D.city_translations, 'pl'), kid = mode === 'kid';
+    var S = (D.stops || []).slice().sort(function (a, b) { return a.stop_number - b.stop_number; });
+    var h = '<article class="tv-pv' + (kid ? ' tv-pv--kid' : '') + '"><header class="tv-pv__h"><p class="tv-pv__k">' + (kid ? 'Widok dziecka' : 'Widok rodzica') + ' · uproszczony podgląd treści</p>' +
+      '<h2>' + esc(ct.title || '') + '</h2>' + (!kid && ct.subtitle ? '<p class="tv-pv__sub">' + esc(ct.subtitle) + '</p>' : '') + (!kid && ct.lead ? paras(ct.lead) : '') +
+      (!kid ? '<p class="tv-pv__meta">' + esc([durLabel(c.duration_type), S.length + ' przystanków'].filter(Boolean).join(' · ')) + '</p>' : '') + '</header><ol class="tv-pv__list">';
+    S.forEach(function (s) {
+      var t = trOf(D.stop_translations, 'pl', 'stop_id', s.id);
+      h += '<li class="tv-pv__stop"><span class="adm-stop__no">' + num(s.stop_number) + '</span><img class="adm-stop__ic" src="' + icon(s.category) + '" alt="" width="48" height="48" loading="lazy"><div class="tv-pv__b">' +
+        '<h3>' + esc(t.name || '') + '</h3>';
+      if (kid) {
+        h += (t.kids_box ? '<div class="tv-pv__mission"><b>Misja</b>' + paras(t.kids_box) + '</div>' : '') +
+          (t.kids_choice && Array.isArray(t.kids_choice.options) ? '<ol class="tv-pv__opts" type="A">' + t.kids_choice.options.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ol>' : '') +
+          (t.hint ? '<p class="tv-pv__hint"><b>Podpowiedź:</b> ' + esc(t.hint) + '</p>' : '');
+      } else {
+        var meta = [s.time_label, s.visit_duration ? minLabel(s.visit_duration) : '', s.price].filter(Boolean).join(' · ');
+        h += (meta ? '<p class="tv-pv__meta">' + esc(meta) + '</p>' : '') + paras(t.desc_paragraphs) +
+          (t.local_flavor ? '<p class="tv-pv__flav"><b>Lokalny smaczek:</b> ' + esc(t.local_flavor) + '</p>' : '') +
+          (t.kids_box ? '<p class="tv-pv__kid"><b>Dla dziecka:</b> misja na tym przystanku</p>' : '');
+      }
+      h += '</div></li>';
+    });
+    h += '</ol>' + (!kid && (ct.good_to_know || ct.local_food) ? '<footer class="tv-pv__f">' + (ct.good_to_know ? '<h3>Warto wiedzieć</h3>' + paras(ct.good_to_know) : '') +
+      (ct.local_food ? '<h3>Lokalna kuchnia</h3>' + paras(ct.local_food) : '') + '</footer>' : '') + '</article>';
+    return h;
+  }
+  function viewApply() {
+    var v = state.tvView || 'fields', F = document.getElementById('tvFields'), P = document.getElementById('tvPreview');
+    if (!F || !P) return;
+    F.hidden = v !== 'fields'; P.hidden = v === 'fields';
+    P.innerHTML = v === 'fields' ? '' : previewHtml(v);
+    [].forEach.call($d.querySelectorAll('[data-view]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === v)); });
+  }
+  // spis przystanków: na szerokim ekranie zawsze otwarty, na telefonie zwinięty nad treścią
+  var tocWide = window.matchMedia('(min-width:1100px)');
+  function fitToc() { var d = document.getElementById('tocD'); if (d) d.open = tocWide.matches; }
+  if (tocWide.addEventListener) tocWide.addEventListener('change', fitToc);
+  $d.addEventListener('toggle', function (e) { if ((e.target.id === 'tocD' || e.target.id === 'readyD') && tocWide.matches && !e.target.open) e.target.open = true; }, true);
+
+  // szuflada „Twoje uwagi”
+  function drawerOpen() {
+    var d = document.getElementById('cmDrawer'); if (!d) return;
+    walkClose(true); popClose();
+    d.hidden = false; document.body.classList.add('has-panel');
+    [].forEach.call($d.querySelectorAll('[data-drawer]'), function (b) { b.setAttribute('aria-expanded', 'true'); });
+    var f = d.querySelector('[data-send]:not([disabled])') || d.querySelector('[data-drawer-close]'); if (f) f.focus();
+  }
+  function drawerClose(silent) {
+    var d = document.getElementById('cmDrawer'); if (!d || d.hidden) return;
+    d.hidden = true; document.body.classList.remove('has-panel');
+    [].forEach.call($d.querySelectorAll('[data-drawer]'), function (b) { b.setAttribute('aria-expanded', 'false'); if (!silent) b.focus(); });
+  }
+
+  // tryb „Przejdź przez flagi”: jedna notatka naraz w panelu; węzeł <li> wraca na miejsce po zamknięciu
+  var walk = { on: false, ids: [], i: 0, li: null, ph: null };
+  function walkPut() {
+    if (walk.li && walk.ph && walk.ph.parentNode) { walk.ph.parentNode.insertBefore(walk.li, walk.ph); walk.ph.parentNode.removeChild(walk.ph); }
+    if (walk.li) walk.li.classList.remove('is-walk');
+    walk.li = null; walk.ph = null;
+  }
+  function walkDone(id) { var li = document.getElementById('q-' + id); return !li || li.classList.contains('is-done'); }
+  function walkOpen() {
+    var w = document.getElementById('walk'); if (!w) return;
+    popClose(); drawerClose(true);
+    walk.ids = [].map.call($d.querySelectorAll('#tvFields .adm-q__it:not(.is-auto)'), function (li) { return li.getAttribute('data-qid'); });
+    if (!walk.ids.length) return;
+    walk.on = true; w.hidden = false; document.body.classList.add('has-panel');
+    [].forEach.call($d.querySelectorAll('[data-walk]'), function (b) { b.setAttribute('aria-expanded', 'true'); });
+    var i = 0; while (i < walk.ids.length && walkDone(walk.ids[i])) i++;
+    walkShow(i < walk.ids.length ? i : 0);
+  }
+  function walkShow(i) {
+    walkPut();
+    walk.i = Math.max(0, Math.min(i, walk.ids.length - 1));
+    var li = document.getElementById('q-' + walk.ids[walk.i]), slot = document.getElementById('walkSlot');
+    if (!li || !slot) return;
+    walk.ph = document.createComment('flaga'); li.parentNode.insertBefore(walk.ph, li);
+    slot.appendChild(li); li.classList.add('is-walk'); walk.li = li;
+    walkPaint();
+    var f = li.querySelector('.adm-qo.is-rec') || li.querySelector('.adm-qo') || li.querySelector('[data-qa-change]'); if (f) f.focus({ preventScroll: true });
+    slot.scrollIntoView && slot.parentNode.scrollTo && slot.parentNode.scrollTo({ top: Math.max(0, slot.offsetTop - 12) });
+  }
+  function walkPaint() {
+    if (!walk.on) return;
+    var n = walk.ids.length, d = walk.ids.filter(walkDone).length, pos = document.getElementById('walkPos'), bar = document.getElementById('walkBar'), fin = document.getElementById('walkFin');
+    if (pos) pos.textContent = (walk.i + 1) + ' z ' + n + ' · rozstrzygnięte ' + d;
+    if (bar) bar.style.width = (n ? Math.round(d / n * 100) : 0) + '%';
+    if (fin) fin.hidden = d < n;
+    [].forEach.call($d.querySelectorAll('[data-walk-step]'), function (b) { var s = +b.getAttribute('data-walk-step'); b.disabled = s < 0 ? walk.i <= 0 : walk.i >= n - 1; });
+  }
+  function walkStep(d) { if (walk.on) walkShow(walk.i + d); }
+  function walkNextOpen() {
+    if (!walk.on) return;
+    for (var k = 1; k <= walk.ids.length; k++) { var j = (walk.i + k) % walk.ids.length; if (!walkDone(walk.ids[j])) { walkShow(j); return; } }
+    walkPaint();
+  }
+  function walkClose(silent) {
+    var w = document.getElementById('walk');
+    walkPut();
+    if (!walk.on) return;
+    walk.on = false; if (w) w.hidden = true; document.body.classList.remove('has-panel');
+    [].forEach.call($d.querySelectorAll('[data-walk]'), function (b) { b.setAttribute('aria-expanded', 'false'); if (!silent) b.focus(); });
+  }
+  $d.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.closest('[data-walk]')) { walk.on ? walkClose() : walkOpen(); return; }
+    if (t.closest('[data-walk-close]')) { walkClose(); return; }
+    var st = t.closest('[data-walk-step]'); if (st) { walkStep(+st.getAttribute('data-walk-step')); return; }
+    if (t.closest('[data-walk-show]')) {
+      var id = walk.ids[walk.i]; walkClose(true);
+      var fl = flagAnchor(id); if (fl) fl.scrollIntoView({ block: 'center' });
+      popOpen(id); return;
+    }
+    var q = t.closest('#walkSlot [data-qa]');
+    if (q && q.getAttribute('data-qa') !== 'own') { setTimeout(walkNextOpen, 450); return; }
+    if (t.closest('[data-drawer]')) { var dd = document.getElementById('cmDrawer'); dd && !dd.hidden ? drawerClose() : drawerOpen(); return; }
+    if (t.closest('[data-drawer-close]')) { drawerClose(); return; }
+    if (t.closest('#cmDrawer a[href^="#st-"]') && !tocWide.matches) { drawerClose(true); return; }
+    var v = t.closest('[data-view]'); if (v) { state.tvView = v.getAttribute('data-view'); viewApply(); return; }
+    var r = t.closest('[data-ready]');
+    if (r) {
+      var k = r.getAttribute('data-ready');
+      if (k === 'walk') walkOpen(); else if (k === 'drawer') drawerOpen();
+      else {
+        if ((state.tvView || 'fields') !== 'fields') { state.tvView = 'fields'; viewApply(); }
+        var el = document.getElementById(k === 'icon' ? 'st-' + (r.getAttribute('data-key') || '') : 'st-_sum');
+        if (el) { el.scrollIntoView({ block: 'start' }); var ic = el.querySelector('.adm-icref__pick, .adm-icref button'); if (ic && k === 'icon') ic.focus({ preventScroll: true }); }
+      }
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { if (walk.on) { e.preventDefault(); walkClose(); return; } var dd = document.getElementById('cmDrawer'); if (dd && !dd.hidden) { e.preventDefault(); drawerClose(); } return; }
+    if (!walk.on || e.ctrlKey || e.metaKey || e.altKey || /^(TEXTAREA|INPUT|SELECT)$/.test((e.target || {}).tagName || '')) return;
+    var k = e.key.toLowerCase();
+    if (k === 'j') { e.preventDefault(); walkStep(1); }
+    else if (k === 'k') { e.preventDefault(); walkStep(-1); }
+    else if (/^[1-4]$/.test(k) && walk.li) { var o = walk.li.querySelectorAll('.adm-qo')[+k - 1]; if (o) { e.preventDefault(); o.focus(); } }
+  });
 
   // ── Pulpit (JP 2026-10-31): cały projekt na jednym ekranie ──
   // Tylko istniejące źródła: admin_trips, skrzynka decyzji (loadInbox), draft_revision_requests + draft_comments (stan uwag),

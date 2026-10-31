@@ -346,3 +346,19 @@ Decyzja JP 2026-10-31: panel ma być ładniejszym, nowoczesnym dashboardem do za
 - **Trasa:** przyklejony pasek akcji pod nagłówkiem — wersja, „Porównaj z”, flagi (następna, „Przyjmij wszystkie rekomendacje”),
   „Wyślij uwagi do poprawki”, „Zatwierdź i opublikuj” / „Odrzuć szkic” (na telefonie zostaje dolny pasek decyzji). Spis przystanków z boku ≥ 1200 px.
 - **Wygląd:** jasny i ciemny motyw (`prefers-color-scheme`), tokeny z `styles.css` przemapowane w `.adm`; statusy kolorem + słowem + ikoną.
+
+## Widok trasy v2 (od v45, 2026-10-31) — miejsce pracy redaktora
+
+JP: „menu fajne, ale przegląd wycieczki słaby”. Ten sam kontrakt API, ta sama logika flag/uwag/porównania/ikon/decyzji.
+- **Jeden nagłówek** (przyklejony na desktopie): nazwa, kraj · region, status, menu „Wersja” (vN · data · status; zamiast zakładek) i „Porównaj z”,
+  jedyny przycisk „Zatwierdź i opublikuj” (licznik nierozstrzygniętych flag; przy flagach potwierdzenie mówi, ile zostało) i menu ⋯:
+  Odrzuć szkic, notatka do wersji, cała trasa w Google Maps, otwórz na stronie, podgląd wersji (gość / zalogowany / dziecko).
+- **Gotowość do publikacji:** flagi x/y, walidator (`review.errors/warnings`), Twoje uwagi do wysłania, ostatnia paczka uwag z weryfikacją
+  (`GET /api/draft_revision_requests?city_slug=eq.X`, `verify`), zdjęcia do ikon x/y, tłumaczenia. Każda pozycja prowadzi do miejsca.
+- **Spis przystanków** z lewej (pełne nazwy, ikona, kropka: nowy/zmieniony/usunięty, liczniki flag i uwag); na telefonie zwinięty.
+- **Widok:** Pola / Rodzic / Dziecko (uproszczony podgląd kolejności i treści z migawki wersji).
+- **Przejdź przez flagi:** panel z jedną notatką naraz (ten sam węzeł co popover), „x z y”, Wstecz/Dalej, J/K, 1–4, Enter, Esc;
+  na górze „Przyjmij wszystkie rekomendacje” i „Całe grupy uwag naraz”.
+- **Twoje uwagi:** jedna szuflada — lista do wysłania, jeden „Wyślij uwagi do poprawki”, paczki z weryfikacją; przy uwadze
+  `verify_status` (naniesiona / częściowo / nie naniesiona / nieaktualna). Pole uwagi przy polu to zwarte „＋ Uwaga do pola”.
+- **Porównanie:** nakładka na te same karty — zmienione pola z różnicą słów i „skąd zmiana”, „Tylko zmiany”, „Zakończ porównanie”.
