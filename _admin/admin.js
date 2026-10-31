@@ -1708,9 +1708,14 @@
     var list = icCands(key), sel = ir.sel[key] || null, files = sel && sel.mode === 'pick' ? sel.files : [];
     var h = '<div class="adm-icref" data-icref="' + esc(key) + '"><p class="adm-icref__h">Referencja do ikony Quo' +
       '<small>kliknij 1–2 zdjęcia zabytku (bez ludzi); domyślnie automat</small></p>';
-    if (!ir.cand) return h + '<p class="adm-icref__st">Kandydaci zdjęć jeszcze nie gotowi — serwer pobiera je z Wikimedia Commons. Do tego czasu ikona powstaje automatycznie.</p></div>';
-    if (!list.length) return h + '<p class="adm-icref__st">Brak zdjęć z Commons bez ludzi i z wolną licencją — ikona powstanie automatycznie (albo pliki ręcznie w place-icons-data.mjs).</p></div>';
     var off = !ir.selApi;
+    if (!ir.cand || !list.length) {
+      var own0 = files.length ? icOwnHtml(key, files, off) : '';
+      return h + '<p class="adm-icref__st">' + (!ir.cand ? 'Kandydaci zdjęć jeszcze nie gotowi — serwer pobiera je z Wikimedia Commons.' : 'Commons nie dał zdjęć bez ludzi i z wolną licencją.') +
+        (files.length ? '' : ' Bez Twojego linku ikona powstanie automatycznie.') + '</p>' + own0 + icLinkHtml(key, files, off) +
+        (ir.msg[key] || files.length ? '<p class="adm-icref__st" role="status">' + esc(icStatus(key, list)) + '</p>' : '') +
+        (sel ? '<div class="adm-icref__bar"><button type="button" class="adm-linkbtn" data-icref-clear="' + esc(key) + '"' + (off ? ' disabled' : '') + '>Cofnij decyzję</button></div>' : '') + '</div>';
+    }
     h += '<ul class="adm-icref__list">' + list.map(function (c, i) {
       var on = files.indexOf(c.title) > -1, nm = c.title.replace(/^File:/, '');
       return '<li class="adm-icref__it' + (on ? ' is-on' : '') + '">' +
@@ -1721,12 +1726,68 @@
         '<p class="adm-icref__meta" title="' + esc(nm) + '">' + esc(c.author || 'autor nieznany') + ' · ' + esc(c.license || 'licencja?') + '</p>' +
         '<a class="adm-icref__lnk" href="' + esc(c.page) + '" target="_blank" rel="noopener noreferrer">otwórz na Commons ↗</a></li>';
     }).join('') + '</ul>';
+    var titles = list.map(function (c) { return c.title; });
+    h += icOwnHtml(key, files.filter(function (f) { return titles.indexOf(f) < 0; }), off) + icLinkHtml(key, files, off);
     h += '<div class="adm-icref__bar"><button type="button" class="qc-btn qc-btn--sm adm-icref__auto' + (sel && sel.mode === 'auto' ? ' is-on' : '') + '" data-icref-auto="' + esc(key) + '"' +
       (off ? ' disabled' : '') + ' aria-pressed="' + !!(sel && sel.mode === 'auto') + '">Automat</button>' +
       (sel ? '<button type="button" class="adm-linkbtn" data-icref-clear="' + esc(key) + '"' + (off ? ' disabled' : '') + '>Cofnij decyzję</button>' : '') +
       '<span class="adm-icref__st" role="status">' + esc(off ? 'Zapis wyboru jeszcze niedostępny — baza czeka na SQL 2026-10-30-icon-refs.sql (deploy.sh approve).' : icStatus(key, list)) + '</span></div></div>';
     return h;
   }
+  // Własny link (JP 2026-10-31): zdjęcie z Wikimedia Commons / Wikipedii → tytuł „File:…” (autor i licencja z Commons, jak u kandydatów).
+  // Inne serwisy odrzucamy: generator pobiera tylko z Commons, a ikona musi mieć udokumentowane źródło z wolną licencją.
+  function icFileFromUrl(u) {
+    u = String(u || '').trim();
+    if (/^File:/i.test(u)) return icNormTitle(u.slice(5));
+    var m;
+    try { m = new URL(u); } catch (e) { return null; }
+    if (m.protocol !== 'https:' && m.protocol !== 'http:') return null;
+    var host = m.hostname.toLowerCase(), path = m.pathname, hash = m.hash || '';
+    var hm = hash.match(/^#\/media\/(?:File|Plik|Datei|Fichier|Archivo|Bestand|Soubor)(?::|%3A)(.+)$/i);
+    if (hm && /(^|\.)(wikipedia|wikimedia|wikivoyage)\.org$/.test(host)) return icNormTitle(hm[1]);
+    if (/^(commons\.(m\.)?wikimedia\.org)$/.test(host)) {
+      var pm = path.match(/^\/wiki\/(?:File|Plik)(?::|%3A)(.+)$/i);
+      return pm ? icNormTitle(pm[1]) : null;
+    }
+    if (/^(upload|thumb)\.wikimedia\.org$/.test(host)) {
+      var um = path.match(/^\/wikipedia\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/]+)/);
+      return um ? icNormTitle(um[1]) : null;
+    }
+    return null;
+  }
+  function icNormTitle(t) {
+    try { t = decodeURIComponent(t); } catch (e) {}
+    t = t.replace(/_/g, ' ').trim();
+    return /^[^|#<>[\]{}\n/]{1,240}\.(jpe?g|png|webp|tiff?)$/i.test(t) ? 'File:' + t : null;
+  }
+  function icOwnHtml(key, own, off) {
+    if (!own.length) return '';
+    return '<ul class="adm-icref__own">' + own.map(function (f) {
+      var nm = f.replace(/^File:/, '');
+      return '<li><a href="https://commons.wikimedia.org/wiki/' + encodeURIComponent(f.replace(/ /g, '_')).replace(/%3A/, ':') + '" target="_blank" rel="noopener noreferrer">Twój link: ' + esc(nm) + ' ↗</a>' +
+        '<button type="button" class="adm-linkbtn" data-icref-pick="' + esc(key) + '" data-file="' + esc(f) + '"' + (off ? ' disabled' : '') + ' aria-label="Usuń zdjęcie ' + esc(nm) + '">usuń</button></li>';
+    }).join('') + '</ul>';
+  }
+  function icLinkHtml(key, files, off) {
+    if (files.length >= 2) return '';
+    return '<form class="adm-icref__link" data-icref-link="' + esc(key) + '" novalidate>' +
+      '<label for="icl-' + esc(key) + '">Własne zdjęcie — link z Wikimedia Commons lub Wikipedii</label>' +
+      '<span class="adm-icref__linkrow"><input id="icl-' + esc(key) + '" type="url" inputmode="url" autocomplete="off" placeholder="https://commons.wikimedia.org/wiki/File:…"' + (off ? ' disabled' : '') + '>' +
+      '<button type="submit" class="qc-btn qc-btn--sm"' + (off ? ' disabled' : '') + '>Dodaj</button></span></form>';
+  }
+  $d.addEventListener('submit', function (e) {
+    var fm = e.target.closest && e.target.closest('[data-icref-link]');
+    if (!fm || !state.icref) return;
+    e.preventDefault();
+    var ir = state.icref, key = fm.getAttribute('data-icref-link'), inp = fm.querySelector('input');
+    var f = icFileFromUrl(inp && inp.value), sel = ir.sel[key], files = sel && sel.mode === 'pick' ? sel.files.slice() : [];
+    var say = function (t) { ir.msg[key] = t; icRedraw(key); setTimeout(function () { if (ir.msg[key] === t) { delete ir.msg[key]; icRedraw(key); } }, 6000); };
+    if (!f) return say('To nie jest link do zdjęcia z Wikimedia Commons ani z Wikipedii (otwórz zdjęcie i skopiuj adres, np. …/wiki/File:Nazwa.jpg). Inne serwisy nie podają licencji, więc generator ich nie użyje.');
+    if (files.indexOf(f) > -1) return say('To zdjęcie już jest wybrane.');
+    if (files.length >= 2) return say('Najwyżej 2 zdjęcia — najpierw odznacz jedno.');
+    files.push(f);
+    icSave(key, files);
+  });
   function icRedraw(key) {
     var el = $d.querySelector('.adm-icref[data-icref="' + key.replace(/"/g, '') + '"]');
     if (!el) return;

@@ -734,3 +734,13 @@ mark.adm-fl--auto{background:#ECEEF2;border-bottom:2px dashed var(--muted)}
 .adm-cmp__toc .adm-toc__no,.adm-cmp__toc .adm-n{font-size:18px}
 .adm-dlg__foot .qc-btn.adm-dlg__apply{background:var(--verde);color:#fff;box-shadow:none}
 @media(max-width:620px){.adm-dlg__f{overflow:auto}.adm-rec__list{overflow:visible;flex:none}.adm-dlg__foot{position:sticky;bottom:0}}
+/* własny link do zdjęcia referencyjnego ikony (JP 2026-10-31) */
+.adm-icref__own{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.adm-icref__own li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:17px}
+.adm-icref__own a{display:inline-flex;align-items:center;min-height:44px;font-weight:700;color:var(--azzurro);overflow-wrap:anywhere}
+.adm-icref__own .adm-linkbtn{min-height:44px}
+.adm-icref__link{margin:10px 0 4px;display:flex;flex-direction:column;gap:6px}
+.adm-icref__link label{font-size:17px;font-weight:700;color:var(--ink2)}
+.adm-icref__linkrow{display:flex;gap:8px;flex-wrap:wrap}
+.adm-icref__linkrow input{flex:1 1 220px;min-width:0;min-height:44px;font-size:18px;padding:8px 10px;border:2px solid var(--line,#ccc);border-radius:10px;background:var(--paper,#fff);color:inherit}
+.adm-icref__linkrow .qc-btn{min-height:44px}
