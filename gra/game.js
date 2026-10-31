@@ -6,8 +6,9 @@
    Spis treści
    1. Stałe i narzędzia
    2. Pamięć (localStorage, tylko prefiks quolino_game_) + postęp z wycieczki
-   3. Quo — szkielet „cut-out” (części, punkty obrotu, pozy, tańce)
-   4. Tereny i tła (rysowane proceduralnie, wspólne dla wszystkich wycieczek)
+   3. Quo — szkielet „cut-out” (części, punkty obrotu, pozy, tańce) — zapas, gdy sprite'y się nie wczytają
+   3b. Quo ze sprite'ów (pozy media/icons/pose-*.webp w atlasie, animacja przełączaniem póz) — domyślnie
+   4. Tereny i tła (rysowane proceduralnie, wspólne dla wszystkich wycieczek; 4d: hero trasy jako daleki plan)
    5. Budowa poziomu z danych wycieczki
    6. Fizyka, gracz, przeciwnicy
    7. Rysowanie świata
@@ -365,6 +366,140 @@
       c.restore();
     }
     c.restore();
+  }
+
+  /* ---------- 3b. Quo ze sprite'ów (JP 2026-10-31) ----------
+     Ten sam Quo co na stronie: pozy z media/icons/pose-NN-*.webp (256 px; 512 px na ostrych ekranach, dogrywane w tle).
+     Wszystkie pozy trafiają do jednego atlasu (płótno 5×3) z usuniętym „wypieczonym” cieniem pod łapkami — cień rysuje gra.
+     Animacja = przełączanie póz + lekki ruch całości (podskok, pochylenie, squash & stretch skalą, lustrzane odbicie w lewo).
+     Gdy obrazy nie zdążą się wczytać albo ich nie ma — rysuje stary szkielet (sekcja 3, drawQuo) — nic nie usuwamy.
+     Metadane pozy w pikselach obrazka 256: file, flip (1 = na rysunku Quo patrzy w LEWO; w grze domyślnie w prawo),
+     gy = linia podłoża (spód łapek), cx = środek nad łapkami, hx/hy = środek głowy (czapki), ht = przechył głowy. */
+  var QUO_SPR = {
+    sleep:   { file: '01-sleeping',          flip: 1, gy: 212, cx: 120, hx: 70,  hy: 125, ht: -.45 },
+    wake:    { file: '02-waking-up',         flip: 1, gy: 212, cx: 120, hx: 72,  hy: 110, ht: -.25 },
+    stretch: { file: '03-stretching',        flip: 1, gy: 208, cx: 120, hx: 75,  hy: 100, ht: -.15 },
+    calm:    { file: '04-calm-sitting',      flip: 0, gy: 236, cx: 125, hx: 118, hy: 72,  ht: 0 },
+    curious: { file: '05-curious-sitting',   flip: 0, gy: 238, cx: 135, hx: 150, hy: 72,  ht: .05 },
+    crouch:  { file: '06-crouching-curious', flip: 1, gy: 236, cx: 115, hx: 62,  hy: 95,  ht: -.1 },
+    ready:   { file: '07-ready-to-spring',   flip: 1, gy: 240, cx: 125, hx: 75,  hy: 100, ht: -.1 },
+    run1:    { file: '08-running',           flip: 0, gy: 222, cx: 120, hx: 138, hy: 76,  ht: 0 },
+    run2:    { file: '09-sprint',            flip: 0, gy: 200, cx: 120, hx: 150, hy: 85,  ht: .15 },
+    run3:    { file: '10-full-speed',        flip: 0, gy: 204, cx: 125, hx: 142, hy: 82,  ht: .15 },
+    leap:    { file: '11-leaping-forward',   flip: 0, gy: 203, cx: 130, hx: 160, hy: 80,  ht: -.2 },
+    high:    { file: '12-high-jump',         flip: 0, gy: 212, cx: 130, hx: 130, hy: 72,  ht: -.1 },
+    cheer:   { file: '13-celebration-jump',  flip: 0, gy: 224, cx: 125, hx: 120, hy: 70,  ht: -.15 },
+    fly:     { file: '14-maximum-energy',    flip: 0, gy: 220, cx: 135, hx: 150, hy: 80,  ht: .1 },
+    medal:   { file: '15-gold-medal',        flip: 0, gy: 245, cx: 125, hx: 128, hy: 72,  ht: 0 }
+  };
+  var QS = { ready: false, atlas: null, bm: null, res: 0, U: 66 / 233, loading: false }; // U = jednostki świata na piksel obrazka 256 (Quo siedzący ≈ 66 j.)
+  var QS_IDS = Object.keys(QUO_SPR), QS_COLS = 5;
+  QS_IDS.forEach(function (id, i) { QUO_SPR[id].col = i % QS_COLS; QUO_SPR[id].row = Math.floor(i / QS_COLS); });
+  function stripBakedShadow(c, sx, sy, res, gy) { // wypieczony cień pod łapkami: jasne, nienasycone piksele od linii podłoża w dół → przezroczyste
+    var y0 = Math.max(0, Math.floor(gy - 10 * res / 256)), h = res - y0; if (h <= 0) return;
+    try {
+      var im = c.getImageData(sx, sy + y0, res, h), d = im.data;
+      for (var i = 0; i < d.length; i += 4) {
+        var a = d[i + 3]; if (!a) continue;
+        var r = d[i], g = d[i + 1], b = d[i + 2], mx = r > g ? (r > b ? r : b) : (g > b ? g : b), mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+        if (mx - mn < 50 && mx > 180) d[i + 3] = 0;
+      }
+      c.putImageData(im, sx, sy + y0);
+    } catch (e) { /* bez zdejmowania cienia (np. płótno „skażone”) */ }
+  }
+  /* Wczytanie atlasu w zadanej rozdzielczości; done(ok). Najpierw 256 (szybko, przed startem etapu), potem 512 w tle na ostrych ekranach. */
+  function loadQuoSprites(res, done) {
+    var cv = document.createElement('canvas'); cv.width = res * QS_COLS; cv.height = res * Math.ceil(QS_IDS.length / QS_COLS);
+    var c = cv.getContext('2d'), left = QS_IDS.length, fail = false;
+    QS_IDS.forEach(function (id) {
+      var m = QUO_SPR[id], im = new Image();
+      im.onload = function () { if (!fail) { c.drawImage(im, m.col * res, m.row * res, res, res); stripBakedShadow(c, m.col * res, m.row * res, res, m.gy * res / 256); } if (!--left) finish(); };
+      im.onerror = function () { fail = true; if (!--left) finish(); };
+      im.src = ICONS + 'pose-' + m.file + '-' + res + '.webp';
+    });
+    function finish() {
+      if (fail) { done(false); return; }
+      QS.atlas = cv; QS.res = res; QS.ready = true; QS.bm = null; QS.halo = makeHalo(cv, res); QS.haloBm = null;
+      if (window.createImageBitmap) {
+        createImageBitmap(cv).then(function (b) { if (QS.atlas === cv) QS.bm = b; }, function () {});
+        createImageBitmap(QS.halo).then(function (b) { if (QS.atlas === cv) QS.haloBm = b; }, function () {});
+      }
+      done(true);
+    }
+  }
+  function makeHalo(atlas, res) { // jasny obrys-poświata wokół sylwetki (czytelność Quo na ciemnym tle): sylwetka rozszerzona w 8 kierunkach, raz
+    var cv = document.createElement('canvas'); cv.width = atlas.width; cv.height = atlas.height;
+    var c = cv.getContext('2d'), r = Math.max(2, Math.round(res / 56));
+    for (var i = 0; i < 8; i++) { var a = i / 8 * Math.PI * 2; c.drawImage(atlas, Math.round(Math.cos(a) * r), Math.round(Math.sin(a) * r)); }
+    c.globalCompositeOperation = 'source-in'; c.fillStyle = '#FFF6E0'; c.fillRect(0, 0, cv.width, cv.height);
+    return cv;
+  }
+  function wantQuoHiRes() { return (view.s || 1) * (view.dpr || 1) >= 2.4 || Math.min(window.innerWidth, window.innerHeight) >= 700; }
+  function prepQuoSprites(done) { // preload przed startem etapu (bez migotania: szkielet nie pojawia się wcale, jeśli atlas zdąży)
+    if (QS.ready || QS.loading) { done(); return; }
+    QS.loading = true;
+    loadQuoSprites(256, function (ok) {
+      QS.loading = false; done();
+      if (ok && wantQuoHiRes()) loadQuoSprites(512, function () {});
+    });
+  }
+  /* Opis pozy sprite'a dla stanu gry — jeden obiekt wielokrotnego użytku (bez alokacji w pętli). */
+  var SP = { id: 'curious', dx: 0, dy: 0, rot: 0, sx: 1, sy: 1, flip: false, halo: 0 };
+  var RUN_CYCLE = ['run1', 'run2', 'run3', 'run2'];
+  function spriteFor(kind, t, o) {
+    o = o || {}; var s = Math.sin, b;
+    SP.id = 'curious'; SP.dx = 0; SP.dy = 0; SP.rot = 0; SP.sx = 1; SP.sy = 1; SP.flip = false; SP.halo = 0;
+    switch (kind) {
+      case 'idle': // ciekawski; co ~5 s rozgląda się (spokojna poza) i oddycha
+        SP.id = ((t % 5.2) < .55) ? 'calm' : 'curious';
+        if (!reduceMotion) { b = s(t * 2.4) * .015; SP.sy = 1 + b; SP.sx = 1 - b * .5; }
+        break;
+      case 'walk': // cykl 3 póz biegu + podskok i pochylenie do przodu
+        b = o.phase || 0; var fi = Math.floor((b / (Math.PI * 2)) * 4) % 4; if (fi < 0) fi += 4;
+        SP.id = RUN_CYCLE[fi];
+        if (!reduceMotion) { SP.dy = -Math.abs(s(b)) * 2.2; SP.rot = .05; SP.sx = fi === 2 ? 1.04 : 1; SP.sy = fi === 2 ? .96 : 1; }
+        break;
+      case 'jump': // start: sprężyna (pierwsze 0,1 s), potem skok do przodu wyciągnięty w górę
+        if ((o.air || 0) < .1) { SP.id = 'ready'; SP.sx = .94; SP.sy = 1.1; } else { SP.id = 'leap'; SP.rot = -.22; SP.sx = .95; SP.sy = 1.06; }
+        break;
+      case 'fall': SP.id = 'leap'; SP.rot = clamp((o.vy || 0) / 900, 0, 1) * .45 - .05; break;
+      case 'glide': SP.id = 'fly'; SP.rot = .1 + (reduceMotion ? 0 : s(t * 9) * .05); SP.dy = reduceMotion ? 0 : s(t * 9) * 1.5; break;
+      case 'land': SP.id = 'crouch'; break;
+      case 'hurt': SP.id = 'high'; SP.rot = -.25; break;
+      case 'nap': SP.id = (o.nap != null && o.nap < .45) ? 'wake' : 'sleep'; if (!reduceMotion) { b = s(t * 1.6) * .02; SP.sy = 1 + b; } break;
+      case 'climb': SP.id = 'ready'; SP.rot = -1.25; SP.dx = -8; SP.dy = -4 + (reduceMotion ? 0 : Math.abs(s(o.phase || 0)) * -3); break;
+      case 'cheer': SP.id = 'cheer'; if (!reduceMotion) SP.dy = -Math.abs(s(t * 6)) * 3; break;
+      case 'dance0': // podskoki z machaniem i krok w bok
+        b = t * Math.PI * 2 * 1.6; SP.id = s(b) > 0 ? 'cheer' : 'high'; SP.dx = s(b / 2) * 5; SP.dy = -Math.abs(s(b)) * 6; SP.rot = s(b / 2) * .08; break;
+      case 'dance1': // skok z obrotem (odbicie lustrzane w locie)
+        b = t * Math.PI * 2 * 1.25; SP.id = Math.abs(s(b)) > .5 ? 'fly' : 'cheer'; SP.dy = -Math.abs(s(b)) * 16; SP.flip = s(b / 2) < 0;
+        SP.sx = .92 + .08 * Math.abs(Math.cos(b)); SP.sy = 1 + .06 * Math.abs(s(b)); SP.rot = s(b) * .15; break;
+      case 'dance2': // medal: tupanie i kołysanie
+        b = t * 9; SP.id = 'medal'; SP.dy = -Math.abs(s(b)) * 3; SP.rot = s(b / 2) * .07; SP.sx = 1 - Math.abs(s(b)) * .03; SP.sy = 1 + Math.abs(s(b)) * .04; break;
+      case 'dance3': // disco: zmiana póz w rytm
+        b = t * Math.PI * 2 * 1.1; var ph = Math.floor((t * 1.1 * 4) % 4); SP.id = ['cheer', 'fly', 'high', 'fly'][ph]; SP.dx = s(b) * 4; SP.rot = s(b) * .12; SP.dy = -Math.abs(s(b * 2)) * 4; break;
+    }
+    if (o.land) { SP.sx *= 1 + .16 * o.land; SP.sy *= 1 - .14 * o.land; }
+    return SP;
+  }
+  function drawQuoSprite(c, x, y, scale, facing, sp, alpha) { // (x, y) = punkt między łapkami na ziemi; facing 1 = w prawo
+    var m = QUO_SPR[sp.id] || QUO_SPR.curious, R = QS.res, f = facing * (sp.flip ? -1 : 1) * (m.flip ? -1 : 1);
+    c.save();
+    if (alpha != null) c.globalAlpha = alpha;
+    c.translate(x + sp.dx * scale * facing, y + sp.dy * scale);
+    c.rotate(sp.rot * facing);
+    c.scale(scale * sp.sx * f, scale * sp.sy);
+    if (sp.halo && QS.halo) { c.globalAlpha = (alpha != null ? alpha : 1) * sp.halo; c.drawImage(QS.haloBm || QS.halo, m.col * R, m.row * R, R, R, -m.cx * QS.U, -m.gy * QS.U, 256 * QS.U, 256 * QS.U); c.globalAlpha = alpha != null ? alpha : 1; }
+    c.drawImage(QS.bm || QS.atlas, m.col * R, m.row * R, R, R, -m.cx * QS.U, -m.gy * QS.U, 256 * QS.U, 256 * QS.U);
+    if (curHat) { // czapka w układzie głowy szkieletu (staw szyi = 0,0): środek głowy szkieletu leży w (2,-13)
+      c.translate((m.hx - m.cx) * QS.U - 2, (m.hy - m.gy) * QS.U + 17); if (m.flip) c.scale(-1, 1); c.rotate(m.ht * (m.flip ? -1 : 1)); c.scale(1.08, 1.08); drawHat(c, curHat);
+    }
+    c.restore();
+  }
+  /* Jedno wejście: sprite, a gdy atlasu nie ma — szkielet. kind jak w quoPose; o = { phase, land, air, vy, nap }. */
+  function drawQuoAny(c, x, y, scale, facing, kind, t, o, alpha) {
+    if (QS.ready) { drawQuoSprite(c, x, y, scale, facing, spriteFor(kind, t, o), alpha); return; }
+    drawQuo(c, x, y, scale, facing, quoPose(kind === 'land' ? 'idle' : kind, t, o), alpha);
   }
 
   /* ---------- 4. Tereny i tła ---------- */
@@ -744,6 +879,41 @@
     c.fillStyle = md; c.beginPath(); ell(c, x - 2 * s, y - 17 * s, 9.5 * s, 10 * s, 0); c.fill();
     c.fillStyle = lt; c.beginPath(); ell(c, x - 5 * s, y - 21 * s, 4.5 * s, 4 * s, 0); c.fill();
   }
+  /* ---------- 4d. Hero trasy jako daleki plan (JP 2026-10-31) ----------
+     Z media/tours/quolino-it-<trasa>-hero-800.webp wycinamy fragment BEZ Quo (lewa część obrazka), układamy go lustrzanie
+     obok siebie (szwy niewidoczne) w pas PER × H w połowie rozdzielczości — rozciągnięty z wygładzaniem daje miękkie
+     rozmycie dalekiego planu — i przyciemniamy, żeby Quo i kafle były z przodu. Pas budujemy raz, potem tylko kopiujemy.
+     Dopóki obraz się nie wczyta (albo go nie ma), warstwa rysuje się jak dawniej (kodem). */
+  var HERO = {};
+  function heroPrep(key, src, crop, H, copies, tint, topFade) {
+    var e = HERO[key] = { cv: null, bm: null, ok: false, H: H };
+    var im = new Image();
+    im.onload = function () {
+      try {
+        var q = 1, cw = Math.round(PER * q), ch = Math.round(H * q), cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+        var c = cv.getContext('2d'), w1 = cw / copies;
+        for (var i = 0; i < copies; i++) { c.save(); c.translate(i * w1 + (i % 2 ? w1 : 0), 0); if (i % 2) c.scale(-1, 1); c.drawImage(im, crop[0], crop[1], crop[2], crop[3], 0, 0, w1 + .5, ch); c.restore(); }
+        if (tint) { c.fillStyle = tint; c.fillRect(0, 0, cw, ch); }
+        if (topFade) { var g = c.createLinearGradient(0, 0, 0, ch * .5); g.addColorStop(0, topFade); g.addColorStop(1, rgba(topFade, 0)); c.fillStyle = g; c.fillRect(0, 0, cw, ch * .5); }
+        e.cv = cv; e.ok = true;
+        if (window.createImageBitmap) createImageBitmap(cv).then(function (b) { e.bm = b; }, function () {});
+      } catch (er) { e.ok = false; }
+    };
+    im.src = src;
+    return e;
+  }
+  function heroOK(key) { var e = HERO[key]; return !!(e && e.ok); }
+  function heroDraw(c, key, ox, oy, yBot, above, below, bottom) { // pas hero z dołem na oy+yBot; nad i pod nim jednolity kolor
+    var e = HERO[key], top = oy + yBot - e.H;
+    if (above) { c.fillStyle = above; c.fillRect(ox, top - 700, PER, 701); }
+    c.imageSmoothingEnabled = false; c.drawImage(e.bm || e.cv, 0, 0, e.cv.width, e.cv.height, ox, top, PER, e.H); c.imageSmoothingEnabled = true;
+    if (below) { c.fillStyle = below; c.fillRect(ox, oy + yBot - 1, PER, Math.max(1, bottom - (oy + yBot) + 2)); }
+  }
+  function genHero() {
+    if (!trip) return;
+    if (trip.trip === 'frasassi') heroPrep('cave', '../media/tours/quolino-it-frasassi-hero-800.webp', [0, 0, 400, 450], 450, 4, 'rgba(4,14,34,.38)', '#071A33');
+    if (trip.trip === 'spello') heroPrep('villa', '../media/tours/quolino-it-spello-hero-800.webp', [0, 0, 240, 210], 350, 4, 'rgba(70,40,15,.2)', '#3A2416');
+  }
   var B2 = {}; // dodatkowe dane warstw (osobne ziarno: dawne tła się nie zmieniają)
   function genArt() {
     var R = rng(9137);
@@ -777,6 +947,7 @@
       ],
       cave: [
         { par: .16, py: .45, far: true, y0: -460, fillTop: true, fillBot: true, draw: function (c, ox, oy, w, bottom) {
+          if (heroOK('cave')) { heroDraw(c, 'cave', ox, oy, 330, '#071A33', '#122B4E', bottom); return; }
           c.fillStyle = '#14305A'; c.beginPath();
           C.tites.forEach(function (s) { if (!vis(ox + s.x, s.w)) return; c.moveTo(ox + s.x - s.w / 2, oy - 460); c.lineTo(ox + s.x - s.w / 2, oy + 10); c.quadraticCurveTo(ox + s.x - s.w * .12, oy + 10 + s.len * .6, ox + s.x, oy + 10 + s.len); c.quadraticCurveTo(ox + s.x + s.w * .12, oy + 10 + s.len * .6, ox + s.x + s.w / 2, oy + 10); c.lineTo(ox + s.x + s.w / 2, oy - 460); });
           c.fill(); c.fillStyle = '#0E2342'; c.fillRect(ox, oy - 460, PER, 474);
@@ -843,9 +1014,9 @@
           }
         } }
       ],
-      villa: [
-        { par: .1, py: .45, far: true, yb: 330, haze: '#F5EEE2', ha0: .1, ha1: .5, draw: function (c, ox, oy, w, bottom) { ridgeFill(c, BG.villa.far, ox, oy, bottom, '#BFCDB6', '#D4D8C6', true); } },
-        { par: .15, py: .45, far: true, haze: '#F5EEE2', ha0: 0, ha1: .3, hy0: 120, hy1: 300, draw: function (c, ox, oy) { BG.villa.town.forEach(function (tx) { if (vis(ox + tx, 280)) spTown(c, ox + tx, oy + 238, .62, false, 0); }); } },
+      villa: [ // wnętrze Villa dei Mosaici: kamienna hala z hero trasy (gdy jest), inaczej dawna panorama
+        { par: .1, py: .45, far: true, yb: 330, haze: '#F5EEE2', ha0: .1, ha1: .5, draw: function (c, ox, oy, w, bottom) { if (heroOK('villa')) { heroDraw(c, 'villa', ox, oy, 340, '#3A2416', '#A58B6B', bottom); return; } ridgeFill(c, BG.villa.far, ox, oy, bottom, '#BFCDB6', '#D4D8C6', true); } },
+        { par: .15, py: .45, far: true, haze: '#F5EEE2', ha0: 0, ha1: .3, hy0: 120, hy1: 300, draw: function (c, ox, oy) { if (heroOK('villa')) return; BG.villa.town.forEach(function (tx) { if (vis(ox + tx, 280)) spTown(c, ox + tx, oy + 238, .62, false, 0); }); } },
         { par: .4, py: .7, draw: function (c, ox, oy, w, bottom) { drawVillaMid(c, ox, oy, PER, bottom); } }
       ],
       gate: [
@@ -982,9 +1153,11 @@
   function drawBackground(c, kind, camX, camY, w, h, t) {
     var Ls = BGL[kind]; if (!Ls) return;
     c.__ga = c.globalAlpha;
-    var i = 0, out = !(kind === 'cave' || kind === 'fresco'), sc = SKYCUT[kind]; skyHc = sc ? -camY * sc[0] + sc[1] + 2 : 1e9;
+    var villaIn = kind === 'villa' && heroOK('villa');
+    var i = 0, out = !(kind === 'cave' || kind === 'fresco' || villaIn), sc = SKYCUT[kind]; skyHc = sc ? -camY * sc[0] + sc[1] + 2 : 1e9;
     if (kind === 'cave') skyGrad(c, w, h, [[0, '#030B18'], [1, '#0D2647']]);
     else if (kind === 'fresco') skyGrad(c, w, h, [[0, '#4A3226'], [1, '#C9A783']]);
+    else if (villaIn) skyGrad(c, w, h, [[0, '#3A2416'], [1, '#8A6A48']]);
     else if (kind === 'belvedere' || kind === 'dusk') belvSky(c, kind === 'dusk', camX, camY, w, h, t);
     else { var T = TER[kind]; outdoorSky(c, w, h, T.skyTop || SKY_SP[kind][0], T.skyBot || SKY_SP[kind][1], camY); if (kind !== 'alley') drawSun(c, w, h, camY, t); }
     if (out && kind !== 'dusk') drawClouds(c, camX, camY, w, t, kind === 'alley' ? 3 : 5, kind === 'belvedere' ? 10 : 0, kind === 'belvedere' ? 1.2 : 1);
@@ -2694,7 +2867,7 @@
     var sw = shade.width, sh = shade.height, sc = sw / view.w;
     sctx.globalCompositeOperation = 'source-over';
     sctx.clearRect(0, 0, sw, sh);
-    sctx.fillStyle = 'rgba(2,8,22,' + (0.88 * w).toFixed(3) + ')';
+    sctx.fillStyle = 'rgba(2,8,22,' + (0.84 * w).toFixed(3) + ')';
     sctx.fillRect(0, 0, sw, sh);
     sctx.globalCompositeOperation = 'destination-out';
     var lantern = P.power === 'lantern';
@@ -3140,15 +3313,18 @@
     ctx.strokeStyle = 'rgba(255,198,41,.8)'; ctx.lineWidth = 5 * view.dpr; ctx.beginPath(); ctx.arc(sx, sy, R, 0, Math.PI * 2); ctx.stroke();
   }
   /* Quo: dodatki rysowane kodem — cień zależny od wysokości, kurz spod łap, sprężyste opóźnienie ogona, chustka na wietrze. */
-  var QA = { tail: 0, head: 0, dust: 0, gr: true, vy: 0, hurt: 0, scarf: 0 };
-  function quoExtras(pose, kind) {
+  var QA = { tail: 0, head: 0, dust: 0, gr: true, vy: 0, hurt: 0, scarf: 0, air: 0 };
+  var QO = { phase: 0, land: 0, air: 0, vy: 0, nap: 0 }; // opcje pozy sprite'a (jeden obiekt, bez alokacji)
+  function quoExtras(pose, kind) { // pose = null przy sprite'ach: zostają tylko efekty (kurz, wstrząs)
     var dt = Math.min(vDt, .05), tv = clamp(-P.vx * P.facing / 420 * .45 + P.vy / 900 * .35, -.6, .6);
     QA.tail += (tv - QA.tail) * Math.min(1, dt * 7); QA.head += (clamp(P.vy / 1400, -.12, .12) - QA.head) * Math.min(1, dt * 10);
     QA.scarf += (clamp(Math.abs(P.vx) / 200 + Math.abs(P.vy) / 600, 0, 1.4) - QA.scarf) * Math.min(1, dt * 5);
-    if (!reduceMotion) { pose.tail.a += QA.tail; pose.head.a += QA.head; }
-    if (!P.onGround && kind !== 'nap' && !P.climb && !reduceMotion) { var v = clamp(Math.abs(P.vy) / 900, 0, 1); pose.root.sy *= 1 + .08 * v; pose.root.sx *= 1 - .06 * v; }
-    if (kind === 'idle' && !reduceMotion) { var b = Math.sin(P.t * 2.4) * .012; pose.root.sy *= 1 + b; pose.root.sx *= 1 - b * .5; }
-    pose.scarf = { a: QA.scarf, t: P.t };
+    if (pose) {
+      if (!reduceMotion) { pose.tail.a += QA.tail; pose.head.a += QA.head; }
+      if (!P.onGround && kind !== 'nap' && !P.climb && !reduceMotion) { var v = clamp(Math.abs(P.vy) / 900, 0, 1); pose.root.sy *= 1 + .08 * v; pose.root.sx *= 1 - .06 * v; }
+      if (kind === 'idle' && !reduceMotion) { var b = Math.sin(P.t * 2.4) * .012; pose.root.sy *= 1 + b; pose.root.sx *= 1 - b * .5; }
+      pose.scarf = { a: QA.scarf, t: P.t };
+    }
     // kurz spod łap przy biegu i lądowaniu
     if (P.onGround && kind === 'walk' && Math.abs(P.vx) > 140) { QA.dust -= dt; if (QA.dust <= 0) { QA.dust = .13 + Math.random() * .05; dust(P.x - P.facing * 8, P.y - 2, 1); } }
     if (P.onGround && !QA.gr && QA.vy > 420) { dust(P.x, P.y - 2, QA.vy > 700 ? 6 : 3); if (QA.vy > 760) addShake(3.2, .2); }
@@ -3668,6 +3844,10 @@
       ctx.save(); ctx.translate(x, y - 128 + bob); ctx.rotate(-.06 + (reduceMotion ? 0 : Math.sin(gameT * 1.3) * .025));
       drawSticker(ctx, img, S, ((vT * .28) % 1) * 1.7 - .35);
       ctx.restore();
+      // podpis: nazwa przystanku na słupku pod naklejką (biały tekst z ciemnym obrysem — czytelny na każdym tle)
+      if (!lm.cap || lm.cap.n !== stopName(lm.sec)) { ctx.font = font(14, 800); lm.cap = { n: stopName(lm.sec), ls: wrapLines(ctx, stopName(lm.sec), 150).slice(0, 2) }; }
+      ctx.font = font(14, 800); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(27,22,48,.85)'; ctx.fillStyle = '#FFF8E6';
+      for (var li = 0; li < lm.cap.ls.length; li++) { var ly = y - 56 + li * 16; ctx.strokeText(lm.cap.ls[li], x, ly); ctx.fillText(lm.cap.ls[li], x, ly); }
     });
   }
   function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
@@ -3685,13 +3865,23 @@
     else if (P.hurtT > 0) kind = 'hurt';
     else if (!P.onGround) kind = (curPower() === 'glide' && input.jump && P.vy >= 80) ? 'glide' : P.vy < 0 ? 'jump' : 'fall';
     else kind = Math.abs(P.vx) > 15 ? 'walk' : 'idle';
-    var pose = quoPose(kind, P.t, { phase: P.phase, land: P.land });
     var gy = groundBelow(P.x, P.y), hh = clamp((gy - P.y) / 170, 0, 1), sa = 1 - hh * .7; // cień: mniejszy i jaśniejszy, im wyżej
     if (gy - P.y < 400) { ctx.fillStyle = 'rgba(14,26,43,' + (.24 * sa).toFixed(3) + ')'; ctx.beginPath(); ell(ctx, P.x, gy - 1, 14 * sa + 2, 3.6 * sa + .8, 0); ctx.fill(); }
-    if (P.zip >= 0) pose = quoPose('jump', P.t);
-    if (P.cart >= 0) pose = quoPose('cheer', P.t);
-    if (P.climb) pose = quoPose('climb', P.t, { phase: P.y / 9 });
-    quoExtras(pose, kind);
+    var pose = null, sp = null;
+    QA.air = P.onGround ? 0 : QA.air + Math.min(vDt, .05);
+    if (QS.ready) { // sprite: ta sama logika stanów, lądowanie = przykuc
+      var sk = kind, so = QO; so.phase = P.phase; so.land = P.land; so.air = QA.air; so.vy = P.vy; so.nap = P.nap;
+      if (P.zip >= 0) sk = 'jump'; if (P.cart >= 0) sk = 'cheer'; if (P.climb) { sk = 'climb'; so.phase = P.y / 9; }
+      if (sk === 'idle' && P.land > .3) sk = 'land';
+      sp = spriteFor(sk, P.t, so); sp.halo = .45 + .5 * caveWeight(P.x); // poświata: lekka w dzień, mocna w jaskini
+      quoExtras(null, kind);
+    } else {
+      pose = quoPose(kind, P.t, { phase: P.phase, land: P.land });
+      if (P.zip >= 0) pose = quoPose('jump', P.t);
+      if (P.cart >= 0) pose = quoPose('cheer', P.t);
+      if (P.climb) pose = quoPose('climb', P.t, { phase: P.y / 9 });
+      quoExtras(pose, kind);
+    }
     if (P.power === 'balloon') {
       var bx = P.x + 8 * P.facing, by = P.y - 100 + (reduceMotion ? 0 : Math.sin(P.t * 3) * 3);
       ctx.strokeStyle = '#3B2A00'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(P.x + 6 * P.facing, P.y - 40); ctx.quadraticCurveTo(bx - 4 * P.facing, by + 40, bx, by + 20); ctx.stroke();
@@ -3702,7 +3892,8 @@
       ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(bx, by, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(P.fly / 8, 0, 1)); ctx.stroke();
       ctx.strokeStyle = '#FFC629'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(bx, by, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(P.fly / 8, 0, 1)); ctx.stroke();
     }
-    drawQuo(ctx, P.x, P.y, 1, P.facing, pose, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
+    if (sp) drawQuoSprite(ctx, P.x, P.y, 1, P.facing, sp, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
+    else drawQuo(ctx, P.x, P.y, 1, P.facing, pose, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
   }
   function groundBelow(x, y) {
     var inZ = P && P.zone >= 0, maxR = inZ ? L.cx[P.zone].H : ROWS, r0 = Math.max(Math.floor(y / TILE), inZ ? 0 : L.sky ? -L.skyH : 0);
@@ -4089,11 +4280,10 @@
       ctx.restore(); ctx.globalAlpha = fadeIn;
     }
     var qScale = wide ? H * .6 / 66 : Math.min(H * .4, W * .55) / 66;
-    var pose = reduceMotion ? quoPose('cheer', 0) : quoPose(C.dance, t);
     var qx = wide ? W * .66 : W / 2, qy = wide ? H * .95 : Math.min(H * .94, cy + S * .5 + qScale * 46);
     ctx.fillStyle = 'rgba(14,26,43,.14)'; ctx.beginPath(); ell(ctx, qx, qy, qScale * 21, qScale * 4.6, 0); ctx.fill();
     ctx.fillStyle = 'rgba(14,26,43,.2)'; ctx.beginPath(); ell(ctx, qx, qy, qScale * 14, qScale * 3, 0); ctx.fill();
-    drawQuo(ctx, qx, qy, qScale, wide ? -1 : 1, pose);
+    drawQuoAny(ctx, qx, qy, qScale, wide ? -1 : 1, reduceMotion ? 'cheer' : C.dance, reduceMotion ? 0 : t, null, null);
     for (i = C.fx.length - 1; i >= 0; i--) { // błyski i pierścień uderzenia
       var p = C.fx[i]; p.t += dt;
       if (p.ring) { var rk = p.t / .45; if (rk >= 1) { C.fx.splice(i, 1); continue; } ctx.globalAlpha = fadeIn * (1 - rk); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 8 * (1 - rk) + 1; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + rk * S * .6, 0, Math.PI * 2); ctx.stroke(); continue; }
@@ -4485,7 +4675,7 @@
     drawBackground(x, L.sections[si].terrain, L.landmarks[si].x - 200, 40, 400, 300, gameT);
     x.save(); x.translate(130, 120); x.rotate(-.06); drawSticker(x, stopIconsBig[si] || stopIcons[si], 150, null); x.restore();
     x.fillStyle = 'rgba(14,26,43,.22)'; x.beginPath(); ell(x, 290, 262, 36, 8, 0); x.fill();
-    drawQuo(x, 290, 262, 2.7, -1, quoPose('cheer', 0));
+    drawQuoAny(x, 290, 262, 2.7, -1, 'cheer', 0, null, null);
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.strokeStyle = '#fff'; x.lineWidth = 28; x.strokeRect(0, 0, 480, 360);
     x.fillStyle = '#fff'; x.fillRect(0, 300, 480, 60);
@@ -4825,17 +5015,18 @@
     resize();
     loadStage().then(function (data) {
       trip = data;
+      genHero();
       stageTexts();
       curHat = lsGet(LS + 'hat' + hatSuffix()) || null; if (curHat && ownedHats().indexOf(curHat) < 0) curHat = null;
       renderHats();
       renderBonus();
-      buildRig(function () {
+      buildRig(function () { prepQuoSprites(function () {
         D = DIFF[diffKey];
         prog = readProgress(trip, demo); L = buildLevel(trip, prog, 0, D); P = newPlayer(); stats = { coins: 0, stickers: [], gates: 0, firstTry: 0, questions: 0, hiddenTotal: 0 };
         loadStopIcons();
         updateCamera(1);
         state = 'menu';
-      });
+      }); });
     }).catch(function (e) { if (e && e.locked) { showLocked(); return; } toast(PT('page.game.t.load_err', 'Nie udało się wczytać danych wycieczki.'), 8000); });
     requestAnimationFrame(frame);
   }
@@ -4900,7 +5091,7 @@
   function setIn(b, prev) { input.left = !!(b & 1); input.right = !!(b & 2); input.jump = !!(b & 4); input.jumpPressed = !!(b & 4) && !(prev & 4); }
   window.__quoGame = {
     get state() { return state; }, get player() { return P; }, get level() { return L; }, get stats() { return stats; }, get diff() { return D; },
-    get cam() { return cam; }, get view() { return view; }, get trip() { return trip && trip.trip; },
+    get cam() { return cam; }, get view() { return view; }, get trip() { return trip && trip.trip; }, get quoRes() { return QS.ready ? QS.res : 0; },
     set botMode(v) { botMode = !!v; }, get botMode() { return botMode; },
     skipCelebration: function () { if (state === 'celebrate') endCelebration(); },
     tileAt: function (x, y) { return tileAt(x, y); },

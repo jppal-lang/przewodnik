@@ -28,7 +28,7 @@ Czysty HTML/CSS/JS, canvas, `requestAnimationFrame` ze stałym krokiem 1/60 s. Z
 |------|---------|
 | `index.html` | ekrany (start, pauza, quiz, koniec), HUD, przyciski dotykowe |
 | `game.css` | wygląd (kolory z design systemu Quolino) |
-| `game.js` | silnik: budowa poziomu, fizyka, rysowanie, szkielet Quo, świętowanie |
+| `game.js` | silnik: budowa poziomu, fizyka, rysowanie, Quo ze sprite'ów (zapas: szkielet kodem), świętowanie |
 | `treasure.js` | Skarb Quo: zapis lokalny i odbiór na koncie rodzica |
 | `icons/manifest.json` | lista własnych ikon miejsc (naklejek przystanków) — patrz „Ikony miejsc” |
 | `stages.json` | lista etapów na ekranie startowym: slug, plik, ikona, napisy (klucze `page.game.*` + polski w `"i18n"`) |
@@ -326,3 +326,19 @@ Do testów automatycznych strona wystawia `window.__quoGame`: stan, `snapshot()/
 że każdy poziom da się przejść; dzieci tego nie widzą.
 
 Czapki rysuje `drawHat()` w układzie głowy — tak samo da się je kiedyś podmienić na pliki.
+
+## Quo i grafika etapów (JP 2026-10-31)
+
+- **Quo = ten sam Quo co na stronie.** Gra używa póz `media/icons/pose-01…15-256.webp` (na ostrych ekranach dogrywa 512),
+  złożonych raz w atlas z usuniętym „wypieczonym” cieniem (cień rysuje gra). Animacja to przełączanie póz plus ruch całości:
+  stanie (ciekawski / co ~5 s spokojny), bieg (cykl running → sprint → full-speed z podskokiem i pochyleniem, squash & stretch),
+  skok (ready-to-spring przy odbiciu, leaping w locie), opadanie (nos w dół), szybowanie (maximum-energy), lądowanie (przykuc),
+  odpoczynek (sleeping → waking-up), wspinaczka, taniec po przystanku (sekwencje celebration / maximum-energy / gold-medal /
+  high-jump z podskokiem i odbiciem lustrzanym). W lewo = odbicie lustrzane. Hitbox i fizyka bez zmian (ok. 66 j. wysokości).
+  Czapki rysowane są kodem nad głową sprite'a (punkt głowy per poza w `QUO_SPR`). Wokół Quo jasna poświata-obrys
+  (sylwetka z atlasu), mocniejsza w jaskini. Gdy obrazy się nie wczytają — stary szkielet z sekcji 3 (`drawQuo`).
+- **Hero trasy jako daleki plan.** `media/tours/quolino-it-<trasa>-hero-800.webp`: fragment bez Quo ułożony lustrzanie w pas
+  1600 px, przyciemniony — Frasassi: jaskinia (teren `cave`), Spello: kamienna hala Villa dei Mosaici (teren `villa`, wtedy bez nieba).
+  Pas budowany raz po wczytaniu obrazu; do tego czasu warstwa rysuje się jak dawniej kodem (`HERO`, `heroPrep`, `heroDraw`).
+- Naklejka przystanku na słupku ma podpis z nazwą przystanku (biały tekst z obrysem).
+
