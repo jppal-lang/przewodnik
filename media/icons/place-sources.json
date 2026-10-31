@@ -1,4 +1,27 @@
 {
+ "frasassi/museo-speleo-paleontologico": {
+  "trip": "frasassi",
+  "stop_key": "museo-speleo-paleontologico",
+  "n": 3,
+  "name": "Museo Speleo Paleontologico e Archeologico",
+  "trip_version": 13,
+  "icon_version": 2,
+  "accepted_at": "2026-10-31T17:34:11.320Z",
+  "icons": {
+   "64": "media/icons/place-frasassi-museo-speleo-paleontologico-64.webp",
+   "128": "media/icons/place-frasassi-museo-speleo-paleontologico-128.webp",
+   "256": "media/icons/place-frasassi-museo-speleo-paleontologico-256.webp",
+   "512": "media/icons/place-frasassi-museo-speleo-paleontologico-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9Ro7YK3eL6aqvEKWWEOJI_oBZx5v24xKxHU0agApuWbK7neEYFmvi0tJZ0Ol9pF4qGsNvgUBe6Ig5_jEgTyWyr6X8-2wBN9DiiOKBa_gX0s8IKeAprmJMq6C2GC91JgB85t6-g=s680-w680-h510-rw",
+    "file_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9Ro7YK3eL6aqvEKWWEOJI_oBZx5v24xKxHU0agApuWbK7neEYFmvi0tJZ0Ol9pF4qGsNvgUBe6Ig5_jEgTyWyr6X8-2wBN9DiiOKBa_gX0s8IKeAprmJMq6C2GC91JgB85t6-g=s680-w680-h510-rw",
+    "source": "link JP"
+   }
+  ]
+ },
  "spello/villa-dei-mosaici": {
   "trip": "spello",
   "stop_key": "villa-dei-mosaici",
