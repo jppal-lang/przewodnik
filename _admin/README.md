@@ -429,3 +429,20 @@ Zgoda JP 2026-10-31. Plik `admin-pipeline.js` (+ `admin-ext.css`), ładowany prz
 - **Zlecenia z błędem:** czerwone z powodem. „Ponów” tylko dla darmowych (`place-candidates.mjs`, `watch.mjs --no-ai`, `ui-translate.mjs`, odczyty) — panel **nie ma RPC kolejkowania**,
   więc pokazuje gotowy JSON do `_content/jobs/<data>-<nazwa>-ponow.json` (repo-jobs.mjs). Płatne (`gemini-draft`, `trip-translate`) — tylko przez zgodę w Decyzjach; ten ekran nic nie zapisuje.
 - Tryb demo: `demoPipeline` z admin.js + własne dane (zlecenia, logi, ops.jobs) w `admin-pipeline.js`.
+
+## Mapa projektu (od v50, 2026-10-31) — `#/mapa` + „Mapa przystanków” w trasie
+
+Zgoda JP 2026-10-31. Plik `admin-map.js` (style w `admin-ext.css`); w `admin.js` jeden hak po `drawMap()` w widoku trasy.
+
+- **Europa** z `media/map/europe.js` (te same kształty i rzut co `atlas.js`; `europe.js` doładowywany przy pierwszym wejściu), kolorystyka narzędzia: szare lądy, kraje z trasami ciemniejsze, bez ozdobników.
+  Pinezka trasy w kolorze etapu: opublikowana (zielona) / do akceptacji (żółta) / w pracy (niebieska: aktywny przebieg albo otwarta prośba o poprawkę) / odrzucona · archiwum (czerwona); podpis miasta;
+  klaster (ciemne kółko z liczbą), gdy pinezki bliżej niż 22 px — klik przybliża. Najechanie/fokus → karta (nazwa, etap, wersja, flagi z `decision_drafts`, języki); klik / Enter → `#/<miasto>`.
+- **Filtry** etap + kraj (z licznikami, `localStorage` klucz `adm.mapFilters` — tylko wygoda), lista tras z boku (klik centruje), przyciski + / − / ⤢, Ctrl + kółko, przeciąganie, szczypanie na dotyku,
+  klawisze + − strzałki 0.
+- **Współrzędne:** `GET /api/admin_versions?select=city_slug,version,lat:content->city->>lat,lon:content->city->>lon,stops:content->stops&order=version.desc` → najnowsza wersja miasta;
+  brak `city.lat/lon` → środek przystanków z `lat/lon`; brak w ogóle → lista „Bez współrzędnych” (nic nie zgadujemy). `admin_trips` nie ma lat/lon — gdyby doszło, wystarczy zamienić źródło w `loadCoords()`.
+- **Nowe miasto klikiem:** brak RPC/formularza nowej trasy → klik w pustą mapę pokazuje tylko lat/lon (odwrotność rzutu) i podpowiedź (wątek na Discordzie). Zero zapisu.
+- **Mapa przystanków** (w karcie „Trasa w skrócie”, pod dotychczasową mapą OSM): przystanki w kolejności, linia przerywana, numery, ikona kategorii z `media/icons`,
+  parking = kwadrat, lokale = romb; klik → karta przystanku (godzina, czas na miejscu, cena, rok, współrzędne) z linkiem „Przejdź do pól przystanku”. Bez km i czasów dojazdu.
+  Podkład: biała siatka (bez kafli, bez CDN); „Otwórz w Google Maps” dla całej trasy (ten sam link co w menu ⋯). Gdy < 2 przystanki mają współrzędne — schemat kolejności z wyraźną informacją.
+- Tryb demo: współrzędne miast i przystanków Spello w `admin-map.js` (`DEMO_CITY`, `DEMO_STOPS`); Zakopane celowo bez współrzędnych.

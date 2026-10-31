@@ -1444,6 +1444,7 @@
     revBoxPaint();
     fitToc();
     drawMap(newStops, draft.stop_translations);
+    if (window.AdminMap) window.AdminMap.tripMap(stops, draft.stop_translations, c, title);   // „Mapa przystanków” (admin-map.js)
     updateCounts();
     qaRefresh();
     spy();
