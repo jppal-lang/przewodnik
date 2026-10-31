@@ -1,4 +1,27 @@
 {
+ "frasassi/abbazia-san-vittore-alle-chiuse": {
+  "trip": "frasassi",
+  "stop_key": "abbazia-san-vittore-alle-chiuse",
+  "n": 4,
+  "name": "Abbazia di San Vittore alle Chiuse",
+  "trip_version": 13,
+  "icon_version": 1,
+  "accepted_at": "2026-10-31T20:38:11.902Z",
+  "icons": {
+   "64": "media/icons/place-frasassi-abbazia-san-vittore-alle-chiuse-64.webp",
+   "128": "media/icons/place-frasassi-abbazia-san-vittore-alle-chiuse-128.webp",
+   "256": "media/icons/place-frasassi-abbazia-san-vittore-alle-chiuse-256.webp",
+   "512": "media/icons/place-frasassi-abbazia-san-vittore-alle-chiuse-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "url": "https://www.italyreview.com/abbazia-di-san-vittore-alle-chiuse.html",
+    "file_url": "https://www.italyreview.com/uploads/2/6/3/6/26365745/abbazia-di-san-vittore-alle-chiuse-marche-italy-1.jpg",
+    "source": "link JP"
+   }
+  ]
+ },
  "frasassi/museo-speleo-paleontologico": {
   "trip": "frasassi",
   "stop_key": "museo-speleo-paleontologico",
