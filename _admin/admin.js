@@ -1739,7 +1739,31 @@
     return h;
   }
   // Własny link (JP 2026-10-31): zdjęcie z Wikimedia Commons / Wikipedii → tytuł „File:…” (autor i licencja z Commons, jak u kandydatów).
-  // Inne serwisy odrzucamy: generator pobiera tylko z Commons, a ikona musi mieć udokumentowane źródło z wolną licencją.
+  // Każdy inny link https (dowolna strona lub plik: Google Drive, Dropbox, Imgur, blog…) → zapisany jako adres; generator pobiera go
+  // bezpiecznie (place-icons-fetch.mjs: bez sieci prywatnej, ≤ 15 MB, JPEG/PNG/WebP, ze strony bierze og:image). SQL 2026-10-31-icon-refs-linki.sql.
+  // Ta sama reguła adresu co ops.icon_ref_ok w SQL: https, host bez loginu, bez spacji/znaków kontrolnych, ≤ 2000 znaków.
+  var IC_LINK = /^https:\/\/[A-Za-z0-9](?:[A-Za-z0-9.-]{0,252}[A-Za-z0-9])?(?::\d{1,5})?(?:[/?#][^\s\x00-\x1f\x7f<>"\\`{}|^]*)?$/;
+  var IC_SQL = '2026-10-31-icon-refs-linki.sql';
+  function icIsLink(f) { return typeof f === 'string' && f.length <= 2000 && IC_LINK.test(f); }
+  // tekst z pola → { ref: 'File:…' | 'https://…' } albo { err: komunikat }
+  function icRefFromInput(u) {
+    u = String(u || '').trim();
+    if (!u) return { err: 'Wklej link do zdjęcia.' };
+    var f = icFileFromUrl(u);
+    if (f) return { ref: f };
+    if (/^File:/i.test(u)) return { err: 'To nie jest poprawny plik z Commons (potrzebny .jpg, .png albo .webp).' };
+    var m; try { m = new URL(u); } catch (e) { return { err: 'To nie jest link — skopiuj pełny adres zaczynający się od https://' }; }
+    if (m.protocol === 'http:') return { err: 'Link musi zaczynać się od https:// (bezpieczne połączenie).' };
+    if (m.protocol !== 'https:') return { err: 'Dozwolone są tylko linki https://' };
+    if (m.username || m.password) return { err: 'Link nie może zawierać loginu ani hasła.' };
+    if (/(^|\.)(wikipedia|wikimedia|wikivoyage)\.org$/i.test(m.hostname)) return { err: 'To link do strony Wikipedii, nie do zdjęcia — kliknij zdjęcie i skopiuj adres z „/media/Plik:…” albo „/wiki/File:…”.' };
+    var href = m.href;
+    if (!icIsLink(href)) return { err: href.length > 2000 ? 'Link jest za długi (ponad 2000 znaków).' : 'Ten link ma niedozwolone znaki — skopiuj go jeszcze raz z paska adresu.' };
+    return { ref: href };
+  }
+  // podgląd tylko dla bezpośredniego pliku obrazu (rozszerzenie w ścieżce) — stron i Dysku Google nie ładujemy
+  function icDirectImg(u) { try { return /\.(jpe?g|png|webp)$/i.test(new URL(u).pathname); } catch (e) { return false; } }
+  function icHost(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return 'link'; } }
   function icFileFromUrl(u) {
     u = String(u || '').trim();
     if (/^File:/i.test(u)) return icNormTitle(u.slice(5));
@@ -1767,6 +1791,12 @@
   function icOwnHtml(key, own, off) {
     if (!own.length) return '';
     return '<ul class="adm-icref__own">' + own.map(function (f) {
+      if (icIsLink(f)) {
+        var host = icHost(f);
+        return '<li class="adm-icref__url">' + (icDirectImg(f) ? '<img class="adm-icref__prev" src="' + esc(f) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="96" height="72" data-icref-prev>' : '') +
+          '<a href="' + esc(f) + '" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="' + esc(f) + '">Twój link: ' + esc(host) + ' ↗</a>' +
+          '<button type="button" class="adm-linkbtn" data-icref-pick="' + esc(key) + '" data-file="' + esc(f) + '"' + (off ? ' disabled' : '') + ' aria-label="Usuń link ' + esc(host) + '">usuń</button></li>';
+      }
       var nm = f.replace(/^File:/, '');
       return '<li><a href="https://commons.wikimedia.org/wiki/' + encodeURIComponent(f.replace(/ /g, '_')).replace(/%3A/, ':') + '" target="_blank" rel="noopener noreferrer">Twój link: ' + esc(nm) + ' ↗</a>' +
         '<button type="button" class="adm-linkbtn" data-icref-pick="' + esc(key) + '" data-file="' + esc(f) + '"' + (off ? ' disabled' : '') + ' aria-label="Usuń zdjęcie ' + esc(nm) + '">usuń</button></li>';
@@ -1775,18 +1805,20 @@
   function icLinkHtml(key, files, off) {
     if (files.length >= 2) return '';
     return '<form class="adm-icref__link" data-icref-link="' + esc(key) + '" novalidate>' +
-      '<label for="icl-' + esc(key) + '">Własne zdjęcie — link z Wikimedia Commons lub Wikipedii</label>' +
-      '<span class="adm-icref__linkrow"><input id="icl-' + esc(key) + '" type="url" inputmode="url" autocomplete="off" placeholder="https://commons.wikimedia.org/wiki/File:…"' + (off ? ' disabled' : '') + '>' +
-      '<button type="submit" class="qc-btn qc-btn--sm"' + (off ? ' disabled' : '') + '>Dodaj</button></span></form>';
+      '<label for="icl-' + esc(key) + '">Własny link do zdjęcia (dowolna strona lub plik)</label>' +
+      '<span class="adm-icref__linkrow"><input id="icl-' + esc(key) + '" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="https://…" aria-describedby="iclh-' + esc(key) + '"' + (off ? ' disabled' : '') + '>' +
+      '<button type="submit" class="qc-btn qc-btn--sm"' + (off ? ' disabled' : '') + '>Dodaj</button></span>' +
+      '<small class="adm-icref__hint" id="iclh-' + esc(key) + '">Generator pobierze zdjęcie z tego linku. Strona musi być publiczna (bez logowania). ' +
+      'Link z Wikimedia Commons lub Wikipedii zapisze się jako plik Commons (z autorem i licencją). Dysk Google: „Udostępnij → każdy, kto ma link”.</small></form>';
   }
   $d.addEventListener('submit', function (e) {
     var fm = e.target.closest && e.target.closest('[data-icref-link]');
     if (!fm || !state.icref) return;
     e.preventDefault();
     var ir = state.icref, key = fm.getAttribute('data-icref-link'), inp = fm.querySelector('input');
-    var f = icFileFromUrl(inp && inp.value), sel = ir.sel[key], files = sel && sel.mode === 'pick' ? sel.files.slice() : [];
-    var say = function (t) { ir.msg[key] = t; icRedraw(key); setTimeout(function () { if (ir.msg[key] === t) { delete ir.msg[key]; icRedraw(key); } }, 6000); };
-    if (!f) return say('To nie jest link do zdjęcia z Wikimedia Commons ani z Wikipedii (otwórz zdjęcie i skopiuj adres, np. …/wiki/File:Nazwa.jpg). Inne serwisy nie podają licencji, więc generator ich nie użyje.');
+    var got = icRefFromInput(inp && inp.value), f = got.ref, sel = ir.sel[key], files = sel && sel.mode === 'pick' ? sel.files.slice() : [];
+    var say = function (t) { ir.msg[key] = t; icRedraw(key); setTimeout(function () { if (ir.msg[key] === t) { delete ir.msg[key]; icRedraw(key); } }, 8000); };
+    if (!f) return say(got.err);
     if (files.indexOf(f) > -1) return say('To zdjęcie już jest wybrane.');
     if (files.length >= 2) return say('Najwyżej 2 zdjęcia — najpierw odznacz jedno.');
     files.push(f);
@@ -1815,9 +1847,17 @@
       delete ir.msg[key]; icRedraw(key);
     }, function (e) {
       if (prev) ir.sel[key] = prev; else delete ir.sel[key];
-      ir.msg[key] = 'Nie zapisano: ' + e.message; icRedraw(key);
+      // baza bez SQL 2026-10-31 odrzuca adresy spoza Commons (stara walidacja „Zły plik: …” albo CHECK icon_refs_files)
+      var sqlOld = (files || []).some(icIsLink) && /Zły plik(?! albo link)|icon_refs_files|check constraint/i.test(e.message || '');
+      ir.msg[key] = sqlOld ? 'Najpierw zatwierdź zmianę w zakładce Decyzje (' + IC_SQL + ') — wtedy zapiszą się linki spoza Wikimedia Commons.' : 'Nie zapisano: ' + e.message;
+      icRedraw(key);
     });
   }
+  // podgląd linku się nie załadował (strona, a nie plik; blokada serwisu) → sam link, bez pustej ramki
+  $d.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && t.hasAttribute('data-icref-prev')) t.parentNode.removeChild(t);
+  }, true);
   $d.addEventListener('click', function (e) {
     var b = e.target.closest('[data-icref-pick],[data-icref-auto],[data-icref-clear]');
     if (!b || b.disabled || !state.icref) return;

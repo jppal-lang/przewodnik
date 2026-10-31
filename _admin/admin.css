@@ -582,7 +582,7 @@ mark.adm-fl--auto{background:#ECEEF2;border-bottom:2px dashed var(--muted)}
 .adm-icref__bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:6px}
 .adm-icref__bar .qc-btn,.adm-icref__bar .adm-linkbtn{min-height:44px}
 .adm-icref__auto.is-on{box-shadow:0 0 0 3px var(--verde)}
-.adm-icref__st{font-size:17px;color:var(--ink2)}
+.adm-icref__st{font-size:18px;color:var(--ink2)}
 @media(max-width:620px){.adm-icref__it{width:calc(50% - 6px)}.adm-icref__pick{width:100%}.adm-icref__lnk{white-space:normal}}
 
 /* ── Skrzynka decyzji (#/decyzje, 2026-10-30) ── */
@@ -736,7 +736,7 @@ mark.adm-fl--auto{background:#ECEEF2;border-bottom:2px dashed var(--muted)}
 @media(max-width:620px){.adm-dlg__f{overflow:auto}.adm-rec__list{overflow:visible;flex:none}.adm-dlg__foot{position:sticky;bottom:0}}
 /* własny link do zdjęcia referencyjnego ikony (JP 2026-10-31) */
 .adm-icref__own{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
-.adm-icref__own li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:17px}
+.adm-icref__own li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:18px}
 .adm-icref__own a{display:inline-flex;align-items:center;min-height:44px;font-weight:700;color:var(--azzurro);overflow-wrap:anywhere}
 .adm-icref__own .adm-linkbtn{min-height:44px}
 .adm-icref__link{margin:10px 0 4px;display:flex;flex-direction:column;gap:6px}
@@ -744,3 +744,8 @@ mark.adm-fl--auto{background:#ECEEF2;border-bottom:2px dashed var(--muted)}
 .adm-icref__linkrow{display:flex;gap:8px;flex-wrap:wrap}
 .adm-icref__linkrow input{flex:1 1 220px;min-width:0;min-height:44px;font-size:18px;padding:8px 10px;border:2px solid var(--line,#ccc);border-radius:10px;background:var(--paper,#fff);color:inherit}
 .adm-icref__linkrow .qc-btn{min-height:44px}
+/* własny link do zdjęcia referencyjnego spoza Commons (JP 2026-10-31) */
+.adm-icref__hint{display:block;font-size:18px;line-height:1.4;color:var(--muted)}
+.adm-icref__own li.adm-icref__url{flex-wrap:wrap;min-width:0}
+.adm-icref__url a{flex:1 1 160px;min-width:0;overflow-wrap:anywhere}
+.adm-icref__prev{display:block;flex:0 0 auto;width:96px;height:72px;object-fit:cover;border-radius:8px;background:var(--slot)}

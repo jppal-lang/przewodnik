@@ -1,8 +1,11 @@
 // Ikony miejsc (JP 2026-10-27) — czyste funkcje bez sieci, bazy i plików: filtr ludzi, ranking zdjęć z Commons,
 // odpowiedzi JP na Discordzie, nazwy plików, prompt generatora. Testy: place-icons.test.mjs. Opis zasad: docs/IKONY-MIEJSC.md.
 import { PRACTICAL_CATS } from './stop-content-lib.mjs';
+import { isLinkRef, hostOf } from './place-icons-fetch.mjs';
 
 export const SIZES = [64, 128, 256, 512];
+export { isLinkRef, hostOf };
+export const isCommonsRef = (t) => /^File:[^|#<>[\]{}\n]{1,240}\.(jpe?g|png|webp|tiff?)$/i.test(String(t ?? ''));
 export const STYLE_REF = 'media/tours/quolino-it-rimini-hero-1200.webp';
 export const BG = '#FF00FF';   // płaskie tło do wycięcia: magenta nie występuje w ciepłej architekturze o złotej godzinie
 export { PRACTICAL_CATS };
@@ -180,7 +183,8 @@ export function stopsOf(content) {
 
 // ── Discord ───────────────────────────────────────────────────────────────────────────────────
 export function caption(stop, trip, refs, { v = 1, notes = null, warn = null } = {}) {
-  const src = (refs ?? []).map((r, i) => `${i + 1}) <${r.page}> — ${r.author.slice(0, 80)}, ${r.license}`).join('\n');
+  const src = (refs ?? []).map((r, i) => r.link ? `${i + 1}) <${String(r.page).slice(0, 300)}> — źródło: link JP`
+    : `${i + 1}) <${r.page}> — ${String(r.author ?? '').slice(0, 80)}, ${r.license}`).join('\n');
   return `🏛️ **${stop.n}. ${stop.name}** (${trip}) · wersja ${v}${notes ? ` (poprawki: ${notes.slice(0, 200)})` : ''}\nźródła:\n${src}` +
     `${warn ? `\n⚠️ ${warn}` : ''}\nOdpisz: **ok ${stop.n}**, **${stop.n} uwagi…** albo **${stop.n} inne zdjęcia**.`;
 }
@@ -226,7 +230,8 @@ export function sourcesEntry({ trip, stop, refs, v, version, at }) {
   return { trip, stop_key: stop.key, n: stop.n, name: stop.name, trip_version: version ?? null, icon_version: v, accepted_at: at,
     icons: Object.fromEntries(SIZES.map(s => [s, iconPath(trip, stop.key, s)])),
     rights: '© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.',
-    references: (refs ?? []).map(r => ({ title: r.title, url: r.page, file_url: r.url, author: r.author, license: r.license, license_url: r.license_url })) };
+    references: (refs ?? []).map(r => r.link ? { url: r.page, file_url: r.url ?? r.page, source: 'link JP' }
+      : { title: r.title, url: r.page, file_url: r.url, author: r.author, license: r.license, license_url: r.license_url }) };
 }
 export function mergeSources(json, entry) {
   const all = { ...(json ?? {}) };
@@ -255,22 +260,38 @@ export function candidateEntry(c) {
   return { title: c.title, thumb: c.thumb, page: c.page, file_url: c.url ?? null, author: String(c.author ?? 'nieznany').slice(0, 160),
     license: String(c.license ?? '').slice(0, 60), license_url: c.license_url ?? null, width: c.width ?? 0, height: c.height ?? 0, score: c.score ?? null };
 }
-// wybór JP (ops.icon_refs): pliki z panelu → poprawne tytuły File:…, najwyżej 2, bez powtórzeń
+// wybór JP (ops.icon_refs): pliki z panelu → poprawne tytuły File:… albo linki https (JP 2026-10-31), najwyżej 2, bez powtórzeń
+export const MAX_JP_REFS = 2;
 export function normFiles(files) {
   const out = [];
   for (const f of Array.isArray(files) ? files : []) {
-    const t = String(f ?? '').trim();
-    if (/^File:[^|#<>[\]{}\n]{1,240}\.(jpe?g|png|webp|tiff?)$/i.test(t) && !out.includes(t)) out.push(t);
+    if (typeof f !== 'string') continue;
+    const t = f.trim();
+    if ((isCommonsRef(t) || isLinkRef(t)) && !out.includes(t)) out.push(t);
   }
-  return out.slice(0, 2);
+  return out.slice(0, MAX_JP_REFS);
+}
+// nieudane pobranie linku JP: stan przystanku link_fail = { sig, tries, at, msg }; po LINK_TRIES próbach tego samego wyboru — czekamy na nowy wybór
+export const LINK_TRIES = 3;
+export const filesSig = (files) => JSON.stringify([...(files ?? [])].sort());
+export function linkFailMsg(stop, trip, fails) {
+  const one = (f) => `nie udało się pobrać Twojego zdjęcia z ${f.host || hostOf(f.file)}: ${f.reason}`;
+  return (`⚠️ ${trip} #${stop.n} (${stop.name}): ${fails.map(one).join('; ')}.\n` +
+    `Ikona czeka na Ciebie — w panelu admina (karta przystanku, „Referencja do ikony Quo”) wklej inny link, wybierz zdjęcie z Commons albo kliknij „Automat”. ` +
+    `Strona musi być publiczna (bez logowania).`).slice(0, 1800);
 }
 // czy generować ikonę przystanku i z czego:
 //   sel  = wiersz ops.icon_refs ({ mode: 'pick'|'auto', files }) albo null (brak wyboru / brak tabeli)
 //   cand = plik kandydatów trasy ({ generated_at, stops: { key: { candidates: [...] } } }) albo null
 // → { use: 'pick', files } | { use: 'auto', why } | { wait: true, until }
-export function iconGate({ sel = null, cand = null, key, now = Date.now(), waitHours = WAIT_HOURS } = {}) {
+//   linkFail = stan przystanku po nieudanym pobraniu linku JP ({ sig, tries, msg }) — ten sam wybór po LINK_TRIES próbach → czeka na JP
+//   (bez terminu i bez automatu: JP świadomie wkleił link, więc nie podmieniamy go po cichu)
+export function iconGate({ sel = null, cand = null, key, now = Date.now(), waitHours = WAIT_HOURS, linkFail = null } = {}) {
   const files = normFiles(sel?.files);
-  if (sel?.mode === 'pick' && files.length) return { use: 'pick', files };
+  if (sel?.mode === 'pick' && files.length) {
+    if (linkFail && linkFail.sig === filesSig(files) && (linkFail.tries ?? 0) >= LINK_TRIES) return { wait: true, jp: true, until: null, why: linkFail.msg ?? 'nie udało się pobrać zdjęcia z linku JP' };
+    return { use: 'pick', files };
+  }
   if (sel?.mode === 'auto') return { use: 'auto', why: 'JP wybrał automat' };
   const list = cand?.stops?.[key]?.candidates;
   const at = Date.parse(cand?.generated_at ?? '');

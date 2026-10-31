@@ -5,6 +5,8 @@
 //   node place-icons.mjs refs <trasa> [--stop key] [--force] [--again] [--dry]   zdjęcia referencyjne (Wikidata + Commons, wybór: Claude)
 //   node place-icons.mjs gen <trasa> [--only k1,k2] [--next] [--force] [--no-wait] generowanie (Antigravity) → #ikony-miejsc: 2 zdjęcia + ikona
 // Wybór zdjęć przez JP w panelu admina (ops.icon_refs, kandydaci z place-candidates.mjs) ma pierwszeństwo przed automatem — także przy --force.
+// JP może też wkleić własny link https (dowolna strona lub plik; place-icons-fetch.mjs). Nieudane pobranie → komunikat na Discordzie,
+// przystanek czeka na nowy wybór JP (bez automatu po cichu) — docs/IKONY-MIEJSC.md §7.
 // Przystanek z kandydatami bez wyboru JP i bez „automatu” czeka do 48 h od wygenerowania kandydatów (--no-wait: automat od razu).
 //   node place-icons.mjs fix <trasa> <N> "uwagi"                                    poprawka z uwagami JP (przy wyczerpanym limicie: czeka w kolejce)
 //   node place-icons.mjs ok <trasa> <N>                                             publikacja WebP 64/128/256/512 + media/icons/place-sources.json
@@ -20,6 +22,7 @@ import { ensureChannel, notify } from './draft-lib.mjs';
 import { fileInfos, download, gatherCandidates } from './place-icons-commons.mjs';
 import CFG from './place-icons-data.mjs';
 import * as L from './place-icons-lib.mjs';
+import { fetchImage, LinkError } from './place-icons-fetch.mjs';
 
 const DIR = new URL('.', import.meta.url).pathname;
 const REPO = '/opt/data/repo/przewodnik', REPO_SH = '/opt/data/quolino/repo.sh', WORK = '/opt/data/quolino/work/place-icons';
@@ -223,25 +226,43 @@ async function findRefs(trip, stop, { again = false, dry = false, jpFiles = null
   return done({ status: 'ok', ...base, picked, reasons, selection: manual ? 'data' : 'auto' });
 }
 // wybrane zdjęcia w 1280 px → ref-1.jpg (ref-2.jpg); stary ref-2.jpg znika, gdy JP wybrał jedno zdjęcie
+// element z linkImg = zdjęcie pobrane z linku JP (bufor już sprawdzony w place-icons-fetch.mjs) — bez autora i licencji, „źródło: link JP”
 async function saveRefs(dir, chosen) {
-  const big = await fileInfos(chosen.map(c => c.title), chosen[0].source, 1280);
+  const com = chosen.filter(c => !c.linkImg);
+  const big = com.length ? await fileInfos(com.map(c => c.title), com[0].source, 1280) : [];
   const picked = [];
   for (const [k, f] of chosen.entries()) {
-    const c = big.find(b => b.title === f.title) ?? f;
-    const src = await download(c.thumb, join(dir, `ref-${k + 1}.src`));
+    const srcF = join(dir, `ref-${k + 1}.src`);
+    const c = f.linkImg ? f : big.find(b => b.title === f.title) ?? f;
+    let src;
+    if (f.linkImg) { writeFileSync(srcF, f.linkImg.buf); src = srcF; }
+    else src = await download(c.thumb, srcF);
     const r = await py({ mode: 'jpeg', src, dst: join(dir, `ref-${k + 1}.jpg`) });
-    if (r.code !== 0) throw new Error(`JPEG: ${r.err.slice(-300)}`);
-    unlinkSync(src);
-    picked.push({ title: c.title, page: c.page, url: c.url, author: c.author, license: c.license, license_url: c.license_url, width: c.width, height: c.height, source: f.source });
+    try { unlinkSync(src); } catch {}
+    if (r.code !== 0) throw new Error(f.linkImg ? `zdjęcie z linku JP (${f.linkImg.host}) nie daje się odczytać: ${r.err.slice(-200)}` : `JPEG: ${r.err.slice(-300)}`);
+    picked.push(f.linkImg
+      ? { title: f.title, page: f.title, url: f.linkImg.url, host: f.linkImg.host, via: f.linkImg.via, link: true, author: 'link JP', license: 'link JP', license_url: null, source: 'link' }
+      : { title: c.title, page: c.page, url: c.url, author: c.author, license: c.license, license_url: c.license_url, width: c.width, height: c.height, source: f.source });
   }
   if (chosen.length < 2) try { unlinkSync(join(dir, 'ref-2.jpg')); } catch { /* nie było */ }
   return picked;
 }
-// wybór JP z panelu admina (ops.icon_refs): 1–2 pliki; nadal sprawdzamy licencję i format (autor i licencja idą do refs.json → place-sources.json)
-async function jpRefs(trip, stop, titles, { dir, done, view }) {
-  const infos = await fileInfos(titles, 'jp');
-  const ok = [], bad = [];
-  for (const t of titles) {
+// wybór JP z panelu admina (ops.icon_refs): 1–2 pliki Commons albo linki https (kolejność zachowana).
+// Commons: nadal sprawdzamy licencję i format (autor i licencja idą do refs.json → place-sources.json); zły plik odpada.
+// Link: bezpieczne pobranie (place-icons-fetch.mjs); jakikolwiek nieudany link → status 'jp-link-failed' (refs.json bez zmian, bez automatu).
+async function jpRefs(trip, stop, files, { dir, done, view }) {
+  const titles = files.filter(L.isCommonsRef);
+  const infos = titles.length ? await fileInfos(titles, 'jp') : [];
+  const ok = [], bad = [], fails = [];
+  for (const t of files) {
+    if (!L.isCommonsRef(t)) {
+      try {
+        const img = await fetchImage(t);
+        log(`${trip}/${stop.key}: link JP ${img.host} → ${img.kind}, ${Math.round(img.buf.length / 1024)} kB${img.via === 'strona' ? ' (obraz ze strony: og:image)' : ''}`);
+        ok.push({ title: t, linkImg: img });
+      } catch (e) { fails.push({ file: t, host: e.host || L.hostOf(t), reason: e instanceof LinkError ? e.reason : `błąd (${String(e.message).slice(0, 120)})` }); }
+      continue;
+    }
     const c = infos.find(i => i.title === t || i.title.replace(/ /g, '_') === t.replace(/ /g, '_'));
     if (!c) { bad.push(`${t}: nie ma na Commons`); continue; }
     if (!/^image\/(jpeg|png|webp|tiff)$/.test(c.mime)) { bad.push(`${t}: format ${c.mime}`); continue; }
@@ -251,16 +272,21 @@ async function jpRefs(trip, stop, titles, { dir, done, view }) {
     ok.push(c);
   }
   for (const b of bad) log(`${trip}/${stop.key}: wybór JP odrzucony — ${b}`);
+  for (const f of fails) log(`${trip}/${stop.key}: link JP nieudany — ${f.host}: ${f.reason}`);
+  if (fails.length) return { status: 'jp-link-failed', fails, reasons: fails.map(f => `${f.host}: ${f.reason}`).join('; ') };   // czeka na JP
   if (!ok.length) return { status: 'jp-invalid', reasons: bad.join('; ') };   // refs.json bez zmian; wołający przechodzi na automat
-  const picked = await saveRefs(dir, ok);
-  log(`${trip}/${stop.key}: referencje z wyboru JP — ${picked.map(p => p.title).join(' + ')}`);
-  return done({ status: 'ok', view, picked, selection: 'jp', jp_files: titles, reasons: `wybór JP w panelu admina${bad.length ? ` (odrzucone: ${bad.join('; ')})` : ''}` });
+  let picked;
+  try { picked = await saveRefs(dir, ok); }
+  catch (e) { if (!/link JP/.test(e.message)) throw e; return { status: 'jp-link-failed', fails: [{ file: ok.find(o => o.linkImg)?.title, host: ok.find(o => o.linkImg)?.linkImg.host, reason: 'plik nie daje się otworzyć jako zdjęcie' }], reasons: e.message }; }
+  log(`${trip}/${stop.key}: referencje z wyboru JP — ${picked.map(p => p.link ? `link ${p.host}` : p.title).join(' + ')}`);
+  return done({ status: 'ok', view, picked, selection: 'jp', jp_files: files, reasons: `wybór JP w panelu admina${bad.length ? ` (odrzucone: ${bad.join('; ')})` : ''}` });
 }
 
 // ── 2. generowanie (Antigravity, AI Pro) ──────────────────────────────────────────────────────
 const AGY = '/opt/data/home/.local/bin/agy', BRAIN = '/opt/data/home/.gemini/antigravity-cli/brain', GQ = '/tmp/gq/place';
 const QUOTA_RE = /quota reached|upgrade your subscription|RESOURCE_EXHAUSTED|Resets in\s*\d/i;
 class QuotaError extends Error {}
+class LinkWaitError extends Error {}   // link JP nie dał się pobrać — komunikat już poszedł na Discord, przystanek czeka na nowy wybór
 function findNew(dir, prefix, since, depth = 0) {
   let hit = null;
   for (const e of (() => { try { return readdirSync(dir, { withFileTypes: true }); } catch { return []; } })()) {
@@ -304,7 +330,8 @@ async function one(trip, key, notes = null) {
   globalThis.__aiCity = trip;
   const stop = stopMeta(trip, key); if (!stop) throw new Error(`${trip}/${key}: brak stop.json — najpierw: refs ${trip}`);
   const dir = L.stopDir(WORK, trip, key);
-  await ensureRefs(trip, key, { noWait: true });   // wybór JP w panelu (ops.icon_refs) ma pierwszeństwo — także przy poprawkach i --force
+  const er = await ensureRefs(trip, key, { noWait: true });   // wybór JP w panelu (ops.icon_refs) ma pierwszeństwo — także przy poprawkach i --force
+  if (er === 'wait-link') throw new LinkWaitError(`${trip}/${key}: ${await waitMsg(trip, key)}`);
   const refs = readJson(join(dir, 'refs.json'));
   if (refs?.status !== 'ok') throw new Error(`${trip}/${key}: brak zdjęć referencyjnych (refs: ${refs?.status ?? 'nie było'})`);
   if (!existsSync(STYLE)) throw new Error(`brak obrazu stylu ${STYLE} (sh repo.sh pull)`);
@@ -365,6 +392,7 @@ function lock() {
 const quotaMsg = (at) => `limit Antigravity (AI Pro) wyczerpany do ${at.slice(0, 16).replace('T', ' ')} UTC`;
 async function onGenError(trip, key, e) {
   const stop = stopMeta(trip, key) ?? { n: '?', name: key };
+  if (e instanceof LinkWaitError) { log(e.message); return 'wait'; }   // bez licznika błędów i bez drugiego posta
   if (isQuota(e)) {
     agyQuotaHit(e.message);
     await say(`⏸️ ${trip} #${stop.n} (${stop.name}): ${quotaMsg(agyQuotaOut() ?? new Date().toISOString())}. Kolejka wznowi generowanie sama.`);
@@ -414,16 +442,21 @@ async function selections(trip) {
   return selCache[trip];
 }
 const candidatesOf = (trip) => readJson(join(WORK, trip, 'candidates.json')) ?? readJson(join(REPO, L.candidatesPath(trip)));
-async function gateOf(trip, key) { return L.iconGate({ sel: (await selections(trip))[key] ?? null, cand: candidatesOf(trip), key }); }
-// true = są referencje; false = brak dobrych zdjęć; 'wait' = czeka na wybór JP (noWait: jawna komenda JP — bez czekania, automat)
+async function gateOf(trip, key) {
+  return L.iconGate({ sel: (await selections(trip))[key] ?? null, cand: candidatesOf(trip), key, linkFail: loadState(trip).stops[key]?.link_fail ?? null });
+}
+// true = są referencje; false = brak dobrych zdjęć; 'wait' = czeka na wybór JP (noWait: jawna komenda JP — bez czekania, automat);
+// 'wait-link' = link JP nie dał się pobrać — czeka na nowy wybór JP (także przy noWait / --no-wait: nie podmieniamy linku JP automatem)
 async function ensureRefs(trip, key, { noWait = false } = {}) {
   const g = await gateOf(trip, key);
+  if (g.wait && g.jp) return 'wait-link';
   if (g.wait && !noWait && !flag('--no-wait')) return 'wait';
   const r = readJson(join(L.stopDir(WORK, trip, key), 'refs.json'));
   if (g.use === 'pick') {
     if (r?.status === 'ok' && r.selection === 'jp' && L.sameFiles(r.jp_files, g.files)) return true;
     const x = await findRefs(trip, stopMeta(trip, key), { jpFiles: g.files });
-    if (x.status === 'ok') return true;
+    if (x.status === 'ok') { patchStop(trip, key, s => { delete s.link_fail; }); return true; }
+    if (x.status === 'jp-link-failed') { await onLinkFail(trip, key, g.files, x.fails); return 'wait-link'; }
     log(`${trip}/${key}: wybór JP nieużywalny (${x.reasons}) — automat`);
   }
   if (r?.status === 'ok' && r.selection !== 'jp') return true;
@@ -431,7 +464,25 @@ async function ensureRefs(trip, key, { noWait = false } = {}) {
   const x = await findRefs(trip, stopMeta(trip, key));             // brak referencji albo JP przełączył z wyboru na automat
   return x.status === 'ok';
 }
-const waitMsg = async (trip, key) => { const g = await gateOf(trip, key); return g.wait ? `czeka na wybór zdjęć JP w panelu admina (najpóźniej do ${g.until.slice(0, 16).replace('T', ' ')} UTC, potem automat)` : ''; };
+// nieudany link JP: licznik prób dla TEGO wyboru (nowy wybór w panelu = od zera), post na Discordzie raz na wybór
+async function onLinkFail(trip, key, files, fails) {
+  const sig = L.filesSig(files), at = new Date().toISOString();
+  let first = false, tries = 0;
+  patchStop(trip, key, s => {
+    if (s.link_fail?.sig !== sig) { first = true; s.link_fail = { sig, tries: 0 }; }
+    s.link_fail.tries = tries = (s.link_fail.tries ?? 0) + 1; s.link_fail.at = at;
+    s.link_fail.msg = fails.map(f => `nie udało się pobrać Twojego zdjęcia z ${f.host}: ${f.reason}`).join('; ').slice(0, 500);
+  });
+  log(`${trip}/${key}: link JP nieudany (próba ${tries}/${L.LINK_TRIES}) — czekam na JP`);
+  if (first) await upload(L.linkFailMsg(stopMeta(trip, key) ?? { n: '?', name: key }, trip, fails));
+}
+const waitMsg = async (trip, key) => {
+  const g = await gateOf(trip, key);
+  if (g.wait && g.jp) return `czeka na nowy wybór zdjęć JP w panelu admina (${g.why})`;
+  const lf = loadState(trip).stops[key]?.link_fail;
+  if (lf && !g.wait) return `czeka na JP: ${lf.msg} (próba ${lf.tries}/${L.LINK_TRIES})`;
+  return g.wait ? `czeka na wybór zdjęć JP w panelu admina (najpóźniej do ${g.until.slice(0, 16).replace('T', ' ')} UTC, potem automat)` : '';
+};
 async function cmdGen(trip) {
   if (agyQuotaOut()) { console.error(`STOP: ${quotaMsg(agyQuotaOut())}. Generowanie wznowi: node place-icons.mjs queue (cron).`); process.exitCode = 1; return; }
   if (!lock()) { console.error('STOP: inny proces generuje teraz ikony (work/place-icons/agy.lock) — spróbuj za chwilę.'); process.exitCode = 1; return; }
@@ -443,10 +494,11 @@ async function cmdGen(trip) {
     if (n <= 0) break;
     try {
       const ok = await ensureRefs(trip, key);
+      if (ok === 'wait-link') { log(`${trip}/${key}: ${await waitMsg(trip, key)} — pomijam`); continue; }
       if (ok === 'wait') { log(`${trip}/${key}: ${await waitMsg(trip, key)} — pomijam (--no-wait wymusza automat)`); continue; }
       if (!ok) { log(`${trip}/${key}: brak dobrych zdjęć — pomijam`); continue; }
       await one(trip, key); n--;
-    } catch (e) { if (await onGenError(trip, key, e) === 'quota') { process.exitCode = 1; break; } n--; }
+    } catch (e) { const r = await onGenError(trip, key, e); if (r === 'quota') { process.exitCode = 1; break; } if (r !== 'wait') n--; }
   }
   if (flag('--next') && n > 0) {
     const st = loadState(trip), left = Object.values(st.stops).filter(s => s.status !== 'ok').length;
@@ -467,7 +519,8 @@ async function cmdFix(trip, n, notes) {
 async function cmdRefsAgain(trip, n) {   // „3 inne zdjęcia” → nowe referencje (bez dotychczasowych) i nowa wersja
   const key = keyOf(trip, n);
   await ensureTrip(trip).catch(() => null);
-  if ((await gateOf(trip, key)).use === 'pick') { await say(`ℹ️ ${trip} #${n}: zdjęcia tego przystanku wybrałeś w panelu admina (karta przystanku, „Referencja do ikony Quo”) — zmień tam wybór albo kliknij „Automat”.`); return; }
+  const g0 = await gateOf(trip, key);
+  if (g0.use === 'pick' || g0.jp) { await say(`ℹ️ ${trip} #${n}: zdjęcia tego przystanku wybrałeś w panelu admina (karta przystanku, „Referencja do ikony Quo”) — zmień tam wybór albo kliknij „Automat”.`); return; }
   const x = await findRefs(trip, stopMeta(trip, key), { again: true });
   if (x.status !== 'ok') { await say(`⚠️ ${trip} #${n}: nie ma innych zdjęć bez ludzi (${x.reasons ?? x.status}). Można wskazać pliki ręcznie w place-icons-data.mjs (files).`); return; }
   if (agyQuotaOut() || !lock()) {
@@ -522,7 +575,7 @@ async function cmdQueue() {
     for (const [key, s] of Object.entries(loadState(t.slug).stops).filter(([, s]) => s.pending_notes && (s.errors ?? 0) < 2).sort((a, b) => a[1].n - b[1].n)) {
       if (budget <= 0) break outer;
       try { await one(t.slug, key, s.pending_notes === 'nowe zdjęcia referencyjne' ? null : s.pending_notes); budget--; }
-      catch (e) { budget--; if (await onGenError(t.slug, key, e) === 'quota') break outer; }
+      catch (e) { const r = await onGenError(t.slug, key, e); if (r === 'quota') break outer; if (r !== 'wait') budget--; }
     }
     if (t.onlyPending) continue;
     let waiting = Object.values(loadState(t.slug).stops).filter(s => s.status === 'review').length;
@@ -531,10 +584,10 @@ async function cmdQueue() {
       if (waiting >= maxPending) { log(`${t.slug}: ${waiting} ikon czeka na ocenę JP — nie generuję na zapas`); break; }
       try {
         const ok = await ensureRefs(t.slug, key);
-        if (ok === 'wait') { log(`${t.slug}/${key}: ${await waitMsg(t.slug, key)} — pomijam`); continue; }
+        if (ok === 'wait' || ok === 'wait-link') { log(`${t.slug}/${key}: ${await waitMsg(t.slug, key)} — pomijam`); continue; }
         if (!ok) { log(`${t.slug}/${key}: brak dobrych zdjęć (refs.json) — pomijam`); continue; }
         await one(t.slug, key); budget--; waiting++;
-      } catch (e) { budget--; if (await onGenError(t.slug, key, e) === 'quota') break outer; }
+      } catch (e) { const r = await onGenError(t.slug, key, e); if (r === 'quota') break outer; if (r !== 'wait') budget--; }
     }
   }
 }
@@ -594,7 +647,7 @@ function cmdStatus(trip) {
   for (const [t, st] of Object.entries(states)) {
     console.log(`\n${t} (wersja ${st.version ?? '?'}${st.workflow ? ', ' + st.workflow : ''})`);
     for (const [k, s] of Object.entries(st.stops).sort((a, b) => a[1].n - b[1].n))
-      console.log(`  ${String(s.n).padStart(2)} ${k.padEnd(28)} ${String(s.status ?? '').padEnd(12)} ${s.v ? 'v' + s.v : '  '} zdjęcia: ${s.refs ?? '—'}${readJson(join(L.stopDir(WORK, t, k), 'refs.json'))?.selection === 'jp' ? ' (wybór JP)' : ''}${s.pending_notes ? ` · czeka poprawka: ${s.pending_notes.slice(0, 60)}` : ''}${s.last_error && s.status !== 'ok' ? ` · błąd: ${s.last_error.slice(0, 80)}` : ''}  ${s.name ?? ''}`);
+      console.log(`  ${String(s.n).padStart(2)} ${k.padEnd(28)} ${String(s.status ?? '').padEnd(12)} ${s.v ? 'v' + s.v : '  '} zdjęcia: ${s.refs ?? '—'}${readJson(join(L.stopDir(WORK, t, k), 'refs.json'))?.selection === 'jp' ? ' (wybór JP)' : ''}${s.pending_notes ? ` · czeka poprawka: ${s.pending_notes.slice(0, 60)}` : ''}${s.link_fail ? ` · link JP: ${s.link_fail.msg.slice(0, 80)} (${s.link_fail.tries}/${L.LINK_TRIES})` : ''}${s.last_error && s.status !== 'ok' ? ` · błąd: ${s.last_error.slice(0, 80)}` : ''}  ${s.name ?? ''}`);
   }
 }
 

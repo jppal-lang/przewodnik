@@ -85,3 +85,30 @@ Pliki robocze: `/opt/data/quolino/work/place-icons/<trasa>/<stop_key>/`.
      najwyżej **48 h od wygenerowania kandydatów** (`generated_at` w pliku), potem automat. Brak pliku kandydatów albo brak kandydatów → automat od razu.
      `gen … --no-wait` wymusza automat od razu. „N inne zdjęcia” na Discordzie przy przystanku z wyborem JP → prośba o zmianę wyboru w panelu.
    - Gdy tabeli jeszcze nie ma (SQL niezatwierdzony) — liczy się jak „brak decyzji”.
+
+## 7. Własny link do zdjęcia (JP 2026-10-31)
+
+**Decyzja JP:** „poza zdjęciami z wiki musi być miejsce na mój własny link lub linki do generowania zdjęć”.
+
+1. **Panel** — karta przystanku, pole „Własny link do zdjęcia (dowolna strona lub plik)”. Link z Wikimedia Commons / Wikipedii
+   (`…/wiki/File:…`, `#/media/Plik:…`, `upload.wikimedia.org/…`) zapisuje się jak dotąd jako `File:…` (autor i licencja z Commons).
+   **Każdy inny link `https://`** (zdjęcie z dowolnej strony, Dysk Google, Dropbox, Imgur, blog…) zapisuje się jako adres.
+   Razem z kandydatami z Commons **najwyżej 2 referencje** (generator dostaje 2 zdjęcia + obraz stylu + ewentualnie poprzednią wersję;
+   więcej obrazów Antigravity nie gwarantuje — `PLACE_ICONS_MAX_REFS`). Wybrane linki: lista z „usuń”; miniatura tylko przy bezpośrednim pliku
+   `.jpg/.png/.webp` (bez referera), strona albo Dysk = sam link. Odrzucane od razu: `http://`, `javascript:`, login w adresie, strona Wikipedii bez pliku.
+   Do zatwierdzenia SQL `_content/claude-skills/sql/2026-10-31-icon-refs-linki.sql` (zakładka Decyzje) baza odrzuca adresy — panel mówi, co zrobić.
+2. **Baza** — `ops.icon_refs.files`: `File:….jpg` albo `https://…` (≤ 2000 znaków, host bez loginu, bez spacji i znaków kontrolnych);
+   ta sama reguła w CHECK (`ops.icon_ref_ok`) i w `admin.admin_icon_refs_set`.
+3. **Generator** (`place-icons-fetch.mjs`, testy `place-icons-fetch.test.mjs`):
+   - Dysk Google `drive.google.com/file/d/ID/view` → `drive.google.com/uc?export=download&id=ID`; Dropbox `?dl=0` → `?raw=1`;
+   - tylko https, port 443, bez loginu; host po rozwiązaniu DNS **nie może** być prywatny / loopback / link-local / metadane
+     (127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10, 0/8, ::1, fc00::/7, fe80::/10, zmapowane IPv4…). Połączenie idzie dokładnie
+     na sprawdzony adres IP (bez okna na podmianę DNS). Przekierowania ręcznie, najwyżej 3, każde sprawdzane tak samo;
+   - limit 15 MB, 20 s na całość, tylko JPEG / PNG / WebP — `Content-Type` **i** sygnatura bajtów (Dysk/Dropbox z `octet-stream`: decyduje sygnatura);
+   - odpowiedź HTML (strona, nie plik) → `og:image` / `twitter:image` / `<link rel=image_src>` i pobranie tego obrazu tą samą drogą (jeden krok);
+   - zdjęcie → `ref-N.jpg` jak z Commons; w `refs.json`, poście na Discordzie i `place-sources.json`: URL i **„źródło: link JP”** zamiast autora i licencji.
+4. **Nieudane pobranie** → post w #ikony-miejsc przy tej ikonie: „nie udało się pobrać Twojego zdjęcia z <host>: powód” (raz na dany wybór)
+   i **żadnego automatu po cichu**: stan przystanku `link_fail = { sig, tries, msg }`; generator próbuje jeszcze przy kolejnych przebiegach
+   kolejki (razem 3 próby — na wypadek chwilowej awarii serwisu), potem `iconGate` zwraca `{ wait: true, jp: true }` i przystanek czeka bez terminu
+   (także przy `--no-wait`, `fix` i „następne”). Nowy wybór w panelu (inny link, Commons albo „Automat”) zeruje licznik.
+   `status` pokazuje „link JP: …”. Zły plik z Commons (licencja, format) działa jak dotąd: odpada, a gdy nic nie zostanie — automat.

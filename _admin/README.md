@@ -301,6 +301,9 @@ same.
 - `GET /api/icon_refs?trip=eq.<trasa>` — wybór JP (`stop_key`, `mode` = `pick` | `auto`, `files`).
 - `POST /api/rpc/admin_icon_refs_set` — `{ p_trip, p_stop_key, p_files }`: 1–2 tytuły `File:…` = wybór, `[]` = automat, `null` = brak decyzji.
   SQL: `_content/claude-skills/sql/2026-10-30-icon-refs.sql`. Tryb demo: przykładowi kandydaci z lokalnych obrazów.
+- Od 2026-10-31 (`docs/IKONY-MIEJSC.md` §7) w `p_files` także adresy `https://…` (dowolna publiczna strona lub plik; łącznie z Commons najwyżej 2).
+  Pole „Własny link do zdjęcia”: Commons/Wikipedia → `File:…`, inny https → adres. Podgląd tylko dla bezpośredniego pliku `.jpg/.png/.webp`
+  (`referrerpolicy=no-referrer`). Bez SQL `2026-10-31-icon-refs-linki.sql` baza odrzuca adresy — panel prosi o zatwierdzenie w zakładce Decyzje.
 
 ## Skrzynka decyzji (od v36, 2026-10-30) — `#/decyzje`
 
