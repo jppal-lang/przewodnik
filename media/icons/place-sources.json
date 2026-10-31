@@ -68,6 +68,29 @@
    }
   ]
  },
+ "frasassi/tempio-del-valadier": {
+  "trip": "frasassi",
+  "stop_key": "tempio-del-valadier",
+  "n": 6,
+  "name": "Tempio del Valadier e Eremo di Santa Maria Infra Saxa",
+  "trip_version": 13,
+  "icon_version": 1,
+  "accepted_at": "2026-10-31T20:38:35.962Z",
+  "icons": {
+   "64": "media/icons/place-frasassi-tempio-del-valadier-64.webp",
+   "128": "media/icons/place-frasassi-tempio-del-valadier-128.webp",
+   "256": "media/icons/place-frasassi-tempio-del-valadier-256.webp",
+   "512": "media/icons/place-frasassi-tempio-del-valadier-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4if65qQHMrU28J7SBKPkc38l_mpdWPvgVk2Jh87An9a-P52XFGX4R0rAg&s=10",
+    "file_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4if65qQHMrU28J7SBKPkc38l_mpdWPvgVk2Jh87An9a-P52XFGX4R0rAg&s=10",
+    "source": "link JP"
+   }
+  ]
+ },
  "spello/villa-dei-mosaici": {
   "trip": "spello",
   "stop_key": "villa-dei-mosaici",
