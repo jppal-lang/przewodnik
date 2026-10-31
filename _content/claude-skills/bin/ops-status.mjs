@@ -113,7 +113,19 @@ async function versionsSnapshot(q) {
       CASE WHEN jsonb_typeof(v.review->'errors') = 'array' THEN jsonb_array_length(v.review->'errors') END AS errors,
       CASE WHEN jsonb_typeof(v.review->'warnings') = 'array' THEN jsonb_array_length(v.review->'warnings') END AS warnings,
       v.review->>'verdict' AS verdict
-    FROM public.city_versions v ORDER BY v.created_at DESC NULLS LAST LIMIT 20`) };
+    FROM public.city_versions v ORDER BY v.created_at DESC NULLS LAST LIMIT 20`), revisions: await revisionsSnapshot(q) };
+}
+// uwagi JP z panelu → prośby o poprawkę (draft-comments.mjs, cron Hermesa co 3 min). Bez treści uwag — tylko stan i odpowiedź automatu.
+async function revisionsSnapshot(q) {
+  const [{ t } = {}] = await q(`SELECT to_regclass('public.draft_revision_requests') IS NOT NULL AS t`);
+  if (!t) return null;
+  return {
+    requests: await q(`SELECT id::int AS id, city_slug, city_version, status, attempts, result_version, coalesce(array_length(comment_ids, 1), 0) AS comments,
+                              left(coalesce(hermes_reply, ''), 240) AS reply, created_at, updated_at
+                         FROM public.draft_revision_requests ORDER BY id DESC LIMIT 8`),
+    comments_by_status: await q(`SELECT city_slug, status, count(*)::int AS n, max(updated_at) AS last
+                                   FROM public.draft_comments WHERE updated_at > now() - interval '7 days' GROUP BY 1, 2 ORDER BY 4 DESC LIMIT 20`),
+  };
 }
 
 async function queueSnapshot(q, lib) {
