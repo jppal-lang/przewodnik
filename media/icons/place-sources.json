@@ -45,6 +45,29 @@
    }
   ]
  },
+ "frasassi/ponte-romano-torre-romanica": {
+  "trip": "frasassi",
+  "stop_key": "ponte-romano-torre-romanica",
+  "n": 5,
+  "name": "Ponte Romano e Torre Romanica",
+  "trip_version": 13,
+  "icon_version": 1,
+  "accepted_at": "2026-10-31T20:38:23.691Z",
+  "icons": {
+   "64": "media/icons/place-frasassi-ponte-romano-torre-romanica-64.webp",
+   "128": "media/icons/place-frasassi-ponte-romano-torre-romanica-128.webp",
+   "256": "media/icons/place-frasassi-ponte-romano-torre-romanica-256.webp",
+   "512": "media/icons/place-frasassi-ponte-romano-torre-romanica-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "url": "https://fai-platform.imgix.net/uploads/5ba48671-78f4-4a0d-b630-ec96718ccbbb.jpg?crop=fit&w=1440&h=800&auto=format,compress",
+    "file_url": "https://fai-platform.imgix.net/uploads/5ba48671-78f4-4a0d-b630-ec96718ccbbb.jpg?crop=fit&w=1440&h=800&auto=format,compress",
+    "source": "link JP"
+   }
+  ]
+ },
  "spello/villa-dei-mosaici": {
   "trip": "spello",
   "stop_key": "villa-dei-mosaici",
