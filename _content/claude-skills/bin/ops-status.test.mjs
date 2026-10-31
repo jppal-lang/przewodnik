@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { scrub, scrubDeep, fit, jobsSnapshot } from './ops-status.mjs';
+import { scrub, scrubDeep, fit, jobsSnapshot, verifySummary } from './ops-status.mjs';
 
 const hidden = (s, secret) => { const o = scrub(s); assert.ok(!o.includes(secret), `wyciekło „${secret}” w: ${o}`); return o; };
 
@@ -77,4 +77,13 @@ test('jobsSnapshot czyta rejestr i 5 najnowszych logów (po 30 linii)', () => {
   const s = jobsSnapshot(w);
   assert.equal(s.registry[0].name, 'a'); assert.equal(s.registry[0].args, 'spello');
   assert.equal(s.logs.length, 5); assert.equal(s.logs[0].tail.length, 30); assert.match(s.logs[0].tail[29], /linia 49$/);
+});
+
+test('revisions.verify: same liczniki weryfikacji, bez listy uwag i linii walidatora', () => {
+  const v = { ok: true, ready: false, applied: 20, partial: 1, missing: 1, stale: 0, total: 22, new_errors: 1, pending_ai: false, label: 'v3g', version: 7, round: 1, retried: 12,
+    checked_at: '2026-10-31T12:00:00Z', items: [{ id: 1, note: 'treść uwagi', quote: 'cytat' }], new_error_lines: ['[BŁĄD] x'] };
+  const s = verifySummary(v);
+  assert.equal(s.ready, false); assert.equal(s.applied, 20); assert.equal(s.retried, 12); assert.equal(s.label, 'v3g');
+  assert.ok(!('items' in s) && !('new_error_lines' in s));
+  assert.equal(verifySummary(null), null);
 });

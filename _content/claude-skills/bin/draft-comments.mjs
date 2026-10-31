@@ -14,6 +14,11 @@
 //      chwilowy błąd (limit sesji, timeout) → prośba wraca do new i czeka na następny przebieg (najwyżej 6 prób);
 //      trwały błąd → prośba failed, uwagi rejected z powodem, wiadomość w wątku.
 //   Prośba „working” starsza niż 60 min (skrypt padł) wraca do new.
+//   4. po sukcesie WERYFIKACJA (verify-revision.mjs, decyzja JP 2026-10-31): każda uwaga porównana w wersji wyjściowej i nowej
+//      (naniesiona / częściowo / nie naniesiona / nie dotyczy już), walidator trasy (nowe błędy = brak gotowości), meldunek
+//      w wątku miasta (+ jedna linia na #admin, gdy gotowa). Nie naniesione → JEDNA ponowna runda tylko dla nich, potem meldunek końcowy.
+//      Ocena treści tylko przez Antigravity (abonament); bez limitu — ocena wstępna, dokończenie w kolejnym przebiegu (resumePending).
+//   Prośba failed → meldunek od razu w wątku i na #admin (nic nie przepada po cichu).
 // Uwag ze statusem new skrypt NIE rusza — czekają na przycisk JP.
 // Tryb dawny (przed approve SQL, brak draft_revision_requests): new → seen, poprawka po 5 min ciszy.
 import { writeFileSync, existsSync, readFileSync, unlinkSync, mkdirSync } from 'node:fs';
@@ -22,6 +27,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { db, log, agyQuotaOut } from './lib.mjs';
 import { WORK, notify } from './draft-lib.mjs';
+import { verifyRequest, resumePending } from './verify-revision.mjs';
+import { failedLine, parentOf } from './verify-revision-lib.mjs';
 
 const sh = promisify(execFile);
 const argv = process.argv.slice(2);
@@ -94,6 +101,11 @@ async function requests() {
               WHERE id = ANY($1::bigint[]) AND status = 'rejected'`, [h.comment_ids]);
     log(`prośba #${h.id} przywrócona po błędzie klucza Google`);
   }
+  // ocena odłożona przez limit Antigravity — dokończ (jedna na przebieg), zanim ruszy następna prośba
+  if (!DRY) {
+    try { if (await resumePending({ q, notify, log, threadOf })) return; }
+    catch (e) { log(`weryfikacja odłożona: ${short(e.message, 160)}`); }
+  }
   // prośby porzucone przez martwy przebieg
   await q(`UPDATE public.draft_revision_requests SET status = 'new', updated_at = now()
             WHERE status = 'working' AND updated_at < now() - interval '60 minutes'`);
@@ -106,18 +118,22 @@ async function requests() {
     if (r.hermes_reply !== why) await q(`UPDATE public.draft_revision_requests SET hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, why]);
     return;
   }
-  const rows = await q('SELECT * FROM public.draft_comments WHERE id = ANY($1::bigint[]) ORDER BY id', [r.comment_ids]);
+  let rows = await q('SELECT * FROM public.draft_comments WHERE id = ANY($1::bigint[]) ORDER BY id', [r.comment_ids]);
   const thread = await threadOf(slug);
+  // ponowna runda (po weryfikacji): uwagi zwykłe dostają dopisek, że poprzednio ich nie naniesiono (odpowiedzi ✓/✂/✗ z kontroli — bez zmian)
+  const parent = parentOf(r, await q('SELECT * FROM public.draft_revision_requests WHERE city_slug = $1 AND id <> $2', [slug, r.id]));
+  if (parent) rows = rows.map(x => /^review\./.test(x.field ?? '') ? x : { ...x, body: `PONOWNIE — poprzednia runda (prośba #${parent.id}) tego nie naniosła: ${x.body}` });
   log(`${slug}: prośba #${r.id} — ${rows.length} ${uwag(rows.length)} (próba ${r.attempts + 1})`);
   if (DRY) { rows.forEach(x => console.log(`#${x.id} [${where(x)}] ${x.body}`)); return; }
   if (!rows.length) {
     await q(`UPDATE public.draft_revision_requests SET status = 'failed', hermes_reply = 'Brak uwag w prośbie.', updated_at = now() WHERE id = $1`, [r.id]);
+    await reportFailed(r, thread, 'brak uwag w prośbie (usunięte z bazy?).', 0);
     return;
   }
   await q(`UPDATE public.draft_revision_requests SET status = 'working', attempts = attempts + 1, updated_at = now() WHERE id = $1`, [r.id]);
   await q(`UPDATE public.draft_comments SET status = 'seen', updated_at = now() WHERE id = ANY($1::bigint[]) AND status IN ('sent', 'seen')`, [r.comment_ids]);
   if (r.attempts === 0) {
-    await notify(thread, `📝 **${slug}**: ${rows.length} ${uwag(rows.length)} z panelu (szkic v${r.city_version}). ` +
+    await notify(thread, `📝 **${slug}**: ${rows.length} ${uwag(rows.length)} z panelu (szkic v${r.city_version})${parent ? ` — ponowna runda po prośbie #${parent.id}` : ''}. ` +
       `Nanoszę wszystkie w jednej nowej wersji, potem kontrola — dam znać tutaj z linkiem do podglądu.\n` +
       rows.slice(0, 12).map(x => `• ${where(x)}: ${short(x.body, 140)}`).join('\n') + (rows.length > 12 ? `\n… i ${rows.length - 12} więcej` : ''));
   }
@@ -129,6 +145,13 @@ async function requests() {
     await q(`UPDATE public.draft_revision_requests SET status = 'done', result_version = $2, hermes_reply = $3, updated_at = now() WHERE id = $1`,
       [r.id, out.version, reply]);
     log(`${slug}: prośba #${r.id} → szkic v${out.version}`);
+    // weryfikacja wdrożenia + meldunek gotowości; jej błąd nie cofa poprawki, ale też nie przepada po cichu
+    try { await verifyRequest({ q, r: { ...r, status: 'done', result_version: out.version }, notify, log, thread }); }
+    catch (e) {
+      log(`${slug}: weryfikacja prośby #${r.id} padła: ${short(e.message, 160)}`);
+      const msg = `⚠️ **${slug}**: szkic v${out.version} zapisany, ale sprawdzenie naniesienia uwag (prośba #${r.id}) nie przebiegło: ${short(e.message, 200)}. Ponów: \`node verify-revision.mjs --request ${r.id}\``;
+      await notify(thread, msg); if (thread !== ADMIN) await notify(ADMIN, msg);
+    }
   } catch (e) {
     const msg = `${e.stderr ?? ''}${e.stdout ?? ''}${e.message ?? ''}`;
     if (TRANSIENT.test(msg) && r.attempts + 1 < MAX_TRIES) {
@@ -140,8 +163,15 @@ async function requests() {
     const why = failWhy(msg);
     await q(`UPDATE public.draft_comments SET status = 'rejected', hermes_reply = $2, updated_at = now() WHERE id = ANY($1::bigint[])`, [r.comment_ids, why]);
     await q(`UPDATE public.draft_revision_requests SET status = 'failed', hermes_reply = $2, updated_at = now() WHERE id = $1`, [r.id, why]);
-    await notify(thread, `⚠️ **${slug}**: ${why}`);
+    await reportFailed(r, thread, why, rows.length);
   }
+}
+
+// prośba failed → od razu w wątku miasta i na #admin (JP 2026-10-31: uwagi nie mogą przepadać po cichu)
+async function reportFailed(r, thread, why, n) {
+  const msg = failedLine({ slug: r.city_slug, requestId: r.id, n, why });
+  try { await notify(thread, msg); if (thread !== ADMIN) await notify(ADMIN, msg); }
+  catch (e) { log(`meldunek o błędzie prośby #${r.id}: ${short(e.message, 120)}`); }
 }
 
 // ── tryb dawny (zanim root wykona SQL 2026-10-17-draft-send-kb-v2.sql) ─────────────────────────────

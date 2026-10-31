@@ -116,15 +116,29 @@ async function versionsSnapshot(q) {
     FROM public.city_versions v ORDER BY v.created_at DESC NULLS LAST LIMIT 20`), revisions: await revisionsSnapshot(q) };
 }
 // uwagi JP z panelu → prośby o poprawkę (draft-comments.mjs, cron Hermesa co 3 min). Bez treści uwag — tylko stan i odpowiedź automatu.
+// verify: wynik weryfikacji naniesienia (verify-revision.mjs, SQL 2026-10-31-weryfikacja-uwag.sql) — same liczniki, bez listy uwag (items)
+// i bez linii walidatora; przed SQL kolumny nie ma → null (to_jsonb nie wymaga kolumny). Plik work/verify/<id>.json — gdy brak kolumny.
+export const VERIFY_KEYS = ['ready', 'applied', 'partial', 'missing', 'stale', 'total', 'new_errors', 'validator_ok', 'pending_ai', 'ai_failed', 'label', 'version', 'from_version', 'round', 'retried', 'checked_at'];
+export function verifySummary(v) {
+  if (!v || typeof v !== 'object') return null;
+  return Object.fromEntries(VERIFY_KEYS.filter(k => k in v).map(k => [k, v[k]]));
+}
 async function revisionsSnapshot(q) {
   const [{ t } = {}] = await q(`SELECT to_regclass('public.draft_revision_requests') IS NOT NULL AS t`);
   if (!t) return null;
+  const requests = await q(`SELECT r.id::int AS id, r.city_slug, r.city_version, r.status, r.attempts, r.result_version, coalesce(array_length(r.comment_ids, 1), 0) AS comments,
+                                   (to_jsonb(r)->>'retry_of')::int AS retry_of, to_jsonb(r)->'verify' AS verify,
+                                   left(coalesce(r.hermes_reply, ''), 240) AS reply, r.created_at, r.updated_at
+                              FROM public.draft_revision_requests r ORDER BY r.id DESC LIMIT 8`);
+  for (const r of requests) {
+    let v = r.verify;
+    if (!v) { const f = readJson(join(WORK, 'verify', `${r.id}.json`)); v = f?.verify ?? null; if (v) v = { ...v, source: 'plik' }; }
+    r.verify = v ? { ...verifySummary(v), ...(v.source ? { source: v.source } : {}) } : null;
+  }
   return {
-    requests: await q(`SELECT id::int AS id, city_slug, city_version, status, attempts, result_version, coalesce(array_length(comment_ids, 1), 0) AS comments,
-                              left(coalesce(hermes_reply, ''), 240) AS reply, created_at, updated_at
-                         FROM public.draft_revision_requests ORDER BY id DESC LIMIT 8`),
-    comments_by_status: await q(`SELECT city_slug, status, count(*)::int AS n, max(updated_at) AS last
-                                   FROM public.draft_comments WHERE updated_at > now() - interval '7 days' GROUP BY 1, 2 ORDER BY 4 DESC LIMIT 20`),
+    requests,
+    comments_by_status: await q(`SELECT c.city_slug, c.status, to_jsonb(c)->>'verify_status' AS verify_status, count(*)::int AS n, max(c.updated_at) AS last
+                                   FROM public.draft_comments c WHERE c.updated_at > now() - interval '7 days' GROUP BY 1, 2, 3 ORDER BY 5 DESC LIMIT 20`),
   };
 }
 
