@@ -121,10 +121,23 @@
         return Object.keys(by).map(function (k) { var c = DEMO_CITY[k]; return { city_slug: k, lat: c ? c[0] : null, lon: c ? c[1] : null, stops: [] }; });
       });
     }
-    return h.api('/admin_versions?select=city_slug,version,lat:content->city->>lat,lon:content->city->>lon,stops:content->stops&order=version.desc&limit=400').then(function (rows) {
-      var by = {};
+    // Współrzędne opublikowanych miast są w tabeli cities (public_cities: slug, lat, lon — publiczny odczyt, bez klucza).
+    // Wersje szkiców mają je w content.city tylko czasem, dlatego oba źródła: najpierw miasto z bazy, potem wersja, potem środek przystanków.
+    var pub = fetch('https://api.quolino.com/public_cities?select=slug,lat,lon', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
+    return Promise.all([
+      h.api('/admin_versions?select=city_slug,version,lat:content->city->>lat,lon:content->city->>lon,stops:content->stops&order=version.desc&limit=400'),
+      pub
+    ]).then(function (r) {
+      var by = {}, rows = r[0], cities = {};
+      (Array.isArray(r[1]) ? r[1] : []).forEach(function (c) { if (c && c.slug) cities[c.slug] = c; });
       (rows || []).forEach(function (v) { if (!by[v.city_slug]) by[v.city_slug] = v; });   // order=version.desc → pierwszy wiersz = najnowsza wersja
-      return Object.keys(by).map(function (k) { return by[k]; });
+      Object.keys(cities).forEach(function (k) { if (!by[k]) by[k] = { city_slug: k, version: 0, stops: [] }; });
+      return Object.keys(by).map(function (k) {
+        var v = by[k], c = cities[k];
+        if (c && fin(c.lat) != null && fin(c.lon) != null) { v.lat = c.lat; v.lon = c.lon; }
+        return v;
+      });
     });
   }
   function soft(p) { return Promise.resolve(p).then(function (v) { return { ok: v }; }, function (e) { if (e && e.session) throw e; return { err: e && e.message || 'błąd' }; }); }
