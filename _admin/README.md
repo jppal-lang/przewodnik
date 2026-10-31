@@ -362,3 +362,11 @@ JP: „menu fajne, ale przegląd wycieczki słaby”. Ten sam kontrakt API, ta s
 - **Twoje uwagi:** jedna szuflada — lista do wysłania, jeden „Wyślij uwagi do poprawki”, paczki z weryfikacją; przy uwadze
   `verify_status` (naniesiona / częściowo / nie naniesiona / nieaktualna). Pole uwagi przy polu to zwarte „＋ Uwaga do pola”.
 - **Porównanie:** nakładka na te same karty — zmienione pola z różnicą słów i „skąd zmiana”, „Tylko zmiany”, „Zakończ porównanie”.
+
+## Wygląd narzędzia analitycznego (od v47, 2026-10-31)
+
+JP: „ma być bardziej jak Google Analytics — to narzędzie do pracy”. Tylko język wizualny (Material 3), bez zmian funkcji i API.
+Jasnoszare tło, białe karty z ramką 1 px, jeden akcent niebieski, jasny pasek boczny z aktywną pozycją jako pigułka, statusy jako
+chipy z ikoną i tekstem. Krój: **Inter** (OFL, lokalnie `media/fonts/inter-latin*-wght-normal.woff2`, licencja `OFL-Inter.txt`), wagi 400/500/600.
+Pulpit: KPI z podpisem, wiersze zamiast kolorowych kafli, sortowanie tabeli tras (Trasa, Etap, Zmiana), wykres ekwiwalentu kosztów 7 dni.
+Widok trasy: „Gotowość” jako lista wierszy z „Przejdź →”, pola jako „etykieta nad treścią”, panel flag dokowany (v46: przewija treść do pola).

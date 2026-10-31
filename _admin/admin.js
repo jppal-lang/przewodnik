@@ -2958,6 +2958,7 @@
       '<span class="tv-ready__bar" role="img" aria-label="Gotowe ' + pct + '%"><span style="width:' + pct + '%"></span></span>' + CHEV + '</summary><ul class="tv-ready__list">' + items.map(function (x) {
         var inner = '<span class="tv-ready__ic tv-ready__ic--' + x.tone + '">' + (x.tone === 'ok' ? IC.ok : x.tone === 'bad' ? IC.bad : IC.wait) + '</span>' +
           '<span class="tv-ready__t"><b>' + esc(x.t) + '</b><span>' + esc(x.v) + '</span>' + (x.pct != null ? '<i class="tv-ready__p"><i style="width:' + Math.round(x.pct * 100) + '%"></i></i>' : '') + '</span>' +
+          (x.k ? '<span class="tv-ready__go" aria-hidden="true">Przejdź →</span>' : '<span></span>') +
           '<span class="adm-sr">' + ({ ok: 'gotowe', bad: 'do zrobienia', warn: 'do zrobienia', wait: 'w toku' }[x.tone]) + '</span>';
         return '<li>' + (x.k ? '<button type="button" class="tv-ready__it" data-ready="' + x.k + '"' + (x.key ? ' data-key="' + esc(x.key) + '"' : '') + '>' + inner + '</button>' : '<div class="tv-ready__it">' + inner + '</div>') + '</li>';
       }).join('') + '</ul></details>';
@@ -3351,10 +3352,10 @@
     var pub = T.filter(function (t) { return t.published != null; }).length, drafts = T.filter(function (t) { return t.status === 'draft'; }).length;
     var busy = runs.filter(function (r) { return r.status === 'running' || r.status === 'stalled'; }).length + reqs.filter(function (r) { return r.status === 'new' || r.status === 'working'; }).length;
     h += '<section class="ad-kpis" aria-label="Stan projektu">' +
-      kpi('#/decyzje', 'Czeka na decyzję', inbox.n == null ? '—' : inbox.n, inbox.n ? 'hot' : '') +
-      kpi('#/trasy', 'Szkice do akceptacji', drafts, '') +
-      kpi('#/postep', 'W pracy (Hermes)', busy, '') +
-      kpi('#/trasy', 'Trasy opublikowane', pub + '<small> z ' + T.length + '</small>', '') + '</section>';
+      kpi('#/decyzje', 'Czeka na decyzję', inbox.n == null ? '—' : inbox.n, inbox.n ? 'hot' : '', C ? [C.deploy + ' wdroż.', C.cost + ' koszty', C.watch + ' strażn.', C.icon + ' ikony'].join(' · ') : '') +
+      kpi('#/trasy', 'Szkice do akceptacji', drafts, '', T.filter(function (t) { return t.status === 'draft' && t.published == null; }).length + ' nowych tras') +
+      kpi('#/postep', 'W pracy (Hermes)', busy, '', 'przebiegi i paczki uwag') +
+      kpi('#/trasy', 'Trasy opublikowane', pub + '<small> z ' + T.length + '</small>', '', 'na quolino.com') + '</section>';
 
     h += '<div class="ad-grid">';
     h += '<section class="ad-card ad-card--todo" aria-labelledby="todoH"><header class="ad-card__h"><h2 id="todoH">Czeka na Ciebie</h2>' +
@@ -3377,22 +3378,39 @@
     // ─ Trasy ─
     var withLangs = T.some(function (t) { return t.langs && t.langs.length; });
     var rows = T.map(function (t) { return { t: t, s: stageOf(t, runs, reqs) }; });
-    var ord = { 2: 0, 1: 1, 0: 2, 3: 3, '-1': 4 };
-    rows.sort(function (a, b) { return ord[a.s.i] - ord[b.s.i] || (Date.parse(b.t.latestAt) || 0) - (Date.parse(a.t.latestAt) || 0); });
+    var ord = { 2: 0, 1: 1, 0: 2, 3: 3, '-1': 4 }, ds = state.dashSort || { k: 'stage', dir: 1 };
+    var byDate = function (a, b) { return (Date.parse(b.t.latestAt) || 0) - (Date.parse(a.t.latestAt) || 0); };
+    rows.sort(function (a, b) {
+      var r = ds.k === 'name' ? a.t.name.localeCompare(b.t.name, 'pl') : ds.k === 'date' ? -byDate(a, b) : ord[a.s.i] - ord[b.s.i];
+      return ds.dir * r || byDate(a, b);
+    });
+    state.dashD = D;
     h += '<section class="ad-card ad-card--trips" aria-labelledby="tripsH"><header class="ad-card__h"><h2 id="tripsH">Trasy</h2><b class="ad-badge">' + T.length + '</b>' +
       '<a class="ad-card__more" href="#/trasy">Lista z filtrami →</a></header>';
     if (!state.trips) h += '<p class="ad-note ad-note--err" role="alert">Nie mogę wczytać tras z API admina. Podgląd na danych testowych: <a href="?demo=1">?demo=1</a>.</p>';
     else if (!T.length) h += '<p class="ad-note">Brak tras w bazie.</p>';
     else {
       h += '<div class="ad-table' + (withLangs ? ' ad-table--langs' : '') + '" role="table" aria-label="Trasy i ich etap"><div class="ad-tr ad-tr--h" role="row">' +
-        ['Trasa', 'Etap', 'Wersja', 'Zmiana', 'Flagi i uwagi'].concat(withLangs ? ['Języki'] : []).concat(['Akcje']).map(function (x) { return '<span role="columnheader">' + x + '</span>'; }).join('') + '</div>' +
+        ['Trasa', 'Etap', 'Wersja', 'Zmiana', 'Flagi i uwagi'].concat(withLangs ? ['Języki'] : []).concat(['Akcje']).map(function (x) {
+          var k = { Trasa: 'name', Etap: 'stage', Zmiana: 'date' }[x], on = k && ds.k === k;
+          return '<span role="columnheader"' + (on ? ' aria-sort="' + (ds.dir > 0 ? 'ascending' : 'descending') + '"' : '') + (x === 'Zmiana' ? ' class="ad-td--date"' : '') + '>' +
+            (k ? '<button type="button" class="ad-sort" data-dsort="' + k + '">' + x + (on ? (ds.dir > 0 ? ' ↑' : ' ↓') : '') + '</button>' : x) + '</span>';
+        }).join('') + '</div>' +
         rows.map(function (x) { return tripRow(x.t, x.s, redBy[x.t.slug], withLangs); }).join('') + '</div>';
     }
     h += '</section></div>';
     $d.innerHTML = h;
   }
-  function kpi(href, label, val, tone) {
-    return '<a class="ad-kpi' + (tone ? ' ad-kpi--' + tone : '') + '" href="' + href + '"><span class="ad-kpi__l">' + esc(label) + '</span><b class="ad-kpi__v">' + val + '</b></a>';
+  $d.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-dsort]'); if (!b || !state.dashD) return;
+    var k = b.getAttribute('data-dsort'), ds = state.dashSort || { k: 'stage', dir: 1 };
+    state.dashSort = { k: k, dir: ds.k === k ? -ds.dir : 1 };
+    drawDash(state.dashD);
+    var nb = $d.querySelector('[data-dsort="' + k + '"]'); if (nb) nb.focus();
+  });
+  function kpi(href, label, val, tone, cap) {
+    return '<a class="ad-kpi' + (tone ? ' ad-kpi--' + tone : '') + '" href="' + href + '"><span class="ad-kpi__l">' + esc(label) + '</span><b class="ad-kpi__v">' + val + '</b>' +
+      (cap ? '<span class="ad-kpi__c">' + esc(cap) + '</span>' : '') + '</a>';
   }
   function tripRow(t, s, dr, withLangs) {
     var flags = [];
@@ -3466,6 +3484,13 @@
     else {
       var today = new Date().toISOString().slice(0, 10), d = zero(), w = zero();
       (U.ok || []).forEach(function (r) { add(w, r); if (r.day === today) add(d, r); });
+      var days = [], per = {}, mx = 0, DN = ['nd', 'pn', 'wt', 'śr', 'cz', 'pt', 'sb'];
+      for (var di = 6; di >= 0; di--) days.push(new Date(Date.now() - di * 864e5).toISOString().slice(0, 10));
+      (U.ok || []).forEach(function (r) { per[r.day] = (per[r.day] || 0) + (+r.usd_equiv || 0) + (+r.usd || 0) * 0; });
+      days.forEach(function (x) { mx = Math.max(mx, per[x] || 0); });
+      body += '<p class="ad-sub" style="margin-top:0">Ekwiwalent cennika API, ostatnie 7 dni</p><div class="ad-chart" role="img" aria-label="' + esc(days.map(function (x) { return x.slice(5) + ': ' + usd(per[x] || 0); }).join(', ')) + '">' +
+        days.map(function (x) { return '<span style="height:' + (mx ? Math.max(2, Math.round((per[x] || 0) / mx * 100)) : 2) + '%" title="' + esc(x + ': ' + usd(per[x] || 0)) + '"></span>'; }).join('') + '</div>' +
+        '<div class="ad-chart__x" aria-hidden="true">' + days.map(function (x) { return '<span>' + DN[new Date(x + 'T12:00:00').getDay()] + '</span>'; }).join('') + '</div>';
       body += '<dl class="ad-cost"><div><dt>Dziś</dt><dd>' + usd(d.usd) + '</dd><p>ekw. ' + usd(d.eq) + ' · ' + tok(d.tok) + ' tok.</p></div>' +
         '<div><dt>7 dni</dt><dd>' + usd(w.usd) + '</dd><p>ekw. ' + usd(w.eq) + ' · ' + tok(w.tok) + ' tok.</p></div></dl>';
     }
