@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light dark">
-<title>Pulpit · Quolino admin</title>
+<title>Dziś · Quolino admin</title>
 <link rel="preload" href="/media/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/media/fonts/inter-latin-ext-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../styles.css?v=41">
@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="admin-preview.css?v=2">
 <link rel="stylesheet" href="admin-palette.css?v=1">
 <link rel="stylesheet" href="admin-ext.css?v=1">
+<link rel="stylesheet" href="admin-today.css?v=1">
 </head>
 <body class="adm">
 <a class="ad-skip" href="#adMain">Przejdź do treści</a>
@@ -21,7 +22,8 @@
 <aside class="ad-side" aria-label="Nawigacja panelu">
   <a href="#/" class="ad-brand" aria-label="Quolino admin — pulpit"><span class="ad-brand__name">quolino</span><span class="ad-brand__dot" aria-hidden="true">.</span><span class="ad-brand__tld">admin</span></a>
   <nav class="ad-nav" id="adNav">
-    <a class="ad-nav__a" href="#/" data-nav="pulpit"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.6"/><rect x="3" y="15" width="7.5" height="6" rx="1.6"/></svg><span>Pulpit</span></a>
+    <a class="ad-nav__a" href="#/" data-nav="dzis"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Dziś</span></a>
+    <a class="ad-nav__a" href="#/pulpit" data-nav="pulpit"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.6"/><rect x="3" y="15" width="7.5" height="6" rx="1.6"/></svg><span>Pulpit</span></a>
     <a class="ad-nav__a" href="#/trasy" data-nav="trasy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M8.5 16.5h7a3 3 0 0 0 0-6h-7a3 3 0 0 1 0-6H15"/></svg><span>Trasy</span><b class="ad-badge is-zero" id="count" title="szkice do zatwierdzenia">·</b></a>
     <a class="ad-nav__a" href="#/decyzje" data-nav="decyzje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l3.5-8h9L20 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"/></svg><span>Decyzje</span><b class="ad-badge ad-badge--hot is-zero" id="decNav" title="ładuję">·</b></a>
     <a class="ad-nav__a" href="#/straznicy" data-nav="straznicy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span>Strażnicy</span><b class="ad-badge is-zero" id="watchNav">·</b></a>
@@ -92,7 +94,7 @@
 
 <!-- telefon: dolny pasek + menu „Więcej” -->
 <nav class="ad-tabbar" aria-label="Nawigacja panelu">
-  <a class="ad-tab" href="#/" data-nav="pulpit"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.6"/><rect x="3" y="15" width="7.5" height="6" rx="1.6"/></svg><span>Pulpit</span></a>
+  <a class="ad-tab" href="#/" data-nav="dzis"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Dziś</span></a>
   <a class="ad-tab" href="#/trasy" data-nav="trasy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M8.5 16.5h7a3 3 0 0 0 0-6h-7a3 3 0 0 1 0-6H15"/></svg><span>Trasy</span></a>
   <a class="ad-tab" href="#/decyzje" data-nav="decyzje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l3.5-8h9L20 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"/></svg><span>Decyzje</span><b class="ad-badge ad-badge--hot is-zero" id="decTab">·</b></a>
   <a class="ad-tab" href="#/straznicy" data-nav="straznicy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span>Strażnicy</span></a>
@@ -100,6 +102,7 @@
 </nav>
 <div class="ad-more" id="moreMenu" hidden>
   <p class="ad-more__h">Więcej</p>
+  <a href="#/pulpit" data-nav="pulpit">Pulpit</a>
   <a href="#/ikony" data-nav="ikony">Ikony <b class="ad-badge is-zero" id="iconMore">·</b></a>
   <a href="#/pipeline" data-nav="pipeline">Pipeline</a>
   <a href="#/mapa" data-nav="mapa">Mapa</a>
@@ -113,6 +116,8 @@
 
 <script src="review-where.js?v=2"></script>
 <script src="admin-pipeline.js?v=1"></script>
+<script src="admin-today.js?v=1"></script>
+<script src="admin-live.js?v=1"></script>
 <script src="admin-map.js?v=2"></script>
 <script src="admin.js?v=56"></script>
 <script src="admin-preview.js?v=2"></script>
