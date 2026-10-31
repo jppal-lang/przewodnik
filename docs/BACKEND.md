@@ -143,6 +143,8 @@ Wszystko zostaje na urządzeniu; „usuwa” = kod sam czyści klucz, inaczej kl
 
 Panel admina (`_admin/`, nie strona publiczna, poza `cookie-policy.html`): `adm.outbox` (uwagi do szkiców, których API jeszcze nie przyjęło),
 `adm.filters` (stan filtrów), `adm.fb` (filtry zgłoszeń: `src`, `cat`, `pri`, `open`), `adm.costMode` (widok kosztów).
+Panel admina, **sessionStorage** (tylko na czas karty, `admin-palette.js`, 2026-10-31): `adm.recent` (ostatnio użyte polecenia palety Ctrl+K — lista id, max 8),
+`adm.theme` (`dark` / `light` wybrane poleceniem „Ciemny/jasny motyw”; brak = za systemem). Mostek podglądu `preview-bridge.js` na stronie publicznej nic nie zapisuje.
 
 ### 6.4 Kształt `qc.kid.avatar` i `qc.album` (2026-10-30)
 

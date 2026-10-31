@@ -390,3 +390,20 @@ Strona quolino.com nie wysyła `X-Frame-Options` ani CSP, więc osadzenie nie wy
   rogu; ≥ 1700 px obok panelu flag. Poniżej 1200 px przycisk „Podgląd” w pasku widoku otwiera telefon jako arkusz; ≤ 480 px pełny ekran z „← Wróć do pól”.
 - Ograniczenia: panel otwarty tunelem na `http://localhost:8088` ma inne źródło niż `admin.quolino.com` — strona wczyta się, ale mostek milczy
   (notka pod ekranem telefonu). Klucz podglądu i tak jest w adresie ramki (jak w linkach „Podgląd vN”).
+
+## Paleta poleceń Ctrl+K / Cmd+K (od v48, 2026-10-31) — `admin-palette.js` / `admin-palette.css`
+
+Przycisk „Szukaj / polecenia” w górnym pasku albo Ctrl+K / Cmd+K. Wyszukiwanie rozmyte (każdy wyraz zapytania musi pasować: prefiks >
+początek wyrazu > fragment > podciąg w wyrazie; grupy w kolejności najlepszego trafienia) po:
+trasach (nazwa, slug, kraj, region, „spello v2”, „flagi spello”), przystankach bieżącej trasy, wersjach, flagach („flaga 13”), decyzjach
+(wdrożenia, koszty), strażnikach, sekcjach panelu (z bocznego paska). Akcje kontekstowe w trasie: Zatwierdź i opublikuj, Odrzuć szkic,
+Wyślij uwagi (n), Przyjmij wszystkie rekomendacje, Przejdź przez flagi, Porównaj z …, Zakończ porównanie, Otwórz na stronie, Podgląd na
+telefonie rodzic/dziecko; globalnie: Ciemny/jasny motyw. **Akcje nieodwracalne** (zatwierdź, odrzuć, wdrożenie) tylko prowadzą do
+istniejącego potwierdzenia (drugie kliknięcie / karta decyzji z fokusem), nie wykonują się z palety.
+
+- Indeks budowany przy każdym otwarciu z `window.ADM.state` i skrzynki decyzji (`ADM.inbox.data`) — zero dodatkowych zapytań.
+- Wyniki pogrupowane, ikona, skrót `↵`, strzałki / Enter / Esc / Home / End, Tab krąży po wynikach (pułapka fokusu), fokus wraca do przycisku.
+  `role=dialog aria-modal`, `combobox` + `aria-activedescendant`, wiersze ≥ 48 px, tekst 18 px.
+- Ostatnio używane na górze (bez zapytania): sessionStorage `adm.recent`; motyw: sessionStorage `adm.theme` + `data-theme` na `<body>`
+  (tokeny skopiowane do `admin-palette.css`, bo `prefers-color-scheme` nie da się przełączyć z JS). Oba klucze w `docs/BACKEND.md` §6.3.
+- Haki w `admin.js`: `window.ADM` (stan + istniejące funkcje) i zdarzenia `adm:render`, `adm:walk`, `adm:route`.

@@ -1,0 +1,63 @@
+/* ── Paleta poleceń Ctrl+K (JP 2026-10-31) — admin-palette.js. Tokeny z admin.css / styles.css. ── */
+.ad-top__k{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-left:auto;padding:6px 10px 6px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--card);color:var(--muted);font-size:16px;font-weight:500;cursor:pointer}
+.ad-top__k:hover{background:var(--page);color:var(--ink)}
+.ad-top__k svg{width:20px;height:20px;flex:none}
+.ad-top__k kbd{font-size:13px;padding:1px 6px;border:1px solid var(--rule);border-radius:6px;background:var(--page);color:var(--muted)}
+.ad-top__k + .adm-env{margin-left:0}
+@media(max-width:899px){.ad-top__k{padding:6px 10px}.ad-top__k span,.ad-top__k kbd{display:none}}
+.pal-shade{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:min(12vh,96px) 16px 16px;background:rgba(0,0,0,.38);overflow:hidden}
+.pal-shade[hidden]{display:none}
+.pal{width:min(680px,100%);max-height:min(72vh,720px);display:flex;flex-direction:column;border-radius:16px;background:var(--card);box-shadow:var(--lift-3),0 0 0 1px var(--rule);overflow:hidden}
+.pal__in{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 16px;border-bottom:1px solid var(--rule);color:var(--muted)}
+.pal__in svg{flex:none;width:22px;height:22px}
+.pal__in input{flex:1;min-width:0;min-height:48px;border:0;outline:0;background:transparent;color:var(--ink);font-size:19px}
+.pal__in input::placeholder{color:var(--muted)}
+.pal__esc{flex:none;font-size:13px;padding:2px 7px;border:1px solid var(--rule);border-radius:6px;background:var(--page);color:var(--muted)}
+.pal__list{flex:1;min-height:0;overflow:auto;list-style:none;margin:0;padding:6px;scrollbar-width:thin}
+.pal__g{margin:8px 10px 2px;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pal__g:first-child{margin-top:4px}
+.pal__it{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:48px;padding:6px 10px;border-radius:10px;color:var(--ink);font-size:18px;line-height:1.3;cursor:pointer}
+.pal__it.is-on{background:var(--azzurro-50);box-shadow:inset 3px 0 0 var(--azzurro)}
+.pal__it--danger .pal__ic{color:var(--rosso)}
+.pal__ic{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--page);color:var(--azzurro)}
+.pal__ic svg{width:22px;height:22px}
+.pal__t{display:flex;flex-direction:column;min-width:0}
+.pal__l{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal__h{font-size:15px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal__k{visibility:hidden;font-size:13px;padding:1px 6px;border:1px solid var(--rule);border-radius:6px;color:var(--muted)}
+.pal__it.is-on .pal__k{visibility:visible}
+.pal__none{padding:18px 12px;color:var(--muted);text-align:center}
+.pal__foot{margin:0;padding:8px 16px;border-top:1px solid var(--rule);font-size:14px;color:var(--muted)}
+.pal__foot kbd{font-size:12px;padding:1px 5px;border:1px solid var(--rule);border-radius:5px;background:var(--page)}
+@media(max-width:599px){.pal-shade{padding:8px}.pal{max-height:calc(100vh - 16px - env(safe-area-inset-bottom))}.pal__foot{display:none}.pal__h{white-space:normal}}
+body.has-pal{overflow:hidden}
+/* karta decyzji wskazana z palety: błysk 1,5 s */
+.dec-item.is-pal-target{box-shadow:0 0 0 3px var(--sun),var(--lift-1);transition:box-shadow .4s}
+
+/* ── Motyw ręczny (polecenie „Ciemny / jasny motyw”): data-theme na <body class="adm">; kopia tokenów z admin.css (v43 + v47),
+   bo ustawienie systemowe (prefers-color-scheme) nie da się zmienić z JS. Bez atrybutu — jak dotąd, za systemem. ── */
+.adm[data-theme="dark"]{
+  color-scheme:dark;
+  --ad-bg:#1F1F1F;--card:#2D2E30;--page:#38393B;--ink:#E8EAED;--ink2:#D2D5D9;--muted:#BDC1C6;--rule:#45474A;--slot:#5F6368;--slot-ink:#45474A;
+  --azzurro:#8AB4F8;--azzurro-ink:#AECBFA;--azzurro-deep:#8AB4F8;--azzurro-50:#2F3A4D;
+  --sun:#FDD663;--sun-ink:#202124;--sun-50:#3D3522;--rosso:#F28B82;--rosso-50:#4A2C2A;--verde:#81C995;--verde-50:#233629;
+  --ad-side:#2D2E30;--ad-side-ink:#D2D5D9;--ad-side-mute:#BDC1C6;--ad-side-hi:#38393B;
+  --ad-on-acc:#202124;--ad-warn-ink:#FDE293;--ad-err-ink:#F6AEA9;--ad-flag-bg:#4A2C2A;--ad-flag-on:#5E3532;--ad-auto-bg:#38393B;
+  --lift-1:0 1px 2px rgba(0,0,0,.4);--lift-2:0 2px 6px rgba(0,0,0,.45);--lift-3:0 4px 16px rgba(0,0,0,.55);
+  --ok-ink:#81C995;--bad-ink:#F28B82;--warn-dot:#FDD663
+}
+.adm[data-theme="dark"] .qc-btn--primary,.adm[data-theme="dark"] .adm-btn-ok,.adm[data-theme="dark"] .adm-btn-send{color:var(--ad-on-acc)}
+.adm[data-theme="dark"] .adm-btn-ok:hover{background:var(--verde);filter:brightness(1.08)}
+.adm[data-theme="dark"] .qc-map__attr{background:rgba(22,33,49,.9)}
+.adm[data-theme="dark"] .adm-sheet__head .label{color:var(--muted)!important}
+.adm[data-theme="light"]{
+  color-scheme:light;
+  --ad-bg:#F8F9FA;--card:#FFFFFF;--page:#F1F3F4;--ink:#202124;--ink2:#3C4043;--muted:#5F6368;--rule:#DADCE0;--slot:#BDC1C6;--slot-ink:#DADCE0;
+  --azzurro:#1A73E8;--azzurro-ink:#1967D2;--azzurro-deep:#174EA6;--azzurro-50:#E8F0FE;
+  --sun:#F9AB00;--sun-ink:#202124;--sun-50:#FEF7E0;--rosso:#D93025;--rosso-50:#FCE8E6;--verde:#188038;--verde-50:#E6F4EA;
+  --ad-side:#FFFFFF;--ad-side-ink:#3C4043;--ad-side-mute:#5F6368;--ad-side-hi:#F1F3F4;
+  --ad-on-acc:#FFFFFF;--ad-warn-ink:#202124;--ad-err-ink:#C5221F;--ad-flag-bg:#FCE8E6;--ad-flag-on:#F9D2CE;--ad-auto-bg:#F1F3F4;
+  --lift-1:0 1px 2px rgba(60,64,67,.12);--lift-2:0 1px 3px rgba(60,64,67,.15),0 4px 8px rgba(60,64,67,.08);--lift-3:0 2px 6px rgba(60,64,67,.15),0 8px 24px rgba(60,64,67,.15);
+  --ad-shadow:none;--ok-ink:#137333;--bad-ink:#C5221F;--warn-dot:#F9AB00
+}
+.adm[data-theme="light"] .qc-map__attr{background:rgba(255,255,255,.9)}
