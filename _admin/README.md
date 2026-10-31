@@ -407,3 +407,25 @@ istniejącego potwierdzenia (drugie kliknięcie / karta decyzji z fokusem), nie 
 - Ostatnio używane na górze (bez zapytania): sessionStorage `adm.recent`; motyw: sessionStorage `adm.theme` + `data-theme` na `<body>`
   (tokeny skopiowane do `admin-palette.css`, bo `prefers-color-scheme` nie da się przełączyć z JS). Oba klucze w `docs/BACKEND.md` §6.3.
 - Haki w `admin.js`: `window.ADM` (stan + istniejące funkcje) i zdarzenia `adm:render`, `adm:walk`, `adm:route`.
+
+## Pipeline — centrum dowodzenia (od v49, 2026-10-31) — `#/pipeline`
+
+Zgoda JP 2026-10-31. Plik `admin-pipeline.js` (+ `admin-ext.css`), ładowany przed `admin.js`; w `admin.js` tylko haki
+(`window.AdminExt.routes` w `route()`, `window.AdminHost` z narzędziami panelu, mini-pasek w kafelku „Serwer”). Zastępuje „Postęp prac” w menu
+(stary widok `#/postep` zostaje jako „Kroki i tokeny przebiegów”).
+
+- **Rząd etapów każdej trasy** (jak GitHub Actions): research → szkic → kontrola źródeł → kontrola (walidator) → uwagi JP → tłumaczenia → publikacja.
+  Etap: stan (czeka / w toku / OK / błąd / uwaga / pominięty), czas, koszt („abonament · Gemini 255 tys.” albo USD), wykonawca (Antigravity / Claude / automat / JP).
+  Klik → panel boczny: log (kroki `pipeline_events`, końcówki logów zleceń, odpowiedź Hermesa), dane wersji, linki do trasy / szkicu / wersji.
+- **Źródła** (każde miękkie): `pipeline_runs` + `pipeline_events` (etapy 1–6 → kolumny 1–4; `kind=revise` → „uwagi JP”), `pipeline_queue`,
+  `draft_revision_requests` (+ `verify`), `decision_drafts` (czerwone flagi → „kontrola” = uwaga), `admin_trips` (języki, publikacja, stare wytyczne = etapy 1–4 pominięte),
+  `ai_usage_daily` (koszty dziś / 7 dni), `rpc/ops_status` **po zatwierdzeniu `2026-10-31-admin-ops-status.sql`**: `jobs.registry` + `jobs.logs`
+  (zlecenia z repo, stany `later`/`failed`, końcówki logów), `queue.open/recent/failed_7d` (ops.jobs: tłumaczenia), `queue.agyQuotaOut/agyWeekCalls` (limit Antigravity), `cron`, `versions`.
+- **Bez `admin.ops_status()`** działa: etapy z przebiegów, uwagi JP, kolejka Gemini, koszty, publikacja, języki. Nie ma: crona i blokad, zleceń z repo i ich logów, tłumaczeń z ops.jobs;
+  limit Antigravity jest wtedy wnioskowany z komunikatów („Resets in 2h14m”, „czeka na odnowienie limitu”) — panel to zaznacza.
+- **Góra:** pierścień Antigravity (zużycie tygodnia ~150 wywołań — ostrożna miara jak w `gemini-queue.mjs`; przy wyczerpaniu odliczanie „odnowi się za 2 h 14 min 05 s”),
+  „Czeka na limit / kolejkę” (zlecenia `later`, prośby `new`, ops.jobs `queued`, kolejka Gemini — „ruszy samo”), koszty, cron „przebiegł x min temu” + blokady.
+- **Zdarzenia na żywo:** jedna oś czasu (kroki przebiegów, prośby o poprawkę, zlecenia, linie logów); odświeżanie co 30 s różnicowo (nowe `<li>` wchodzą, reszta nietknięta), pauza, gdy kursor/fokus jest nad listą.
+- **Zlecenia z błędem:** czerwone z powodem. „Ponów” tylko dla darmowych (`place-candidates.mjs`, `watch.mjs --no-ai`, `ui-translate.mjs`, odczyty) — panel **nie ma RPC kolejkowania**,
+  więc pokazuje gotowy JSON do `_content/jobs/<data>-<nazwa>-ponow.json` (repo-jobs.mjs). Płatne (`gemini-draft`, `trip-translate`) — tylko przez zgodę w Decyzjach; ten ekran nic nie zapisuje.
+- Tryb demo: `demoPipeline` z admin.js + własne dane (zlecenia, logi, ops.jobs) w `admin-pipeline.js`.

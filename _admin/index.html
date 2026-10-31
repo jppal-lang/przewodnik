@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="admin.css?v=35">
 <link rel="stylesheet" href="admin-preview.css?v=1">
 <link rel="stylesheet" href="admin-palette.css?v=1">
+<link rel="stylesheet" href="admin-ext.css?v=1">
 </head>
 <body class="adm">
 <a class="ad-skip" href="#adMain">Przejdź do treści</a>
@@ -26,7 +27,7 @@
     <a class="ad-nav__a" href="#/straznicy" data-nav="straznicy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span>Strażnicy</span><b class="ad-badge is-zero" id="watchNav">·</b></a>
     <a class="ad-nav__a" href="#/ikony" data-nav="ikony"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8.5 8.5"/></svg><span>Ikony</span><b class="ad-badge is-zero" id="iconNav">·</b></a>
     <p class="ad-nav__h">Praca w tle</p>
-    <a class="ad-nav__a" href="#/postep" data-nav="postep"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><span>Postęp prac</span></a>
+    <a class="ad-nav__a" href="#/pipeline" data-nav="pipeline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><span>Pipeline</span></a>
     <a class="ad-nav__a" href="#/zgloszenia" data-nav="zgloszenia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Zgłoszenia</span></a>
     <a class="ad-nav__a" href="#/koszty" data-nav="koszty"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 3 5.8 1.6 5.8 4.4 0 1.3-1.2 2.1-3 2.1-1.4 0-2.5-.6-3-1.6M12 6v1.8M12 16.4V18"/></svg><span>Koszty AI</span></a>
     <a class="ad-nav__a" href="#/baza-wiedzy" data-nav="baza-wiedzy" id="kbOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v11.5H8.5A3.5 3.5 0 0 1 5 16z"/><path d="M5 16a3.5 3.5 0 0 1 3.5-3.5H19"/></svg><span>Baza wiedzy</span><b class="ad-badge is-zero" id="kbCount" title="reguły do zatwierdzenia">0</b></a>
@@ -99,7 +100,7 @@
 <div class="ad-more" id="moreMenu" hidden>
   <p class="ad-more__h">Więcej</p>
   <a href="#/ikony" data-nav="ikony">Ikony <b class="ad-badge is-zero" id="iconMore">·</b></a>
-  <a href="#/postep" data-nav="postep">Postęp prac</a>
+  <a href="#/pipeline" data-nav="pipeline">Pipeline</a>
   <a href="#/zgloszenia" data-nav="zgloszenia">Zgłoszenia</a>
   <a href="#/koszty" data-nav="koszty">Koszty AI</a>
   <a href="#/baza-wiedzy" data-nav="baza-wiedzy">Baza wiedzy redakcji</a>
@@ -109,7 +110,8 @@
 </div>
 
 <script src="review-where.js?v=2"></script>
-<script src="admin.js?v=48"></script>
+<script src="admin-pipeline.js?v=1"></script>
+<script src="admin.js?v=49"></script>
 <script src="admin-preview.js?v=1"></script>
 <script src="admin-palette.js?v=1"></script>
 </body>

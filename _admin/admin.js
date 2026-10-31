@@ -553,7 +553,7 @@
     var h = location.hash;
     moreClose();
     emit('adm:route', { hash: h });
-    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony)$/.test(h));
+    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony|pipeline|mapa)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
     if (!h || h === '#' || h === '#/' || h === '#/pulpit') { setHead('pulpit'); showDetail(); window.scrollTo(0, 0); openDashboard(); return; }
@@ -563,6 +563,8 @@
     if (h === '#/postep') { setHead('postep'); showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     if (h === '#/koszty') { setHead('koszty'); showDetail(); window.scrollTo(0, 0); openCosts(); return; }
     if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
+    var ext = window.AdminExt && window.AdminExt.routes && window.AdminExt.routes[h];   // #/pipeline (admin-pipeline.js), #/mapa (admin-map.js)
+    if (ext) { ext(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
     if (m) { var known = (state.trips || []).filter(function (t) { return t.slug === decodeURIComponent(m[1]); })[0];
       document.body.classList.add('is-trip');
@@ -3357,7 +3359,7 @@
     h += '<section class="ad-kpis" aria-label="Stan projektu">' +
       kpi('#/decyzje', 'Czeka na decyzję', inbox.n == null ? '—' : inbox.n, inbox.n ? 'hot' : '', C ? [C.deploy + ' wdroż.', C.cost + ' koszty', C.watch + ' strażn.', C.icon + ' ikony'].join(' · ') : '') +
       kpi('#/trasy', 'Szkice do akceptacji', drafts, '', T.filter(function (t) { return t.status === 'draft' && t.published == null; }).length + ' nowych tras') +
-      kpi('#/postep', 'W pracy (Hermes)', busy, '', 'przebiegi i paczki uwag') +
+      kpi('#/pipeline', 'W pracy (Hermes)', busy, '', 'przebiegi i paczki uwag') +
       kpi('#/trasy', 'Trasy opublikowane', pub + '<small> z ' + T.length + '</small>', '', 'na quolino.com') + '</section>';
 
     h += '<div class="ad-grid">';
@@ -3460,8 +3462,9 @@
       if (Array.isArray(q.failed_7d) && q.failed_7d.length) rows.push(hRow('Zlecenia z błędem (7 dni)', String(q.failed_7d.length), 'bad'));
       if (q.agyQuotaOut && Date.parse(q.agyQuotaOut) > Date.now()) rows.push(hRow('Limit Antigravity', 'wyczerpany do ' + when(q.agyQuotaOut), 'warn'));
     }
-    return '<section class="ad-card ad-card--h" aria-labelledby="srvH"><header class="ad-card__h"><h2 id="srvH">Serwer</h2><a class="ad-card__more" href="#/postep">Postęp prac →</a></header>' +
+    return '<section class="ad-card ad-card--h" aria-labelledby="srvH"><header class="ad-card__h"><h2 id="srvH">Serwer</h2><a class="ad-card__more" href="#/pipeline">Pipeline →</a></header>' +
       '<ul class="ad-hrows">' + rows.join('') + '</ul>' +
+      (window.AdminPipeline ? window.AdminPipeline.miniHtml(runs, queue, state.trips, state.dashD && state.dashD.revs && state.dashD.revs.ok) : '') +
       (lastDep && lastDep.txt ? '<p class="ad-note">' + esc(lastDep.txt) + '</p>' : '') +
       (cron ? '' : '<p class="ad-note">Cron i blokady pojawią się, gdy panel dostanie podgląd serwera (<code>ops_status</code> w schemacie admin).</p>') + '</section>';
   }
@@ -3575,6 +3578,13 @@
       .catch(function (err) { m.className = 'adm-msg adm-msg--err'; m.textContent = 'Nie zapisano: ' + err.message; });
   });
   function alertRow(li, msg) { var p = document.createElement('p'); p.className = 'adm-msg adm-msg--err'; p.textContent = 'Nie zapisano: ' + msg; li.appendChild(p); }
+
+  // ── rozszerzenia (admin-pipeline.js, admin-map.js — ładowane przed tym plikiem): wspólne narzędzia panelu, bez kopiowania kodu ──
+  window.AdminHost = { api: api, state: state, DEMO: DEMO, SITE: SITE, $d: $d, esc: esc, when: when, ago: ago, dur: dur, tok: tok, usd: usd, plForm: plForm, num: num,
+    titleCase: titleCase, countryName: countryName, regionName: regionName, icon: icon, trOf: trOf, stopKey: stopKey, routeUrl: routeUrl, setHead: setHead, showDetail: showDetail,
+    loadingHtml: loadingHtml, stChip: stChip, IC: IC, loadOps: loadOps, ops: ops, demoCosts: demoCosts, loadInbox: loadInbox, route: route,
+    enter: function (key, title) { state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll); $d.onclick = null; $d.onsubmit = null; $d.onchange = null; setHead(key, title); showDetail(); window.scrollTo(0, 0); },
+    setPoll: function (fn, ms) { clearInterval(state.poll); state.poll = setInterval(fn, ms); } };
 
   // ── start ────────────────────────────────────────────
   var env = document.getElementById('env');
