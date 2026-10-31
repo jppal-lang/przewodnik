@@ -336,7 +336,7 @@ Decyzja JP 2026-10-31: panel ma być ładniejszym, nowoczesnym dashboardem do za
 - **Pulpit:** liczby (do decyzji, szkice, w pracy, opublikowane) · „Czeka na Ciebie” (szkice z czerwonymi flagami, wdrożenia, koszty,
   strażnicy, zdjęcia ikon z terminem) · „Uwagi wysłane do poprawki” (`GET /api/draft_revision_requests?order=id.desc&limit=12`
   + `GET /api/draft_comments?select=*&request_id=not.is.null`: w kolejce / Hermes nanosi / naniesione w vN / nieudane;
-  opcjonalnie kolumny `verify_status`, `verify_applied`, `verify_total` (albo `verify_*` przy uwagach) → „gotowa do akceptacji” / „x z y naniesionych”)
+  po SQL `2026-10-31-weryfikacja-uwag.sql`: `verify` prośby (jsonb: applied, total, ready, pending_ai, new_errors) albo `verify_status` uwag → „gotowa do akceptacji” / „x z y naniesionych”)
   · tabela tras z etapem szkic → kontrola → do akceptacji → opublikowana (z `pipeline_runs` i próśb o poprawkę), wersja, data, flagi
   (`decision_drafts.red_flags`), języki (gdy `admin_trips` ma kolumnę `langs text[]`) · Serwer · Strażnicy · Koszty AI (dziś / 7 dni
   z `ai_usage_daily?day=gte.…`, budżet z `ai_budget`) · Statystyki ↗.

@@ -228,9 +228,9 @@
       { id: 7, city_slug: 'wieliczka', city_version: 1, comment_ids: [21, 22, 23], status: 'new', result_version: null, hermes_reply: 'Czeka na odnowienie limitu Antigravity — ruszy samo.', attempts: 0, created_at: iso(40), updated_at: iso(12) },
       { id: 6, city_slug: 'ancona', city_version: 1, comment_ids: [17, 18, 19, 20], status: 'working', result_version: null, hermes_reply: null, attempts: 1, created_at: iso(30), updated_at: iso(4) },
       { id: 5, city_slug: 'urbino', city_version: 1, comment_ids: [12, 13, 14, 15, 16], status: 'done', result_version: 2, hermes_reply: 'Poprawione opisy i misje; dwie uwagi bez źródła — zostawione.', attempts: 1,
-        created_at: iso(600), updated_at: iso(520), verify_total: 5, verify_applied: 3, verify_status: 'partial' },
+        created_at: iso(600), updated_at: iso(520), verify: { applied: 3, partial: 1, missing: 1, stale: 0, total: 5, new_errors: 0, ready: false, pending_ai: false, version: 2 } },
       { id: 3, city_slug: 'spello', city_version: 2, comment_ids: [2, 3], status: 'done', result_version: 3, hermes_reply: 'Przesunięte na 17:45, wstęp skrócony do dwóch zdań.', attempts: 1,
-        created_at: '2026-10-16T09:10:00Z', updated_at: '2026-10-18T07:40:00Z', verify_total: 2, verify_applied: 2, verify_status: 'ok' }
+        created_at: '2026-10-16T09:10:00Z', updated_at: '2026-10-18T07:40:00Z', verify: { applied: 2, partial: 0, missing: 0, stale: 0, total: 2, new_errors: 0, ready: true, pending_ai: false, version: 3 } }
     ];
     return d.revs;
   }
@@ -2920,23 +2920,20 @@
   }
   var REQST = { 'new': ['wait', 'w kolejce'], working: ['wait', 'Hermes nanosi'], done: ['ok', 'naniesione'], failed: ['bad', 'nieudane'] };
   function n_(v) { return v == null || v === '' || isNaN(+v) ? null : +v; }
-  // weryfikacja naniesienia (kolumny verify_* — dodaje je bin/draft-comments.mjs; nazwy przyjmujemy elastycznie)
+  // weryfikacja naniesienia (SQL 2026-10-31-weryfikacja-uwag.sql, bin/verify-revision.mjs): prośba.verify (jsonb:
+  // applied, total, ready, label, pending_ai, new_errors…) i uwaga.verify_status (applied | partial | missing | stale).
+  // Przed tym SQL kolumn nie ma — wtedy null i pulpit pokazuje sam stan prośby.
   function verifyOf(r, cms) {
-    var has = Object.keys(r).some(function (k) { return /^verify_/.test(k) && r[k] != null; });
-    var applied = n_(r.verify_applied != null ? r.verify_applied : r.verify_done != null ? r.verify_done : r.verify_ok_count);
-    var total = n_(r.verify_total != null ? r.verify_total : r.verify_count);
-    var st = r.verify_status || r.verify_state || r.verify_result || null;
-    if (applied == null || total == null) {
-      var own = cms.filter(function (c) { return Object.keys(c).some(function (k) { return /^verify_/.test(k) && c[k] != null; }); });
-      if (own.length) {
-        has = true; total = own.length;
-        applied = own.filter(function (c) { var v = c.verify_status || c.verify_state || c.verify_result || c.verify_ok; return v === true || /^(ok|applied|done|passed|verified|true)$/i.test(String(v)); }).length;
-      }
+    var v = r.verify && typeof r.verify === 'object' ? r.verify : null;
+    if (v) {
+      var tot = n_(v.total), ap = n_(v.applied), st = (+v.missing || +v.partial) ? 'partial' : 'ok';
+      return { ready: v.ready === true, applied: ap, total: tot, pending: !!v.pending_ai, newErr: n_(v.new_errors), label: v.label || null, bad: v.ready === false && !v.pending_ai, st: st };
     }
-    if (!has) return null;
-    var ready = /^(ok|passed|ready|done|complete|verified)$/i.test(String(st || '')) || (total != null && total > 0 && applied >= total);
-    var bad = /^(failed|error|missing|partial)$/i.test(String(st || '')) || (total != null && applied != null && applied < total);
-    return { ready: ready && !(/^(failed|error)$/i.test(String(st || ''))), bad: bad && !ready, applied: applied, total: total, st: st };
+    var own = cms.filter(function (c) { return c.verify_status; });
+    if (!own.length) return null;
+    var stale = own.filter(function (c) { return c.verify_status === 'stale'; }).length, ok = own.filter(function (c) { return c.verify_status === 'applied'; }).length;
+    var total = own.length - stale;
+    return { ready: total > 0 && ok >= total, applied: ok, total: total, pending: false, newErr: null, label: null, bad: ok < total };
   }
   function revRow(r, cms, names) {
     var mine = cms.filter(function (c) { return +c.request_id === +r.id; });
@@ -2952,8 +2949,11 @@
     var v = verifyOf(r, mine);
     if (v) {
       if (v.ready) { tone = 'ok'; label = 'gotowa do akceptacji'; }
-      else if (v.applied != null && v.total != null) { tone = v.bad && r.status === 'done' ? 'bad' : tone; label = v.applied + ' z ' + v.total + ' naniesionych'; }
-      else if (v.st) label = String(v.st);
+      else if (v.applied != null && v.total != null) { tone = v.bad ? 'bad' : 'wait'; label = v.applied + ' z ' + v.total + ' naniesionych'; }
+      if (v.pending) meta.push('sprawdzenie wstępne — pełne po odnowieniu limitu AI');
+      if (v.newErr) meta.push(plForm(v.newErr, 'nowy błąd', 'nowe błędy', 'nowych błędów') + ' w kontroli');
+      if (v.label) meta.push(esc(v.label));
+      if (r.retry_of) meta.push('ponowna runda po prośbie #' + esc(r.retry_of));
     }
     if (r.hermes_reply) meta.push('„' + esc(String(r.hermes_reply).slice(0, 140)) + (String(r.hermes_reply).length > 140 ? '…' : '') + '”');
     meta.push(esc(when(r.updated_at || r.created_at)));
