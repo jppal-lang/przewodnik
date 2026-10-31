@@ -1612,3 +1612,9 @@ mark.adm-fl.is-walk-on{background:var(--sun);color:var(--sun-ink);border-bottom-
 .adm .tv .adm-cm__form textarea:focus,.adm .tv .adm-cm__form textarea:not(:placeholder-shown){border:2px solid var(--azzurro)!important;background:var(--card);padding:10px 12px;font-size:17px;color:inherit;border-radius:10px}
 .tv .adm-cm__form .adm-cm__send{display:none}
 .tv .adm-cm__form:focus-within .adm-cm__send,.tv .adm-cm__form:has(textarea:not(:placeholder-shown)) .adm-cm__send{display:inline-flex}
+.adm-blk-none{font-size:15px;color:var(--muted)}
+.adm-blk-chk{font-size:14px;color:var(--muted)}
+.adm-blk-chk details{display:inline}
+.adm-blk-chk summary{display:inline;cursor:pointer;list-style:none;text-decoration:underline dotted;text-underline-offset:3px;padding:12px 0}
+.adm-blk-chk summary::-webkit-details-marker{display:none}
+.adm-blk-chk details[open] summary{display:none}

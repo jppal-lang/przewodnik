@@ -2028,8 +2028,12 @@
     var b = state.blocks && state.blocks[key]; if (!b) return '';
     var m = b.marked || {}, st = b.state || {};
     var rows = BLK.map(function (f) {
-      var s = st[f[0]] || {}, txt = s.state === 'found' ? blockText(f[0], m[f[0]]) : 'brak — sprawdzono: ' + (s.checked || '(nie podano)');
-      return cell(f[1], null, txt, null, false, commentBox(key, 'stop.' + f[0], f[1], ver), { box: key, field: 'stop.' + f[0] });
+      var s = st[f[0]] || {};
+      if (s.state === 'found') return cell(f[1], null, blockText(f[0], m[f[0]]), null, false, commentBox(key, 'stop.' + f[0], f[1], ver), { box: key, field: 'stop.' + f[0] });
+      // blok pusty: „Brak” wprost, a ślad sprawdzenia małym drugorzędnym tekstem (JP 2026-10-31) — adresy skrócone do domeny, długi ślad zwinięty
+      var chk = String(s.checked || '').replace(/https?:\/\/([^\s/,;)]+)[^\s,;)]*/g, '$1').replace(/\s+/g, ' ').trim();
+      var html = '<span class="adm-blk-none">Brak</span>' + (chk ? ' <span class="adm-blk-chk">· ' + (chk.length > 90 ? '<details><summary>sprawdzono: ' + esc(chk.slice(0, 70)) + '…</summary>' + esc(chk) + '</details>' : 'sprawdzono: ' + esc(chk)) + '</span>' : '');
+      return cell(f[1], null, 'brak — sprawdzono: ' + (s.checked || '(nie podano)'), null, false, commentBox(key, 'stop.' + f[0], f[1], ver), { box: key, field: 'stop.' + f[0], html: html });
     }).join('');
     // źródła: mała lista jak przypisy w druku — numer, tytuł jako link, sama domena zamiast pełnego adresu (JP 2026-10-31: „linki do źródeł mniejsze”)
     var srcTxt = (b.sources || []).map(function (x) { return '[' + x.n + '] ' + (x.title || '') + ' — ' + x.url; }).join('\n');
