@@ -273,6 +273,19 @@ async function cmdFix(name, notes) {
   }
   try { await one(pack, notes.slice(0, 800)); return 0; } catch (e) { return onGenError(pack, e, notes.slice(0, 800)); }
 }
+// podgląd ostatniej wersji do repo (gra/art/_review/<paczka>-vN-*), bez panelu i bez AI — JP 2026-11-01 „pokaż je teraz”
+async function cmdPeek(name) {
+  const pack = CFG.packs.find(p => p.name === name); if (!pack) { log(`nie ma paczki ${name}`); return 1; }
+  const s = loadState().packs[name]; if (!s?.v) { log(`${name}: brak wygenerowanej wersji`); return 1; }
+  const dir = vDir(name, s.v), out = join(REPO, 'gra/art/_review'); mkdirSync(out, { recursive: true });
+  await run('sh', [REPO_SH, 'pull'], { timeout: 120_000 });
+  const got = [];
+  for (const [f, n] of [['raw.png', 'raw.png'], ['contact.png', 'klatki.png'], ['anim.gif', 'animacja.gif'], ['meta.json', 'meta.json']])
+    if (existsSync(join(dir, f)) && statSync(join(dir, f)).size < 8e6) { copyFileSync(join(dir, f), join(out, `${name}-v${s.v}-${n}`)); got.push(n); }
+  const pub = await run('sh', [REPO_SH, 'publish', `podgląd grafiki gry: ${name} v${s.v}`], { timeout: 5 * 60_000 });
+  log(`${name} v${s.v}: podgląd w repo (${got.join(', ')}) ${pub.code === 0 ? 'opublikowany' : 'BŁĄD publish ' + (pub.err || pub.out).slice(-150)}`);
+  return pub.code === 0 ? 0 : 1;
+}
 async function cmdOk(name) {
   const pack = packOf(name), s = loadState().packs[name];
   if (!s?.v) throw new Error(`${name}: jeszcze nie wygenerowana`);
@@ -381,6 +394,7 @@ try {
   if (cmd === 'gen') code = await cmdGen(a1);
   else if (cmd === 'fix') code = await cmdFix(a1, a2);
   else if (cmd === 'ok') code = await cmdOk(a1);
+  else if (cmd === 'peek') code = await cmdPeek(a1);
   else if (cmd === 'watch') code = await cmdWatch();
   else if (cmd === 'to-panel') code = await cmdToPanel();
   else if (cmd === 'status') code = cmdStatus();

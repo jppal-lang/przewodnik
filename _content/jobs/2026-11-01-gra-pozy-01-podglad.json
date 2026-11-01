@@ -1,0 +1,11 @@
+{
+ "script": "game-art.mjs",
+ "args": ["peek", "quo-pozy-01"],
+ "why": "Podgląd wygenerowanych 10 klatek Quo v2 do repo (gra/art/_review/), żeby Claude mógł je pokazać JP. Bez AI, 0 $.",
+ "title": "Podgląd: pozy Quo v2, klatki 1–10",
+ "est_usd": 0,
+ "est_limit": "0 wywołań (tylko kopiowanie plików)",
+ "jp_ok": {"date": "2026-11-01", "quote": "pokaż jes teraz"},
+ "by": "Claude",
+ "timeout_min": 10
+}
