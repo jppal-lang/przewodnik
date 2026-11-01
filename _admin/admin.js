@@ -520,6 +520,7 @@
       var dir = f.sort === 'old' ? 1 : -1;
       shown.sort(function (a, b) { return dir * ((Date.parse(a.latestAt) || 0) - (Date.parse(b.latestAt) || 0)) || a.name.localeCompare(b.name, 'pl'); });
       $res.innerHTML = '<div class="adm-cards">' + shown.map(function (t) { return cardHtml(t, true); }).join('') + '</div>';
+      emit('adm:list', { shown: shown.length });   // admin-newtrip.js: „+ Nowa trasa”, „Przepisz od zera”
       return;
     }
     var groups = {};
@@ -529,6 +530,7 @@
       return '<section class="adm-cgroup" aria-label="' + esc(countryName(c)) + '"><h3 class="adm-cgroup__h">' + esc(countryName(c)) +
         ' <b class="adm-n">' + list.length + '</b></h3><div class="adm-cards">' + list.map(function (t) { return cardHtml(t, false); }).join('') + '</div></section>';
     }).join('');
+    emit('adm:list', { shown: shown.length });
   }
   function cardHtml(t, byDate) {
     var chip = t.status === 'draft'
@@ -3647,6 +3649,7 @@
     }
     h += '</section></div>';
     $d.innerHTML = h;
+    emit('adm:dash', {});   // admin-newtrip.js: „+ Nowa trasa” w kafelku Trasy, „Przepisz od zera” przy starych trasach
   }
   $d.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-dsort]'); if (!b || !state.dashD) return;

@@ -42,7 +42,30 @@ export const ALLOWED = {
   'trip-translate.mjs': (a) => /^[a-z0-9-]+$/.test(a[0] ?? '') && a.slice(1).every((x, i, r) => x === '--fresh' || x === '--langs' || (r[i - 1] === '--langs' && /^[a-z]{2}(,[a-z]{2})*$/.test(x))),
   // grafiki gry „Quo: Wyprawa” (JP 2026-10-31): Antigravity (abonament, limit tygodniowy) — dlatego też w COSTLY (jp_ok)
   'game-art.mjs': (a) => isGameArtArgs(a),
+  // nowa trasa do kolejki Gemini (JP 2026-11-01): ten sam wiersz ops.jobs co qdb job-add / panel; kolejka zużyje limit Antigravity → COSTLY (jp_ok)
+  'trip-enqueue.mjs': (a) => isEnqueueArgs(a),
 };
+// <slug> --name "…" --region <slug> [--country xx] [--duration half_day|full_day] [--brief "…"] [--fresh] [--dry]; każda opcja najwyżej raz
+export function isEnqueueArgs(a) {
+  const S = /^[a-z0-9][a-z0-9-]{1,62}$/;
+  if (!S.test(a[0] ?? '')) return false;
+  const seen = new Set();
+  for (let i = 1; i < a.length; i++) {
+    const k = a[i];
+    if (seen.has(k)) return false;
+    seen.add(k);
+    if (k === '--fresh' || k === '--dry') continue;
+    const v = a[++i];
+    if (typeof v !== 'string') return false;
+    if (k === '--name') { if (v.trim().length < 2 || v.length > 80 || /["\n\r]/.test(v)) return false; }
+    else if (k === '--region') { if (!S.test(v)) return false; }
+    else if (k === '--country') { if (!/^[a-z]{2}$/.test(v)) return false; }
+    else if (k === '--duration') { if (v !== 'half_day' && v !== 'full_day') return false; }
+    else if (k === '--brief') { if (v.length > 2000) return false; }
+    else return false;
+  }
+  return seen.has('--name') && seen.has('--region');
+}
 // gen <paczka|--next> [--wait-review] [--force] | fix <paczka> "<uwagi>" | ok <paczka> | status — paczka = nazwa z game-art-data.mjs
 export function isGameArtArgs(a) {
   const P = (x) => /^[a-z0-9][a-z0-9-]{0,40}$/.test(x ?? '');
@@ -73,7 +96,7 @@ export function afterExit(prev, code, tail, now = new Date().toISOString()) {
 // Skrypty, które wydają pieniądze albo limit AI (OpenRouter, Claude, Gemini). JP 2026-10-30: „dbaj o moje środki”.
 // Zlecenie takiego skryptu musi nieść zgodę JP: pole jp_ok = { date: 'RRRR-MM-DD', quote: 'dosłowne słowa JP z czatu' },
 // nie starszą niż 3 dni. Bez tego serwer odrzuca zlecenie (status rejected), zanim cokolwiek wyda.
-export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs', 'game-art.mjs']);
+export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs', 'game-art.mjs', 'trip-enqueue.mjs']);
 export function jpOkError(job, now = Date.now()) {
   const ok = job?.jp_ok;
   if (!ok || typeof ok !== 'object' || typeof ok.quote !== 'string' || ok.quote.trim().length < 2 || !/^\d{4}-\d{2}-\d{2}$/.test(ok.date ?? '')) return 'brak zgody JP (jp_ok {date, quote}) dla zlecenia, które kosztuje';

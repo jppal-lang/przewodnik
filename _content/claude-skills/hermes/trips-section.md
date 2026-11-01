@@ -23,6 +23,8 @@ Marche ≠ Umbria ≠ Emilia-Romagna), `full_day` / `half_day` (domyślnie half_
 cd /opt/data/quolino && node qdb.mjs job-add gubbio draft gemini '{"name":"Gubbio","region":"umbria","duration":"full_day","brief":"kolejka na Monte Ingino, finał z widokiem"}'
 ```
 Odpowiedz JP: „W kolejce (#id). Dam znać w tym wątku.” Stan kolejki: `node qdb.mjs jobs`. Od nowa (bez wznowienia): dodaj `"fresh": true`.
+Od 2026-11-01 ten sam wiersz `ops.jobs` powstaje też z panelu („+ Nowa trasa”, `admin.admin_trip_enqueue`) i ze zlecenia z repo
+(`trip-enqueue.mjs`, kosztowny → `jp_ok`); opis trzech dróg: `docs/WORKFLOW-NOWA-TRASA.md`. Każda droga odmawia, gdy miasto ma już zadanie queued/running.
 Nie uruchamiaj `trip-draft.mjs` ani `stop-content.mjs` — to stary proces (archiwum).
 
 ### 2. Rozmowa o szkicu (każda uwaga JP)
