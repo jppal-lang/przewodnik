@@ -1,0 +1,11 @@
+{
+ "script": "game-art.mjs",
+ "args": ["peek", "quo-pozy-02"],
+ "why": "Podgląd paczki 2 (lądowanie, fikołek…) do repo. Bez AI, 0 $.",
+ "title": "Podgląd: pozy Quo v2, paczka 2",
+ "est_usd": 0,
+ "est_limit": "0 wywołań (tylko kopiowanie plików)",
+ "jp_ok": {"date": "2026-11-01", "quote": "pokaż jes teraz"},
+ "by": "Claude",
+ "timeout_min": 10
+}
