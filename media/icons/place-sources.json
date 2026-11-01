@@ -143,6 +143,40 @@
    }
   ]
  },
+ "spello/santa-maria-maggiore": {
+  "trip": "spello",
+  "stop_key": "santa-maria-maggiore",
+  "n": 5,
+  "name": "Santa Maria Maggiore / Cappella Baglioni",
+  "trip_version": 17,
+  "icon_version": 1,
+  "accepted_at": "2026-11-01T15:28:11.420Z",
+  "icons": {
+   "64": "media/icons/place-spello-santa-maria-maggiore-64.webp",
+   "128": "media/icons/place-spello-santa-maria-maggiore-128.webp",
+   "256": "media/icons/place-spello-santa-maria-maggiore-256.webp",
+   "512": "media/icons/place-spello-santa-maria-maggiore-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "title": "File:06038 Spello PG, Italy - panoramio (8).jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:06038_Spello_PG,_Italy_-_panoramio_(8).jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/06038_Spello_PG%2C_Italy_-_panoramio_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "trolvag",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+   },
+   {
+    "title": "File:Cammino Francescano della Marca, Spello, Collegiata di Santa Maria Maggiore 01.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_Collegiata_di_Santa_Maria_Maggiore_01.jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/6/68/Cammino_Francescano_della_Marca%2C_Spello%2C_Collegiata_di_Santa_Maria_Maggiore_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Mongolo1984",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   }
+  ]
+ },
  "spello/villa-dei-mosaici": {
   "trip": "spello",
   "stop_key": "villa-dei-mosaici",
