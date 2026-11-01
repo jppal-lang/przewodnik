@@ -234,6 +234,7 @@ async function one(pack, notes = null) {
   // JP 2026-11-01: akceptacja w panelu — podgląd (arkusz / panorama + gif animacji) do repo, wiersz pending; w wątku tylko link do panelu
   const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: files[0][0], kind: 'game_art', key: pack.name, v, title, more: files.slice(1).map(f => f[0]) });
   const rid = rv && await reviewRow(pack, v, rv, { notes, warn: warnTxt });
+  if (!rv && pack.kind === 'frames') await cmdPeek(pack.name).catch(e => log(`podgląd do repo: ${e.message}`));   // bez panelu: podgląd i tak w gra/art/_review/
   const id = rid
     ? await upload(AR.notifyLine(title, { v, warn: warnTxt }), files.slice(0, 1))
     : await upload(L.caption(pack, idxOf(pack.name), { v, notes, warn: warnTxt, budget: L.budgetLeft(loadState(), CFG.maxCalls) }), files);
