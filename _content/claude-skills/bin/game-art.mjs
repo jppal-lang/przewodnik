@@ -210,6 +210,7 @@ async function one(pack, notes = null) {
   const left = L.budgetLeft(st, CFG.maxCalls);
   if (left <= 0) throw new Error(`wyczerpany limit grafik gry (${CFG.maxCalls} wywołań Antigravity) — więcej tylko po zgodzie JP (maxCalls w game-art-data.mjs)`);
   const refs = pack.refs.map(p => join(REPO, p));
+  if (refs.some(r => !existsSync(r))) await run('sh', [REPO_SH, 'pull'], { timeout: 120_000 }).catch(() => {}); // nowe referencje z repo
   for (const r of refs) if (!existsSync(r)) throw new Error(`brak referencji ${r} (sh repo.sh pull)`);
   const prevDir = s.v ? vDir(pack.name, s.v) : null, prevRaw = prevDir && join(prevDir, 'raw.png');
   const withPrev = !!(notes && prevRaw && existsSync(prevRaw));
