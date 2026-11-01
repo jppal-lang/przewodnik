@@ -1,0 +1,18 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "działaj , masz wolna rekę"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "fix",
+  "quo-pozy-02",
+  "Frames 2–6, 8 and 9 are good — keep them exactly. Frame 1 landing: much deeper squash, knees bent low, body wider and lower, paws out to the sides. Frame 7 hurt: body FACING RIGHT (nose to the right) but knocked backwards to the LEFT, leaning back, paws thrown forward, surprised face. Frame 10 pickup: bent far forward at the waist, head low, one front paw touching the ground in front of his feet. Every frame faces RIGHT."
+ ],
+ "title": "Pozy Quo v2, paczka 2: poprawka (lądowanie głębsze, uderzenie w prawo, zbieranie schylony)",
+ "why": "Poprawka paczki 2: lądowanie głębsze, uderzenie w prawo, zbieranie schylony. Antigravity, abonament, 0 $."
+}
