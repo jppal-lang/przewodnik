@@ -1,0 +1,18 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "działaj , masz wolna rekę"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "fix",
+  "quo-pozy-09",
+  "Frames 2 and 4 are good. Frames 1 and 3 must be clearly different: frame 1 the NEAR (front) paw points diagonally up to the upper right and the hip pushes forward; frame 3 the FAR (back) paw points diagonally up to the upper left behind his head, the near paw on the hip, the hip pushes backward and the body leans back. Every frame faces RIGHT."
+ ],
+ "title": "Pozy Quo v2, paczka 9: poprawka (klatki 1 i 3 różne (druga łapka, biodro w drugą stronę))",
+ "why": "Poprawka paczki 9: klatki 1 i 3 różne (druga łapka, biodro w drugą stronę). Antigravity, abonament, 0 $."
+}

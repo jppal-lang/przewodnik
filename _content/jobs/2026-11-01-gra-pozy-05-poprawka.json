@@ -1,0 +1,18 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "działaj , masz wolna rekę"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "fix",
+  "quo-pozy-05",
+  "Frames 1–4 (ladder) are good — keep them exactly. Frames 5–10: REMOVE the rope and the line completely; draw only the character, nothing in his paws, the game draws the rope and the zipline itself. Frames 5–8 must differ clearly: 5 right paw high and left paw at chest, legs pulled up; 6 left paw high, right paw at chest, legs stretched down; 7 like 5 but body higher; 8 like 6 but body higher. Frames 9–10: both front paws raised straight above the head gripping nothing, body hanging, legs and tail swinging forward in 9 and backward in 10. Every frame faces RIGHT."
+ ],
+ "title": "Pozy Quo v2, paczka 5: poprawka (drabina zostaje; lina i tyrolka bez liny (rysuje gra), wyraźniejsze różnice klatek)",
+ "why": "Poprawka paczki 5: drabina zostaje; lina i tyrolka bez liny (rysuje gra), wyraźniejsze różnice klatek. Antigravity, abonament, 0 $."
+}
