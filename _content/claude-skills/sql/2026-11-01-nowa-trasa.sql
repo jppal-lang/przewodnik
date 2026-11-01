@@ -21,6 +21,12 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS ops;
 CREATE SCHEMA IF NOT EXISTS admin;
 
+-- ── worker 'gemini' w ops.jobs ───────────────────────────────────────────────────────────────────────────────────
+-- 2026-11-01: zlecenie Asyżu padło na „jobs_worker_check” — stary CHECK nie zna workera 'gemini' (kolejka nowych tras).
+-- Zamiast listy (której pełnej treści repo nie zna) — nazwa workera jako prosty identyfikator; obecne wiersze (claude, hermes) przechodzą.
+ALTER TABLE ops.jobs DROP CONSTRAINT IF EXISTS jobs_worker_check;
+ALTER TABLE ops.jobs ADD CONSTRAINT jobs_worker_check CHECK (worker ~ '^[a-z][a-z0-9_-]{1,30}$');
+
 -- ── lista regionów dla panelu ───────────────────────────────────────────────────────────────────────────────────
 DO $v$
 DECLARE col text;

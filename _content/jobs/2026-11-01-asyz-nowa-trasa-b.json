@@ -1,0 +1,11 @@
+{
+ "script": "trip-enqueue.mjs",
+ "args": ["asyz", "--name", "Asyż", "--region", "umbria", "--country", "it", "--duration", "full_day", "--fresh", "--brief", "trasa od zera w nowym procesie; stara treść Asyżu to archiwum; rodzina z dziećmi, start z parkingu, bazylika św. Franciszka i Santa Chiara, bez czasów dojazdu"],
+ "why": "JP wybrał (2026-11-01) Asyż jako następną trasę, od zera w nowym procesie (Gemini research + szkic, kontrola Claude, akceptacja w panelu). Skrypt tylko dopisuje zadanie do kolejki ops.jobs (kind draft, worker gemini) — jak qdb job-add; samą trasę zrobi gemini-queue.mjs w kolejnym przebiegu crona. Koszt: ≈20–40 wywołań Antigravity z abonamentu (ok. 15–25 % tygodniowego limitu), 0 $ API; czas ≈ 1 h.",
+ "title": "Nowa trasa: Asyż (od zera, cały dzień)",
+ "est_usd": 0,
+ "est_limit": "≈20–40 wywołań Antigravity (AI Pro), ok. 15–25 % tygodniowego limitu",
+ "jp_ok": {"date": "2026-11-01", "quote": "Asyż"},
+ "by": "Claude",
+ "timeout_min": 10
+}

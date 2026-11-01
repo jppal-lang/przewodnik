@@ -26,7 +26,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     else log(`${o.slug}: już ma zadanie #${r.id} (queued/running) — nie dubluję`);
     console.log(JSON.stringify({ city_slug: o.slug, ...r }));
   } catch (e) {
-    console.error(`BŁĄD: ${e.message}`);
-    process.exitCode = 1;
+    // stary CHECK ops.jobs bez workera 'gemini' — czekamy na zatwierdzenie 2026-11-01-nowa-trasa.sql (repo-jobs ponowi, kod 75)
+    if (/jobs_worker_check/.test(e.message)) { log(`${o.slug}: baza nie przyjmuje jeszcze workera 'gemini' — czeka na zatwierdzenie SQL 2026-11-01-nowa-trasa.sql (Decyzje)`); process.exitCode = 75; }
+    else { console.error(`BŁĄD: ${e.message}`); process.exitCode = 1; }
   } finally { await c.end(); }
 }
