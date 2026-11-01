@@ -1,0 +1,18 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "działaj , masz wolna rekę"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "fix",
+  "quo-pozy-06",
+  "Frames 2–4, 7, 8 and 10 are good — keep them exactly. Frame 1 must lean far forward with both paws pressed flat on the invisible boulder, like frames 2–4, with the opposite leg forward. Frames 5 and 6: REMOVE the lever stick completely — only the character with both paws closed as if gripping an invisible handle (5 paws high above the head, 6 paws low at the belly, body bent). Frame 9: leaning forward, both front paws raised high at head height lifting an invisible heavy lid, curious happy face. Every frame faces RIGHT."
+ ],
+ "title": "Pozy Quo v2, paczka 6: poprawka (dźwignia bez drążka, pchanie 1, skrzynia)",
+ "why": "Poprawka paczki 6: drążek dźwigni rysuje gra, klatka 1 pchania i skrzynia wyraźniej. Antigravity, abonament, 0 $."
+}
