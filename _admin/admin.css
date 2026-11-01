@@ -1672,3 +1672,10 @@ body.has-walk .ad-content,body.has-phone .ad-content{max-width:none}
 .tv-walk__send .adm-btn-send{width:100%;min-height:44px}
 .tv-walk__send .adm-btn-send:disabled{opacity:.55}
 .tv-walk__sendnote{font-size:14px;color:var(--muted);line-height:1.35}
+/* bramka publikacji (JP 2026-11-01): przycisk zablokowany z czytelnym powodem; wynik publikacji z tłumaczeniami i następną trasą */
+.tv-approve:disabled{opacity:1;background:var(--rule);border-color:var(--rule);color:var(--muted);cursor:not-allowed;box-shadow:none}
+.tv-gate{flex-basis:100%;margin:0;max-width:520px;margin-left:auto;font-size:18px;line-height:1.35;color:var(--bad-ink,var(--rosso));text-align:right}
+.tv-gate b{font-weight:700}
+.tv-pubres{margin:8px 0 0;font-size:18px;line-height:1.4;color:var(--ok-ink,var(--verde))}
+.tv-pubres__n{margin:6px 0 0;font-size:18px;line-height:1.4;color:var(--muted)}
+@media(max-width:899px){.tv-gate{text-align:left;margin-left:0;max-width:none}}

@@ -148,6 +148,20 @@
         else d.rules.forEach(function (r) { if (r.id === rb.p_id) { r.status = rb.p_status; if (rb.p_rule) r.rule = rb.p_rule; } });
         return Promise.resolve({ ok: true });
       }
+      // bramka publikacji (SQL 2026-11-01-publikacja-bramka.sql) — w demo ten sam kod reguł co w panelu (publish-gate.js)
+      if (path === '/rpc/admin_publish_gate' || path === '/rpc/admin_approve') {
+        var gb = opts.body, gv = d.versions.filter(function (v) { return v.city_slug === gb.p_slug && v.version === gb.p_version; })[0] || {};
+        var gr = (demoRevs(d) || []).filter(function (r) { return r.city_slug === gb.p_slug; }).sort(function (a, b2) { return b2.id - a.id; })[0] || null;
+        var g = window.PublishGate ? window.PublishGate.evaluate({ version: gb.p_version, review: gv.review || null, comments: d.comments.filter(function (c) { return c.city_slug === gb.p_slug; }), request: gr })
+          : { ok: true, reasons: [] };
+        var est = { usd: 0.5, source: 'stała (dzienny limit płatnych modeli)' };
+        if (path === '/rpc/admin_publish_gate') return Promise.resolve(Object.assign({}, g, { translation_est: est }));
+        if (!g.ok) return Promise.reject(new Error('Publikacja zablokowana: ' + g.reasons.map(function (r) { return r.t; }).join('; ')));
+        d.queue = d.queue.filter(function (q) { return !(q.city_slug === gb.p_slug && q.version === gb.p_version); });
+        var reg = ((gv.content || {}).city || {}).region_slug;
+        return new Promise(function (res) { setTimeout(function () { res({ city_slug: gb.p_slug, version: gb.p_version, status: 'published', translation_job: 21, translation_consent: 8, translation_est: est,
+          next_region: reg, next_trip: reg === 'umbria' ? (gb.p_slug === 'perugia' ? { slug: 'orvieto', name: 'Orvieto', region: 'umbria', fresh: false, job: 22 } : { slug: 'perugia', name: 'Perugia', region: 'umbria', fresh: true, job: 22 }) : reg === 'marche' ? { slug: 'loreto', name: 'Loreto', region: 'marche', fresh: false, job: 22 } : null, next_error: null }); }, 500); });
+      }
       if (/^\/rpc\/admin_(approve|reject)$/.test(path)) {
         var b = opts.body;
         d.queue = d.queue.filter(function (q) { return !(q.city_slug === b.p_slug && q.version === b.p_version); });
@@ -1512,8 +1526,9 @@
       '<p class="tv-where">' + esc([countryName(T.country), T.region ? regionName(T.region) : ''].filter(Boolean).join(' · ')) + ' ' + stChip(stx[0], stx[1]) + '</p></div>' +
       '<div class="tv-ver"><span class="tv-ver__f"><label for="vTabs">Wersja</label><select id="vTabs" class="adm-cmp__sel">' + tabsHtml() + '</select></span>' +
       '<span class="tv-ver__f">' + cmpBarHtml(it) + '</span></div>' +
-      '<div class="tv-dec">' + (state.readOnly ? '' : '<button type="button" class="qc-btn adm-btn-ok tv-approve" data-act="approve"' +
-        (newStops.length ? '' : ' disabled data-lock title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>') + more +
+      '<div class="tv-dec">' + (state.readOnly ? '' : '<button type="button" class="qc-btn adm-btn-ok tv-approve" data-act="approve" aria-describedby="tvGate"' +
+        (newStops.length ? '' : ' disabled data-lock data-nostops title="Szkic bez przystanków nie może trafić na stronę"') + '>Zatwierdź i opublikuj</button>') + more +
+      (state.readOnly ? '' : '<p class="tv-gate" id="tvGate" hidden></p>') +
       '<span class="adm-msg tv-msg" id="msg" role="status"></span></div></header>';
     if (state.readOnly) {
       html += '<p class="adm-ro">' + (it.isNewest
@@ -2395,13 +2410,12 @@
     var b = e.target.closest('[data-act]');
     if (!b || b.disabled || !state.current) return;
     var act = b.getAttribute('data-act');
+    if (act === 'approve' && b.hasAttribute('data-lock')) return;    // bramka publikacji (JP 2026-11-01): bez „mimo to”
     if (armed !== b) {
       disarm();
-      var left = state.qaLeft ? state.qaLeft.b + state.qaLeft.w : 0;
       armed = b; b.classList.add('is-armed');
-      b.textContent = act === 'approve' ? (left ? 'Zostało ' + plForm(left, 'nierozstrzygnięta flaga', 'nierozstrzygnięte flagi', 'nierozstrzygniętych flag') + ' — kliknij, by mimo to opublikować' : 'Na pewno? Kliknij jeszcze raz')
-        : 'Odrzucić? Kliknij jeszcze raz';
-      armTimer = setTimeout(disarm, left ? 7000 : 4000);
+      b.textContent = act === 'approve' ? 'Opublikować? Tłumaczenia ruszą same (' + estTxt() + ') — kliknij jeszcze raz' : 'Odrzucić? Kliknij jeszcze raz';
+      armTimer = setTimeout(disarm, act === 'approve' ? 7000 : 4000);
       return;
     }
     disarm();
@@ -2409,10 +2423,11 @@
     var $msg = document.getElementById('msg');
     [].forEach.call($d.querySelectorAll('[data-act]'), function (x) { x.disabled = true; });
     $msg.className = 'adm-msg'; $msg.textContent = act === 'approve' ? 'Publikuję…' : 'Odrzucam…';
+    state.publishing = true;
     var body = act === 'approve' ? { p_slug: it.city_slug, p_version: it.version, p_note: note } : { p_slug: it.city_slug, p_version: it.version, p_reason: note };
-    api('/rpc/admin_' + act, { method: 'POST', body: body }).then(function () {
-      clearInterval(state.poll);
-      $d.innerHTML = '<div class="adm-sheet"><div class="adm-done"><h3>' + (act === 'approve' ? 'Opublikowane' : 'Odrzucone') + '</h3><p>' +
+    api('/rpc/admin_' + act, { method: 'POST', body: body }).then(function (res) {
+      clearInterval(state.poll); state.publishing = false;
+      $d.innerHTML = '<div class="adm-sheet"><div class="adm-done"><h3>' + (act === 'approve' ? 'Opublikowane' : 'Odrzucone') + '</h3>' + (act === 'approve' ? publishedLine(it, res) : '') + '<p>' +
         esc(it.city_name || it.city_slug) + ' v' + it.version + (act === 'approve' ? ' jest teraz wersją na stronie. Poprzednia trafiła do historii.' : ' trafił do historii jako odrzucony.') +
         (act === 'approve' ? '</p><p style="margin-top:14px"><a href="../city.html?c=' + encodeURIComponent(it.city_slug) + '" target="_blank" rel="noopener">Otwórz stronę miasta</a>' : '') +
         '</p><p class="adm-done__acts"><a class="qc-btn qc-btn--sm adm-back" href="#/trasy">← Trasy</a><a class="qc-btn qc-btn--sm" href="#/">Pulpit</a>' +
@@ -2420,11 +2435,63 @@
       state.trip = null; state.versions = null; state.current = null;
       loadTrips();
     }).catch(function (err) {
+      state.publishing = false;
       [].forEach.call($d.querySelectorAll('[data-act]'), function (x) { x.disabled = x.hasAttribute('data-lock'); });
       actLabels();
       $msg.className = 'adm-msg adm-msg--err'; $msg.textContent = 'Nie zapisano: ' + err.message;
+      if (act === 'approve' && state.tvIt) { state.gateSrv = null; gatePaint(); }   // serwer odmówił → pokaż jego powód
     });
   });
+  // ── bramka publikacji (JP 2026-11-01): te same reguły co admin.publish_gate w SQL — publish-gate.js ──
+  // Lokalnie liczone od razu (flagi, uwagi, prośba + weryfikacja); serwer sprawdzany, gdy lokalnie zielono — jego „nie” wygrywa.
+  function gateNow() {
+    var it = state.tvIt;
+    if (!it || it.status !== 'draft' || state.readOnly || !window.PublishGate) return null;
+    var rq = (state.revs || [])[0] || null;
+    var g = window.PublishGate.evaluate({ version: it.version, review: it.review || null, comments: state.comments || [], request: rq });
+    var key = it.city_slug + '/' + it.version + '/' + (state.comments || []).map(function (c) { return c.id + ':' + c.status; }).join(',') + '/' + (rq ? rq.id + ':' + rq.status + ':' + JSON.stringify(rq.verify || null) : '-');
+    var s = state.gateSrv;
+    if (g.ok && (!s || s.key !== key) && !state.gateBusy) {
+      state.gateBusy = true;
+      api('/rpc/admin_publish_gate', { method: 'POST', body: { p_slug: it.city_slug, p_version: it.version } }).then(function (r) {
+        state.gateSrv = r && typeof r === 'object' ? Object.assign({ key: key }, r) : { key: key, ok: true, reasons: [] };
+      }, function () { state.gateSrv = { key: key, ok: true, reasons: [], off: true }; })   // SQL jeszcze nie wdrożony → i tak pilnuje admin_approve
+        .then(function () { state.gateBusy = false; if (state.tvIt === it) gatePaint(); });
+    }
+    if (g.ok && s && s.key === key && s.ok === false && Array.isArray(s.reasons) && s.reasons.length) {
+      g = { ok: false, reasons: s.reasons.map(function (r) { return typeof r === 'string' ? { k: 'srv', t: r } : r; }), srv: true };
+    }
+    if (s && s.translation_est) state.trEst = s.translation_est;
+    return g;
+  }
+  function estTxt() {
+    var e = state.trEst;
+    return e && e.usd != null ? 'szac. ' + String((+e.usd).toFixed(2)).replace('.', ',') + ' USD' : 'szac. do 0,50 USD dziennie';
+  }
+  function gatePaint() {
+    var b = $d.querySelector('[data-act="approve"]'), p = document.getElementById('tvGate');
+    if (!b) return null;
+    var g = gateNow(), lock = b.hasAttribute('data-nostops') || !!(g && !g.ok);
+    b.toggleAttribute('data-lock', lock);
+    if (!state.publishing) b.disabled = lock;
+    if (lock && armed === b) disarm();
+    if (p) {
+      p.hidden = !(g && !g.ok);
+      p.innerHTML = g && !g.ok ? '<b>Publikacja zablokowana:</b> ' + esc(g.reasons.map(function (r) { return r.t; }).join(' · ')) : '';
+    }
+    b.title = b.hasAttribute('data-nostops') ? 'Szkic bez przystanków nie może trafić na stronę' : g && !g.ok ? 'Zablokowane, dopóki wszystkie flagi nie są zielone' : 'Publikacja uruchomi tłumaczenia i następną trasę z planu regionu';
+    return g;
+  }
+  // „Opublikowano vN · tłumaczenia w kolejce · następna trasa: <miasto>” (wynik admin_approve)
+  function publishedLine(it, r) {
+    r = r || {};
+    var nx = r.next_trip, parts = ['Opublikowano v' + it.version];
+    parts.push(r.translation_job != null ? 'tłumaczenia w kolejce (zlecenie #' + r.translation_job + ': EN, potem pozostałe języki' + (r.translation_est && r.translation_est.usd != null ? ', szac. ' + String((+r.translation_est.usd).toFixed(2)).replace('.', ',') + ' USD' : '') + ')' : 'tłumaczenia w kolejce');
+    parts.push(nx && nx.job != null ? 'następna trasa: ' + (nx.name || nx.slug) + (nx.fresh ? ' (od zera)' : '') + ' — zadanie #' + nx.job
+      : r.next_error ? 'następna trasa: nie zlecona (' + r.next_error + ')' : nx === null && 'next_trip' in r ? 'następna trasa: plan regionu wyczerpany' : 'następna trasa: zleci serwer po wdrożeniu SQL bramki');
+    return '<p class="tv-pubres" role="status"><b>' + esc(parts.join(' · ')) + '</b></p>' +
+      '<p class="tv-pubres__n">Zgoda na koszt tłumaczeń = ta publikacja' + (r.translation_consent != null ? ' (zapisana w decyzjach, #' + r.translation_consent + ')' : '') + '. Następna trasa idzie z planu popularności regionu (trip-plan.mjs).</p>';
+  }
   function disarm() {
     clearTimeout(armTimer);
     if (armed) armed.classList.remove('is-armed');
@@ -3331,6 +3398,11 @@
   function readyRefresh() {
     var box = document.getElementById('tvReady'), it = state.tvIt; if (!box || !it) return;
     var q = state.qaLeft || { b: 0, w: 0, done: 0, all: 0 }, items = [];
+    var gt = gatePaint();
+    if (gt) {
+      var gk = gt.ok ? null : gt.reasons[0].k, go = gk === 'flags' || gk === 'errors' ? (q.all ? 'walk' : null) : gk ? 'drawer' : null;
+      items.push({ k: go, tone: gt.ok ? 'ok' : 'bad', t: 'Publikacja', v: gt.ok ? 'odblokowana — wszystkie flagi zielone' : 'zablokowana: ' + gt.reasons.map(function (r) { return r.t; }).join(' · ') });
+    }
     items.push(q.all ? { k: 'walk', tone: q.b ? 'bad' : q.w ? 'warn' : 'ok', t: 'Flagi z kontroli', v: q.done + ' z ' + q.all + ' rozstrzygniętych' + (q.b ? ' · ' + plForm(q.b, 'blokująca otwarta', 'blokujące otwarte', 'blokujących otwartych') : ''), pct: q.done / q.all }
       : { tone: 'ok', t: 'Flagi z kontroli', v: 'brak flag' });
     var rv = it.review;
@@ -3367,7 +3439,8 @@
     var D = state.tvDraft, S = (D && D.stops) || [], L = langsOf(D && D.stop_translations);
     if (S.length) {
       var noEn = S.filter(function (x) { return !trOf(D.stop_translations, 'en', 'stop_id', x.id).name; }).length;
-      items.push({ k: 'sum', tone: noEn ? 'warn' : 'ok', t: 'Tłumaczenia', v: plForm(L.length, 'język', 'języki', 'języków') + (L.length ? ' (' + L.join(', ').toUpperCase() + ')' : '') + (noEn ? ' · EN brak w ' + noEn : '') });
+      items.push({ k: 'sum', tone: noEn && !gt ? 'warn' : 'ok', t: 'Tłumaczenia', v: plForm(L.length, 'język', 'języki', 'języków') + (L.length ? ' (' + L.join(', ').toUpperCase() + ')' : '') + (noEn ? ' · EN brak w ' + noEn : '') +
+        (gt ? ' · ruszą same po publikacji (EN, potem reszta; ' + estTxt() + ')' : '') });
     }
     var ok = items.filter(function (x) { return x.tone === 'ok'; }).length, pct = Math.round(ok / items.length * 100);
     var od = document.getElementById('readyD'), isOpen = od ? od.open : tocWide.matches;

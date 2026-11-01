@@ -59,3 +59,47 @@ cd /opt/data/quolino && node qdb.mjs job-add asyz draft gemini '{"name":"Asyż",
 
 Stan kolejki: `node qdb.mjs jobs` albo panel → Pipeline. Testy: `sh _content/claude-skills/bin/test-all.sh`
 (`trip-enqueue.test.mjs`) i Playwright `node _content/claude-skills/test/nowa-trasa-pw.mjs`.
+
+## 4. Automatycznie po publikacji — następna trasa z planu regionu (JP 2026-11-01)
+
+> JP: „Opublikowanie wyzwala następną trasę, kolejność wg najbardziej popularnych miejsc w danym regionie.”
+
+**Gdzie wpięte:** w funkcji zatwierdzania `admin.admin_approve` (SQL `_content/claude-skills/sql/2026-11-01-publikacja-bramka.sql`),
+**po** udanej publikacji, w tej samej transakcji. Dlaczego tu, a nie w `gemini-queue.mjs`: jedno miejsce, które wie, *że* i *co*
+opublikowano (region z `content.city.region_slug`), blokada doradcza na mieście (dwa kliknięcia nie zrobią dwóch zadań), a panel od razu
+dostaje odpowiedź „następna trasa: X — zadanie #N”. Kolejkowanie idzie **tą samą ścieżką co „+ Nowa trasa”** —
+`admin.admin_trip_enqueue` (te same walidacje, ten sam wiersz `ops.jobs` draft/gemini). Błąd kolejkowania **nie cofa publikacji**
+(trafia do wyniku jako `next_error` i do komunikatu w panelu). Brief pusty — pole „życzenia do trasy” idzie do modelu jako polecenie.
+
+**Plan:** `_content/claude-skills/bin/trip-plan.mjs` — lista redakcyjna miast per region w kolejności popularności (edytowalna, z
+komentarzem), kolejność regionów Umbria → Marche → Emilia-Romagna. Kopia w bazie: `ops.trip_plan` (+ `ops.trip_plan_regions`);
+po zmianie listy w pliku: `node trip-plan.mjs --sync` na serwerze (test `trip-plan.test.mjs` pilnuje, że lista w SQL = lista w pliku).
+Podgląd stanu: `node trip-plan.mjs` (co opublikowane, co w kolejce, co następne), `node trip-plan.mjs --next umbria`;
+w panelu/API: `POST /api/rpc/admin_trip_next {p_region}`.
+
+**Wybór następnego miasta** (`admin.trip_next(region, pomiń)` = `pickNext()` w trip-plan.mjs): pierwsze miasto z planu regionu, które
+- nie jest opublikowane w nowym procesie (`content.workflow = 'v2'` albo wytyczne > v01),
+- nie ma szkicu w toku,
+- nie ma żadnego zadania draft/gemini w `ops.jobs` (queued/running = już w kolejce, np. Asyż zlecony 2026-11-01; done/failed = powtórkę
+  decyduje JP przyciskiem „+ Nowa trasa”),
+- nie jest właśnie opublikowaną trasą, a jego region istnieje w `public.regions`.
+
+Region wyczerpany → następny wg kolejności, na końcu wcześniejsze; cały plan wyczerpany → nic (panel: „plan regionu wyczerpany”).
+Miasto ze starą trasą w bazie → `fresh: true` (od zera). `gemini-queue.mjs` bierze jedno miasto naraz i wstrzymuje nowe trasy przy
+≥ 90 % tygodniowego limitu Antigravity — łańcuch publikacji nie przeciąży abonamentu.
+
+## 5. Bramka publikacji i tłumaczenia (JP 2026-11-01)
+
+> JP: „Tłumaczenia mają ruszyć po tym jak kliknę zatwierdź i opublikuj. Jak są nierozstrzygnięte flagi muszę mieć zablokowaną możliwość
+> publikacji; jak już wyślę poprawki, to też jeszcze nie — dopiero jak wszystkie flagi będą zielone możesz odblokować przycisk opublikuj.”
+
+„Zatwierdź i opublikuj” jest nieaktywny, a pod nim stoi powód, dopóki: są flagi kontroli bez odpowiedzi; są uwagi niewysłane albo bez
+przystanku; prośba o poprawkę jest w toku / nieudana; ostatnia poprawka nie przeszła weryfikacji (`verify.ready` — częściowo, nie
+naniesione, nowe błędy, ocena wstępna); walidator ma błędy, których odpowiedzi Hermes jeszcze nie rozpatrzył. Reguły:
+`_admin/publish-gate.js` (panel, test `publish-gate.test.mjs`) = `admin.publish_gate()` w SQL — serwer odmawia publikacji tak samo
+(bez obejścia „mimo to”). „Gotowość do publikacji” pokazuje pierwszą pozycję „Publikacja” z listą tego, co blokuje.
+
+Publikacja = zgoda JP na koszt tłumaczeń tej trasy: `admin_approve` kolejkuje tłumaczenie jak dotąd (`ops.jobs` kind translate →
+`translate-queue.mjs`: najpierw EN, potem reszta) i zapisuje decyzję w `ops.cost_requests` (status `approved`, „JP (publikacja)”,
+szacunek z `public.ai_usage`, bez danych 0,50 USD = dzienny limit płatnych modeli). Potwierdzenie w panelu pokazuje szacunek,
+wynik: „Opublikowano vN · tłumaczenia w kolejce · następna trasa: <miasto>”. Test przeglądarkowy: `node _content/claude-skills/test/publikacja-pw.mjs`.
