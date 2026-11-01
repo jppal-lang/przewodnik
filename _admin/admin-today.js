@@ -127,6 +127,10 @@
       var wr = (I.watch.ok && I.watch.ok.ready && I.watch.ok.rows) || [], wb = {}, newest = null;
       wr.forEach(function (r) { wb[r.kind] = (wb[r.kind] || 0) + 1; if (!newest || r.created_at > newest) newest = r.created_at; });
       if (wr.length) add('watch:open', 'todo', plForm(wr.length, 'ustalenie strażników czeka', 'ustalenia strażników czekają', 'ustaleń strażników czeka') + ' na decyzję (' + Object.keys(wb).map(function (k) { return (WKIND[k] || k) + ' ' + wb[k]; }).join(', ') + ').', '#/straznicy', newest);
+      (I.art && I.art.ok || []).forEach(function (a) {
+        var K = { place_icon: 'Ikona miejsca', quo_pose: 'Poza Quo', game_art: 'Grafika gry' };
+        add('art:' + a.id, 'todo', (K[a.kind] || 'Grafika') + ' „' + short(a.title, 70) + '” (wersja ' + (a.version || 1) + ') czeka na Twoją akceptację w panelu.', '#/grafiki', a.created_at, a.meta && a.meta.trip || null);
+      });
       (I.icons.ok || []).forEach(function (ic) {
         var late = ic.deadline && t_(ic.deadline) < Date.now(), n = ic.stops.length;
         add('icon:' + ic.trip, late ? 'warn' : 'todo', nm(ic.trip) + ': ' + plForm(n, 'przystanek czeka', 'przystanki czekają', 'przystanków czeka') + ' na wybór zdjęcia do ikony' + (ic.deadline ? (late ? ', termin minął, automat wybierze sam' : ', automat ruszy ' + dayHour(ic.deadline)) : '') + '.', '#/ikony', null, ic.trip);
@@ -177,6 +181,7 @@
         { id: 'deploy:12', kind: 'todo', text: 'Wdrożenie skrzynki decyzji czeka na Twoją zgodę: 2026-10-30-skrzynka-decyzji.sql i deploy.sh.', href: '#/decyzje', when: iso(14) },
         { id: 'cost:4', kind: 'todo', text: 'Tłumaczenie Rimini na 7 języków potrzebuje Twojej zgody na koszt, szacunek 0.40 $.', href: '#/decyzje', when: iso(40) },
         { id: 'watch:open', kind: 'todo', text: 'Strażnicy mają 2 ustalenia do decyzji: godziny jaskiń Frasassi i martwy link do parkingu w Spello.', href: '#/straznicy', when: iso(70) },
+        { id: 'art:31', kind: 'todo', text: 'Ikona miejsca „spello #7: Porta Venere” (wersja 2) czeka na Twoją akceptację w panelu.', href: '#/grafiki', when: iso(25), trip: 'spello' },
         { id: 'rev:6', kind: 'wait', text: 'Hermes nanosi 4 uwagi do Ancony v1, powinno być gotowe niedługo.', href: '#/ancona', when: iso(4), trip: 'ancona' },
         { id: 'run:demo-1', kind: 'wait', text: 'Gubbio powstaje: Hermes jest przy 4 z 9 przystanków, teraz Palazzo dei Consoli.', href: '#/pipeline', when: iso(2), trip: 'gubbio' },
         { id: 'rev:7', kind: 'wait', text: '3 uwagi do Wieliczki v1 czekają, aż wróci limit Antigravity.', href: '#/wieliczka', when: iso(12), trip: 'wieliczka' },

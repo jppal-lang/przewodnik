@@ -578,7 +578,7 @@
   // ── nawigacja (v43, JP 2026-10-31: panel = centrum dowodzenia) ──
   // #/ pulpit · #/trasy lista · #/<miasto> najnowsza wersja · #/<miasto>/v<N> starsza · #/decyzje · #/straznicy · #/ikony
   // #/postep · #/koszty · #/zgloszenia · #/baza-wiedzy. Boczny pasek (desktop) i dolny pasek (telefon) — index.html.
-  var SECTIONS = { dzis: 'Dziś', pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', postep: 'Postęp prac',
+  var SECTIONS = { dzis: 'Dziś', pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', grafiki: 'Grafiki', postep: 'Postęp prac',
     koszty: 'Koszty AI', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
   var $title = document.getElementById('secTitle'), $crumbs = document.getElementById('crumbs');
   // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
@@ -610,7 +610,7 @@
     var h = location.hash;
     moreClose();
     emit('adm:route', { hash: h });
-    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony|pipeline|mapa)$/.test(h));
+    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
     // „Dziś” (admin-today.js) jako start panelu: #/ → meldunek; Pulpit zostaje pod #/pulpit (JP 2026-10-31)
@@ -619,6 +619,7 @@
     if (!h || h === '#' || h === '#/' || h === '#/pulpit') { setHead('pulpit'); showDetail(); window.scrollTo(0, 0); openDashboard(); return; }
     if (h === '#/trasy') { showList(); return; }
     if (h === '#/decyzje' || h === '#/straznicy' || h === '#/ikony') { var only = h.slice(2); setHead(only); showDetail(); window.scrollTo(0, 0); openDecisions(only === 'decyzje' ? null : only); return; }
+    if (h === '#/grafiki') { setHead('grafiki'); showDetail(); window.scrollTo(0, 0); openArt(); return; }
     if (h === '#/baza-wiedzy') { setHead('baza-wiedzy'); showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { setHead('postep'); showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     if (h === '#/koszty') { setHead('koszty'); showDetail(); window.scrollTo(0, 0); openCosts(); return; }
@@ -2001,7 +2002,8 @@
     var ir = state.icref, st = placeIconState(ir.slug, s || { stop_key: key });
     if (!st) return '';
     var rec = ir.pub[ir.slug + '/' + key], name = 'place-' + ir.slug + '-' + key;
-    return '<p class="adm-icref__pub adm-icref__st is-' + st + '" role="status"><img src="' + ICONS + name + '-64.webp" srcset="' + ICONS + name + '-64.webp 1x, ' + ICONS + name + '-128.webp 2x" alt="" width="40" height="40" loading="lazy" onerror="this.remove()"> ' +
+    return '<p class="adm-icref__pub adm-icref__st is-' + st + '" role="status"><img src="' + ICONS + name + '-64.webp" srcset="' + ICONS + name + '-64.webp 1x, ' + ICONS + name + '-128.webp 2x" alt="" width="40" height="40" loading="lazy" onerror="this.remove()"' +
+      ' data-zoom="' + ICONS + name + '-512.webp" data-zoom-caption="' + esc(titleCase(ir.slug) + ' · ' + ((s && s.name) || key) + (rec && rec.icon_version ? ' · wersja ' + rec.icon_version : '')) + '"> ' +
       (st === 'linked' ? '<b>Ikona miejsca opublikowana · podpięta</b> do przystanku (stops.icon = ' + esc(name) + ')'
         : '<b>Ikona miejsca gotowa, niepodpięta</b> — pliki są w repo, przystanek dostanie ją przy najbliższym <code>place-icons.mjs sync</code> (kolejka co 30 min)') +
       (rec && rec.accepted_at ? ' · zaakceptowana ' + esc(when(rec.accepted_at)) + (rec.icon_version ? ', wersja ikony ' + esc(String(rec.icon_version)) : '') : '') + '</p>';
@@ -2028,7 +2030,8 @@
         '<img src="' + esc(c.thumb) + '" alt="" loading="lazy" decoding="async" width="320" height="' + (c.width && c.height ? Math.round(320 * c.height / c.width) : 240) + '">' +
         '<span class="adm-icref__ck" aria-hidden="true">✓</span></button>' +
         '<p class="adm-icref__meta" title="' + esc(nm) + '">' + esc(c.author || 'autor nieznany') + ' · ' + esc(c.license || 'licencja?') + '</p>' +
-        '<a class="adm-icref__lnk" href="' + esc(c.page) + '" target="_blank" rel="noopener noreferrer">otwórz na Commons ↗</a></li>';
+        '<a class="adm-icref__lnk" href="' + esc(c.page) + '" target="_blank" rel="noopener noreferrer">otwórz na Commons ↗</a>' +
+        ' <button type="button" class="adm-icref__lnk adm-icref__zoom" data-zoom="' + esc(/^https:\/\/upload\.wikimedia\.org\//.test(String(c.thumb)) ? 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(nm.replace(/ /g, '_')) + '?width=1280' : String(c.thumb)) + '" data-zoom-group="cand-' + esc(key) + '" data-zoom-caption="' + esc(nm + ' · ' + (c.author || 'autor nieznany') + ' · ' + (c.license || 'licencja?')) + '">powiększ</button></li>';
     }).join('') + '</ul>';
     var titles = list.map(function (c) { return c.title; });
     h += icOwnHtml(key, files.filter(function (f) { return titles.indexOf(f) < 0; }), off) + icLinkHtml(key, files, off);
@@ -2795,17 +2798,19 @@
         return api('/admin_queue').then(function (q) { return q.map(function (x) { return Object.assign({}, x, { red_flags: null }); }); });
       });
     var icons = loadIconInbox();
-    inbox.loading = Promise.all([soft(deploys), soft(hist), soft(costs), soft(budget), soft(watch), soft(drafts), soft(icons)]).then(function (r) {
-      var d = { deploys: r[0], hist: r[1], costs: r[2], budget: r[3], watch: r[4], drafts: r[5], icons: r[6] };
+    var art = DEMO ? Promise.resolve(demoArt().rows.filter(function (r) { return r.status === 'pending'; })) : api('/art_requests?status=eq.pending&order=id.desc&limit=60');
+    inbox.loading = Promise.all([soft(deploys), soft(hist), soft(costs), soft(budget), soft(watch), soft(drafts), soft(icons), soft(art)]).then(function (r) {
+      var d = { deploys: r[0], hist: r[1], costs: r[2], budget: r[3], watch: r[4], drafts: r[5], icons: r[6], art: r[7] };
       var pend = function (x, f) { return x.ok ? x.ok.filter(f).length : 0; };
       d.count = {
         deploy: pend(d.deploys, function (x) { return x.status === 'pending'; }),
         cost: pend(d.costs, function (x) { return x.status === 'pending'; }),
         watch: d.watch.ok && d.watch.ok.ready ? (d.watch.ok.rows || []).length : 0,
         draft: d.drafts.ok ? d.drafts.ok.length : 0,
-        icon: d.icons.ok ? d.icons.ok.length : 0
+        icon: d.icons.ok ? d.icons.ok.length : 0,
+        art: d.art.ok ? d.art.ok.length : 0
       };
-      inbox.n = d.count.deploy + d.count.cost + d.count.watch + d.count.draft + d.count.icon;
+      inbox.n = d.count.deploy + d.count.cost + d.count.watch + d.count.draft + d.count.icon + d.count.art;
       inbox.data = d; inbox.loading = null;
       paintInboxCount();
       return d;
@@ -2849,7 +2854,8 @@
     var n = inbox.n;
     var C = inbox.data ? inbox.data.count : {};
     [['decNav', n, ' do decyzji'], ['decTab', n, ' do decyzji'], ['decCount', n, ' do decyzji'], ['watchNav', C.watch, ' ustaleń strażników'],
-      ['iconNav', C.icon, ' tras ze zdjęciami do wyboru'], ['iconMore', C.icon, ' tras ze zdjęciami do wyboru']].forEach(function (x) {
+      ['iconNav', C.icon, ' tras ze zdjęciami do wyboru'], ['iconMore', C.icon, ' tras ze zdjęciami do wyboru'],
+      ['artNav', C.art, ' grafik do akceptacji'], ['artMore', C.art, ' grafik do akceptacji']].forEach(function (x) {
       var el = document.getElementById(x[0]); if (!el) return;
       var v = n == null ? null : x[1];
       el.textContent = v == null ? '·' : v; el.classList.toggle('is-zero', !v);
@@ -2996,7 +3002,8 @@
   // only: null = cała skrzynka (#/decyzje); 'straznicy' / 'ikony' = jedna sekcja z własnej pozycji w nawigacji
   // zakładka Ikony: opublikowane ikony miejsc (place-sources.json) × stops.icon z wersji opublikowanej (admin_versions.content->stops)
   function loadPubIcons() {
-    var src = DEMO ? Promise.resolve({}) : fetch('../media/icons/place-sources.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
+    // plik statyczny strony — także w demo (podgląd prawdziwych ikon i lightboxa bez bazy)
+    var src = fetch('../media/icons/place-sources.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
       .then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
     return src.then(function (j) {
       var recs = Object.keys(j || {}).map(function (k) { return j[k]; }).filter(function (r) { return r && r.trip && r.stop_key; });
@@ -3017,13 +3024,14 @@
     });
   }
   function pubIconsHtml(d) {
-    if (!d.list.length) return '<p class="adm-empty dec-empty">Jeszcze żadnej zaakceptowanej ikony miejsca (Discord #ikony-miejsc → „ok N”).</p>';
+    if (!d.list.length) return '<p class="adm-empty dec-empty">Jeszcze żadnej zaakceptowanej ikony miejsca (akceptacja: <a href="#/grafiki">Grafiki</a>).</p>';
     var ST = { linked: ['ok', 'opublikowana · podpięta'], ready: ['warn', 'gotowa, niepodpięta — czeka na sync (kolejka co 30 min)'], missing: ['bad', 'brak przystanku o tym kluczu w wersji opublikowanej'], unknown: ['', 'stan podpięcia nieznany (brak admin_versions)'] };
     var byTrip = {}; d.list.forEach(function (x) { (byTrip[x.trip] = byTrip[x.trip] || []).push(x); });
     return (d.noApi ? '<p class="adm-cmwarn">Nie udało się odczytać wersji opublikowanych — status podpięcia nieznany.</p>' : '') + Object.keys(byTrip).map(function (t) {
       return '<article class="pg-card dec-item dec-item--iconpub"><p class="dec-kind">Ikony miejsc · ' + esc(titleCase(t)) + '</p><ul class="adm-icpub">' + byTrip[t].map(function (x) {
         var st = ST[x.st] || ST.unknown;
-        return '<li class="adm-icpub__it is-' + esc(x.st) + '"><img src="' + ICONS + x.icon + '-64.webp" srcset="' + ICONS + x.icon + '-64.webp 1x, ' + ICONS + x.icon + '-128.webp 2x" alt="" width="40" height="40" loading="lazy" onerror="this.remove()">' +
+        return '<li class="adm-icpub__it is-' + esc(x.st) + '"><img src="' + ICONS + x.icon + '-64.webp" srcset="' + ICONS + x.icon + '-64.webp 1x, ' + ICONS + x.icon + '-128.webp 2x" alt="" width="40" height="40" loading="lazy" onerror="this.remove()"' +
+          ' data-zoom="' + ICONS + x.icon + '-512.webp" data-zoom-group="icpub" data-zoom-caption="' + esc(titleCase(t) + ' · ' + (x.n ? num(x.n) + ' ' : '') + (x.name || x.key) + (x.v ? ' · wersja ' + x.v : '')) + '">' +
           '<span><b>' + (x.n ? num(x.n) + ' · ' : '') + esc(x.name || x.key) + '</b><br><span class="pg-pill pg-pill--' + (st[0] || 'running') + '">' + esc(st[1]) + '</span>' +
           (x.at ? ' <span class="adm-cm__meta">zaakceptowana ' + esc(when(x.at)) + (x.version ? ' · trasa v' + esc(String(x.version)) : '') + '</span>' : '') + '</span></li>';
       }).join('') + '</ul><div class="dec-acts"><a class="qc-btn qc-btn--sm" href="#/' + esc(encodeURIComponent(t)) + '">Otwórz trasę →</a></div></article>';
@@ -3041,9 +3049,10 @@
         esc(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</span></div><section class="pg dec">' +
         (only ? '' : '<header class="pg-head"><div><h2>' + (inbox.n ? 'Czeka na Ciebie: ' + inbox.n : 'Nic nie czeka') + '</h2></div>' +
         '<dl class="pg-kpi"><div><dt>wdrożenia</dt><dd>' + C.deploy + '</dd></div><div><dt>koszty</dt><dd>' + C.cost + '</dd></div><div><dt>strażnicy</dt><dd>' + C.watch + '</dd></div>' +
-        '<div><dt>szkice</dt><dd>' + C.draft + '</dd></div><div><dt>ikony</dt><dd>' + C.icon + '</dd></div></dl></header>') +
+        '<div><dt>szkice</dt><dd>' + C.draft + '</dd></div><div><dt>ikony</dt><dd>' + C.icon + '</dd></div><div><dt>grafiki</dt><dd>' + C.art + '</dd></div></dl></header>') +
         '<p class="dec-lead">' + (only === 'straznicy' ? 'Strażnicy co dzień sprawdzają godziny, ceny, linki, lokale i zmiany sezonu na trasach. Każde ustalenie czeka tu na Twoją decyzję.'
-          : only === 'ikony' ? 'Do każdego zabytku możesz wybrać 1–2 zdjęcia referencyjne do ikony Quo. Bez decyzji po terminie generator wybierze sam.'
+          : only === 'ikony' ? 'Do każdego zabytku możesz wybrać 1–2 zdjęcia referencyjne do ikony Quo. Bez decyzji po terminie generator wybierze sam. ' +
+            '<a class="dec-lead__link" href="#/grafiki">Grafiki do akceptacji (' + C.art + ') →</a>'
           : 'Każdy przycisk zapisuje decyzję; serwer wykonuje ją sam — wdrożenia w ciągu 2 min, zlecenia w ciągu 10 min. Wynik zobaczysz tutaj.') + '</p>';
       if (only === 'straznicy') h += watchRunsHtml(d);
       // wdrożenia
@@ -3064,6 +3073,9 @@
       // ikony
       if (!only || only === 'ikony') h += decSection('ikony', 'Zdjęcia do ikon', C.icon, d.icons.err ? errBox(d.icons, 'Wybór zdjęć') : d.icons.ok.length ? d.icons.ok.map(iconHtml).join('') : none('Wszystkie przystanki z kandydatami mają decyzję.'));
       if (only === 'ikony') h += decSection('ikony-pub', 'Opublikowane ikony miejsc', d.pubIcons ? d.pubIcons.n : 0, d.pubIcons ? pubIconsHtml(d.pubIcons) : none('Ładuję opublikowane ikony…'));
+      // grafiki do akceptacji (ikony miejsc, pozy Quo, grafiki gry) — decyzje w #/grafiki, tu skrót
+      if (!only) h += decSection('grafiki', 'Grafiki do akceptacji', C.art, d.art.err ? (/art_requests|404|schema cache|does not exist/i.test(d.art.err) ? none('Akceptacja grafik w panelu jeszcze nie działa (baza czeka na SQL 2026-11-01-akceptacja-grafik.sql).') : errBox(d.art, 'Grafiki'))
+        : d.art.ok.length ? artInboxHtml(d.art.ok) : none('Żadna grafika nie czeka na akceptację.'));
       if (!only) h += histHtml(d);
       $d.innerHTML = h + '</section>';
       [].forEach.call($d.querySelectorAll('details[data-k]'), function (x) { if (keep[x.getAttribute('data-k')]) x.open = true; });
@@ -3131,6 +3143,170 @@
     }
     return new Promise(function (res) { setTimeout(res, 250); });
   }
+  // ── Grafiki do akceptacji (JP 2026-11-01: „temat akceptacji ikon, niech to będzie przez panel admina”) ──
+  // Źródło: admin.art_requests (SQL 2026-11-01-akceptacja-grafik.sql; wiersze wpisują place-icons.mjs / quo-icons.mjs / game-art.mjs
+  // przez bin/art-review.mjs). Decyzja: rpc admin_art_decide {p_id, p_decision: accept|fix|reject, p_note}. Skrypt (cron watch co 2 min)
+  // wykonuje ją sam: accept → publikacja (WebP, stops.icon, commit), fix → nowa wersja (nowy wiersz), reject → stop do nowego polecenia.
+  // Podglądy to pliki w repo (media/icons/_review/, gra/art/_review/) — ścieżki względne do strony; referencje Commons to adresy https.
+  var ART_KIND = { place_icon: 'ikona miejsca', quo_pose: 'poza Quo', game_art: 'grafika gry' };
+  var ART_ST = { accepted: ['done', 'zaakceptowana'], fix: ['running', 'do poprawy'], rejected: ['bad', 'odrzucona'], superseded: ['', 'zastąpiona nowszą wersją'], pending: ['running', 'czeka'] };
+  var ART_SQL = 'baza czeka na SQL 2026-11-01-akceptacja-grafik.sql (zakładka Decyzje → Wdrożenia).';
+  function demoArt() {
+    if (state.demoArt) return state.demoArt;
+    var now = Date.now(), iso = function (m) { return new Date(now - m * 60000).toISOString(); };
+    state.demoArt = { rows: [
+      { id: 31, kind: 'place_icon', key: 'spello/porta-venere', title: 'spello #7: Porta Venere + Torri di Properzio', version: 2, status: 'pending', created_at: iso(25),
+        preview_urls: { preview: 'media/icons/place-spello-porta-venere-512.webp', inputs: [
+          { url: '../media/tours/quolino-it-perugia-tile-384.webp', label: 'zdjęcie 1: Rosa Rossi, CC BY-SA 4.0', page: 'https://commons.wikimedia.org/wiki/File:Example.jpg' },
+          { url: '../media/tours/quolino-it-assisi-tile-384.webp', label: 'zdjęcie 2: link JP (drive.google.com)', page: 'https://drive.google.com/' }] },
+        meta: { trip: 'spello', stop_key: 'porta-venere', n: 7, name: 'Porta Venere + Torri di Properzio', notes: 'wieże wyższe, mniej drzew', warn: null } },
+      { id: 30, kind: 'quo_pose', key: 'quo-mapa', title: 'Quo #31: Mapa (atlas.html)', version: 1, status: 'pending', created_at: iso(90),
+        preview_urls: { preview: 'media/icons/pose-02-waking-up-512.webp', inputs: [{ url: 'media/icons/pose-05-curious-sitting-512.webp', label: 'Quo (wzorzec postaci)' }, { url: 'media/icons/icon-museum-256.webp', label: 'ikona ze stylem' }] },
+        meta: { n: 31, slug: 'mapa', place: 'Mapa (atlas.html)' } },
+      { id: 29, kind: 'game_art', key: 'quo-run', title: 'Bieg Quo — 8 klatek (quo-run)', version: 1, status: 'pending', created_at: iso(200),
+        preview_urls: { preview: 'media/tours/quolino-it-spello-tile-768.webp', inputs: [
+          { url: 'media/icons/pose-08-running-512.webp', label: 'the character (running)' }, { url: 'media/icons/pose-09-sprint-512.webp', label: 'the same character sprinting' }, { url: 'media/icons/pose-10-full-speed-512.webp', label: 'the same character at full speed' }] },
+        meta: { pack: 'quo-run', kind: 'frames', idx: 1, warn: 'znalazłem 7 elementów zamiast 8 (krojenie: siatka) — sprawdź kolejność', budget_left: 9 } },
+      { id: 28, kind: 'place_icon', key: 'spello/sant-andrea', title: 'spello #4: Chiesa di Sant\'Andrea', version: 1, status: 'accepted', created_at: iso(900), decided_at: iso(600), decided_by: 'JP (panel)', handled_at: iso(598), result: 'opublikowana v1',
+        preview_urls: { preview: 'media/icons/place-spello-sant-andrea-512.webp', inputs: [] }, meta: { trip: 'spello', stop_key: 'sant-andrea', n: 4 } },
+      { id: 27, kind: 'place_icon', key: 'spello/porta-venere', title: 'spello #7: Porta Venere + Torri di Properzio', version: 1, status: 'fix', note: 'wieże wyższe, mniej drzew', created_at: iso(1400), decided_at: iso(700), decided_by: 'JP (panel)', handled_at: iso(698), result: 'nowa wersja wygenerowana',
+        preview_urls: { preview: 'media/icons/place-spello-villa-dei-mosaici-512.webp', inputs: [] }, meta: { trip: 'spello', stop_key: 'porta-venere', n: 7 } },
+      { id: 26, kind: 'quo_pose', key: 'quo-skarb', title: 'Quo #30: Skarb (konto.html)', version: 3, status: 'rejected', note: 'za dużo złota, zostawiamy obecną ikonę', created_at: iso(3000), decided_at: iso(2800), decided_by: 'JP (panel)', handled_at: iso(2798), result: 'odrzucona',
+        preview_urls: { preview: 'media/icons/pose-01-sleeping-512.webp', inputs: [] }, meta: { n: 30 } }
+    ] };
+    return state.demoArt;
+  }
+  function artUrl(u) { u = String(u || ''); return /^https?:\/\//i.test(u) ? u : /^\.\.\//.test(u) ? u : '../' + u.replace(/^\/+/, ''); }
+  function artSafeUrl(u) { u = String(u || ''); return /^(https:\/\/|\.\.\/|[a-z0-9_])/i.test(u) && !/[\s"'<>]/.test(u) ? u : null; }
+  function artWhere(r) {
+    var m = r.meta || {};
+    if (r.kind === 'place_icon') return (m.trip ? '<a href="#/' + esc(encodeURIComponent(m.trip)) + '">' + esc(titleCase(m.trip)) + '</a>' : esc(r.key)) + (m.n != null ? ' · przystanek ' + esc(String(m.n)) : '') + (m.stop_key ? ' <code>' + esc(m.stop_key) + '</code>' : '');
+    if (r.kind === 'game_art') return 'paczka <code>' + esc(m.pack || r.key) + '</code>' + (m.kind ? ' · ' + esc(m.kind) : '') + (m.budget_left != null ? ' · zostało ' + esc(String(m.budget_left)) + ' wywołań' : '');
+    return 'ikona Quo' + (m.n != null ? ' #' + esc(String(m.n)) : '') + (m.place ? ' · ' + esc(m.place) : '') + ' <code>' + esc(r.key) + '</code>';
+  }
+  function artCaption(r) {
+    var m = r.meta || {};
+    var where = r.kind === 'place_icon' ? titleCase(m.trip || '') + (m.n != null ? ' · przystanek ' + m.n : '') + (m.name ? ' ' + m.name : '') : r.kind === 'game_art' ? 'paczka ' + (m.pack || r.key) : 'Quo' + (m.n != null ? ' #' + m.n : '') + (m.place ? ' · ' + m.place : '');
+    return (ART_KIND[r.kind] || r.kind) + ' · ' + where + ' · wersja ' + (r.version || 1);
+  }
+  function artInputsHtml(r, big) {
+    var ins = r.preview_urls && Array.isArray(r.preview_urls.inputs) ? r.preview_urls.inputs : [];
+    if (!ins.length) return '';
+    return '<ul class="art-ins' + (big ? '' : ' art-ins--sm') + '" aria-label="Obrazy wejściowe">' + ins.slice(0, 4).map(function (x) {
+      var u = artSafeUrl(x.url), pg = /^https:\/\//.test(String(x.page || '')) ? String(x.page) : u && /^https:/.test(u) ? u : null;
+      return '<li>' + (u ? '<img src="' + esc(artUrl(u)) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add(\'is-missing\')" data-zoom="' + esc(artUrl(u)) + '" data-zoom-group="art-in-' + esc(String(r.id)) + '" data-zoom-caption="' + esc(r.title + ' · ' + (x.label || 'obraz wejściowy')) + '">' : '') +
+        '<span>' + esc(x.label || 'obraz wejściowy') + (pg ? ' <a href="' + esc(pg) + '" target="_blank" rel="noopener noreferrer">otwórz ↗</a>' : '') + '</span></li>';
+    }).join('') + '</ul>';
+  }
+  function artCard(r) {
+    var p = r.preview_urls || {}, u = artSafeUrl(p.preview), m = r.meta || {}, pend = r.status === 'pending', st = ART_ST[r.status] || ART_ST.pending;
+    var more = Array.isArray(p.more) ? p.more.map(artSafeUrl).filter(Boolean) : [];
+    var h = '<article class="pg-card dec-item art-card' + (pend ? ' pg-card--running' : r.status === 'accepted' ? ' pg-card--done' : r.status === 'rejected' ? ' pg-card--bad' : '') + '" data-kind="art" data-id="' + esc(String(r.id)) + '" data-art-kind="' + esc(r.kind) + '">' +
+      '<div class="art-card__body"><figure class="art-fig"><div class="art-fig__prev' + (r.kind === 'game_art' ? ' art-fig__prev--wide' : '') + '">' +
+      (u ? '<img src="' + esc(artUrl(u)) + '" alt="' + esc(r.title) + ' — podgląd" loading="lazy" onerror="this.parentNode.classList.add(\'is-missing\')" data-zoom="' + esc(artUrl(u)) + '" data-zoom-group="art-' + (pend ? 'todo' : 'done') + '" data-zoom-caption="' + esc(artCaption(r)) + '">' : '') +
+      '<span class="art-fig__none">Podgląd jeszcze się nie zsynchronizował — spróbuj za minutę.</span></div>' +
+      (more.length ? '<p class="art-fig__more">' + more.map(function (x) { return '<a href="' + esc(artUrl(x)) + '" target="_blank" rel="noopener">' + esc(/\.gif$/i.test(x) ? 'animacja (gif) ↗' : x.split('/').pop()) + '</a>'; }).join(' · ') + '</p>' : '') +
+      '</figure><div class="art-info">' +
+      '<p class="dec-kind">' + esc(ART_KIND[r.kind] || r.kind) + ' · wersja ' + esc(String(r.version || 1)) + ' · <time>' + esc(when(r.created_at)) + '</time>' +
+      (!pend ? ' <span class="pg-pill pg-pill--' + (st[0] || 'running') + '">' + esc(st[1]) + '</span>' : '') + '</p>' +
+      '<h4 class="dec-title">' + esc(r.title) + '</h4><p class="art-where">' + artWhere(r) + '</p>' +
+      (m.notes ? '<p class="art-prev-notes"><b>Uwagi do tej wersji:</b> ' + esc(m.notes) + '</p>' : '') +
+      (m.warn ? '<p class="adm-cmwarn">' + esc(m.warn) + '</p>' : '') +
+      (!pend && r.note ? '<p class="art-prev-notes"><b>Twoja decyzja:</b> ' + esc(r.note) + '</p>' : '') +
+      (!pend && r.result ? '<p class="art-result">' + esc(r.decided_by || 'JP') + ' · ' + esc(when(r.decided_at)) + ' → ' + esc(r.result) + (r.handled_at ? '' : ' <span class="pg-pill pg-pill--running">serwer wykona w ciągu 2 min</span>') + '</p>' : '') +
+      (!pend && !r.result ? '<p class="art-result">' + esc(r.decided_by || 'JP') + ' · ' + esc(when(r.decided_at)) + ' · <span class="pg-pill pg-pill--running">serwer wykona w ciągu 2 min</span></p>' : '') +
+      artInputsHtml(r, true) + '</div></div>';
+    if (pend) h += '<div class="dec-acts art-acts">' + decBtn('accept', 'Akceptuj', 'adm-btn-ok art-btn-ok', false) + decBtn('fix-open', 'Popraw', '', false) + decBtn('reject', 'Odrzuć', 'adm-btn-no', true) + '</div>' +
+      '<form class="art-fix" data-art-fix hidden><label for="artFix' + esc(String(r.id)) + '">Co poprawić w nowej wersji?</label>' +
+      '<textarea id="artFix' + esc(String(r.id)) + '" rows="3" maxlength="800" placeholder="np. wieża wyższa, mniej drzew, cieplejsze światło" required></textarea>' +
+      '<div class="dec-acts"><button type="submit" class="qc-btn qc-btn--sm adm-btn-ok" data-art-send>Wyślij uwagi i generuj nową wersję</button><button type="button" class="qc-btn qc-btn--sm" data-dec="fix-close">Anuluj</button></div></form>';
+    return h + '<p class="adm-msg dec-msg" role="status"></p></article>';
+  }
+  // skrót w skrzynce decyzji: miniatury + link do #/grafiki
+  function artInboxHtml(rows) {
+    return '<article class="pg-card dec-item dec-item--art pg-card--running"><p class="dec-kind">Grafiki · ' + plForm(rows.length, 'czeka', 'czekają', 'czeka') + '</p>' +
+      '<ul class="art-mini">' + rows.slice(0, 8).map(function (r) { var u = artSafeUrl(r.preview_urls && r.preview_urls.preview); return '<li>' + (u ? '<img src="' + esc(artUrl(u)) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '<span>' + esc(r.title) + '<br><small>' + esc(ART_KIND[r.kind] || r.kind) + ' · v' + esc(String(r.version || 1)) + '</small></span></li>'; }).join('') + '</ul>' +
+      '<p class="dec-rec"><b>Rekomendacja:</b> otwórz Grafiki i oceń każdą z podglądem — Akceptuj, Popraw (z uwagami) albo Odrzuć.</p>' +
+      '<div class="dec-acts"><a class="qc-btn qc-btn--sm adm-btn-ok" href="#/grafiki">Otwórz Grafiki (' + rows.length + ') →</a></div></article>';
+  }
+  function openArt() {
+    state.current = null; state.trip = null; state.versions = null; state.tabVersion = null; clearInterval(state.poll);
+    var myHash = location.hash, kindF = state.artKind || '';
+    function load() {
+      if (DEMO) { var D = demoArt(); return Promise.resolve({ pend: D.rows.filter(function (r) { return r.status === 'pending'; }), done: D.rows.filter(function (r) { return r.status !== 'pending'; }).slice(0, 20) }); }
+      return Promise.all([api('/art_requests?status=eq.pending&order=id.desc&limit=60'), api('/art_requests?status=in.(accepted,fix,rejected,superseded)&order=decided_at.desc.nullslast,id.desc&limit=20')])
+        .then(function (r) { return { pend: r[0] || [], done: r[1] || [] }; });
+    }
+    function draw(d) {
+      if (location.hash !== myHash) return;
+      var open = {}; [].forEach.call($d.querySelectorAll('form[data-art-fix]:not([hidden])'), function (f) { open[f.closest('.art-card').getAttribute('data-id')] = f.querySelector('textarea').value; });
+      var f = function (list) { return kindF ? list.filter(function (r) { return r.kind === kindF; }) : list; };
+      var pend = f(d.pend), done = f(d.done), cnt = {}; d.pend.forEach(function (r) { cnt[r.kind] = (cnt[r.kind] || 0) + 1; });
+      var seg = [['', 'Wszystkie', d.pend.length], ['place_icon', 'Ikony miejsc', cnt.place_icon || 0], ['quo_pose', 'Pozy Quo', cnt.quo_pose || 0], ['game_art', 'Grafiki gry', cnt.game_art || 0]];
+      var h = '<div class="adm-trip__bar"><span class="adm-cm__meta">odświeża się co 30 s · ' + esc(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })) + '</span></div>' +
+        '<section class="pg dec art"><header class="pg-head"><div><h2>' + (d.pend.length ? plForm(d.pend.length, 'grafika czeka', 'grafiki czekają', 'grafik czeka') + ' na akceptację' : 'Żadna grafika nie czeka') + '</h2>' +
+        '<p class="pg-lead">Ikony miejsc, pozy Quo i grafiki gry generowane przez Antigravity. Akceptuj — serwer opublikuje w ciągu 2 min; Popraw — nowa wersja z Twoimi uwagami; Odrzuć — nic więcej bez nowego polecenia.</p></div>' +
+        '<div class="pg-seg art-seg" role="group" aria-label="Rodzaj grafiki">' + seg.map(function (x) { return '<button type="button" data-art-filter="' + x[0] + '" aria-pressed="' + (kindF === x[0]) + '">' + x[1] + ' <b>' + x[2] + '</b></button>'; }).join('') + '</div></header>';
+      h += decSection('art-todo', 'Do decyzji', pend.length, pend.length ? '<div class="art-list">' + pend.map(artCard).join('') + '</div>' : '<p class="adm-empty dec-empty">' + (d.pend.length ? 'Nic z tego rodzaju nie czeka.' : 'Wszystkie wygenerowane grafiki rozstrzygnięte. Nowe pojawią się tu same (powiadomienie na Discordzie).') + '</p>');
+      h += decSection('art-done', 'Rozstrzygnięte (ostatnie 20)', done.length, done.length ? '<div class="art-list art-list--done">' + done.map(artCard).join('') + '</div>' : '<p class="adm-empty dec-empty">Jeszcze żadnej decyzji.</p>');
+      $d.innerHTML = h + '</section>';
+      Object.keys(open).forEach(function (id) { var c = $d.querySelector('.art-card[data-id="' + id + '"]'); if (!c) return; var fm = c.querySelector('form[data-art-fix]'); if (fm) { fm.hidden = false; fm.querySelector('textarea').value = open[id]; } });
+    }
+    function reload() {
+      return load().then(draw, function (e) {
+        if (e && e.session) throw e;
+        $d.innerHTML = '<section class="pg dec"><header class="pg-head"><div><h2>Grafiki</h2></div></header><p class="adm-cmwarn">Grafiki niedostępne: ' + esc(e.message) + (/art_requests|404|schema cache|does not exist/i.test(e.message) ? ' — ' + ART_SQL : '') + '</p>' +
+          '<p class="dec-lead">Do wdrożenia SQL grafiki czekają na Discordzie (#ikony-miejsc, #quo-ikony, wątek „🎮 grafiki gry”) — odpowiedź „ok” / uwagi działa jak dotąd.</p></section>';
+      });
+    }
+    function say(card, msg, bad) { var m = card.querySelector('.dec-msg'); if (m) { m.className = 'adm-msg dec-msg' + (bad ? ' adm-msg--err' : ''); m.textContent = msg; } }
+    function decide(card, act, note) {
+      var id = card.getAttribute('data-id'), all = card.querySelectorAll('button'); [].forEach.call(all, function (x) { x.disabled = true; });
+      say(card, 'Zapisuję…');
+      var p = DEMO ? demoArtDecide(id, act, note) : api('/rpc/admin_art_decide', { method: 'POST', body: { p_id: +id, p_decision: act, p_note: note || null } });
+      p.then(function () {
+        say(card, act === 'accept' ? 'Zaakceptowana — serwer opublikuje w ciągu 2 min.' : act === 'fix' ? 'Uwagi wysłane — nowa wersja pojawi się tu po wygenerowaniu (1–5 min).' : 'Odrzucona.');
+        setTimeout(reload, DEMO ? 500 : 900);
+      }, function (e) { [].forEach.call(all, function (x) { x.disabled = false; }); say(card, 'Nie zapisano: ' + e.message + (/admin_art_decide|404|schema cache/i.test(e.message) ? ' — ' + ART_SQL : ''), true); });
+    }
+    var armed = null, armT = null;
+    function disarm() { if (armed) { armed.classList.remove('is-armed'); armed.textContent = armed.getAttribute('data-label'); armed = null; } clearTimeout(armT); }
+    $d.onclick = function (e) {
+      var fb = e.target.closest && e.target.closest('[data-art-filter]');
+      if (fb) { state.artKind = kindF = fb.getAttribute('data-art-filter'); reload(); return; }
+      var b = e.target.closest && e.target.closest('[data-dec]');
+      if (!b || b.disabled) return;
+      var card = b.closest('.art-card'); if (!card) return;
+      var a = b.getAttribute('data-dec');
+      if (a === 'fix-open' || a === 'fix-close') { var fm = card.querySelector('form[data-art-fix]'); fm.hidden = a === 'fix-close'; if (a === 'fix-open') fm.querySelector('textarea').focus(); return; }
+      if (b.hasAttribute('data-confirm') && armed !== b) {
+        disarm(); armed = b; b.setAttribute('data-label', b.textContent); b.classList.add('is-armed'); b.textContent = 'Kliknij jeszcze raz, aby odrzucić';
+        armT = setTimeout(disarm, 6000); return;
+      }
+      disarm(); decide(card, a, null);
+    };
+    $d.onsubmit = function (e) {
+      var fm = e.target.closest && e.target.closest('form[data-art-fix]'); if (!fm) return;
+      e.preventDefault();
+      var v = fm.querySelector('textarea').value.trim(), card = fm.closest('.art-card');
+      if (v.length < 3) { say(card, 'Napisz, co poprawić (co najmniej kilka słów).', true); return; }
+      decide(card, 'fix', v);
+    };
+    $d.onchange = null;
+    $d.innerHTML = loadingHtml('Ładuję grafiki do akceptacji…');
+    reload(); state.poll = setInterval(function () { if (location.hash === myHash && !document.hidden && !$d.querySelector('.is-armed') && !$d.querySelector('form[data-art-fix]:not([hidden])')) reload(); }, 30000);
+    document.title = 'Grafiki · Quolino admin';
+  }
+  function demoArtDecide(id, act, note) {
+    var D = demoArt(), now = new Date().toISOString();
+    D.rows.forEach(function (r) {
+      if (String(r.id) !== String(id) || r.status !== 'pending') return;
+      r.status = act === 'accept' ? 'accepted' : act === 'fix' ? 'fix' : 'rejected'; r.note = note || null; r.decided_at = now; r.decided_by = 'JP (panel)'; r.handled_at = null; r.result = null;
+    });
+    inbox.data = null; inbox.loading = null; inbox.n = null;
+    return new Promise(function (res) { setTimeout(res, 250); }).then(function () { return loadInbox().catch(function () { /* licznik */ }); });
+  }
+
   // licznik w nagłówku i na stronie startowej: przy starcie, co minutę i po powrocie do karty
   setInterval(function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* licznik pomocniczy */ }); }, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && location.hash !== '#/decyzje') loadInbox().catch(function () { /* jw. */ }); });
@@ -3453,6 +3629,7 @@
     deploy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v5h16v-5"/></svg>',
     cost: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 3 5.8 1.6 5.8 4.4 0 1.3-1.2 2.1-3 2.1-1.4 0-2.5-.6-3-1.6M12 6v1.8M12 16.4V18"/></svg>',
     watch: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/></svg>',
+    art: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2.2-1 1.7-2.2-.6-1.4.4-2.8 1.9-2.8H17a4 4 0 0 0 4-4c0-5-4-9-9-9z"/><circle cx="7.5" cy="12" r="1.2"/><circle cx="10" cy="7.8" r="1.2"/><circle cx="14.5" cy="7.8" r="1.2"/></svg>',
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8.5 8.5"/></svg>',
     rev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
     ok: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></svg>',
@@ -3585,6 +3762,10 @@
         todo.push(todoRow('watch', '#/straznicy', plForm(wr.length, 'ustalenie strażników', 'ustalenia strażników', 'ustaleń strażników'),
           esc(Object.keys(wb).map(function (k) { return (WKIND[k] || k) + ': ' + wb[k]; }).join(' · ')), 'warn', 'do decyzji'));
       }
+      (I.art.ok || []).slice(0, 8).forEach(function (a) {
+        todo.push(todoRow('art', '#/grafiki', esc(a.title) + ' — ' + esc(ART_KIND[a.kind] || 'grafika') + ' do akceptacji', esc('wersja ' + (a.version || 1) + ' · ' + when(a.created_at)), 'warn', 'akceptacja'));
+      });
+      if (I.art.ok && I.art.ok.length > 8) todo.push(todoRow('art', '#/grafiki', '… i ' + plForm(I.art.ok.length - 8, 'kolejna grafika', 'kolejne grafiki', 'kolejnych grafik') + ' do akceptacji', '', 'warn', 'akceptacja'));
       (I.icons.ok || []).forEach(function (x) {
         var late = x.deadline && Date.parse(x.deadline) < Date.now();
         todo.push(todoRow('icon', '#/' + encodeURIComponent(x.trip), esc(names[x.trip] || titleCase(x.trip)) + ' — zdjęcia do ikon',
@@ -3594,14 +3775,14 @@
     }
     var revOpen = reqs.filter(function (r) { return r.status !== 'done'; }), revDone = reqs.filter(function (r) { return r.status === 'done'; }).slice(0, Math.max(0, 4 - revOpen.length));
     var revRows = revOpen.concat(revDone).map(function (r) { return revRow(r, cms, names); });
-    var errs = I ? ['deploys', 'costs', 'watch', 'drafts', 'icons'].filter(function (k) { return I[k].err; }) : [];
+    var errs = I ? ['deploys', 'costs', 'watch', 'drafts', 'icons', 'art'].filter(function (k) { return I[k].err; }) : [];
 
     var h = '<div class="ad-dash">';
     // KPI
     var pub = T.filter(function (t) { return t.published != null; }).length, drafts = T.filter(function (t) { return t.status === 'draft'; }).length;
     var busy = runs.filter(function (r) { return r.status === 'running' || r.status === 'stalled'; }).length + reqs.filter(function (r) { return r.status === 'new' || r.status === 'working'; }).length;
     h += '<section class="ad-kpis" aria-label="Stan projektu">' +
-      kpi('#/decyzje', 'Czeka na decyzję', inbox.n == null ? '—' : inbox.n, inbox.n ? 'hot' : '', C ? [C.deploy + ' wdroż.', C.cost + ' koszty', C.watch + ' strażn.', C.icon + ' ikony'].join(' · ') : '') +
+      kpi('#/decyzje', 'Czeka na decyzję', inbox.n == null ? '—' : inbox.n, inbox.n ? 'hot' : '', C ? [C.deploy + ' wdroż.', C.cost + ' koszty', C.watch + ' strażn.', C.icon + ' ikony', C.art + ' grafiki'].join(' · ') : '') +
       kpi('#/trasy', 'Szkice do akceptacji', drafts, '', T.filter(function (t) { return t.status === 'draft' && t.published == null; }).length + ' nowych tras') +
       kpi('#/pipeline', 'W pracy (Hermes)', busy, '', 'przebiegi i paczki uwag') +
       kpi('#/trasy', 'Trasy opublikowane', pub + '<small> z ' + T.length + '</small>', '', 'na quolino.com') + '</section>';
@@ -3611,8 +3792,8 @@
       (todo.length ? '<b class="ad-badge ad-badge--hot">' + todo.length + '</b>' : '') + '<a class="ad-card__more" href="#/decyzje">Wszystkie decyzje →</a></header>';
     if (!I) h += '<p class="ad-note ad-note--err" role="alert">Skrzynka decyzji niedostępna: ' + esc(D.inbox.err) + '</p>';
     else if (todo.length) h += '<ul class="ad-todos">' + todo.join('') + '</ul>';
-    else h += '<div class="ad-empty">' + IC.ok + '<p><b>Nic nie czeka na Twoją decyzję.</b> Szkice, wdrożenia, koszty, strażnicy i zdjęcia do ikon — wszystko rozstrzygnięte.</p></div>';
-    if (errs.length) h += '<p class="ad-note">Niedostępne źródła: ' + esc(errs.map(function (k) { return { deploys: 'wdrożenia', costs: 'koszty', watch: 'strażnicy', drafts: 'szkice', icons: 'ikony' }[k]; }).join(', ')) + ' — szczegóły w Decyzjach.</p>';
+    else h += '<div class="ad-empty">' + IC.ok + '<p><b>Nic nie czeka na Twoją decyzję.</b> Szkice, wdrożenia, koszty, strażnicy, zdjęcia do ikon i grafiki — wszystko rozstrzygnięte.</p></div>';
+    if (errs.length) h += '<p class="ad-note">Niedostępne źródła: ' + esc(errs.map(function (k) { return { deploys: 'wdrożenia', costs: 'koszty', watch: 'strażnicy', drafts: 'szkice', icons: 'ikony', art: 'grafiki' }[k]; }).join(', ')) + ' — szczegóły w Decyzjach.</p>';
     h += '<h3 class="ad-sub">Uwagi wysłane do poprawki</h3>';
     if (D.revs.err) h += '<p class="ad-note">Stan uwag niedostępny (' + esc(D.revs.err) + ').</p>';
     else h += revRows.length ? '<ul class="ad-todos">' + revRows.join('') + '</ul>' : '<p class="ad-note">Brak wysłanych uwag.</p>';

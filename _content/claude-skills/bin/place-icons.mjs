@@ -13,9 +13,13 @@
 //                                                                                   + stops.icon = 'place-<trasa>-<stop_key>' w bazie (strona pokazuje ikonę miejsca od razu)
 //   node place-icons.mjs sync                                                       uzupełnia stops.icon dla WSZYSTKICH ikon z place-sources.json (bez AI, bez kosztów; także co 30 min z queue)
 //   node place-icons.mjs status [trasa]
-//   node place-icons.mjs watch                                                      cron co 2 min: odpowiedzi JP w #ikony-miejsc
+//   node place-icons.mjs watch                                                      cron co 2 min: decyzje JP z panelu (#/grafiki) + odpowiedzi w #ikony-miejsc
 //   node place-icons.mjs queue [--max 3]                                            cron co 30 min: refs + gen dla tras z place-icons-data.mjs
+//   node place-icons.mjs to-panel                                                   zaległe (czekające na „ok” na Discordzie) → panel; woła je raz art-review migrateOnce z watch
 // N = numer przystanku w trasie (stop_number, jak na stronie). Przystanki praktyczne (parking, restauracja, lody, słodycze) bez ikon.
+// Akceptacja (JP 2026-11-01): każda wersja trafia do panelu admina (#/grafiki, ops.art_requests — art-review.mjs) z podglądem w repo
+// (media/icons/_review/); JP klika Akceptuj / Popraw / Odrzuć, a `watch` wykonuje decyzję. Discord: jedno zdanie z linkiem do panelu;
+// odpowiedź „ok N” / uwagi w #ikony-miejsc działa dalej jako droga zapasowa (wiersz w panelu zamyka się sam).
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync, rmSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
@@ -25,6 +29,7 @@ import { fileInfos, download, gatherCandidates } from './place-icons-commons.mjs
 import CFG from './place-icons-data.mjs';
 import * as L from './place-icons-lib.mjs';
 import { fetchImage, LinkError } from './place-icons-fetch.mjs';
+import * as AR from './art-review.mjs';
 
 const DIR = new URL('.', import.meta.url).pathname;
 const REPO = '/opt/data/repo/przewodnik', REPO_SH = '/opt/data/quolino/repo.sh', WORK = '/opt/data/quolino/work/place-icons';
@@ -327,6 +332,42 @@ async function generate(prompt, images, labels, name) {
 }
 const isQuota = (e) => e instanceof QuotaError || QUOTA_RE.test(String(e?.message));
 
+// wiersz w panelu admina (ops.art_requests) dla wersji v ikony przystanku — z one() i z to-panel (przeniesienie zaległych)
+const reviewTitle = (trip, stop) => `${trip} #${stop.n}: ${stop.name}`;
+function reviewRow(trip, key, stop, { v, refs, notes = null, warn = null, preview, onlyNew = false }) {
+  return AR.requestReview({ kind: 'place_icon', key: `${trip}/${key}`, title: reviewTitle(trip, stop), version: v, preview, inputs: AR.inputsFromRefs(refs?.picked), onlyNew,
+    meta: { trip, stop_key: key, n: stop.n, name: stop.name, city: stop.city ?? null, notes, warn, selection: refs?.selection ?? null,
+      sources: (refs?.picked ?? []).map(p => ({ title: p.title, page: p.page, author: p.author ?? null, license: p.license ?? null })) } });
+}
+// to-panel (JP 2026-11-01): ikony wygenerowane przed panelem, czekające na „ok” w #ikony-miejsc → panel (#/grafiki).
+// Jeden commit z podglądami, potem wiersze pending; stan dostaje review_id (drugi raz nie przenosi). Kod 75 = baza/repo niedostępne.
+async function cmdToPanel() {
+  if (!(await AR.ready())) { console.error('panel grafik niedostępny (SQL 2026-11-01-akceptacja-grafik.sql) — spróbuję później'); process.exitCode = 75; return; }
+  const todo = [];
+  for (const [trip, st] of Object.entries(allStates()))
+    for (const [key, s] of AR.backlog(Object.entries(st.stops ?? {}))) {
+      const f = join(L.stopDir(WORK, trip, key), L.outName(s.v)), stop = stopMeta(trip, key) ?? { n: s.n, name: s.name ?? key };
+      if (existsSync(f)) todo.push({ trip, key, s, f, stop }); else log(`to-panel: ${trip}/${key} v${s.v} — brak pliku ${f}, pomijam`);
+    }
+  if (!todo.length) { console.log('to-panel: ikony miejsc — nic zaległego'); return; }
+  if (!(await AR.pullRepo(REPO_SH))) { process.exitCode = 75; return; }
+  const done = [];
+  for (const t of todo) {
+    const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: t.f, kind: 'place_icon', key: `${t.trip}/${t.key}`, v: t.s.v, title: reviewTitle(t.trip, t.stop), sync: false });
+    if (rv) done.push({ ...t, preview: rv.preview });
+  }
+  if (!done.length || !(await AR.publishRepo(REPO_SH, `podglądy ${done.length} ikon miejsc do akceptacji w panelu (przeniesienie z Discorda)`))) { process.exitCode = 75; return; }
+  let n = 0;
+  for (const t of done) {
+    const refs = readJson(join(L.stopDir(WORK, t.trip, t.key), 'refs.json'));
+    const rid = await reviewRow(t.trip, t.key, t.stop, { v: t.s.v, refs, notes: t.s.history?.at(-1)?.notes ?? null, preview: t.preview, onlyNew: true });
+    if (!rid) { process.exitCode = 75; continue; }
+    patchStop(t.trip, t.key, x => { x.review_id = rid; }); n++;
+  }
+  console.log(`to-panel: ikony miejsc — przeniesione ${n} z ${todo.length}`);
+  if (n) await say(AR.migratedLine(n === 1 ? 'ikonę miejsca' : 'ikon miejsc', n)).catch(() => {});
+}
+
 // jedna wersja ikony przystanku → plik out-vN.png (przezroczysty) → #ikony-miejsc (2 zdjęcia + ikona)
 async function one(trip, key, notes = null) {
   globalThis.__aiCity = trip;
@@ -359,9 +400,16 @@ async function one(trip, key, notes = null) {
   const warn = info.bg !== 'alpha' && info.transparent != null && info.transparent < 0.08 ? `tło prawie się nie wycięło (${Math.round(info.transparent * 100)}% przezroczyste, tło ${info.bg}) — pewnie nie było jednolite` : null;
   const now = new Date().toISOString();
   patchStop(trip, key, x => { x.v = v; x.status = 'review'; x.pending_notes = null; x.errors = 0; x.posted_at = now; (x.history ??= []).push({ v, at: now, notes, cut: info }); });
-  const id = await upload(L.caption(stop, trip, refs.picked, { v, notes, warn: [warn, refs.selection === 'jp' ? 'zdjęcia wybrał JP w panelu' : null].filter(Boolean).join(' · ') || null }), [
-    ...photos.map((p, i) => [p, `${stop.n}-ref-${i + 1}.jpg`]), [f, `${stop.n}-${key}-v${v}.png`]]);
-  if (id) patchStop(trip, key, x => { x.msgs = [...(x.msgs ?? []), id].slice(-20); });
+  const warnTxt = [warn, refs.selection === 'jp' ? 'zdjęcia wybrał JP w panelu' : null].filter(Boolean).join(' · ') || null;
+  // JP 2026-11-01: akceptacja w panelu admina — podgląd do repo, wiersz pending w ops.art_requests, na Discordzie tylko powiadomienie z linkiem;
+  // bez bazy/repo (SQL jeszcze nie wdrożony, publikacja nieudana) — po staremu: 2 zdjęcia + ikona i „odpisz ok”
+  const title = reviewTitle(trip, stop);
+  const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: f, kind: 'place_icon', key: `${trip}/${key}`, v, title });
+  const rid = rv && await reviewRow(trip, key, stop, { v, refs, notes, warn: warnTxt, preview: rv.preview });
+  const id = rid
+    ? await upload(AR.notifyLine(title, { v, warn: warnTxt }), [[f, `${stop.n}-${key}-v${v}.png`]])
+    : await upload(L.caption(stop, trip, refs.picked, { v, notes, warn: warnTxt }), [...photos.map((p, i) => [p, `${stop.n}-ref-${i + 1}.jpg`]), [f, `${stop.n}-${key}-v${v}.png`]]);
+  patchStop(trip, key, x => { if (id) x.msgs = [...(x.msgs ?? []), id].slice(-20); x.review_id = rid ?? null; });
   return f;
 }
 
@@ -510,6 +558,7 @@ async function cmdGen(trip) {
 async function cmdFix(trip, n, notes) {
   if (!notes) throw new Error('fix <trasa> <N> "uwagi"');
   const key = keyOf(trip, n), stop = stopMeta(trip, key);
+  await AR.closePending('place_icon', `${trip}/${key}`, 'fix', `uwagi spoza panelu (Discord/konsola): ${notes.slice(0, 200)}`);   // wiersz z panelu nie wisi; nowa wersja = nowy wiersz
   if (agyQuotaOut() || !lock()) {
     patchStop(trip, key, x => { x.pending_notes = notes.slice(0, 800); x.status = 'fix-pending'; });
     await say(`🕓 Poprawka ${trip} #${stop.n} (${stop.name}) zapisana: „${notes.slice(0, 200)}”. ${agyQuotaOut() ? quotaMsg(agyQuotaOut()) + ' — wygeneruję po odnowieniu.' : 'Teraz generuje się inna ikona — kolejka zrobi ją w ciągu 30 min.'}`);
@@ -550,6 +599,7 @@ async function cmdOk(trip, n) {
   const pub = await run('sh', [REPO_SH, 'publish', `ikona miejsca ${trip} #${stop.n}: ${stop.name} (place-${trip}-${key}, WebP ${L.SIZES.join('/')} + źródła)`], { timeout: 5 * 60_000 });
   if (pub.code !== 0 || /BŁĄD/.test(pub.out)) throw new Error(`publikacja: ${(pub.err || pub.out).slice(-300)}`);
   patchStop(trip, key, x => { x.status = 'ok'; x.accepted_at = at; x.accepted_v = s.v; });
+  await AR.closePending('place_icon', `${trip}/${key}`, 'accepted', 'ok spoza panelu (Discord/konsola) — opublikowana');   // gdy decyzja zapadła w panelu: wiersz już nie jest pending
   await say(`✅ ${trip} #${stop.n} (${stop.name}) zaakceptowana: media/icons/place-${trip}-${key}-{${L.SIZES.join(',')}}.webp + źródła w media/icons/place-sources.json.`);
   // JP 2026-10-31: „po akceptacji to musi lecieć automatem” — ikona od razu podpięta do przystanku w bazie (strona, SSR, panel)
   let link;
@@ -652,18 +702,51 @@ async function cmdQueue() {
     }
   }
 }
+// decyzje JP z panelu admina (#/grafiki): accepted → ok (+ następna), fix → fix z uwagami (nowa wersja = nowy wiersz), rejected → stop
+async function pollPanel(me) {
+  const of = (row) => { const m = row.meta ?? {}; if (!m.trip || !m.stop_key || m.n == null) throw new Error('wiersz bez trip/stop_key/n'); return m; };
+  return AR.poll('place_icon', {
+    ok: async (row) => {
+      const m = of(row);
+      const x = await me('ok', m.trip, m.n);
+      if (x.code) throw new Error((x.err || x.out).trim().slice(-300) || 'ok nie przeszło');
+      if (agyQuotaOut()) await say(`⏸️ Następną ikonę ${m.trip} wygeneruje kolejka — ${quotaMsg(agyQuotaOut())}.`); else await me('gen', m.trip, '--next');
+      return `opublikowana v${row.version}`;
+    },
+    fix: async (row, notes) => {
+      const m = of(row);
+      await say(`🔧 Poprawka z panelu ${m.trip} #${m.n}: „${notes.slice(0, 200)}”. Generuję nową wersję (ok. 1–3 min).`);
+      const x = await me('fix', m.trip, m.n, notes);   // błąd generowania: onGenError zapisał pending_notes, kolejka ponowi — nie powtarzamy z poll
+      return x.code ? 'poprawka zapisana, generowanie ponowi kolejka' : 'nowa wersja wygenerowana';
+    },
+    reject: async (row, notes) => {
+      const m = of(row);
+      patchStop(m.trip, m.stop_key, x => { x.status = 'rejected'; x.rejected_at = new Date().toISOString(); x.reject_note = notes; x.pending_notes = null; });
+      await say(`🚫 ${m.trip} #${m.n} (${m.name ?? m.stop_key}) odrzucona w panelu${notes ? `: „${notes.slice(0, 200)}”` : ''}. Nie generuję dalej — nowa wersja tylko na polecenie (**${m.n} uwagi…** albo gen ${m.trip} --only ${m.stop_key} --force).`);
+      return 'odrzucona';
+    }
+  }, { say });
+}
 async function cmdWatch() {
   const WLOCK = join(WORK, 'watch.lock'), LAST_F = join(WORK, 'watch-last.txt');
   if (existsSync(WLOCK) && Date.now() - statSync(WLOCK).mtimeMs < 30 * 60_000) return;
   writeFileSync(WLOCK, String(process.pid));
+  const me = (...a) => run('node', [join(DIR, 'place-icons.mjs'), ...a.map(String)], { timeout: 15 * 60_000 }).then(r => { if (r.code) log(`${a.join(' ')}: ${(r.err || r.out).slice(-300)}`); return r; });
   try {
+    try { await pollPanel(me); } catch (e) { log(`decyzje z panelu: ${e.message}`); }
+    // jednorazowo (aż się uda): grafiki czekające na „ok” na Discordzie → panel (ikony miejsc, pozy Quo, paczki gry)
+    try { const r = await AR.migrateOnce(); if (r.ok === false) log(`przeniesienie zaległych do panelu: ${JSON.stringify(r.out).slice(0, 300)}`); } catch (e) { log(`przeniesienie zaległych do panelu: ${e.message}`); }
+    // pozy Quo: decyzje z panelu (bez czytania #quo-ikony — ten kanał ma własny watch); ten sam cron, bez zmiany crontab
+    if (existsSync(join(DIR, 'quo-icons.mjs'))) {
+      const q = await run('node', [join(DIR, 'quo-icons.mjs'), 'watch', '--panel-only'], { timeout: 20 * 60_000 });
+      if (q.code) log(`quo-icons watch --panel-only: ${(q.err || q.out).slice(-300)}`);
+    }
     const ch = await channel();
-    if (!ch || !TOKEN) { log('Discord niedostępny'); return; }
+    if (!ch || !TOKEN) log('Discord niedostępny — tylko decyzje z panelu');
     const JP = env('QUOLINO_JP_DISCORD_ID') || '946118130709692476';
     const last = existsSync(LAST_F) ? readFileSync(LAST_F, 'utf8').trim() : '';
-    const msgs = await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${last ? `&after=${last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json();
+    const msgs = ch && TOKEN ? await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${last ? `&after=${last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json() : [];
     const list = (Array.isArray(msgs) ? msgs : []).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
-    const me = (...a) => run('node', [join(DIR, 'place-icons.mjs'), ...a.map(String)], { timeout: 15 * 60_000 }).then(r => { if (r.code) log(`${a.join(' ')}: ${(r.err || r.out).slice(-300)}`); return r; });
     const done = new Set();
     for (const m of list) {
       writeFileSync(LAST_F, m.id);
@@ -698,7 +781,7 @@ async function cmdWatch() {
         await me('refs-again', trip, n);
       }
     }
-    // grafiki gry (JP 2026-10-31): odpowiedzi JP w wątku „🎮 grafiki gry” tego kanału czyta game-art.mjs — ten sam cron, bez zmiany crontab
+    // grafiki gry (JP 2026-10-31): decyzje z panelu i odpowiedzi JP w wątku „🎮 grafiki gry” tego kanału czyta game-art.mjs — ten sam cron, bez zmiany crontab
     if (existsSync(join(DIR, 'game-art.mjs'))) {
       const g = await run('node', [join(DIR, 'game-art.mjs'), 'watch'], { timeout: 20 * 60_000 });
       if (g.code) log(`game-art watch: ${(g.err || g.out).slice(-300)}`);
@@ -726,6 +809,7 @@ try {
   else if (cmd === 'sync') await cmdSync({ quiet: flag('--quiet') });
   else if (cmd === 'queue') await cmdQueue();
   else if (cmd === 'watch') await cmdWatch();
+  else if (cmd === 'to-panel') await cmdToPanel();
   else if (cmd === 'status') cmdStatus(a1);
-  else { console.error('komendy: refs | gen | fix | ok | sync | status | watch | queue (opis na początku place-icons.mjs)'); process.exitCode = 2; }
+  else { console.error('komendy: refs | gen | fix | ok | sync | status | watch | queue | to-panel (opis na początku place-icons.mjs)'); process.exitCode = 2; }
 } catch (e) { console.error('BŁĄD:', e.message); process.exitCode = 1; }

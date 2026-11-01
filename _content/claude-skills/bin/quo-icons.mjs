@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 // Ikony Quo na stronę (JP 2026-10-25): Gemini generuje według promptów z dokumentu „Quo na stronie: miejsca i prompty do Flow”
-// (bin/quo-icons-data.mjs), każda ikona ląduje na Discordzie (#quo-ikony w kategorii „Grafiki”), JP odpisuje „ok N” albo „N: uwagi”.
+// (bin/quo-icons-data.mjs), każda ikona trafia do panelu admina (#/grafiki, ops.art_requests przez art-review.mjs, podgląd
+// w media/icons/_review/) — JP klika Akceptuj / Popraw / Odrzuć (JP 2026-11-01); #quo-ikony (kategoria „Grafiki”) dostaje
+// powiadomienie z linkiem, a odpowiedź „ok N” / „N: uwagi” w kanale działa dalej jako droga zapasowa.
 //   node quo-icons.mjs gen [--only 1,2,3] [--force]     generuje brakujące (albo wskazane) i wrzuca na Discord
 //   node quo-icons.mjs fix <N> "<uwagi JP>"             poprawka: poprzednia wersja + uwagi → nowa wersja na Discord
 //   node quo-icons.mjs ok <N>                           akceptacja: WebP 128/256/512 → repo media/icons/quo-<slug>-<rozmiar>.webp
 //   node quo-icons.mjs status                           lista: czeka / do poprawy / zaakceptowana
+//   node quo-icons.mjs watch [--panel-only]             decyzje z panelu + odpowiedzi JP w #quo-ikony; --panel-only (bez kanału)
+//                                                       woła co 2 min place-icons.mjs watch
+//   node quo-icons.mjs to-panel                         zaległe (czekające na „ok” w #quo-ikony) → panel (raz, z art-review migrateOnce)
 // Referencje: kanoniczny Quo (pose-05) + ikona ze stylem (icon-museum). Wygląd Quo opisuje tylko obrazek, nie słowa.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
@@ -12,6 +17,7 @@ import { join } from 'node:path';
 import { env, log, run, aiUsage } from './lib.mjs';
 import { ensureChannel } from './draft-lib.mjs';
 import CFG from './quo-icons-data.mjs';
+import * as AR from './art-review.mjs';
 
 const DIR = new URL('.', import.meta.url).pathname;
 const REPO = '/opt/data/repo/przewodnik';
@@ -179,12 +185,45 @@ async function one(ic, notes = null) {
   const c2 = await py({ mode: 'cut', src: f, dst: f, title: ic.place });
   if (c2.code !== 0) throw new Error(`przezroczyste tło: ${c2.err.slice(-300)}`);
   save();
-  await upload(`🎨 **Quo #${ic.n} — ${ic.place}** · wersja ${s.v}${notes ? ` (poprawki: ${notes.slice(0, 200)})` : ''}\nOdpisz: **ok ${ic.n}** albo **${ic.n}: co poprawić**.`, f);
+  // JP 2026-11-01: akceptacja w panelu — podgląd do repo, wiersz pending; na Discordzie tylko powiadomienie z linkiem (bez bazy: po staremu)
+  const title = reviewTitle(ic);
+  const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: f, kind: 'quo_pose', key: `quo-${ic.slug}`, v: s.v, title });
+  const rid = rv && await reviewRow(ic, s.v, rv.preview, notes);
+  s.review_id = rid ?? null; save();
+  await upload(rid ? AR.notifyLine(title, { v: s.v }) : `🎨 **Quo #${ic.n} — ${ic.place}** · wersja ${s.v}${notes ? ` (poprawki: ${notes.slice(0, 200)})` : ''}\nOdpisz: **ok ${ic.n}** albo **${ic.n}: co poprawić**.`, f);
   return f;
 }
 
+// wiersz w panelu admina (ops.art_requests) — z one() i z to-panel (przeniesienie zaległych)
+const reviewTitle = (ic) => `Quo #${ic.n}: ${ic.place}`;
+const reviewRow = (ic, v, preview, notes = null, onlyNew = false) => AR.requestReview({ kind: 'quo_pose', key: `quo-${ic.slug}`, title: reviewTitle(ic), version: v, preview, onlyNew,
+  inputs: AR.inputsFromRepo(CFG.refs, ['Quo (wzorzec postaci)', 'ikona ze stylem']), meta: { n: ic.n, slug: ic.slug, place: ic.place, notes } });
+
 try {
-  if (cmd === 'gen') {
+  if (cmd === 'to-panel') {
+    // JP 2026-11-01: pozy czekające na „ok” w #quo-ikony → panel (#/grafiki); jeden commit z podglądami. Kod 75 = baza/repo niedostępne.
+    if (!(await AR.ready())) { console.error('panel grafik niedostępny — spróbuję później'); process.exitCode = 75; }
+    else {
+      const todo = AR.backlog(Object.entries(state).filter(([k]) => /^\d+$/.test(k))).map(([n, s]) => {
+        const ic = CFG.icons.find(x => x.n === +n), f = ic && join(WORK, `${String(ic.n).padStart(2, '0')}-${ic.slug}-v${s.v}.png`);
+        return ic && existsSync(f) ? { ic, s, f } : null;
+      }).filter(Boolean);
+      if (!todo.length) console.log('to-panel: pozy Quo — nic zaległego');
+      else if (!(await AR.pullRepo(REPO_SH))) process.exitCode = 75;
+      else {
+        const done = [];
+        for (const t of todo) { const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: t.f, kind: 'quo_pose', key: `quo-${t.ic.slug}`, v: t.s.v, title: reviewTitle(t.ic), sync: false }); if (rv) done.push({ ...t, preview: rv.preview }); }
+        if (!done.length || !(await AR.publishRepo(REPO_SH, `podglądy ${done.length} póz Quo do akceptacji w panelu (przeniesienie z Discorda)`))) process.exitCode = 75;
+        else {
+          let n = 0;
+          for (const t of done) { const rid = await reviewRow(t.ic, t.s.v, t.preview, t.s.history?.at(-1)?.notes ?? null, true); if (rid) { state[t.ic.n].review_id = rid; n++; } else process.exitCode = 75; }
+          save();
+          console.log(`to-panel: pozy Quo — przeniesione ${n} z ${todo.length}`);
+          if (n) await upload(AR.migratedLine(n === 1 ? 'pozę Quo' : 'póz Quo', n), null).catch(() => {});
+        }
+      }
+    }
+  } else if (cmd === 'gen') {
     const only = opt('--only')?.split(',').map(Number);
     let list = CFG.icons.filter(ic => only ? only.includes(ic.n) : (!ic.hold && (process.argv.includes('--force') || !state[ic.n]?.v)));   // hold = czeka na zgodę JP
     if (process.argv.includes('--next')) list = list.slice(0, 1);   // po jednej: JP ocenia, „ok” uruchamia następną
@@ -193,6 +232,7 @@ try {
     }
   } else if (cmd === 'fix') {
     if (!a2) throw new Error('fix <N> "<uwagi>"');
+    await AR.closePending('quo_pose', `quo-${icon(a1).slug}`, 'fix', `uwagi spoza panelu (Discord/konsola): ${a2.slice(0, 200)}`);
     try { await one(icon(a1), a2); }
     catch (e) { await upload(`⚠️ Poprawka Quo #${a1} nie wygenerowała się: ${e.message}. Napisz uwagi jeszcze raz.`, null); throw e; }
   } else if (cmd === 'cut') {   // przerobienie istniejącej wersji na przezroczyste tło (bez generowania)
@@ -212,6 +252,7 @@ try {
     const pub = await run('sh', [REPO_SH, 'publish', `ikona Quo #${ic.n}: ${ic.place} (quo-${ic.slug}, 3 rozmiary WebP)`], { timeout: 5 * 60_000 });
     if (pub.code !== 0 || /BŁĄD/.test(pub.out)) throw new Error(`publikacja: ${(pub.err || pub.out).slice(-300)}`);
     s.status = 'ok'; s.accepted_at = new Date().toISOString(); save();
+    await AR.closePending('quo_pose', `quo-${ic.slug}`, 'accepted', 'ok spoza panelu (Discord/konsola) — opublikowana');
     const ch = await ensureChannel('quo-ikony', 'Grafiki');
     const { notify } = await import('./draft-lib.mjs');
     await notify(ch, `✅ Quo #${ic.n} (${ic.place}) zaakceptowana: media/icons/quo-${ic.slug}-128/256/512.webp. Wstawienie na stronę: Claude.`);
@@ -222,11 +263,31 @@ try {
     if (existsSync(LOCK) && Date.now() - statSync(LOCK).mtimeMs < 30 * 60_000) process.exit(0);
     writeFileSync(LOCK, String(process.pid));
     try {
-      const ch = await ensureChannel('quo-ikony', 'Grafiki');
+      const panelOnly = process.argv.includes('--panel-only');
+      const ch = panelOnly ? null : await ensureChannel('quo-ikony', 'Grafiki');   // panel-only: kanał dopiero, gdy jest co powiedzieć
+      const { notify: say0 } = await import('./draft-lib.mjs');
+      const say = async (t) => say0(ch ?? await ensureChannel('quo-ikony', 'Grafiki'), t);
+      const me = (...a) => run('node', [join(DIR, 'quo-icons.mjs'), ...a.map(String)], { timeout: 10 * 60_000 });
+      // decyzje JP z panelu admina (#/grafiki) — przed czytaniem kanału; stan odczytany na nowo (procesy potomne zapisują state.json)
+      try {
+        await AR.poll('quo_pose', {
+          ok: async (row) => { const x = await me('ok', row.meta?.n); if (x.code) throw new Error((x.err || x.out).trim().slice(-300) || 'ok nie przeszło'); await me('gen', '--next'); return `opublikowana v${row.version}`; },
+          fix: async (row, notes) => { await say(`🔧 Poprawka z panelu Quo #${row.meta?.n}: „${notes.slice(0, 200)}”. Generuję nową wersję (ok. 1 min).`); const x = await me('fix', row.meta?.n, notes); return x.code ? 'poprawka nieudana — napisz uwagi jeszcze raz' : 'nowa wersja wygenerowana'; },
+          reject: async (row, notes) => {
+            const st = JSON.parse(readFileSync(STATE_F, 'utf8')), n = row.meta?.n;
+            if (st[n]) { st[n].status = 'rejected'; st[n].rejected_at = new Date().toISOString(); st[n].reject_note = notes; writeFileSync(STATE_F, JSON.stringify(st, null, 2)); }
+            await say(`🚫 Quo #${n} (${row.title}) odrzucona w panelu${notes ? `: „${notes.slice(0, 200)}”` : ''}. Nie generuję dalej — nowa wersja tylko na polecenie (**${n}: uwagi…** albo gen --only ${n} --force).`);
+            return 'odrzucona';
+          }
+        }, { say });
+      } catch (e) { log(`decyzje z panelu: ${e.message}`); }
+      // --panel-only: wołane co 2 min z place-icons.mjs watch (bez zmiany crontab) — tylko decyzje z panelu, kanału nie czytamy
+      if (!panelOnly) {
+      if (!ch || !TOKEN) log('Discord niedostępny — tylko decyzje z panelu');
       const JP = env('QUOLINO_JP_DISCORD_ID') || '946118130709692476';
       // ostatnia przeczytana wiadomość w osobnym pliku: state.json zapisują procesy potomne (ok, fix, gen) — nie nadpisujemy ich zmian
       const last = existsSync(LAST_F) ? readFileSync(LAST_F, 'utf8').trim() : (state._last ?? '');
-      const msgs = await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${last ? `&after=${last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json();
+      const msgs = ch && TOKEN ? await (await fetch(`https://discord.com/api/v10/channels/${ch}/messages?limit=30${last ? `&after=${last}` : ''}`, { headers: { Authorization: `Bot ${TOKEN}` } })).json() : [];
       const list = (Array.isArray(msgs) ? msgs : []).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
       const lastPosted = () => Object.entries(JSON.parse(readFileSync(STATE_F, 'utf8'))).filter(([k, v]) => /^\d+$/.test(k) && v.status === 'review').sort((a, b) => (a[1].history.at(-1)?.at > b[1].history.at(-1)?.at ? -1 : 1))[0]?.[0];
       const done = new Set();
@@ -244,6 +305,7 @@ try {
         // uwagi bez numeru („inna tarcza”) → poprawka ostatniej wrzuconej ikony (JP 2026-10-25)
         else if (t.length >= 3) { const n = lastPosted(); if (n) { await ack(`🔧 Poprawka Quo #${n} (ostatnia ikona) przyjęta: „${t.slice(0, 200)}”. Generuję nową wersję (ok. 1 min).`); await run('node', [join(DIR, 'quo-icons.mjs'), 'fix', n, t.slice(0, 800)], { timeout: 10 * 60_000 }); } }
       }
+      }   // --panel-only
     } finally { try { (await import('node:fs')).unlinkSync(LOCK); } catch {} }
   } else {
     for (const ic of CFG.icons) console.log(`${String(ic.n).padStart(2)} ${ic.slug.padEnd(20)} ${state[ic.n]?.status ?? (ic.hold ? 'wstrzymana (zgoda JP)' : 'nie było')}${state[ic.n]?.v ? ' v' + state[ic.n].v : ''}`);

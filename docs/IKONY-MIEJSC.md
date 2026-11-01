@@ -138,3 +138,22 @@ Pliki robocze: `/opt/data/quolino/work/place-icons/<trasa>/<stop_key>/`.
    (place-sources.json × `admin_versions.content->stops`); „Gotowe” liczy podpięte i czekające.
 5. **Testy** — `bin/stop-icon.test.mjs` (wybór ikony, zapas, biała lista), przeglądarkowy `test/ikony-miejsca-pw.mjs` (Playwright, lokalna
    `city.html` z mockiem API: karta i pasek pokazują ikonę miejsca, inny przystanek ikonę kategorii, brak pliku → zapas).
+
+## 9. Akceptacja w panelu admina (JP 2026-11-01)
+
+„Temat akceptacji ikon, niech to będzie przez panel admina.” Dotyczy ikon miejsc (`place-icons.mjs`), póz Quo (`quo-icons.mjs`) i paczek grafik gry (`game-art.mjs`).
+
+1. **Po wygenerowaniu** skrypt woła `bin/art-review.mjs`: podgląd → repo (`media/icons/_review/<klucz>-vN.webp`, gra: `gra/art/_review/…` + gif animacji),
+   wiersz `pending` w `ops.art_requests` (obrazy wejściowe: miniatury Commons przez `Special:FilePath`, link JP, pliki referencyjne z repo).
+   Poprzedni `pending` tego samego klucza → `superseded`. Discord dostaje tylko jedno zdanie z linkiem https://admin.quolino.com/_admin/#/grafiki.
+2. **Panel → Grafiki** (`#/grafiki`, licznik w menu, „Czeka na Ciebie” na Pulpicie, „Dziś”): karta z podglądem na szachownicy i obrazami wejściowymi;
+   **Akceptuj** / **Popraw** (uwagi obowiązkowe) / **Odrzuć** (drugie kliknięcie potwierdza) → RPC `admin.admin_art_decide`.
+3. **Wykonanie**: `place-icons.mjs watch` (cron co 2 min, bez zmiany crontab) czyta decyzje (`AR.poll`) dla ikon miejsc, woła `game-art.mjs watch`
+   i `quo-icons.mjs watch --panel-only`. accepted → to, co „ok” (publikacja, `stops.icon`, następna); fix → nowa wersja z uwagami (nowy wiersz);
+   rejected → status `rejected`, nic więcej bez nowego polecenia. Błąd wykonania: 3 próby, potem wiersz z błędem i ostrzeżenie na Discordzie.
+4. **Droga zapasowa**: „ok N” / uwagi na Discordzie działają dalej — skrypt zamyka wtedy wiersz w panelu (`closePending`).
+5. **Zaległe sprzed panelu** (czekające na „ok” na Discordzie): `node art-review.mjs migrate` — robi to sam `place-icons.mjs watch`, raz, gdy baza ma
+   tabelę (komendy `to-panel` trzech skryptów, jeden commit podglądów, znacznik `work/art-review/migrated-2026-11-01.json`).
+6. **Bez SQL** (`sql/2026-11-01-akceptacja-grafik.sql` niezatwierdzony) wszystko działa po staremu przez Discord; podglądy nie trafiają do repo.
+7. **Powiększanie** (JP 2026-11-01: „ikony miejsc w panelu muszą się dać powiększyć”): `_admin/admin-art.js` — każdy element z `data-zoom`
+   (Grafiki, Ikony: opublikowane i kandydaci Commons, karta przystanku) otwiera podgląd 512 px na szachownicy; Esc, ←/→ w obrębie listy, „otwórz plik ↗”.

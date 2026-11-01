@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Grafiki gry „Quo: Wyprawa” (zgoda JP 2026-10-31: „miałeś zlecić wykonanie nowych grafik”): Antigravity (abonament AI Pro, 0 $) generuje
 // paczki z bin/game-art-data.mjs (bieg i skok Quo, panorama Spello, kafle Spello/Frasassi, drobiazgi), skrypt kroi je i wyrównuje,
-// podgląd idzie do wątku „🎮 grafiki gry” w #ikony-miejsc (kategoria „Grafiki”), JP odpisuje „ok” albo uwagi.
+// podgląd idzie do panelu admina (#/grafiki, ops.art_requests przez art-review.mjs; plik w gra/art/_review/) — JP klika
+// Akceptuj / Popraw / Odrzuć (JP 2026-11-01); wątek „🎮 grafiki gry” w #ikony-miejsc dostaje powiadomienie z linkiem,
+// a odpowiedź „ok” / uwagi w wątku działa dalej jako droga zapasowa.
 //   node game-art.mjs gen <paczka|--next> [--force] [--wait-review]   generowanie (1 wywołanie Antigravity) → podgląd w wątku
 //   node game-art.mjs fix <paczka> "uwagi JP"                          poprawka: poprzednia wersja + uwagi → nowa wersja
 //   node game-art.mjs ok <paczka>                                      WebP → gra/art/<paczka>/ + gra/art/manifest.json → commit+push (repo.sh)
 //   node game-art.mjs status
-//   node game-art.mjs watch                                            odpowiedzi JP w wątku (woła place-icons.mjs watch, cron co 2 min)
+//   node game-art.mjs watch                                            decyzje JP z panelu + odpowiedzi w wątku (woła place-icons.mjs watch, cron co 2 min)
+//   node game-art.mjs to-panel                                         zaległe (czekające na „ok” w wątku) → panel (raz, z art-review migrateOnce)
 // Kod wyjścia 75 = „spróbuj później” (limit Antigravity, inny proces generuje, --wait-review i coś czeka na ocenę) — repo-jobs ponawia.
 // Limit: CFG.maxCalls wywołań na wszystkie paczki razem (state.calls). Nigdy płatny model — tylko Antigravity.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
@@ -17,6 +20,7 @@ import { ensureChannel, notify } from './draft-lib.mjs';
 import CFG from './game-art-data.mjs';
 import * as L from './game-art-lib.mjs';
 import { pyRun, lastJson } from './game-art-img.mjs';
+import * as AR from './art-review.mjs';
 
 const DIR = new URL('.', import.meta.url).pathname;
 const REPO = '/opt/data/repo/przewodnik', REPO_SH = '/opt/data/quolino/repo.sh', WORK = '/opt/data/quolino/work/game-art';
@@ -168,6 +172,38 @@ async function processPack(pack, raw, dir) {
   return { files: [[join(dir, 'contact.png'), `${pack.name}.png`]], warn };
 }
 
+// panel admina (JP 2026-11-01): pliki podglądu wersji (te same, co szły do wątku) i wiersz w ops.art_requests
+const reviewFiles = (pack, dir) => pack.kind === 'panorama' ? [join(dir, 'preview.jpg')] : pack.kind === 'frames' ? [join(dir, 'contact.png'), join(dir, 'anim.gif')] : [join(dir, 'contact.png')];
+const reviewTitle = (pack) => `${pack.title} (${pack.name})`;
+const reviewRow = (pack, v, rv, { notes = null, warn = null, onlyNew = false } = {}) => AR.requestReview({ kind: 'game_art', key: pack.name, title: reviewTitle(pack), version: v,
+  preview: rv.preview, more: rv.more, inputs: AR.inputsFromRepo(pack.refs, pack.labels), onlyNew,
+  meta: { pack: pack.name, kind: pack.kind, idx: idxOf(pack.name), notes, warn, budget_left: L.budgetLeft(loadState(), CFG.maxCalls), hint: pack.hint ?? null } });
+// to-panel: paczki czekające na „ok” w wątku „🎮 grafiki gry” → panel (#/grafiki); jeden commit z podglądami. Kod 75 = baza/repo niedostępne.
+async function cmdToPanel() {
+  if (!(await AR.ready())) { console.error('panel grafik niedostępny — spróbuję później'); return EXIT_LATER; }
+  const todo = AR.backlog(Object.entries(loadState().packs ?? {})).map(([name, s]) => {
+    const pack = CFG.packs.find(p => p.name === name), files = pack ? reviewFiles(pack, vDir(name, s.v)) : [];
+    return pack && existsSync(files[0]) ? { pack, s, files } : null;
+  }).filter(Boolean);
+  if (!todo.length) { console.log('to-panel: grafiki gry — nic zaległego'); return 0; }
+  if (!(await AR.pullRepo(REPO_SH))) return EXIT_LATER;
+  const done = [];
+  for (const t of todo) {
+    const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: t.files[0], kind: 'game_art', key: t.pack.name, v: t.s.v, title: reviewTitle(t.pack), more: t.files.slice(1), sync: false });
+    if (rv) done.push({ ...t, rv });
+  }
+  if (!done.length || !(await AR.publishRepo(REPO_SH, `podglądy ${done.length} paczek grafik gry do akceptacji w panelu (przeniesienie z Discorda)`))) return EXIT_LATER;
+  let n = 0, code = 0;
+  for (const t of done) {
+    const h = t.s.history?.at(-1) ?? {};
+    const rid = await reviewRow(t.pack, t.s.v, t.rv, { notes: h.notes ?? null, warn: Array.isArray(h.warn) ? h.warn.join(' · ') || null : h.warn ?? null, onlyNew: true });
+    if (rid) { patchPack(t.pack.name, x => { x.review_id = rid; }); n++; } else code = EXIT_LATER;
+  }
+  console.log(`to-panel: grafiki gry — przeniesione ${n} z ${todo.length}`);
+  if (n) await say(AR.migratedLine(n === 1 ? 'paczkę grafik gry' : 'paczek grafik gry', n)).catch(() => {});
+  return code;
+}
+
 // jedna wersja paczki: Antigravity → raw.png → obróbka → wątek
 async function one(pack, notes = null) {
   const st = loadState(), s = st.packs[pack.name] ?? {};
@@ -191,8 +227,14 @@ async function one(pack, notes = null) {
   const { files, warn } = await processPack(pack, raw, dir);
   const now = new Date().toISOString();
   patchPack(pack.name, x => { x.v = v; x.status = 'review'; x.pending_notes = null; x.errors = 0; x.posted_at = now; (x.history ??= []).push({ v, at: now, notes, warn }); });
-  const id = await upload(L.caption(pack, idxOf(pack.name), { v, notes, warn: warn.join(' · ') || null, budget: L.budgetLeft(loadState(), CFG.maxCalls) }), files);
-  if (id) patchPack(pack.name, x => { x.msgs = [...(x.msgs ?? []), id].slice(-20); });
+  const warnTxt = warn.join(' · ') || null, title = `${pack.title} (${pack.name})`;
+  // JP 2026-11-01: akceptacja w panelu — podgląd (arkusz / panorama + gif animacji) do repo, wiersz pending; w wątku tylko link do panelu
+  const rv = await AR.publishPreview({ repo: REPO, repoSh: REPO_SH, src: files[0][0], kind: 'game_art', key: pack.name, v, title, more: files.slice(1).map(f => f[0]) });
+  const rid = rv && await reviewRow(pack, v, rv, { notes, warn: warnTxt });
+  const id = rid
+    ? await upload(AR.notifyLine(title, { v, warn: warnTxt }), files.slice(0, 1))
+    : await upload(L.caption(pack, idxOf(pack.name), { v, notes, warn: warnTxt, budget: L.budgetLeft(loadState(), CFG.maxCalls) }), files);
+  patchPack(pack.name, x => { if (id) x.msgs = [...(x.msgs ?? []), id].slice(-20); x.review_id = rid ?? null; });
 }
 async function onGenError(pack, e, notes = null) {
   if (isQuota(e)) {
@@ -222,6 +264,7 @@ async function cmdGen(name) {
 async function cmdFix(name, notes) {
   if (!notes) throw new Error('fix <paczka> "uwagi"');
   const pack = packOf(name);
+  await AR.closePending('game_art', name, 'fix', `uwagi spoza panelu (Discord/konsola): ${notes.slice(0, 200)}`);
   if (agyQuotaOut() || !lock()) {
     patchPack(name, x => { x.pending_notes = notes.slice(0, 800); x.status = 'fix-pending'; });
     await say(`🕓 Poprawka ${name} zapisana: „${notes.slice(0, 200)}”. ${agyQuotaOut() ? quotaMsg(agyQuotaOut()) + ' — wygeneruję po odnowieniu.' : 'Teraz generuje się coś innego — zrobię ją za kilka minut.'}`);
@@ -249,6 +292,7 @@ async function cmdOk(name) {
   const pub = await run('sh', [REPO_SH, 'publish', `grafika gry: ${pack.title} (${name} v${s.v}, gra/art/${name}/ + manifest)`], { timeout: 5 * 60_000 });
   if (pub.code !== 0 || /BŁĄD/.test(pub.out)) throw new Error(`publikacja: ${(pub.err || pub.out).slice(-300)}`);
   patchPack(name, x => { x.status = 'ok'; x.accepted_at = at; x.accepted_v = s.v; });
+  await AR.closePending('game_art', name, 'accepted', 'ok spoza panelu (Discord/konsola) — w grze');
   await say(`✅ ${name} (${pack.title}) w grze: gra/art/${name}/ + gra/art/manifest.json. Strona odświeży się w 1–3 min.`);
   return 0;
 }
@@ -262,12 +306,34 @@ function cmdStatus() {
   }
   return 0;
 }
+// decyzje JP z panelu admina (#/grafiki): accepted → ok (+ następna paczka), fix → fix z uwagami, rejected → paczka stoi do nowego polecenia
+async function pollPanel(me) {
+  return AR.poll('game_art', {
+    ok: async (row) => {
+      const x = await me('ok', row.key);
+      if (x.code) throw new Error((x.err || x.out).trim().slice(-300) || 'ok nie przeszło');
+      if (!agyQuotaOut()) await me('gen', '--next');
+      return `w grze (v${row.version})`;
+    },
+    fix: async (row, notes) => {
+      await say(`🔧 Poprawka z panelu ${row.key}: „${notes.slice(0, 200)}”. Generuję nową wersję (ok. 1–3 min).`);
+      const x = await me('fix', row.key, notes);   // błąd/limit: fix sam zapisał pending_notes, watch ponowi — nie powtarzamy z poll
+      return x.code && x.code !== EXIT_LATER ? 'poprawka zapisana, generowanie ponowi watch' : 'nowa wersja wygenerowana';
+    },
+    reject: async (row, notes) => {
+      patchPack(row.key, x => { x.status = 'rejected'; x.rejected_at = new Date().toISOString(); x.reject_note = notes; x.pending_notes = null; });
+      await say(`🚫 ${row.key} (${row.title}) odrzucona w panelu${notes ? `: „${notes.slice(0, 200)}”` : ''}. Nie generuję dalej — nowa wersja tylko na polecenie (**${row.key}: uwagi…** albo gen ${row.key} --force).`);
+      return 'odrzucona';
+    }
+  }, { say });
+}
 async function cmdWatch() {
   const WLOCK = join(WORK, 'watch.lock'), LAST_F = join(WORK, 'watch-last.txt');
   if (existsSync(WLOCK) && Date.now() - statSync(WLOCK).mtimeMs < 30 * 60_000) return 0;
   writeFileSync(WLOCK, String(process.pid));
   const me = (...a) => run('node', [join(DIR, 'game-art.mjs'), ...a.map(String)], { timeout: 15 * 60_000 }).then(r => { if (r.code && r.code !== EXIT_LATER) log(`${a.join(' ')}: ${(r.err || r.out).slice(-300)}`); return r; });
   try {
+    try { await pollPanel(me); } catch (e) { log(`decyzje z panelu: ${e.message}`); }
     const st0 = loadState();
     if (st0.thread && TOKEN) {
       const JP = env('QUOLINO_JP_DISCORD_ID') || '946118130709692476';
@@ -315,7 +381,8 @@ try {
   else if (cmd === 'fix') code = await cmdFix(a1, a2);
   else if (cmd === 'ok') code = await cmdOk(a1);
   else if (cmd === 'watch') code = await cmdWatch();
+  else if (cmd === 'to-panel') code = await cmdToPanel();
   else if (cmd === 'status') code = cmdStatus();
-  else { console.error('komendy: gen | fix | ok | status | watch (opis na początku game-art.mjs)'); code = 2; }
+  else { console.error('komendy: gen | fix | ok | status | watch | to-panel (opis na początku game-art.mjs)'); code = 2; }
   process.exitCode = code;
 } catch (e) { console.error('BŁĄD:', e.message); process.exitCode = 1; }
