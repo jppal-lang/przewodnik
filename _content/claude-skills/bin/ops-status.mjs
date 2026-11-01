@@ -159,6 +159,7 @@ async function queueSnapshot(q, lib) {
     agyQuotaOut: lib?.agyQuotaOut?.() ?? null,
     agyWeekCalls: lib?.agyWeekCalls?.() ?? null,
     agyAlert: readJson(join(WORK, '..', 'agy-alert.json')),
+    translate: readJson(join(WORK, 'translate', 'state.json')),
   };
 }
 

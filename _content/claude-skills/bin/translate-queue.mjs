@@ -14,6 +14,8 @@ import { notify } from './draft-lib.mjs';
 const DRY = process.argv.includes('--dry');
 const WORK = '/opt/data/quolino/work/translate';
 const LOCK = `${WORK}/.queue.lock`;
+// ostatnia decyzja kolejki (podgląd serwera: ops-status → queue.translate) — żeby było widać, DLACZEGO tłumaczenie stoi
+const said = (msg) => { try { writeFileSync(`${WORK}/state.json`, JSON.stringify({ at: new Date().toISOString(), msg, paid_today: +paidToday().toFixed(3), daily_usd: DAILY_USD })); } catch {} };
 const STALE_H = 6;                         // „running” starsze niż 6 h = przerwane (restart kontenera)
 
 mkdirSync(WORK, { recursive: true });
@@ -34,16 +36,17 @@ async function main() {
   await q(`UPDATE ops.jobs SET status = 'queued' WHERE kind = 'translate' AND status = 'running'
              AND coalesce(started_at, created_at) < now() - interval '${STALE_H} hours'`).catch(() => {});
   const [running] = await q(`SELECT id FROM ops.jobs WHERE kind = 'translate' AND status = 'running' LIMIT 1`);
-  if (running) { log(`zlecenie ${running.id} w toku — czekam`); return; }
+  if (running) { log(`zlecenie ${running.id} w toku — czekam`); said(`zlecenie ${running.id} w toku`); return; }
 
   const [jobRow] = await q(`SELECT j.id, j.city_slug, c.discord_thread_id AS thread
       FROM ops.jobs j LEFT JOIN ops.cities c ON c.slug = j.city_slug
      WHERE j.kind = 'translate' AND j.status = 'queued' AND j.city_slug IS NOT NULL
      ORDER BY j.created_at, j.id LIMIT 1`);
-  if (!jobRow) return;
+  if (!jobRow) { said('kolejka pusta'); return; }
 
   const used = paidToday();
-  if (used >= DAILY_USD) { log(`dzienny limit płatnych modeli ($${used.toFixed(2)}) — tłumaczenie ${jobRow.city_slug} poczeka`); return; }
+  if (used >= DAILY_USD) { log(`dzienny limit płatnych modeli ($${used.toFixed(2)}) — tłumaczenie ${jobRow.city_slug} poczeka`); said(`dzienny limit płatnych modeli ($${used.toFixed(2)} z $${DAILY_USD}) — ${jobRow.city_slug} czeka`); return; }
+  said(`start: ${jobRow.city_slug} (zlecenie ${jobRow.id})`);
 
   // pozostałe zlecenia tego miasta połącz z tym (jedno tłumaczenie obejmie najnowszą wersję)
   const dup = await q(`SELECT id FROM ops.jobs WHERE kind = 'translate' AND status = 'queued' AND city_slug = $1 AND id <> $2`, [jobRow.city_slug, jobRow.id]);
