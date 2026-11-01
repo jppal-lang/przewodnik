@@ -1,0 +1,11 @@
+{
+ "script": "game-art.mjs",
+ "args": ["peek", "quo-pozy-01"],
+ "why": "Podgląd poprawionej wersji klatek 1–10 do repo. Bez AI, 0 $.",
+ "title": "Podgląd: pozy Quo v2, klatki 1–10, poprawka",
+ "est_usd": 0,
+ "est_limit": "0 wywołań (tylko kopiowanie plików)",
+ "jp_ok": {"date": "2026-11-01", "quote": "pokaż jes teraz"},
+ "by": "Claude",
+ "timeout_min": 10
+}
