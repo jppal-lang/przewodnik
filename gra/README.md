@@ -342,3 +342,16 @@ Czapki rysuje `drawHat()` w układzie głowy — tak samo da się je kiedyś pod
   Pas budowany raz po wczytaniu obrazu; do tego czasu warstwa rysuje się jak dawniej kodem (`HERO`, `heroPrep`, `heroDraw`).
 - Naklejka przystanku na słupku ma podpis z nazwą przystanku (biały tekst z obrysem).
 
+
+### Grafiki z `gra/art/` (JP 2026-10-31)
+
+- Źródło: `_content/claude-skills/bin/game-art.mjs` (prompty: `game-art-data.mjs`) — Antigravity generuje paczki w kolejności
+  `quo-run` (bieg, 8 klatek), `quo-jump` (odbicie / apogeum / opadanie / lądowanie), `spello-panorama`, `tiles-spello`, `tiles-frasassi`,
+  `props` (kwiaty Infioraty, kryształ, kropla, kałuża). Podgląd (klatki na linii stóp + GIF, kafle parami) idzie do wątku
+  „🎮 grafiki gry” w #ikony-miejsc; JP odpisuje **ok** / **ok quo-run** albo **quo-run: uwagi**. Po „ok” WebP trafiają do
+  `gra/art/<paczka>/` i wpis do `gra/art/manifest.json` (commit przez repo.sh). Odpowiedzi czyta `place-icons.mjs watch` (ten sam cron).
+- Gra: `art.js` (QuoArt — odczyt manifestu, tylko ścieżki `<paczka>/<plik>.webp`) + sekcja 3c w `game.js`: bieg = cykl N klatek z `P.phase`
+  (tempo rośnie z prędkością), skok według `vy`, panorama przez `ART_SRC['<teren>.0']` (olive, gate, alley, belvedere; warstwy z miasteczkiem
+  rysowanym kodem chowa `ART_HIDE`), kafle zestawu dla terenów z manifestu (wierzch / krawędź L/P / środek / półka / kruchy), drobiazgi w `drawProp`.
+- Brak manifestu albo pliku = wszystko jak dawniej (pozy z `media/icons`, tła i kafle kodem). Test: `bin/game-art.test.mjs`,
+  w przeglądarce `__quoGame.art` pokazuje, co się wczytało.

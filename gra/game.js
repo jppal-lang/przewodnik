@@ -496,6 +496,81 @@
     }
     c.restore();
   }
+  /* ---------- 3c. Grafiki z gra/art/manifest.json (bin/game-art.mjs, akceptacja JP na Discordzie; JP 2026-10-31) ----------
+     Odczyt manifestu: gra/art.js (QuoArt). Bieg: arkusz N klatek (cykl z P.phase — szybciej biegnie, szybciej przebiera łapkami),
+     skok: odbicie / apogeum / opadanie / lądowanie. Klatki wyrównane do linii stóp (anchor), wysokość Quo jak dotychczasowe pozy.
+     Panorama: daleki plan terenów z listy w manifeście (przez ART_SRC), kafle i drobiazgi: zamiast rysowania kodem.
+     Brak manifestu, pliku albo błąd wczytania = wszystko jak dawniej (pozy z media/icons, kafle i tła kodem). */
+  var ART = { A: null, run: null, jump: null, tiles: {}, props: {}, tileFor: {} };
+  var ART_H = 56; // wysokość Quo w biegu (j. świata) — jak poza „running” w atlasie póz
+  function artWant(px) { return px * Math.max(1, (view.s || 1) * (view.dpr || window.devicePixelRatio || 1)); }
+  function artImage(path, ok) { var im = new Image(); im.onload = function () { if (im.naturalWidth) ok(im); }; im.onerror = function () {}; im.src = 'art/' + path + (ART.A && ART.A.ver ? '?v=' + ART.A.ver : ''); return im; }
+  function artSheet(role, S) {
+    artImage(window.QuoArt.pick(S.src, artWant(64) > 140 ? 512 : 256), function (im) {
+      var k = im.naturalHeight / S.fh;
+      ART[role] = { S: S, im: im, k: k, halo: makeHalo(im, im.naturalHeight), U: ART_H / S.quoH };
+      if (role === 'jump' && ART.run) ART.jump.U = ART.run.U; // ta sama skala co bieg: Quo nie „rośnie” w locie
+      if (role === 'run' && ART.jump) ART.jump.U = ART.run.U;
+    });
+  }
+  function loadArt() {
+    if (!window.QuoArt || !window.fetch) return;
+    fetch('art/manifest.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (M) {
+      var A = ART.A = window.QuoArt.parse(M); if (!A.any) return;
+      if (A.run) artSheet('run', A.run);
+      if (A.jump) artSheet('jump', A.jump);
+      Object.keys(A.pano).forEach(function (place) { artPano(A.pano[place]); });
+      Object.keys(A.tiles).forEach(function (set) {
+        var T = A.tiles[set], imgs = {}, left = Object.keys(T.tiles).length;
+        Object.keys(T.tiles).forEach(function (it) {
+          artImage(window.QuoArt.pick(T.tiles[it], artWant(TILE)), function (im) {
+            imgs[it] = im;
+            if (--left === 0 || (imgs.top && imgs.mid && !ART.tiles[set])) { ART.tiles[set] = imgs; T.terrains.forEach(function (tk) { ART.tileFor[tk] = imgs; }); CHK.map = {}; }
+          });
+        });
+      });
+      Object.keys(A.props).forEach(function (p) { artImage(window.QuoArt.pick(A.props[p], artWant(20)), function (im) { ART.props[p] = im; CHK.map = {}; }); });
+    });
+  }
+  /* Panorama jako daleki plan: obraz + lustrzana kopia w pas PER (szwy niewidoczne), góra przechodzi w niebo rysowane kodem,
+     linia „ground” obrazu na dole warstwy (yb). Bliższe warstwy z miasteczkiem rysowanym kodem chowamy (ART_HIDE). */
+  var ART_HIDE = {};
+  var PANO_HIDE = { olive: [1], gate: [1], belvedere: [1] };
+  function artPano(P) {
+    artImage(window.QuoArt.pick(P.src, 1024), function (im) {
+      try {
+        var w1 = PER / 2, H = Math.round(w1 * im.naturalHeight / im.naturalWidth), cv = document.createElement('canvas'); cv.width = PER; cv.height = H;
+        var c = cv.getContext('2d');
+        c.drawImage(im, 0, 0, w1 + .5, H); c.save(); c.translate(PER, 0); c.scale(-1, 1); c.drawImage(im, 0, 0, w1 + .5, H); c.restore();
+        c.globalCompositeOperation = 'destination-out'; // góra 30 % miękko w niebo
+        var g = c.createLinearGradient(0, 0, 0, H * .3); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, PER, H * .3);
+        c.globalCompositeOperation = 'source-over';
+        var d = c.getImageData(Math.floor(PER / 3), H - 2, 1, 1).data, src = 'pano:' + P.src[Object.keys(P.src)[0]];
+        artImg[src] = { band: cv, H: H, ground: P.ground, bot: 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')' };
+        P.terrains.forEach(function (tk) {
+          ART_SRC[tk + '.0'] = src; delete LC.map[tk + '|0'];
+          (PANO_HIDE[tk] || []).forEach(function (li) { ART_HIDE[tk + '.' + li] = true; });
+        });
+      } catch (e) { /* bez panoramy */ }
+    });
+  }
+  function artFrameFor(sk, so) { // { R: ART.run|ART.jump, i } albo null (wtedy pozy z atlasu)
+    var Q = window.QuoArt;
+    if (sk === 'walk' && ART.run) return { R: ART.run, i: Q.runFrame(so.phase, ART.run.S.frames) };
+    if (ART.jump && (sk === 'jump' || sk === 'fall' || sk === 'land')) return { R: ART.jump, i: Math.min(ART.jump.S.frames - 1, Q.jumpFrame(sk, so.vy, ART.jump.S.names)) };
+    return null;
+  }
+  function drawArtFrame(c, x, y, facing, F, sp, alpha) { // (x, y) = punkt między łapkami na ziemi; klatki patrzą w prawo
+    var R = F.R, S = R.S, k = R.k, U = R.U, ax = S.anchor[0], ay = S.anchor[1], sx = F.i * S.fw * k;
+    c.save();
+    if (alpha != null) c.globalAlpha = alpha;
+    c.translate(x, y); c.scale(facing * U, U);
+    if (sp.halo) { c.globalAlpha = (alpha != null ? alpha : 1) * sp.halo; c.drawImage(R.halo, sx, 0, S.fw * k, S.fh * k, -ax, -ay, S.fw, S.fh); c.globalAlpha = alpha != null ? alpha : 1; }
+    c.drawImage(R.im, sx, 0, S.fw * k, S.fh * k, -ax, -ay, S.fw, S.fh);
+    var hd = S.heads[F.i];
+    if (curHat && hd) { c.scale(1 / U, 1 / U); c.translate((hd[0] - ax) * U - 2, (hd[1] - ay) * U + 13); c.scale(1.08, 1.08); drawHat(c, curHat); }
+    c.restore();
+  }
   /* Jedno wejście: sprite, a gdy atlasu nie ma — szkielet. kind jak w quoPose; o = { phase, land, air, vy, nap }. */
   function drawQuoAny(c, x, y, scale, facing, kind, t, o, alpha) {
     if (QS.ready) { drawQuoSprite(c, x, y, scale, facing, spriteFor(kind, t, o), alpha); return; }
@@ -763,7 +838,12 @@
     var cv = document.createElement('canvas'); cv.width = Math.ceil(PER * q); cv.height = Math.max(2, Math.ceil((y1 - y0) * q));
     var c = cv.getContext('2d'), src = ART_SRC[kind + '.' + li], im = src && artImg[src];
     c.setTransform(q, 0, 0, q, 0, -y0 * q);
-    if (im && im.complete && im.naturalWidth) c.drawImage(im, 0, y0, PER, y1 - y0);
+    if (im && im.band) { // panorama z gra/art (artPano): linia „ground” na dole warstwy, pod nią kolor dołu obrazu
+      var yb = (Ly.yb != null ? Ly.yb : 300) + 6, top = yb - im.ground * im.H;
+      c.drawImage(im.band, 0, top, PER, im.H);
+      if (top + im.H < y1) { c.fillStyle = im.bot; c.fillRect(0, top + im.H - 1, PER, y1 - (top + im.H) + 1); }
+    }
+    else if (im && im.complete && im.naturalWidth) c.drawImage(im, 0, y0, PER, y1 - y0);
     else { c.save(); c.beginPath(); c.rect(0, y0, PER, y1 - y0); c.clip(); Ly.draw(c, 0, 0, PER, y1 + 10); Ly.draw(c, -PER, 0, PER, y1 + 10); c.restore(); }
     if (Ly.haze) { // mgła: kolor nieba, mocniej u dołu
       c.globalCompositeOperation = 'source-atop';
@@ -789,6 +869,7 @@
   function vis(x, pad) { return x > -pad && x < VW + pad; } // czy element warstwy jest na ekranie (nie budujemy niewidocznych kształtów)
   function blitLayer(c, kind, li, camX, camY, w, h) {
     var Ly = BGL[kind][li], oy = -camY * Ly.py + (Ly.dy || 0);
+    if (ART_HIDE[kind + '.' + li]) return; // warstwa zastąpiona panoramą z gra/art
     if (!LAYER_CACHE && !ART_SRC[kind + '.' + li]) { // dalsze warstwy wypełniamy tylko do „yb” (niżej i tak je zasłania bliższa)
       var bot = Ly.yb != null ? oy + Ly.yb : h + 10;
       VW = w; c.__far = !!Ly.far; eachRepeat(camX, Ly.par, w, function (ox) { if (Ly.draw) Ly.draw(c, ox, oy, w, bot); }); c.__far = false;
@@ -2994,7 +3075,7 @@
       if (st) {
         var depth = 0; if (up) { depth = 1; for (var d = 2; d <= 4; d++) { var yy = y - d + 1; if (yy <= 0 ? tk === 'cave' : sol(x, Math.min(ROWS - 1, yy - 1))) depth = d; else break; } }
         var h = hashXY(x, y);
-        drawSolid(T, tk, px, py, !up, !dn && y < ROWS, !lf, !rt, h, depth);
+        if (!artSolid(tk, px, py, !up, !lf, !rt, depth)) drawSolid(T, tk, px, py, !up, !dn && y < ROWS, !lf, !rt, h, depth);
         if (v === 5 && !up) { ctx.fillStyle = 'rgba(160,220,255,.7)'; ctx.fillRect(px, py, TILE, 3); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(px + (hashXY(x, 1) % 20), py + 1, 8, 1.6); ctx.fillStyle = 'rgba(160,220,255,.35)'; ctx.fillRect(px + 4 + h % 12, py + 4, 2, 9 + h % 6); }
         if (v === 6) { ctx.strokeStyle = 'rgba(14,26,43,.16)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px + 10, py + 6); ctx.lineTo(px + 16, py + 14); ctx.lineTo(px + 12, py + 22); ctx.stroke(); }
         if (!up && y >= 0 && y < ROWS && ty > 0 && L.grid[(ty - 1) * Wd + x] === 0) drawProp(T, tk, px, py, h, !lf, !rt);
@@ -3003,12 +3084,13 @@
         var gp = ((gameT * 40 + x * 37) % 160); if (gp < TILE) { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(px + gp, py, 5, 1.6); }
       }
     } else if (v === 2 && y === ty) { if (st) drawPlatform(T, tk, px, py, L.grid[ty * Wd + x - 1] === 2, L.grid[ty * Wd + x + 1] === 2); }
-    else if (v === 4 && y === ty) { if (dy) drawCrumble(px, py, L.crumbles[L.crumbleAt[ty * Wd + x]]); }
+    else if (v === 4 && y === ty) { if (dy) drawCrumble(px, py, L.crumbles[L.crumbleAt[ty * Wd + x]], tk); }
     else if (v === 3) { if (dy) drawWater(px, py, x, y === ty && (y === 0 || L.grid[(y - 1) * Wd + x] !== 3), tk); }
     else if (v === 7 && y === ty) { if (st) drawSpikes(px, py, ty > 0 && sol(x, ty - 1), tk); }
   }
-  function drawCrumble(px, py, c) {
-    var sh = c && c.s === 1 ? (Math.sin(gameT * 60) * 1.5) : 0;
+  function drawCrumble(px, py, c, tk) {
+    var sh = c && c.s === 1 ? (Math.sin(gameT * 60) * 1.5) : 0, ai = tk && ART.tileFor[tk];
+    if (ai && ai.crumble) { ctx.drawImage(ai.crumble, px + sh, py, TILE, TILE); return; }
     ctx.fillStyle = INK; roundRect(ctx, px + sh - .5, py - .5, TILE + 1, 13, 3); ctx.fill();
     var g = ctx.createLinearGradient(0, py, 0, py + 11); g.addColorStop(0, '#D2A56C'); g.addColorStop(1, '#9A7040'); ctx.fillStyle = g; roundRect(ctx, px + 1 + sh, py + 1, TILE - 2, 9, 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(px + 2 + sh, py + 1.5, TILE - 4, 1.5);
@@ -3114,12 +3196,21 @@
       ctx.fillStyle = 'rgba(200,235,255,.75)'; ctx.beginPath(); ell(ctx, x + 8, y + TILE + 6 + (h % 10), 1.2, 1.5, 0); ell(ctx, x + 23, y + TILE + 4 + ((h >> 4) % 14), 1.2, 1.5, 0); ctx.fill();
     }
   }
+  /* Kafel z gra/art (zestaw dla terenu): wierzch / krawędź / środek + ten sam cień głębi co kafle kodem. false = brak grafiki. */
+  function artSolid(tk, x, y, top, left, right, depth) {
+    var ai = ART.tileFor[tk]; if (!ai) return false;
+    var im = ai[window.QuoArt.tileFor(top, left, right)] || (top ? ai.top : ai.mid); if (!im) return false;
+    ctx.drawImage(im, x, y, TILE + .5, TILE + .5);
+    if (depth > 1) { var a0 = Math.min(.15, (depth - .5) * .035); ctx.fillStyle = DEPTH_A[Math.round(a0 * 100)] || (DEPTH_A[Math.round(a0 * 100)] = 'rgba(24,16,34,' + a0.toFixed(2) + ')'); ctx.fillRect(x, y, TILE, TILE); }
+    return true;
+  }
   /* Drobne ozdoby na wierzchu kafli — wybierane z ziarna kafla (zawsze te same, nigdy w równym rytmie). Bez wpływu na grę. */
   function drawProp(T, tk, x, y, h, lf, rt) {
     var r = (h >>> 3) % 23, c = ctx;
     var grass = tk === 'valley' || tk === 'stone' || T.grass;
     if (grass) {
-      if (r === 0 || r === 9) { // kwiatki
+      if ((r === 0 || r === 9) && T.sp && artProp(['flower-red', 'flower-yellow', 'flower-white'][(h >> 4) % 3], x + 8 + h % 14, y + 1, 15)) { /* kwiaty Infioraty z gra/art */ }
+      else if (r === 0 || r === 9) { // kwiatki
         var FC = tk === 'olive' || tk === 'belvedere' ? ['#D7263D', '#D7263D', '#FFFFFF'] : tk === 'dusk' ? ['#C9B6FF', '#FFFFFF', '#FFD27A'] : ['#FFFFFF', '#FFD84D', '#F59AB8'];
         for (var i = 0; i < 3; i++) { var fx = x + 6 + i * 8 + ((h >> (i * 2)) & 3), fy = y - 3 - ((h >> (i + 5)) & 3);
           c.strokeStyle = '#3F7A3A'; c.lineWidth = 1; c.beginPath(); c.moveTo(fx, y + 2); c.lineTo(fx, fy); c.stroke();
@@ -3139,7 +3230,10 @@
         for (i = 0; i < 3; i++) { c.save(); c.translate(x + 6 + i * 9 + (h >> i & 3), y + 1.5); c.rotate(((h >> (i * 3)) & 7) * .4); c.fillStyle = LCC[i % 2]; c.beginPath(); ell(c, 0, 0, 3.2, 1.4, 0); c.fill(); c.restore(); }
       }
     } else if (tk === 'cave') {
-      if (r === 0 || r === 12) { // kryształki z poświatą
+      if ((r === 0 || r === 12) && artProp('crystal', x + 10 + h % 12, y + 1, 18)) { /* kryształ z gra/art */ }
+      else if (r === 8 && artProp('puddle', x + 16, y + 3, 22)) { /* kałuża z gra/art */ }
+      else if (r === 20 && artProp('drop', x + 10 + h % 12, y + 1, 9)) { /* kropla z gra/art */ }
+      else if (r === 0 || r === 12) { // kryształki z poświatą
         var cx = x + 10 + h % 12, col = ['#7FD4FF', '#B49CFF', '#7FF0D0'][h % 3];
         var g = c.createRadialGradient(cx, y - 4, 1, cx, y - 4, 16); g.addColorStop(0, rgba(col, .45)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.fillRect(cx - 16, y - 20, 32, 24);
         for (i = -1; i <= 1; i++) { var hgt = i ? 6 : 10; c.fillStyle = INK; c.beginPath(); c.moveTo(cx + i * 4 - 2.6, y + 1); c.lineTo(cx + i * 4 + i * 1.5, y - hgt - 1); c.lineTo(cx + i * 4 + 2.6, y + 1); c.fill();
@@ -3164,7 +3258,9 @@
       for (i = 0; i < len; i += 5) { c.fillStyle = i % 10 ? '#5E9A4E' : '#7DB565'; c.beginPath(); ell(c, ix + (i % 10 ? 2.2 : -2.2) + (lf ? -1 : 1), y + 2 + i, 2.6, 1.8, 0); c.fill(); }
     }
   }
+  function artProp(name, cx, by, s) { var im = ART.props[name]; if (!im) return false; ctx.drawImage(im, cx - s / 2, by - s, s, s); return true; } // stoi na (cx, by)
   function drawPlatform(T, tk, x, y, l, r) { // deska/półka: kontur, słoje, gwoździe, cień pod spodem
+    var ai = ART.tileFor[tk]; if (ai && ai.float) { ctx.drawImage(ai.float, x, y, TILE, TILE); return; } // półka z gra/art
     if (T.sp && T.balcony) { drawPlatformSp(T, x, y, l, r); return; }
     var c = ctx, x0 = x - (l ? .5 : 0), w = TILE + (l ? .5 : 0) + (r ? .5 : 0), h = hashXY(x, y);
     var sg = c.createLinearGradient(0, y + 11, 0, y + 19); sg.addColorStop(0, 'rgba(20,14,30,.22)'); sg.addColorStop(1, 'rgba(20,14,30,0)'); c.fillStyle = sg; c.fillRect(x0 + (l ? 0 : 3), y + 11, w - (l ? 0 : 3) - (r ? 0 : 3), 8);
@@ -3867,13 +3963,14 @@
     else kind = Math.abs(P.vx) > 15 ? 'walk' : 'idle';
     var gy = groundBelow(P.x, P.y), hh = clamp((gy - P.y) / 170, 0, 1), sa = 1 - hh * .7; // cień: mniejszy i jaśniejszy, im wyżej
     if (gy - P.y < 400) { ctx.fillStyle = 'rgba(14,26,43,' + (.24 * sa).toFixed(3) + ')'; ctx.beginPath(); ell(ctx, P.x, gy - 1, 14 * sa + 2, 3.6 * sa + .8, 0); ctx.fill(); }
-    var pose = null, sp = null;
+    var pose = null, sp = null, artF = null;
     QA.air = P.onGround ? 0 : QA.air + Math.min(vDt, .05);
     if (QS.ready) { // sprite: ta sama logika stanów, lądowanie = przykuc
       var sk = kind, so = QO; so.phase = P.phase; so.land = P.land; so.air = QA.air; so.vy = P.vy; so.nap = P.nap;
       if (P.zip >= 0) sk = 'jump'; if (P.cart >= 0) sk = 'cheer'; if (P.climb) { sk = 'climb'; so.phase = P.y / 9; }
       if (sk === 'idle' && P.land > .3) sk = 'land';
       sp = spriteFor(sk, P.t, so); sp.halo = .45 + .5 * caveWeight(P.x); // poświata: lekka w dzień, mocna w jaskini
+      artF = artFrameFor(sk, so); // klatki z gra/art (bieg, skok), gdy są
       quoExtras(null, kind);
     } else {
       pose = quoPose(kind, P.t, { phase: P.phase, land: P.land });
@@ -3892,7 +3989,8 @@
       ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(bx, by, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(P.fly / 8, 0, 1)); ctx.stroke();
       ctx.strokeStyle = '#FFC629'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(bx, by, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(P.fly / 8, 0, 1)); ctx.stroke();
     }
-    if (sp) drawQuoSprite(ctx, P.x, P.y, 1, P.facing, sp, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
+    if (artF) drawArtFrame(ctx, P.x, P.y, P.facing, artF, sp, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
+    else if (sp) drawQuoSprite(ctx, P.x, P.y, 1, P.facing, sp, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
     else drawQuo(ctx, P.x, P.y, 1, P.facing, pose, P.nap > 0 ? clamp(P.nap / 1.4 + .3, 0, 1) : null);
   }
   function groundBelow(x, y) {
@@ -5016,6 +5114,7 @@
     loadStage().then(function (data) {
       trip = data;
       genHero();
+      loadArt();
       stageTexts();
       curHat = lsGet(LS + 'hat' + hatSuffix()) || null; if (curHat && ownedHats().indexOf(curHat) < 0) curHat = null;
       renderHats();
@@ -5091,6 +5190,7 @@
   function setIn(b, prev) { input.left = !!(b & 1); input.right = !!(b & 2); input.jump = !!(b & 4); input.jumpPressed = !!(b & 4) && !(prev & 4); }
   window.__quoGame = {
     get state() { return state; }, get player() { return P; }, get level() { return L; }, get stats() { return stats; }, get diff() { return D; },
+    get art() { return { run: !!ART.run, jump: !!ART.jump, tiles: Object.keys(ART.tileFor), props: Object.keys(ART.props), pano: Object.keys(ART_SRC) }; }, // grafiki z gra/art (testy)
     get cam() { return cam; }, get view() { return view; }, get trip() { return trip && trip.trip; }, get quoRes() { return QS.ready ? QS.res : 0; },
     set botMode(v) { botMode = !!v; }, get botMode() { return botMode; },
     skipCelebration: function () { if (state === 'celebrate') endCelebration(); },

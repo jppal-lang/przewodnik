@@ -1,0 +1,19 @@
+{
+ "script": "game-art.mjs",
+ "args": [
+  "gen",
+  "spello-panorama",
+  "--wait-review"
+ ],
+ "why": "Grafiki gry Quo: Wyprawa, paczka 3/6 (Spello — panorama (daleki plan)) — JP 2026-10-31 „miałeś zlecić wykonanie nowych grafik”. Antigravity (abonament AI Pro, 0 $), 1 wywołanie; podgląd w #ikony-miejsc → wątek „🎮 grafiki gry”, JP odpisuje „ok” albo uwagi. --wait-review: czeka, aż JP oceni poprzednią paczkę (kod 75 = ponowienie przy następnym przebiegu); po „ok” watch generuje następną sam.",
+ "title": "Grafiki gry 3/6: Spello — panorama (daleki plan)",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-10-31",
+  "quote": "miałeś zlecić wykonanie nowych grafik"
+ },
+ "by": "Claude",
+ "timeout_min": 20,
+ "not_before": "2026-11-01T12:00:00Z"
+}

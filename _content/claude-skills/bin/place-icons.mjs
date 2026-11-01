@@ -698,6 +698,11 @@ async function cmdWatch() {
         await me('refs-again', trip, n);
       }
     }
+    // grafiki gry (JP 2026-10-31): odpowiedzi JP w wątku „🎮 grafiki gry” tego kanału czyta game-art.mjs — ten sam cron, bez zmiany crontab
+    if (existsSync(join(DIR, 'game-art.mjs'))) {
+      const g = await run('node', [join(DIR, 'game-art.mjs'), 'watch'], { timeout: 20 * 60_000 });
+      if (g.code) log(`game-art watch: ${(g.err || g.out).slice(-300)}`);
+    }
   } finally { try { unlinkSync(WLOCK); } catch {} }
 }
 function cmdStatus(trip) {

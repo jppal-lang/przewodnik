@@ -40,7 +40,18 @@ export const ALLOWED = {
   'watch.mjs': (a) => a.includes('--no-ai') && /^(prices|closures|track|recheck|links|venues|season|site|costs|apply)$/.test(a[0] ?? '') &&
     a.slice(1).every((x, i, r) => x === '--no-ai' || x === '--dry' || x === '--city' || (r[i - 1] === '--city' && /^[a-z0-9][a-z0-9-]{0,62}$/.test(x))),
   'trip-translate.mjs': (a) => /^[a-z0-9-]+$/.test(a[0] ?? '') && a.slice(1).every((x, i, r) => x === '--fresh' || x === '--langs' || (r[i - 1] === '--langs' && /^[a-z]{2}(,[a-z]{2})*$/.test(x))),
+  // grafiki gry „Quo: Wyprawa” (JP 2026-10-31): Antigravity (abonament, limit tygodniowy) — dlatego też w COSTLY (jp_ok)
+  'game-art.mjs': (a) => isGameArtArgs(a),
 };
+// gen <paczka|--next> [--wait-review] [--force] | fix <paczka> "<uwagi>" | ok <paczka> | status — paczka = nazwa z game-art-data.mjs
+export function isGameArtArgs(a) {
+  const P = (x) => /^[a-z0-9][a-z0-9-]{0,40}$/.test(x ?? '');
+  if (a[0] === 'status') return a.length === 1;
+  if (a[0] === 'ok') return a.length === 2 && P(a[1]);
+  if (a[0] === 'fix') return a.length === 3 && P(a[1]) && typeof a[2] === 'string' && a[2].trim().length >= 3 && a[2].length <= 800;
+  if (a[0] === 'gen') return (P(a[1]) || a[1] === '--next') && a.slice(2).every(x => x === '--wait-review' || x === '--force') && new Set(a.slice(2)).size === a.length - 2;
+  return false;
+}
 // przebieg „tylko misje” (JP 2026-10-31): <slug> --choices [--max-usd ≤0.5]; nic poza tym (żadnych --facts/--patch)
 export function isChoicesArgs(a) {
   if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(a[0] ?? '') || a[1] !== '--choices') return false;
@@ -62,7 +73,7 @@ export function afterExit(prev, code, tail, now = new Date().toISOString()) {
 // Skrypty, które wydają pieniądze albo limit AI (OpenRouter, Claude, Gemini). JP 2026-10-30: „dbaj o moje środki”.
 // Zlecenie takiego skryptu musi nieść zgodę JP: pole jp_ok = { date: 'RRRR-MM-DD', quote: 'dosłowne słowa JP z czatu' },
 // nie starszą niż 3 dni. Bez tego serwer odrzuca zlecenie (status rejected), zanim cokolwiek wyda.
-export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs']);
+export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs', 'game-art.mjs']);
 export function jpOkError(job, now = Date.now()) {
   const ok = job?.jp_ok;
   if (!ok || typeof ok !== 'object' || typeof ok.quote !== 'string' || ok.quote.trim().length < 2 || !/^\d{4}-\d{2}-\d{2}$/.test(ok.date ?? '')) return 'brak zgody JP (jp_ok {date, quote}) dla zlecenia, które kosztuje';
