@@ -209,7 +209,9 @@ elif m == 'slice':
             fr, dropped = keep_main(fr)
             bb = fr.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox()
             if bb: fr = fr.crop(bb)
-        if job.get('face_right'):
+        if job.get('face_right') and (i + 1) in (job.get('face_flip') or []):
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT); flipped = True   # ręcznie wskazana klatka (heurystyka jej nie łapie)
+        elif job.get('face_right') and (i + 1) not in (job.get('face_skip') or []):
             f, d = facing(fr); face = d
             # JP 2026-11-01: wszystkie klatki patrzą w PRAWO (gra odbija je przy ruchu w lewo) — klatkę odwróconą odbijamy tu, nie w grze
             if f < 0 and d < -0.015: fr = fr.transpose(Image.FLIP_LEFT_RIGHT); flipped = True

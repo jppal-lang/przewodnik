@@ -1,0 +1,18 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "działaj , masz wolna rekę"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "fix",
+  "quo-pozy-05",
+  "Keep all frames exactly as they are, but frame 6 still shows a rope — remove the rope completely from frame 6 (only the character, paws as if gripping an invisible rope). Frames 9 and 10: no line or remnants of a line above the paws, nothing in the paws. Every frame faces RIGHT."
+ ],
+ "title": "Pozy Quo v2, paczka 5: poprawka (usunięcie liny z klatki 6 i resztek tyrolki)",
+ "why": "Poprawka paczki 5: usunięcie liny z klatki 6 i resztek tyrolki. Antigravity, abonament, 0 $."
+}

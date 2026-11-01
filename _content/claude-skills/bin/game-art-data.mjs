@@ -63,7 +63,7 @@ export default {
         `${SIDE} Frames 4 and 5 may turn only the head. Each frame shows the whole character, feet and tail included, centred in its own cell with generous empty space around it, at the same scale in every frame; the characters never touch or overlap each other or the cell edges. ` +
         `Clean pure white #FFFFFF background everywhere, no ground line, no shadow under the character, no motion lines, no dust, no labels. ${STYLE}`
     },
-    pz({ name: 'quo-pozy-02', role: 'pozy02', title: 'Quo v2 — pozy 11–20 (lądowanie, fikołek, szybowanie, uderzenie, balonik, zbieranie)', grid: [5, 2], expect: 10,
+    pz({ name: 'quo-pozy-02', role: 'pozy02', faceSkip: [2, 3, 4],   // fikołek: obrót, nie odbijać title: 'Quo v2 — pozy 11–20 (lądowanie, fikołek, szybowanie, uderzenie, balonik, zbieranie)', grid: [5, 2], expect: 10,
       frameNames: ['land', 'double_jump_1', 'double_jump_2', 'double_jump_3', 'glide_1', 'glide_2', 'hurt', 'balloon_float_1', 'balloon_float_2', 'pickup'],
       hint: 'Rząd 1: lądowanie (przysiad, spłaszczony), fikołek ×3 (zwijanie w kłębek i obrót), szybowanie 1. Rząd 2: szybowanie 2, uderzenie (odrzut do tyłu), balonik ×2, zbieranie (schyla się).',
       prompt: sheet(10, 5, 2, 'Frame 1 landing: knees deeply bent, body squashed a little, paws out to the sides for balance. ' +

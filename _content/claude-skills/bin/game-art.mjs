@@ -151,7 +151,7 @@ async function processPack(pack, raw, dir) {
     return { files: [[join(dir, 'preview.jpg'), `${pack.name}.jpg`]], warn };
   }
   const tol = pack.bg === 'magenta' ? 70 : 48;
-  const sl = await py({ mode: 'slice', src: raw, outDir: join(dir, 'cells'), tol, expect: pack.expect, grid: pack.grid, shadow: pack.kind === 'frames', measure: pack.kind === 'frames', face_right: pack.kind === 'frames' && pack.facing !== 'any' });
+  const sl = await py({ mode: 'slice', src: raw, outDir: join(dir, 'cells'), tol, expect: pack.expect, grid: pack.grid, shadow: pack.kind === 'frames', measure: pack.kind === 'frames', face_right: pack.kind === 'frames' && pack.facing !== 'any', face_skip: pack.faceSkip ?? [], face_flip: pack.faceFlip ?? [] });
   if (sl.count !== pack.expect) warn.push(`znalazłem ${sl.count} elementów zamiast ${pack.expect} (krojenie: ${sl.how}) — sprawdź kolejność`);
   if (sl.bg !== 'alpha' && sl.transparent < 0.2) warn.push(`tło prawie się nie wycięło (${Math.round(sl.transparent * 100)}% przezroczyste, tło ${sl.bg})`);
   const cells = sl.cells.slice(0, pack.expect);
@@ -290,6 +290,14 @@ async function cmdPeek(name) {
   log(`${name} v${s.v}: podgląd w repo (${got.join(', ')}) ${pub.code === 0 ? 'opublikowany' : 'BŁĄD publish ' + (pub.err || pub.out).slice(-150)}`);
   return pub.code === 0 ? 0 : 1;
 }
+// ponowne cięcie ostatniej wersji obecnym kodem (bez AI): raw.png → klatki, arkusz, gif → podgląd w repo
+async function cmdRecut(name) {
+  const pack = packOf(name), s = loadState().packs[name]; if (!s?.v) { log(`${name}: brak wersji`); return 1; }
+  const dir = vDir(name, s.v), raw = join(dir, 'raw.png'); if (!existsSync(raw)) { log(`${name}: brak raw.png`); return 1; }
+  const { warn } = await processPack(pack, raw, dir);
+  log(`${name} v${s.v}: pocięte od nowa${warn.length ? ' — ' + warn.join(' · ') : ''}`);
+  return cmdPeek(name);
+}
 async function cmdOk(name) {
   const pack = packOf(name), s = loadState().packs[name];
   if (!s?.v) throw new Error(`${name}: jeszcze nie wygenerowana`);
@@ -399,6 +407,7 @@ try {
   else if (cmd === 'fix') code = await cmdFix(a1, a2);
   else if (cmd === 'ok') code = await cmdOk(a1);
   else if (cmd === 'peek') code = await cmdPeek(a1);
+  else if (cmd === 'recut') code = await cmdRecut(a1);
   else if (cmd === 'watch') code = await cmdWatch();
   else if (cmd === 'to-panel') code = await cmdToPanel();
   else if (cmd === 'status') code = cmdStatus();

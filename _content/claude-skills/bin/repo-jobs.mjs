@@ -71,7 +71,7 @@ export function isGameArtArgs(a) {
   const P = (x) => /^[a-z0-9][a-z0-9-]{0,40}$/.test(x ?? '');
   if (a[0] === 'status') return a.length === 1;
   if (a[0] === 'ok') return a.length === 2 && P(a[1]);
-  if (a[0] === 'peek') return a.length === 2 && P(a[1]);   // podgląd do repo, bez AI
+  if (a[0] === 'peek' || a[0] === 'recut') return a.length === 2 && P(a[1]);   // podgląd / ponowne cięcie, bez AI
   if (a[0] === 'fix') return a.length === 3 && P(a[1]) && typeof a[2] === 'string' && a[2].trim().length >= 3 && a[2].length <= 800;
   if (a[0] === 'gen') return (P(a[1]) || a[1] === '--next') && a.slice(2).every(x => x === '--wait-review' || x === '--force') && new Set(a.slice(2)).size === a.length - 2;
   return false;
