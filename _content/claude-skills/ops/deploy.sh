@@ -12,6 +12,12 @@
 #   sh /root/quolino-web/ops/deploy.sh pending          — co czeka (pliki + zmiany)
 #   sh /root/quolino-web/ops/deploy.sh approve <hash>   — wdróż to, co czeka (hash z komunikatu)
 # SQL: każdy NOWY plik sql/*.sql wykonuje się raz (rejestr /root/quolino-web/.sql-applied), w całości albo wcale.
+# AUTOMAT (JP 2026-11-01: „chuj z mojego klikania to ma być automat”): od tej wersji SAMO wchodzą też
+#   • sql/*.sql — każdy nowy plik raz, w transakcji (całość albo nic), PRZED nim zrzut bazy do backups/pre-sql-*.sql.gz;
+#     błąd → alert na Discord, plik nie wchodzi i nie jest ponawiany, dopóki jego treść się nie zmieni (.sql-failed);
+#   • cron/crontab.txt — blok „quolino (z repo)” w crontabie roota; wchodzą tylko linie uruchamiające skrypty w kontenerze
+#     Hermesa (docker exec -u hermes …) albo /root/quolino-web/ops/*.sh; inne linie są pomijane z alertem.
+#   Ręczna zgoda zostaje tylko dla tego, co działa jako root: ops/, ssr/, gate/, install.sh i reszta.
 set -u
 V=/var/lib/docker/volumes/quolino-web_site/_data
 S=$V/_content/claude-skills
@@ -31,7 +37,8 @@ post() { [ -n "${ALERT_WEBHOOK:-}" ] && curl -s -m 20 -H 'Content-Type: applicat
 tell_hermes() { printf '%s\n%s\n' "$(date -u '+%F %T UTC')" "$1" | docker exec -i -u hermes "$H" sh -c 'cat > /opt/data/quolino/work/deployed.txt' 2>/dev/null; }
 HEAD=$(G rev-parse HEAD) || exit 1
 short() { echo "$1" | cut -c1-8; }
-root_files() { G diff --name-only "$1" "$2" -- "$P" | grep -Ev "$SAFE" || true; }
+AUTO='^_content/claude-skills/(sql/[A-Za-z0-9._-]+\.sql|cron/crontab\.txt)$'
+root_files() { G diff --name-only "$1" "$2" -- "$P" | grep -Ev "$SAFE" | grep -Ev "$AUTO" || true; }
 
 # ── skrzynka decyzji w panelu (ops.deploy_requests) ──
 # Wartości idą do psql przez stdin jako base64 (alfabet bez cudzysłowów i średników) — treść commitów ani plików nie może
@@ -131,6 +138,81 @@ do_approve() {
   return 0
 }
 
+# ── AUTOMAT: SQL i crontab z repo (bez zgody; patrz nagłówek) ──
+SQLFAIL=$W/.sql-failed
+auto_sql() {
+  new=""
+  for f in $(ls "$S/sql" 2>/dev/null | grep '\.sql$' | sort); do
+    grep -qxF "$f" "$LEDGER" && continue
+    h=$(md5sum "$S/sql/$f" | cut -d' ' -f1)
+    grep -qxF "$f $h" "$SQLFAIL" 2>/dev/null && continue     # już padł w tej treści — czeka na poprawiony plik
+    new="$new $f"
+  done
+  [ -n "$new" ] || return 0
+  mkdir -p $W/backups; bk=$W/backups/pre-sql-$(date -u +%Y%m%d-%H%M%S).sql.gz
+  if ! docker exec "$PG" sh -c 'pg_dump -U "$POSTGRES_USER" -d quolino --no-owner --format=plain' | gzip -6 > "$bk" || [ "$(gzip -dc "$bk" | grep -c city_versions)" -lt 1 ]; then
+    rm -f "$bk"; post "🔴 Automat SQL wstrzymany: nie udał się zrzut bazy przed$new"; echo "automat SQL: brak zrzutu — wstrzymane"; return 0
+  fi
+  find $W/backups -name 'pre-sql-*.sql.gz' -mtime +14 -delete 2>/dev/null
+  ok=""; bad=""
+  for f in $new; do
+    if r=$(docker exec -i "$PG" sh -c 'psql -U "$POSTGRES_USER" -d quolino -v ON_ERROR_STOP=1 -1 -q' < "$S/sql/$f" 2>&1); then
+      echo "$f" >> "$LEDGER"; ok="$ok $f"; echo "SQL OK (automat): $f"
+    else
+      echo "$f $(md5sum "$S/sql/$f" | cut -d' ' -f1)" >> "$SQLFAIL"; bad="$bad $f"
+      echo "SQL BŁĄD (automat) $f: $r"; post "🔴 SQL $f nie wszedł (wycofany, baza bez zmian): $(echo "$r" | tail -2)"
+    fi
+  done
+  docker exec "$PG" sh -c 'psql -U "$POSTGRES_USER" -d quolino -qc "NOTIFY pgrst, '"'"'reload schema'"'"'"' >/dev/null 2>&1
+  m="🗄️ automat SQL:${ok:+ wdrożone$ok}${bad:+ · BŁĄD$bad} (kopia przed: $(basename "$bk"))"
+  tell_hermes "$m"; echo "$m"
+}
+CRONSUM=$W/.cron-synced
+auto_cron() {
+  src=$S/cron/crontab.txt; [ -f "$src" ] || return 0
+  h=$(md5sum "$src" | cut -d' ' -f1); [ "$(cat "$CRONSUM" 2>/dev/null)" = "$h" ] && return 0
+  blk=$(mktemp); skipped=""
+  echo "# >>> quolino (z repo: cron/crontab.txt, deploy.sh — nie edytuj ręcznie) >>>" > "$blk"
+  while IFS= read -r l; do
+    case "$l" in
+      ''|'#'*) echo "$l" >> "$blk" ;;
+      H=hermes-quolino-hermes-agent-1) echo "$l" >> "$blk" ;;
+      *) cmd=$(echo "$l" | awk '{for(i=6;i<=NF;i++) printf "%s%s",$i,(i<NF?" ":"")}')
+         if echo "$l" | grep -qE '^[0-9*/,-]+[[:space:]]+[0-9*/,-]+[[:space:]]+[0-9*/,-]+[[:space:]]+[0-9*/,-]+[[:space:]]+[0-9*/,-]+[[:space:]]' &&
+            { echo "$cmd" | grep -qE '^docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino \$H node [A-Za-z0-9._-]+\.mjs( [A-Za-z0-9 ._=-]*)? >> /root/quolino-web/[A-Za-z0-9._-]+\.log 2>&1$' ||
+              echo "$cmd" | grep -qE '^/root/quolino-web/ops/[A-Za-z0-9._-]+\.sh( >> /root/quolino-web/[A-Za-z0-9._-]+\.log 2>&1)?$'; }; then
+           echo "$l" >> "$blk"
+         else skipped="$skipped
+$l"; fi ;;
+    esac
+  done < "$src"
+  echo "# <<< quolino (z repo) <<<" >> "$blk"
+  cur=$(mktemp); crontab -l 2>/dev/null > "$cur" || true
+  # stary blok out; linie dodane kiedyś ręcznie, identyczne z linią z repo — też out (inaczej zadanie szłoby dwa razy)
+  python3 - "$cur" "$blk" <<'PY'
+import sys
+cur, blk = sys.argv[1], sys.argv[2]
+lines = open(cur, encoding='utf-8').read().split('\n')
+repo = [l for l in open(blk, encoding='utf-8').read().split('\n') if l.strip() and not l.lstrip().startswith('#')]
+norm = lambda l: ' '.join(l.split())
+rs = {norm(l) for l in repo}
+out, inside = [], False
+for l in lines:
+    if l.startswith('# >>> quolino (z repo'): inside = True; continue
+    if l.startswith('# <<< quolino (z repo'): inside = False; continue
+    if inside or (l[:1] in '0123456789*@' and norm(l) in rs): continue   # tylko zadania; H= i inne zmienne zostają
+    out.append(l)
+while out and not out[-1].strip(): out.pop()
+open(cur, 'w', encoding='utf-8').write('\n'.join(out) + '\n\n' + open(blk, encoding='utf-8').read())
+PY
+  if crontab "$cur"; then
+    echo "$h" > "$CRONSUM"; m="⏰ automat cron: harmonogram z repo wdrożony"
+    [ -n "$skipped" ] && { m="$m · pominięte linie (nie wyglądają na zadania Hermesa/ops): $(echo "$skipped" | head -5 | tr '\n' ' ')"; post "⚠️ $m"; }
+    tell_hermes "$m"; echo "$m"
+  else post "🔴 automat cron: crontab nie przyjął bloku z repo"; echo "automat cron: błąd"; fi
+  rm -f "$blk" "$cur"
+}
+
 if [ "${1:-}" = approve ]; then
   [ -n "${2:-}" ] || { echo "Podaj hash z komunikatu: deploy.sh approve <hash>"; exit 1; }
   do_approve "$2"; exit $?
@@ -145,7 +227,9 @@ if [ "${1:-}" = pending ]; then
   echo; echo "Zatwierdzenie: panel admina → Decyzje → „Zatwierdź i wdróż” albo sh $W/ops/deploy.sh approve $(short "$HEAD")"; exit 0
 fi
 
-# ── cron: najpierw decyzje z panelu (zatwierdzone wdrożenia), potem prośba o zgodę dla nowych zmian ──
+# ── cron: najpierw automat (SQL, crontab), potem decyzje z panelu, potem prośba o zgodę dla tego, co działa jako root ──
+auto_sql
+auto_cron
 dr_run_approved
 root=$(root_files "$(cat "$APPROVED")" "$HEAD")
 [ -n "$root" ] && dr_register "$root"

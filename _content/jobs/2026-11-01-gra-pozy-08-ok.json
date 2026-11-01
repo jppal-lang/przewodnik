@@ -1,0 +1,17 @@
+{
+ "script": "game-art.mjs",
+ "args": [
+  "ok",
+  "quo-pozy-08"
+ ],
+ "title": "Pozy Quo v2, paczka 8 do gry (tańce)",
+ "why": "Akceptacja paczki 8 (tańce) — sprawdzona przez Claude (klatki w prawo, wierne obrotowi JP). JP 2026-11-01: automat zamiast klikania. Bez AI, 0 $.",
+ "est_usd": 0,
+ "est_limit": "0 wywołań (WebP + manifest)",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "chuj z mojego klikania to ma być automat"
+ },
+ "by": "Claude",
+ "timeout_min": 15
+}
