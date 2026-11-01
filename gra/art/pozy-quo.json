@@ -1,0 +1,339 @@
+{
+  "projekt": "Quo: Wyprawa — komplet póz Quo do gry (do wygenerowania od nowa)",
+  "wersja": "2026-11-01",
+  "zasady_wspolne": {
+    "postac": "Quo — złoto-pomarańczowa popielica, kremowy brzuszek i pyszczek, duże brązowe oczy, małe okrągłe uszy z różowym wnętrzem, czubek na głowie, puszysty zawinięty ogon, terakotowa chusta zawiązana z tyłu szyi; wierny referencji obrotu 8 ujęć (JP 2026-11-01)",
+    "widok": "profil w prawo (gra 2D z boku); lewo = odbicie lustrzane w grze",
+    "tlo": "przezroczyste, bez cienia pod łapkami (gra rysuje własny)",
+    "rozmiar_klatki_px": 512,
+    "kotwica": "środek między łapkami na linii podłoża; ta sama skala i linia stóp we wszystkich klatkach",
+    "styl": "jak ikony miejsc i hero Quolino: kreskówka 3D, miękkie futro, ciepłe światło złotej godziny",
+    "bez": [
+      "ludzi",
+      "tekstu",
+      "logo",
+      "dodatkowych akcesoriów poza wymienionymi"
+    ],
+    "format_dostawy": "arkusz klatek jednej animacji w rzędzie (jedno wywołanie = jedna animacja), potem cięcie na WebP 512",
+    "metadane": "© Quolino (quolino.com)"
+  },
+  "pozy": [
+    {
+      "id": "idle",
+      "stan_w_grze": "stoi",
+      "klatki": 3,
+      "opis": "stoi spokojnie, łapki przy brzuszku; klatka 2: lekki wdech; klatka 3: mrugnięcie"
+    },
+    {
+      "id": "idle_look",
+      "stan_w_grze": "stoi dłużej (co ~5 s)",
+      "klatki": 2,
+      "opis": "rozgląda się ciekawie: głowa w stronę widza, potem w górę"
+    },
+    {
+      "id": "walk",
+      "stan_w_grze": "chodzi powoli",
+      "klatki": 8,
+      "opis": "pełny cykl kroku, ogon kołysze się, chusta lekko faluje"
+    },
+    {
+      "id": "run",
+      "stan_w_grze": "biegnie",
+      "klatki": 8,
+      "opis": "pełny cykl biegu, pochylony do przodu, uszy do tyłu, ogon wyciągnięty"
+    },
+    {
+      "id": "jump_start",
+      "stan_w_grze": "odbicie",
+      "klatki": 1,
+      "opis": "przysiad-sprężyna tuż przed skokiem"
+    },
+    {
+      "id": "jump_up",
+      "stan_w_grze": "lot w górę",
+      "klatki": 1,
+      "opis": "wyciągnięty w górę, łapki nad głową, ogon w dół"
+    },
+    {
+      "id": "jump_apex",
+      "stan_w_grze": "szczyt skoku",
+      "klatki": 1,
+      "opis": "skulony, kolana pod brodą, radosna mina"
+    },
+    {
+      "id": "fall",
+      "stan_w_grze": "spada",
+      "klatki": 2,
+      "opis": "łapki w górę, uszy i ogon w górę od pędu, lekkie zdziwienie"
+    },
+    {
+      "id": "land",
+      "stan_w_grze": "lądowanie",
+      "klatki": 1,
+      "opis": "ugięte nogi, spłaszczony (squash), łapki w bok dla równowagi"
+    },
+    {
+      "id": "double_jump",
+      "stan_w_grze": "podwójny skok (moc)",
+      "klatki": 3,
+      "opis": "fikołek w powietrzu: klatki obrotu w kłębek"
+    },
+    {
+      "id": "glide",
+      "stan_w_grze": "szybowanie (moc)",
+      "klatki": 2,
+      "opis": "rozłożone łapki, ogon jak ster, lekkie falowanie"
+    },
+    {
+      "id": "hurt",
+      "stan_w_grze": "uderzenie / utrata serduszka",
+      "klatki": 1,
+      "opis": "odrzucony do tyłu, zaskoczony, gwiazdki NIE (gra dodaje efekty)"
+    },
+    {
+      "id": "sleep",
+      "stan_w_grze": "odpoczynek po utracie serduszek",
+      "klatki": 2,
+      "opis": "zwinięty w kłębek na ziemi, ogon jak kocyk, oddech"
+    },
+    {
+      "id": "wake",
+      "stan_w_grze": "budzenie",
+      "klatki": 2,
+      "opis": "przeciąga się i ziewa, potem wstaje"
+    },
+    {
+      "id": "climb_ladder",
+      "stan_w_grze": "drabina",
+      "klatki": 4,
+      "opis": "wspina się po drabinie, widziany z boku, łapki na zmianę"
+    },
+    {
+      "id": "climb_rope",
+      "stan_w_grze": "lina (zagadka liny w jaskini)",
+      "klatki": 4,
+      "opis": "wspina się po pionowej linie, łapka nad łapką"
+    },
+    {
+      "id": "zipline",
+      "stan_w_grze": "tyrolka nad wąwozem",
+      "klatki": 2,
+      "opis": "wisi na jednej/dwóch łapkach na linie, nogi i ogon kołyszą się"
+    },
+    {
+      "id": "cart_ride",
+      "stan_w_grze": "wagonik",
+      "klatki": 2,
+      "opis": "siedzi (od pasa w górę widoczny ponad krawędzią wagonika), łapki w górę z radości; wagonik rysuje gra"
+    },
+    {
+      "id": "push",
+      "stan_w_grze": "pchanie głazu (zagadka)",
+      "klatki": 4,
+      "opis": "zaparty łapkami o głaz z prawej, mocno pochylony, wysiłek; głaz rysuje gra"
+    },
+    {
+      "id": "lever",
+      "stan_w_grze": "dźwignia",
+      "klatki": 2,
+      "opis": "ciągnie dźwignię w dół obiema łapkami"
+    },
+    {
+      "id": "balloon_float",
+      "stan_w_grze": "lot na baloniku (moc)",
+      "klatki": 2,
+      "opis": "wisi trzymając sznurek balonika w uniesionej łapce, nogi zwisają; wymaga akcesorium balloon"
+    },
+    {
+      "id": "photo",
+      "stan_w_grze": "tryb foto / zadanie foto",
+      "klatki": 1,
+      "opis": "trzyma aparat przy oku; wymaga akcesorium camera"
+    },
+    {
+      "id": "think",
+      "stan_w_grze": "brama z pytaniem (quiz)",
+      "klatki": 1,
+      "opis": "łapka pod brodą, zamyślony, wzrok w górę"
+    },
+    {
+      "id": "pickup",
+      "stan_w_grze": "zbieranie (moneta, naklejka, przebranie)",
+      "klatki": 1,
+      "opis": "schyla się i sięga łapką w dół"
+    },
+    {
+      "id": "open_chest",
+      "stan_w_grze": "otwieranie skrzyni",
+      "klatki": 1,
+      "opis": "pochylony, podnosi wieko obiema łapkami; skrzynię rysuje gra"
+    },
+    {
+      "id": "door",
+      "stan_w_grze": "wejście do bramy / strefy",
+      "klatki": 1,
+      "opis": "od tyłu (3/4 tył), robi krok w głąb"
+    },
+    {
+      "id": "cheer",
+      "stan_w_grze": "radość (wagonik, nagroda)",
+      "klatki": 2,
+      "opis": "obie łapki w górę, podskok"
+    },
+    {
+      "id": "dance_wave",
+      "stan_w_grze": "taniec po przystanku #1",
+      "klatki": 4,
+      "opis": "machanie łapkami i krok w bok"
+    },
+    {
+      "id": "dance_spin",
+      "stan_w_grze": "taniec po przystanku #2",
+      "klatki": 4,
+      "opis": "skok z obrotem (klatki: przód, bok, tył, bok)"
+    },
+    {
+      "id": "dance_medal",
+      "stan_w_grze": "taniec po przystanku #3",
+      "klatki": 2,
+      "opis": "tupie i kołysze się z medalem na piersi; wymaga akcesorium medal"
+    },
+    {
+      "id": "dance_disco",
+      "stan_w_grze": "taniec po przystanku #4",
+      "klatki": 4,
+      "opis": "disco: łapka w górę po skosie, biodro w bok, na zmianę"
+    },
+    {
+      "id": "treasure",
+      "stan_w_grze": "Skarb Quo (komnata w chmurach)",
+      "klatki": 1,
+      "opis": "trzyma nad głową złotą skrzyneczkę-skarb; wymaga akcesorium treasure"
+    }
+  ],
+  "akcesoria": {
+    "czapki": {
+      "opis": "przebrania z gry (HATS); zakładane na głowę, więc zmieniają sylwetkę we WSZYSTKICH pozach",
+      "lista": [
+        {
+          "id": "helmet",
+          "nazwa": "Kask z lampką",
+          "opis": "żółty kask speleologa z małą lampką z przodu, pasek pod brodą"
+        },
+        {
+          "id": "hood",
+          "nazwa": "Kaptur mnicha",
+          "opis": "brązowy kaptur habitu, uszy wystają przez otwory lub są pod kapturem — do decyzji JP"
+        },
+        {
+          "id": "explorer",
+          "nazwa": "Kapelusz odkrywcy",
+          "opis": "beżowy kapelusz safari z ciemną taśmą"
+        },
+        {
+          "id": "crown",
+          "nazwa": "Wianek z kwiatów",
+          "opis": "wianek z drobnych kwiatów Infioraty (czerwone, żółte, białe)"
+        }
+      ],
+      "dotyczy_poz": "wszystkie"
+    },
+    "trzymane": {
+      "opis": "przedmioty mocy i nagród; trzymane w łapce, więc tylko w pozach, w których mają sens",
+      "lista": [
+        {
+          "id": "lantern",
+          "nazwa": "Latarka (moc w jaskini)",
+          "opis": "mała latarka z ciepłym światłem w przedniej łapce",
+          "dotyczy_poz": [
+            "idle",
+            "walk",
+            "run",
+            "jump_start",
+            "jump_up",
+            "jump_apex",
+            "fall",
+            "land",
+            "double_jump",
+            "climb_ladder",
+            "hurt"
+          ]
+        },
+        {
+          "id": "balloon",
+          "nazwa": "Balonik (moc)",
+          "opis": "czerwony balonik na sznurku",
+          "dotyczy_poz": [
+            "balloon_float",
+            "idle",
+            "walk",
+            "run",
+            "jump_up",
+            "fall"
+          ]
+        },
+        {
+          "id": "magnet",
+          "nazwa": "Magnes na kamyczki (moc)",
+          "opis": "czerwony magnes podkowa w łapce",
+          "dotyczy_poz": [
+            "idle",
+            "walk",
+            "run",
+            "jump_up",
+            "fall",
+            "land"
+          ]
+        },
+        {
+          "id": "leaf",
+          "nazwa": "Liść do szybowania (moc)",
+          "opis": "duży zielony liść trzymany nad głową jak lotnia",
+          "dotyczy_poz": [
+            "glide",
+            "fall"
+          ]
+        },
+        {
+          "id": "camera",
+          "nazwa": "Aparat (zadanie foto)",
+          "opis": "mały aparat fotograficzny",
+          "dotyczy_poz": [
+            "photo"
+          ]
+        },
+        {
+          "id": "medal",
+          "nazwa": "Medal",
+          "opis": "złoty medal na terakotowej wstążce na piersi",
+          "dotyczy_poz": [
+            "dance_medal",
+            "cheer"
+          ]
+        },
+        {
+          "id": "treasure",
+          "nazwa": "Skarb Quo",
+          "opis": "złota skrzyneczka",
+          "dotyczy_poz": [
+            "treasure"
+          ]
+        }
+      ]
+    }
+  },
+  "podsumowanie": {
+    "animacje": 32,
+    "klatki_bazowe": 79,
+    "klatki_z_czapkami_4x": 316,
+    "klatki_z_przedmiotami": 84,
+    "razem_klatek": 479,
+    "wywolania_jeden_arkusz_na_animacje": {
+      "bazowe": 32,
+      "czapki_4x": 128,
+      "przedmioty": 25,
+      "razem": 185
+    },
+    "uwaga": "Przedmioty wpisane w samą pozę (balonik w balloon_float, aparat w photo, medal w dance_medal, skarb w treasure) są w klatkach bazowych. Tygodniowy limit Antigravity przyjęty w projekcie to ok. 150 wywołań."
+  }
+}
