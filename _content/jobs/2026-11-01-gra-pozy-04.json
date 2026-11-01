@@ -1,0 +1,17 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "ok, zleć i, i wykonaj kolejne pozy rób sensowne paczki"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "gen",
+  "quo-pozy-04"
+ ],
+ "title": "Pozy Quo v2, paczka 4/9: bieg 8 klatek",
+ "why": "Pozy Quo v2, paczka 4/9: bieg 8 klatek. Z gra/art/pozy-quo.json; wszystkie klatki patrzą w prawo (gra odbija przy ruchu w lewo, skrypt odbija klatki odwrócone). Antigravity, abonament, 0 $."
+}

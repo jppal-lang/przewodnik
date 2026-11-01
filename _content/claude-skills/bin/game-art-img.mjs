@@ -130,6 +130,44 @@ def order(cells):
         else: rows.append([cy, [c]])
     return [c for _, rc in rows for c in sorted(rc, key=lambda c: c[0])]
 
+def keep_main(fr, keep=0.03):
+    # usuwa okruchy po cięciu (kawałek ogona sąsiedniej klatki, kropki): zostają spójne plamy >= keep * największej
+    a = fr.getchannel('A').point(lambda v: 255 if v > 24 else 0)
+    w, h = a.size; k = max(1, max(w, h) // 300); sw, sh = (w + k - 1) // k, (h + k - 1) // k
+    sm = a.resize((sw, sh), Image.NEAREST).load()
+    lab = [[0] * sw for _ in range(sh)]; sizes = {}; n = 0
+    for y in range(sh):
+        for x in range(sw):
+            if sm[x, y] and not lab[y][x]:
+                n += 1; st = [(x, y)]; lab[y][x] = n; c = 0
+                while st:
+                    px, py = st.pop(); c += 1
+                    for qx, qy in ((px + 1, py), (px - 1, py), (px, py + 1), (px, py - 1)):
+                        if 0 <= qx < sw and 0 <= qy < sh and sm[qx, qy] and not lab[qy][qx]: lab[qy][qx] = n; st.append((qx, qy))
+                sizes[n] = c
+    if n <= 1: return fr, 0
+    big = max(sizes.values()); drop = {i for i, c in sizes.items() if c < big * keep}
+    if not drop: return fr, 0
+    m = Image.new('L', (sw, sh), 255); mp = m.load()
+    for y in range(sh):
+        for x in range(sw):
+            if lab[y][x] in drop: mp[x, y] = 0
+    m = m.resize((w, h), Image.NEAREST)
+    r, g, b, al = fr.split(); al = ImageChops.multiply(al, m)
+    return Image.merge('RGBA', (r, g, b, al)), len(drop)
+
+def facing(fr):
+    # 1 = patrzy w prawo: środek górnej części (głowa) na prawo od środka całej sylwetki (ogon ciągnie środek w lewo)
+    a = fr.getchannel('A').point(lambda v: 255 if v > 24 else 0); w, h = a.size; px = a.load()
+    def cx(y0, y1):
+        sx = n = 0
+        for y in range(y0, y1, 2):
+            for x in range(0, w, 2):
+                if px[x, y]: sx += x; n += 1
+        return sx / n if n else w / 2
+    d = (cx(0, max(1, int(h * 0.35))) - cx(0, h)) / max(1, w)
+    return (1 if d >= 0 else -1), round(d, 3)
+
 def measure(fr):
     a = fr.getchannel('A').point(lambda v: 255 if v > 24 else 0); w, h = fr.size
     def cx_of(y0, y1):
@@ -166,8 +204,18 @@ elif m == 'slice':
         if job.get('shadow'): fr = strip_shadow(fr)
         bb = fr.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox() or (0, 0, fr.size[0], fr.size[1])
         fr = fr.crop(bb)
+        dropped = 0; flipped = False; face = None
+        if job.get('shadow'):
+            fr, dropped = keep_main(fr)
+            bb = fr.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox()
+            if bb: fr = fr.crop(bb)
+        if job.get('face_right'):
+            f, d = facing(fr); face = d
+            # JP 2026-11-01: wszystkie klatki patrzą w PRAWO (gra odbija je przy ruchu w lewo) — klatkę odwróconą odbijamy tu, nie w grze
+            if f < 0 and d < -0.015: fr = fr.transpose(Image.FLIP_LEFT_RIGHT); flipped = True
         p = os.path.join(job['outDir'], 'cell-%02d.png' % (i + 1)); fr.save(p, 'PNG')
         info = measure(fr) if job.get('measure') else { 'w': fr.size[0], 'h': fr.size[1] }
+        info['flipped'] = flipped; info['dropped'] = dropped; info['face'] = face
         info['path'] = p; info['src'] = [c[0] + bb[0], c[1] + bb[1], c[0] + bb[2], c[1] + bb[3]]
         res.append(info)
     print(json.dumps({ 'bg': bg, 'how': how, 'count': len(res), 'transparent': transparent, 'size': list(im.size), 'cells': res }))

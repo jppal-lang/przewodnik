@@ -1,0 +1,18 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {
+  "date": "2026-11-01",
+  "quote": "ok, zleć i, i wykonaj kolejne pozy rób sensowne paczki"
+ },
+ "by": "Claude",
+ "timeout_min": 25,
+ "args": [
+  "fix",
+  "quo-pozy-01",
+  "Poprawki JP 2026-11-01. Klatki 1, 3, 4, 5, 6 są dobre — zostaw je bez zmian. Frame 2 must have the eyes OPEN (only a gentle breath in, chest slightly raised); only frame 3 blinks. Frame 7 flying straight UP: whole body stretched vertically, both front paws straight up ABOVE THE HEAD, tail hanging down, feet pointing down. Frame 8 top of the jump: curled into a compact ball, knees pulled up under the chin, front paws hugging the knees, eyes closed with joy. Frames 9 and 10 falling: both front paws raised high above the head, ears and tail blown upwards, legs dangling below, surprised open mouth; 10 slightly lower paws than 9. Every frame faces RIGHT (nose to the right edge, tail on the left)."
+ ],
+ "title": "Pozy Quo v2 1–10: poprawka (klatki 2, 7–10)",
+ "why": "Pozy Quo v2 1–10: poprawka (klatki 2, 7–10). Z gra/art/pozy-quo.json; wszystkie klatki patrzą w prawo (gra odbija przy ruchu w lewo, skrypt odbija klatki odwrócone). Antigravity, abonament, 0 $."
+}

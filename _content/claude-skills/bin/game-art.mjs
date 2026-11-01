@@ -35,7 +35,7 @@ const readJson = (f) => { try { return JSON.parse(readFileSync(f, 'utf8')); } ca
 globalThis.__aiRole = () => 'grafiki gry';
 mkdirSync(WORK, { recursive: true });
 
-const ORDER = CFG.packs.map(p => p.name);
+const ORDER = CFG.packs.filter(p => !p.superseded).map(p => p.name);   // zastąpione (stary bieg/skok → pozy v2) nie idą w --next
 const packOf = (name) => CFG.packs.find(p => p.name === name) ?? (() => { throw new Error(`nie ma paczki „${name}” (są: ${ORDER.join(', ')})`); })();
 const idxOf = (name) => ORDER.indexOf(name) + 1;
 
@@ -151,10 +151,12 @@ async function processPack(pack, raw, dir) {
     return { files: [[join(dir, 'preview.jpg'), `${pack.name}.jpg`]], warn };
   }
   const tol = pack.bg === 'magenta' ? 70 : 48;
-  const sl = await py({ mode: 'slice', src: raw, outDir: join(dir, 'cells'), tol, expect: pack.expect, grid: pack.grid, shadow: pack.kind === 'frames', measure: pack.kind === 'frames' });
+  const sl = await py({ mode: 'slice', src: raw, outDir: join(dir, 'cells'), tol, expect: pack.expect, grid: pack.grid, shadow: pack.kind === 'frames', measure: pack.kind === 'frames', face_right: pack.kind === 'frames' && pack.facing !== 'any' });
   if (sl.count !== pack.expect) warn.push(`znalazłem ${sl.count} elementów zamiast ${pack.expect} (krojenie: ${sl.how}) — sprawdź kolejność`);
   if (sl.bg !== 'alpha' && sl.transparent < 0.2) warn.push(`tło prawie się nie wycięło (${Math.round(sl.transparent * 100)}% przezroczyste, tło ${sl.bg})`);
   const cells = sl.cells.slice(0, pack.expect);
+  const flipped = cells.map((c, i) => c.flipped ? i + 1 : 0).filter(Boolean);
+  if (flipped.length) warn.push(`klatki ${flipped.join(', ')} patrzyły w lewo — odbite lustrzanie (gra odbija sama przy ruchu w lewo)`);
   if (!cells.length) throw new Error('nic nie wycięte z obrazu');
   if (pack.kind === 'frames') {
     const plan = L.framePlan(cells.map(c => ({ w: c.w, h: c.h, cx: c.cx, head: c.head })));
@@ -255,9 +257,10 @@ async function cmdGen(name) {
   const st = loadState();
   if (name === '--next' || !name) { name = L.nextPack(ORDER, st); if (!name) { log('wszystkie paczki wygenerowane'); return 0; } }
   const pack = packOf(name), s = st.packs[name];
+  if (pack.superseded && !flag('--force')) { log(`${name}: zastąpiona (${pack.superseded}) — pomijam`); return 0; }
   if (s?.status === 'ok' && !flag('--force')) { log(`${name}: już zaakceptowana`); return 0; }
   if (s?.v && s.status !== 'queued' && !flag('--force')) { log(`${name}: już jest v${s.v} (${s.status}) — poprawki: fix, nowa wersja: --force`); return 0; }
-  if (flag('--wait-review')) { const w = L.waitingReview(st).filter(k => k !== name); if (w.length) { log(`${name}: czeka — JP ocenia ${w.join(', ')}`); return EXIT_LATER; } }
+  if (flag('--wait-review')) { const w = L.waitingReview(st).filter(k => k !== name && !CFG.packs.find(p => p.name === k)?.superseded); if (w.length) { log(`${name}: czeka — JP ocenia ${w.join(', ')}`); return EXIT_LATER; } }
   if (agyQuotaOut()) { patchPack(name, x => { x.status = x.v ? x.status : 'queued'; }); log(`${name}: ${quotaMsg(agyQuotaOut())}`); return EXIT_LATER; }
   if (!lock()) { log(`${name}: inny proces generuje (agy.lock) — później`); return EXIT_LATER; }
   try { await one(pack); return 0; } catch (e) { return onGenError(pack, e); }
