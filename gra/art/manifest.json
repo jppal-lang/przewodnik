@@ -626,7 +626,77 @@
     "256": "quo-pozy-08/pozy08-256.webp",
     "512": "quo-pozy-08/pozy08-512.webp"
    }
+  },
+  "quo-pozy-09": {
+   "pack": "quo-pozy-09",
+   "v": 2,
+   "accepted_at": "2026-11-01T15:31:55.576Z",
+   "kind": "frames",
+   "role": "pozy09",
+   "frames": 4,
+   "names": [
+    "dance_disco_1",
+    "dance_disco_2",
+    "dance_disco_3",
+    "dance_disco_4"
+   ],
+   "cols": 4,
+   "fw": 512,
+   "fh": 512,
+   "anchor": [
+    256,
+    471
+   ],
+   "quoH": 451,
+   "heads": [
+    [
+     270,
+     98
+    ],
+    [
+     281,
+     108
+    ],
+    [
+     273,
+     97
+    ],
+    [
+     275,
+     97
+    ]
+   ],
+   "boxes": [
+    [
+     85,
+     22,
+     366,
+     449
+    ],
+    [
+     100,
+     34,
+     303,
+     437
+    ],
+    [
+     88,
+     20,
+     349,
+     451
+    ],
+    [
+     106,
+     20,
+     295,
+     451
+    ]
+   ],
+   "src": {
+    "256": "quo-pozy-09/pozy09-256.webp",
+    "512": "quo-pozy-09/pozy09-512.webp"
+   }
   }
  },
- "updated_at": "2026-11-01T15:31:42.083Z"
+ "updated_at": "2026-11-01T15:31:55.576Z"
 }
