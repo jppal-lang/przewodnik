@@ -35,6 +35,22 @@ export default {
         `Clean pure white #FFFFFF background everywhere, no ground line, no shadow, no motion lines, no dust. ${STYLE}`
     },
     {
+      // Pozy v2 (gra/art/pozy-quo.json), seria 1: pierwsze 10 klatek pozycji stojących i skoku — JP 2026-11-01 „wygeneruj piersze 10 klatek”.
+      name: 'quo-pozy-01', title: 'Quo v2 — pozy 1–10 (stoi, rozgląda się, skok)', kind: 'frames', role: 'pozy01', bg: 'white', grid: [5, 2], expect: 10, aspect: '16:9',
+      refs: ['gra/art/ref/quo-bok-ref.webp', 'gra/art/ref/quo-obrot-ref.webp'],
+      labels: ['the character, side view facing right (main reference)', 'the same character from 8 angles (turnaround, for shape and colours only)'],
+      frameNames: ['idle_1', 'idle_2', 'idle_3', 'idle_look_1', 'idle_look_2', 'jump_start', 'jump_up', 'jump_apex', 'fall_1', 'fall_2'],
+      hint: 'Rząd 1: stoi (3 klatki: spokojnie, wdech, mrugnięcie) + rozgląda się (2: głowa do widza, głowa w górę). Rząd 2: odbicie, lot w górę, szczyt skoku, spadanie ×2. Ocena: czy Quo wygląda jak na referencji obrotu (chusta, czubek, ogon) i czy linia stóp się zgadza.',
+      prompt: `${QUO}\nCreate a game sprite sheet of exactly 10 separate frames arranged in a grid of 5 columns and 2 rows, read left to right, top row first. ` +
+        `Frame 1 standing calmly, paws resting on the belly. Frame 2 the same, a gentle breath in (chest slightly raised). Frame 3 the same as frame 1 but blinking (eyes closed). ` +
+        `Frame 4 standing, head turned towards the viewer, curious. Frame 5 standing, looking up, curious. ` +
+        `Frame 6 crouched like a spring right before a jump. Frame 7 flying upwards, body stretched up, paws above the head, tail pointing down. ` +
+        `Frame 8 top of the jump, curled up, knees under the chin, joyful face. Frame 9 falling, paws up, ears and tail lifted by the air, slightly surprised. Frame 10 the same fall a moment later, paws a little lower. ` +
+        `The golden-orange fur, cream belly and muzzle, big brown eyes, round ears with pink inside, small tuft on the head, big fluffy curled tail and the terracotta neckerchief tied at the back of the neck must match the turnaround reference in every frame. ` +
+        `${SIDE} Frames 4 and 5 may turn only the head. Each frame shows the whole character, feet and tail included, centred in its own cell with generous empty space around it, at the same scale in every frame; the characters never touch or overlap each other or the cell edges. ` +
+        `Clean pure white #FFFFFF background everywhere, no ground line, no shadow under the character, no motion lines, no dust, no labels. ${STYLE}`
+    },
+    {
       name: 'spello-panorama', title: 'Spello — panorama (daleki plan)', kind: 'panorama', place: 'spello', aspect: '16:9',
       terrains: ['olive', 'gate', 'alley', 'belvedere'],
       refs: ['media/tours/quolino-it-spello-tile-768.webp', 'media/tours/quolino-it-perugia-hero-1200.webp'],

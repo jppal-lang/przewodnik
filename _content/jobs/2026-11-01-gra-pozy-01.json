@@ -1,0 +1,11 @@
+{
+ "script": "game-art.mjs",
+ "args": ["gen", "quo-pozy-01"],
+ "why": "Pozy Quo v2 z gra/art/pozy-quo.json, seria 1: pierwsze 10 klatek (idle ×3, idle_look ×2, jump_start, jump_up, jump_apex, fall ×2) z referencją obrotu 8 ujęć JP. Antigravity (abonament AI Pro, 0 $), 1 wywołanie. Wynik do oceny w panelu (Grafiki) / wątku grafik gry.",
+ "title": "Pozy Quo v2: klatki 1–10",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro), limit grafik gry 50",
+ "jp_ok": {"date": "2026-11-01", "quote": "wygeneruj piersze 10 klatek"},
+ "by": "Claude",
+ "timeout_min": 20
+}
