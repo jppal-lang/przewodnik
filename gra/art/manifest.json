@@ -1,0 +1,143 @@
+{
+ "note": "Grafiki gry Quo: Wyprawa (bin/game-art.mjs, akceptacja JP na Discordzie). Ścieżki względem gra/art/. Brak wpisu = gra rysuje kodem.",
+ "version": 1,
+ "packs": {
+  "quo-pozy-01": {
+   "pack": "quo-pozy-01",
+   "v": 2,
+   "accepted_at": "2026-11-01T15:30:28.795Z",
+   "kind": "frames",
+   "role": "pozy01",
+   "frames": 10,
+   "names": [
+    "idle_1",
+    "idle_2",
+    "idle_3",
+    "idle_look_1",
+    "idle_look_2",
+    "jump_start",
+    "jump_up",
+    "jump_apex",
+    "fall_1",
+    "fall_2"
+   ],
+   "cols": 10,
+   "fw": 512,
+   "fh": 512,
+   "anchor": [
+    256,
+    471
+   ],
+   "quoH": 442,
+   "heads": [
+    [
+     282,
+     98
+    ],
+    [
+     279,
+     97
+    ],
+    [
+     284,
+     98
+    ],
+    [
+     285,
+     98
+    ],
+    [
+     279,
+     110
+    ],
+    [
+     323,
+     171
+    ],
+    [
+     340,
+     104
+    ],
+    [
+     283,
+     179
+    ],
+    [
+     274,
+     117
+    ],
+    [
+     267,
+     113
+    ]
+   ],
+   "boxes": [
+    [
+     114,
+     22,
+     297,
+     449
+    ],
+    [
+     110,
+     20,
+     291,
+     451
+    ],
+    [
+     109,
+     22,
+     299,
+     449
+    ],
+    [
+     111,
+     22,
+     290,
+     449
+    ],
+    [
+     110,
+     36,
+     288,
+     435
+    ],
+    [
+     96,
+     109,
+     333,
+     362
+    ],
+    [
+     129,
+     29,
+     341,
+     442
+    ],
+    [
+     116,
+     119,
+     291,
+     352
+    ],
+    [
+     82,
+     44,
+     320,
+     427
+    ],
+    [
+     86,
+     40,
+     312,
+     431
+    ]
+   ],
+   "src": {
+    "256": "quo-pozy-01/pozy01-256.webp",
+    "512": "quo-pozy-01/pozy01-512.webp"
+   }
+  }
+ },
+ "updated_at": "2026-11-01T15:30:28.795Z"
+}
