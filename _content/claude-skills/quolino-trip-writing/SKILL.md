@@ -199,6 +199,26 @@ pisanie, walidator, kontrola Claude, zapis do `ops.stop_research`; publikacja (`
 
 ---
 
+## Brzmi jak człowiek (2026-11-02)
+
+Na podstawie skilla Humanizer (github.com/blader/humanizer, licencja MIT), przeniesione na polski. Obowiązuje w Trybie A
+przed oddaniem tekstu i w Trybie B jako punkt kontroli. Zasada: zamiast ozdobnika fakt ze źródła; niczego nie dopisuj.
+
+1. **Kontrast z nikim**: „nie tylko X, ale i Y”, „to nie X, to Y”, „X, a nie Y”, gdy nikt nie twierdził X. Napisz Y wprost.
+2. **Puenta po akapicie**: jedno zdanie, które powtarza to, co już padło („I to jest prawdziwa magia tego miejsca.”). Skreśl.
+3. **Złote myśli**: „w gruncie rzeczy”, „prawdziwe serce miasta”, „kamienie, które pamiętają”. Zamień na konkretną informację.
+4. **Zapowiedź zamiast treści**: „Zanurzmy się”, „Oto, co musisz wiedzieć”, „Przygotujcie się na…”. Zacznij od rzeczy.
+5. **Triady z rozpędu**: trzy przymiotniki albo trzy przykłady, gdy treść ma dwa. Zostaw tyle, ile jest naprawdę.
+6. **Słowa-wydmuszki**: kluczowy, wyjątkowy, niezwykły, magiczny, malowniczy, urokliwy, zachwycający, niezapomniany, tętniący
+   życiem, bogata historia, prawdziwa perełka, w sercu (miasta), świadectwo, odcisnął piętno. Pojedyncze bywa w porządku, kilka
+   w akapicie to sygnał.
+7. **Napuszone znaczenie**: zwykły fakt podany jako „przełomowy moment” albo „symbol”. Zostaw fakt.
+8. **Doczepki imiesłowowe**: „…, podkreślając wyjątkowość miejsca”, „…, tworząc niepowtarzalny klimat”. Skreśl doczepkę.
+9. **Omijanie „jest” i „ma”**: „pełni funkcję”, „stanowi”, „szczyci się”, „może pochwalić się”. Napisz „jest”, „ma”.
+10. **Ten sam początek zdań** kilka razy z rzędu („Tu…”, „Tu…”, „Tu…”). Połącz albo zmień szyk.
+
+Sprawdzenie końcowe: przeczytaj na głos; czy przepisanie nie zgubiło ani nie dodało faktu, liczby, nazwy, godziny.
+
 ## Format plików (Tryb A)
 
 Kontrakt wymiany: `_content/IMPORT.md`. Nowe miasto = katalog `_content/cities/<region>/<slug>/`:

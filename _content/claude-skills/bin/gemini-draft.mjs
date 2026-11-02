@@ -293,7 +293,8 @@ wyjazdu z bazy — tylko czas zwiedzania na miejscu, godziny otwarcia, kolejnoś
 tylko ze źródłem, inaczej „sprawdź na miejscu”. Bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika, bez emoji,
 bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.
 Tekst ma brzmieć naturalnie, jak pisany przez człowieka: NIE używaj długiej pauzy „—” ani półpauzy „–”; zamiast nich zwykły łącznik „-”,
-przecinek albo nowe zdanie.`;
+przecinek albo nowe zdanie. Bez sztuczek tekstów AI: „nie tylko X, ale Y” z nikim, puenty powtarzające akapit, złote myśli, zapowiedzi
+(„zanurzmy się”), triady z rozpędu, słowa-wydmuszki (wyjątkowy, magiczny, urokliwy, w sercu, prawdziwa perełka), „stanowi/pełni funkcję” zamiast „jest”.`;
 
 // ── ① research miasta ─────────────────────────────────────────────────────────────────────────
 async function researchCity() {
