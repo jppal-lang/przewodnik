@@ -91,6 +91,40 @@
    }
   ]
  },
+ "spello/belvedere-arco-romano": {
+  "trip": "spello",
+  "stop_key": "belvedere-arco-romano",
+  "n": 9,
+  "name": "Belvedere e Arco Romano (Via Cappuccini)",
+  "trip_version": 17,
+  "icon_version": 1,
+  "accepted_at": "2026-11-03T14:16:12.653Z",
+  "icons": {
+   "64": "media/icons/place-spello-belvedere-arco-romano-64.webp",
+   "128": "media/icons/place-spello-belvedere-arco-romano-128.webp",
+   "256": "media/icons/place-spello-belvedere-arco-romano-256.webp",
+   "512": "media/icons/place-spello-belvedere-arco-romano-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "title": "File:Spello - Spello - 2026-09-23 20-35-46 001.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Spello_-_Spello_-_2026-09-23_20-35-46_001.jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Spello_-_Spello_-_2026-09-23_20-35-46_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Albus65",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   },
+   {
+    "title": "File:Spello (Hispellum), Italy (44633010975).jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Spello_(Hispellum),_Italy_(44633010975).jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Spello_%28Hispellum%29%2C_Italy_%2844633010975%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Carole Raddato from FRANKFURT, Germany",
+    "license": "CC BY-SA 2.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+   }
+  ]
+ },
  "spello/porta-venere": {
   "trip": "spello",
   "stop_key": "porta-venere",
