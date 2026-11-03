@@ -1104,7 +1104,27 @@
     "256": "quo-pozy-06/pozy06-256.webp",
     "512": "quo-pozy-06/pozy06-512.webp"
    }
+  },
+  "spello-panorama": {
+   "pack": "spello-panorama",
+   "v": 1,
+   "accepted_at": "2026-11-03T21:28:32.175Z",
+   "kind": "panorama",
+   "place": "spello",
+   "w": 2048,
+   "h": 1152,
+   "ground": 0.86,
+   "src": {
+    "1024": "spello-panorama/spello-1024.webp",
+    "2048": "spello-panorama/spello-2048.webp"
+   },
+   "terrains": [
+    "olive",
+    "gate",
+    "alley",
+    "belvedere"
+   ]
   }
  },
- "updated_at": "2026-11-03T18:31:44.700Z"
+ "updated_at": "2026-11-03T21:28:32.175Z"
 }
