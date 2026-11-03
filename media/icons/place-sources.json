@@ -242,9 +242,9 @@
   "stop_key": "santa-maria-maggiore",
   "n": 5,
   "name": "Santa Maria Maggiore / Cappella Baglioni",
-  "trip_version": 17,
+  "trip_version": 20,
   "icon_version": 1,
-  "accepted_at": "2026-11-01T15:28:11.420Z",
+  "accepted_at": "2026-11-03T21:28:12.521Z",
   "icons": {
    "64": "media/icons/place-spello-santa-maria-maggiore-64.webp",
    "128": "media/icons/place-spello-santa-maria-maggiore-128.webp",
