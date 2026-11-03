@@ -1,0 +1,9 @@
+{
+ "script": "db-diag.mjs",
+ "args": [],
+ "title": "Diagnostyka bazy: co blokuje nową trasę",
+ "why": "Odczyt definicji CHECK ops.jobs i obecności obiektów z migracji. Bez AI, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 5
+}
