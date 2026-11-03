@@ -125,6 +125,40 @@
    }
   ]
  },
+ "spello/porta-consolare": {
+  "trip": "spello",
+  "stop_key": "porta-consolare",
+  "n": 3,
+  "name": "Porta Consolare",
+  "trip_version": 17,
+  "icon_version": 1,
+  "accepted_at": "2026-11-03T14:16:25.882Z",
+  "icons": {
+   "64": "media/icons/place-spello-porta-consolare-64.webp",
+   "128": "media/icons/place-spello-porta-consolare-128.webp",
+   "256": "media/icons/place-spello-porta-consolare-256.webp",
+   "512": "media/icons/place-spello-porta-consolare-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "title": "File:Cammino Francescano della Marca, Spello, Porta Consolare 01.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_Porta_Consolare_01.jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Cammino_Francescano_della_Marca%2C_Spello%2C_Porta_Consolare_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Mongolo1984",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   },
+   {
+    "title": "File:Porta Consolare, Spello, Italy (45448623142).jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Porta_Consolare,_Spello,_Italy_(45448623142).jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Porta_Consolare%2C_Spello%2C_Italy_%2845448623142%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Carole Raddato from FRANKFURT, Germany",
+    "license": "CC BY-SA 2.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+   }
+  ]
+ },
  "spello/porta-venere": {
   "trip": "spello",
   "stop_key": "porta-venere",
