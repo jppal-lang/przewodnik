@@ -151,6 +151,40 @@
    }
   ]
  },
+ "spello/belvedere-panoramico": {
+  "trip": "spello",
+  "stop_key": "belvedere-panoramico",
+  "n": 10,
+  "name": "Belvedere Panoramico — Punkt Widokowy",
+  "trip_version": 20,
+  "icon_version": 1,
+  "accepted_at": "2026-11-03T21:28:24.080Z",
+  "icons": {
+   "64": "media/icons/place-spello-belvedere-panoramico-64.webp",
+   "128": "media/icons/place-spello-belvedere-panoramico-128.webp",
+   "256": "media/icons/place-spello-belvedere-panoramico-256.webp",
+   "512": "media/icons/place-spello-belvedere-panoramico-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "title": "File:Cammino Francescano della Marca, Spello, via degli Ulivi, Belvedere 02.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_via_degli_Ulivi,_Belvedere_02.jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/8/86/Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Mongolo1984",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   },
+   {
+    "title": "File:Cammino Francescano della Marca, Spello, via degli Ulivi, Belvedere 01.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:Cammino_Francescano_della_Marca,_Spello,_via_degli_Ulivi,_Belvedere_01.jpg",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Cammino_Francescano_della_Marca%2C_Spello%2C_via_degli_Ulivi%2C_Belvedere_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Mongolo1984",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   }
+  ]
+ },
  "spello/porta-consolare": {
   "trip": "spello",
   "stop_key": "porta-consolare",
