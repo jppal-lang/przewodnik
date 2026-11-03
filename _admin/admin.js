@@ -1561,7 +1561,8 @@
         return '<button type="button" data-view="' + v[0] + '" aria-pressed="' + ((state.tvView || 'fields') === v[0]) + '" title="' + v[2] + '"><span class="adm-sr">' + (v[0] === 'fields' ? '' : 'Jak widzi ') + '</span>' + v[1] + '</button>';
       }).join('') + '</div><span class="tv-tools__r">' +
       (nFlags ? '<button type="button" class="qc-btn qc-btn--sm tv-walkbtn" data-walk aria-controls="walk" aria-expanded="false">' + FLAG + ' Przejdź przez flagi <b class="adm-n" data-qleft-all>0</b></button>' : '') +
-      '<button type="button" class="qc-btn qc-btn--sm" data-drawer aria-controls="cmDrawer" aria-expanded="false">Twoje uwagi <b class="adm-n is-zero" id="cmN">0</b></button></span></div>';
+      '<button type="button" class="qc-btn qc-btn--sm" data-drawer aria-controls="cmDrawer" aria-expanded="false">Twoje uwagi <b class="adm-n is-zero" id="cmN">0</b></button>' +
+      '<a class="qc-btn qc-btn--sm tv-gamebtn" href="' + SITE + '/gra/?trasa=' + encodeURIComponent(T.slug) + '&test=1" target="_blank" rel="noopener" title="Quo: Wyprawa dla tej trasy (wersja testowa, także niezatwierdzone etapy)">🎮 Gra<span class="adm-sr"> (otwiera nową kartę)</span> ↗</a></span></div>';
     var sum = '<section class="tv-card adm-anchor" id="st-_sum" data-spy="_sum"><h3 class="tv-card__h">Trasa w skrócie</h3><div class="adm-sum">' +
       stat('Przystanki', newStops.length, pub ? oldStops.length : null) +
       stat('Czas', durLabel(c.duration_type), pc ? durLabel(pc.duration_type) : null) +

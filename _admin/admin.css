@@ -1679,3 +1679,4 @@ body.has-walk .ad-content,body.has-phone .ad-content{max-width:none}
 .tv-pubres{margin:8px 0 0;font-size:18px;line-height:1.4;color:var(--ok-ink,var(--verde))}
 .tv-pubres__n{margin:6px 0 0;font-size:18px;line-height:1.4;color:var(--muted)}
 @media(max-width:899px){.tv-gate{text-align:left;margin-left:0;max-width:none}}
+.tv-gamebtn{text-decoration:none;display:inline-flex;align-items:center;gap:6px}
