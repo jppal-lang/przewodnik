@@ -22,6 +22,32 @@
    }
   ]
  },
+ "frasassi/grotte-di-frasassi": {
+  "trip": "frasassi",
+  "stop_key": "grotte-di-frasassi",
+  "n": 2,
+  "name": "Grotte di Frasassi",
+  "trip_version": 13,
+  "icon_version": 1,
+  "accepted_at": "2026-11-03T14:16:38.417Z",
+  "icons": {
+   "64": "media/icons/place-frasassi-grotte-di-frasassi-64.webp",
+   "128": "media/icons/place-frasassi-grotte-di-frasassi-128.webp",
+   "256": "media/icons/place-frasassi-grotte-di-frasassi-256.webp",
+   "512": "media/icons/place-frasassi-grotte-di-frasassi-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "title": "File:Genga - Grotte di Frasassi - 2023-09-30 13-21-20 001.JPG",
+    "url": "https://commons.wikimedia.org/wiki/File:Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG",
+    "file_url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Genga_-_Grotte_di_Frasassi_-_2023-09-30_13-21-20_001.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Maddy16869",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+   }
+  ]
+ },
  "frasassi/museo-speleo-paleontologico": {
   "trip": "frasassi",
   "stop_key": "museo-speleo-paleontologico",
