@@ -49,7 +49,7 @@
 
   function plural(n, one, few, many) { var d = n % 10, t = n % 100; return n + ' ' + (n === 1 ? one : d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many); }
 
-  // o = { version, review, comments: [{city_version, field, status}], request: najnowsza prośba miasta | null, now?: ms }
+  // o = { version, review, comments: [{city_version, field, status}], request: najnowsza prośba miasta | null, published?: [{version, published_at}], now?: ms }
   // → { ok, reasons: [{ k, t }], flagsOpen, errors, unsent, unplaced, requestBlocks }
   function evaluate(o) {
     o = o || {};
@@ -74,6 +74,12 @@
     if (unplaced) reasons.push({ k: 'unplaced', t: plural(unplaced, 'uwaga czeka', 'uwagi czekają', 'uwag czeka') + ' na wskazanie przystanku' });
 
     var rq = o.request, rqBlock = false;
+    // 2026-11-03 (Spello #7): prośba zakończona (done/failed), po której była już publikacja trasy (wersja ≥ wynik prośby), nie blokuje
+    var pubs = Array.isArray(o.published) ? o.published : [];
+    if (rq && (rq.status === 'done' || rq.status === 'failed')) {
+      var rqAt = Date.parse(rq.updated_at || rq.created_at || ''), rqV = rq.result_version != null ? +rq.result_version : +(rq.city_version || 0);
+      if (!isNaN(rqAt) && pubs.some(function (p) { var pa = Date.parse(p.published_at || ''); return !isNaN(pa) && pa > rqAt && +p.version >= rqV; })) rq = null;
+    }
     if (rq) {
       var vf = rq.verify && typeof rq.verify === 'object' ? rq.verify : null, t = null;
       if (rq.status === 'new' || rq.status === 'working') t = 'poprawka #' + rq.id + ' w toku (' + (rq.status === 'new' ? 'w kolejce' : 'Hermes nanosi') + ') — poczekaj na nową wersję i weryfikację';

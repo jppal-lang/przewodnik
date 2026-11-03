@@ -684,7 +684,7 @@
     state.trip = { slug: slug }; state.versions = null; state.current = null; state.drafts = {};
     var known = (state.trips || []).filter(function (t) { return t.slug === slug; })[0];
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję ' + esc(known ? known.name : slug) + '…</p></div>';
-    var vq = '/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,content,review';
+    var vq = '/admin_versions?city_slug=eq.' + encodeURIComponent(slug) + '&select=city_slug,version,status,source,note,created_at,published_at,content,review';
     Promise.all([
       // changes (skąd zmiana — porównanie wersji); gdyby widok nie miał tej kolumny, panel działa dalej bez niej
       api(vq + ',changes&order=version.asc').catch(function (e) { if (e && e.session) throw e; return api(vq + '&order=version.asc'); }),
@@ -2448,7 +2448,8 @@
     var it = state.tvIt;
     if (!it || it.status !== 'draft' || state.readOnly || !window.PublishGate) return null;
     var rq = (state.revs || [])[0] || null;
-    var g = window.PublishGate.evaluate({ version: it.version, review: it.review || null, comments: state.comments || [], request: rq });
+    var pubs = (state.versions || []).filter(function (v) { return v.published_at; }).map(function (v) { return { version: v.version, published_at: v.published_at }; });
+    var g = window.PublishGate.evaluate({ version: it.version, review: it.review || null, comments: state.comments || [], request: rq, published: pubs });
     var key = it.city_slug + '/' + it.version + '/' + (state.comments || []).map(function (c) { return c.id + ':' + c.status; }).join(',') + '/' + (rq ? rq.id + ':' + rq.status + ':' + JSON.stringify(rq.verify || null) : '-');
     var s = state.gateSrv;
     if (g.ok && (!s || s.key !== key) && !state.gateBusy) {
