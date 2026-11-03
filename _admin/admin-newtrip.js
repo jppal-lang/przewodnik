@@ -175,7 +175,12 @@
       ex.hidden = false; ex.innerHTML = 'W bazie jest już <b>' + esc(t.name) + '</b> (' + esc(t.std === 'old' ? 'stare wytyczne' : 'wytyczne ' + t.std) + ', ' + esc(window.ADM.VST[t.status] || t.status) + ' v' + esc(t.latest) + ').';
       if (!fr.dataset.touched) fr.checked = true;
       w.hidden = false; w.textContent = 'Stara trasa trafi do archiwum, nowa powstaje od zera (nowy research i szkic; nic nie znika z panelu — wersje zostają w historii).';
-    } else { ex.hidden = true; w.hidden = true; if (!fr.dataset.touched) fr.checked = false; }
+      var cf = f.querySelector('#ntConfirm');
+      if (!cf) {
+        w.insertAdjacentHTML('afterend', '<div class="nt-row" id="ntConfirmRow"><label class="nt-l" for="ntConfirm">Żeby przepisać istniejącą trasę, wpisz jej slug: <b>' + esc(t.slug) + '</b></label>' +
+          '<input class="nt-in nt-in--mono" id="ntConfirm" type="text" autocomplete="off" spellcheck="false" maxlength="63"></div>');
+      } else { cf.parentNode.querySelector('b').textContent = t.slug; }
+    } else { ex.hidden = true; w.hidden = true; if (!fr.dataset.touched) fr.checked = false; var cr = f.querySelector('#ntConfirmRow'); if (cr) cr.remove(); }
     fr.onchange = function () { fr.dataset.touched = '1'; };
   }
   function refreshEstimate() {
@@ -187,7 +192,9 @@
     if (S.busy) return;
     var f = S.dlg.querySelector('form'), v = values(), err = f.querySelector('#ntErr'), ok = f.querySelector('#ntOk'), go = f.querySelector('#ntGo');
     var bad = validate(v, S.regions || []);
-    if (bad) { err.hidden = false; err.textContent = bad; var bf = f.querySelector(/Slug/.test(bad) ? '#ntSlug' : /Region/.test(bad) ? '#ntRegion' : /Nazwa/.test(bad) ? '#ntName' : '#ntName'); if (bf) bf.focus(); return; }
+    var cfm = f.querySelector('#ntConfirm');
+    if (!bad && tripBySlug(v.slug) && (!cfm || cfm.value.trim().toLowerCase() !== v.slug)) bad = 'Ta trasa już istnieje — wpisz jej slug w polu potwierdzenia, żeby przepisać ją od zera.';
+    if (bad) { err.hidden = false; err.textContent = bad; var bf = f.querySelector(/potwierdzenia/.test(bad) ? '#ntConfirm' : /Slug/.test(bad) ? '#ntSlug' : /Region/.test(bad) ? '#ntRegion' : /Nazwa/.test(bad) ? '#ntName' : '#ntName'); if (bf) bf.focus(); return; }
     err.hidden = true; S.busy = true; go.disabled = true; go.textContent = 'Zlecam…';
     var body = { p_slug: v.slug, p_name: v.name, p_country: v.country, p_region: v.region, p_duration: v.duration, p_brief: v.brief, p_fresh: v.fresh };
     var p = H().DEMO ? new Promise(function (res) { setTimeout(function () { res({ id: 100 + Math.floor(Math.random() * 900), city_slug: v.slug, status: 'queued' }); }, 400); })
@@ -219,9 +226,8 @@
     [].forEach.call(res.querySelectorAll('a.adm-tc'), function (a) {
       if (a.parentNode.classList.contains('nt-wrap')) return;
       var slug = decodeURIComponent((a.getAttribute('href') || '').replace(/^#\//, '')), t = T.filter(function (x) { return x.slug === slug; })[0];
-      if (!t || t.std !== 'old') return;
-      var w = document.createElement('div'); w.className = 'nt-wrap'; a.parentNode.insertBefore(w, a); w.appendChild(a);
-      w.insertAdjacentHTML('beforeend', rewriteBtn(t, 'ad-btn ad-btn--ghost nt-rw'));
+      // JP 2026-11-03: „Przepisz od zera” na karcie groził przypadkowym kliknięciem — przepisanie tylko przez „+ Nowa trasa” z potwierdzeniem nazwą
+      return;
     });
   }
   function hookDash() {
@@ -232,7 +238,7 @@
     [].forEach.call(card.querySelectorAll('.ad-tr:not(.ad-tr--h)'), function (row) {
       var a = row.querySelector('.ad-td--name a'), acts = row.querySelector('.ad-td--acts'); if (!a || !acts || acts.querySelector('[data-nt-rewrite]')) return;
       var slug = decodeURIComponent((a.getAttribute('href') || '').replace(/^#\//, '')), t = T.filter(function (x) { return x.slug === slug; })[0];
-      if (t && t.std === 'old') acts.insertAdjacentHTML('beforeend', rewriteBtn(t, 'ad-btn ad-btn--ghost nt-rw'));
+      void t;   // bez „Przepisz od zera” w pulpicie (JP 2026-11-03)
     });
   }
   document.addEventListener('adm:list', hookList);

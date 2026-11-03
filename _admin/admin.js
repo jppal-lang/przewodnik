@@ -2121,13 +2121,16 @@
     }).join('') + '</ul>';
   }
   function icLinkHtml(key, files, off) {
-    if (files.length >= 2) return '';
-    return '<details class="adm-icref__more"><summary>Własny link do zdjęcia</summary><form class="adm-icref__link" data-icref-link="' + esc(key) + '" novalidate>' +
+    // JP 2026-11-03: link także przy gotowej ikonie (→ nowa wersja ikony do oceny) i przy 2 zdjęciach (nowy zastępuje drugie)
+    var ir = state.icref, pub = ir && placeIconState(ir.slug, { stop_key: key });
+    var sum = pub ? 'Nowe zdjęcie do ikony (powstanie nowa wersja do oceny)' : 'Własny link do zdjęcia';
+    return '<details class="adm-icref__more"' + (pub ? ' open' : '') + '><summary>' + sum + '</summary><form class="adm-icref__link" data-icref-link="' + esc(key) + '" novalidate>' +
       '<label for="icl-' + esc(key) + '">Własny link do zdjęcia (dowolna strona lub plik)</label>' +
       '<span class="adm-icref__linkrow"><input id="icl-' + esc(key) + '" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="https://…" aria-describedby="iclh-' + esc(key) + '"' + (off ? ' disabled' : '') + '>' +
       '<button type="submit" class="qc-btn qc-btn--sm"' + (off ? ' disabled' : '') + '>Dodaj</button></span>' +
       '<small class="adm-icref__hint" id="iclh-' + esc(key) + '">Generator pobierze zdjęcie z tego linku. Strona musi być publiczna (bez logowania). ' +
-      'Link z Wikimedia Commons lub Wikipedii zapisze się jako plik Commons (z autorem i licencją). Dysk Google: „Udostępnij → każdy, kto ma link”.</small></form></details>';
+      'Link z Wikimedia Commons lub Wikipedii zapisze się jako plik Commons (z autorem i licencją). Dysk Google: „Udostępnij → każdy, kto ma link”.' +
+      (files.length >= 2 ? ' Są już 2 zdjęcia — nowy link zastąpi drugie.' : '') + (pub ? ' Obecna ikona zostaje na stronie, dopóki nie zaakceptujesz nowej.' : '') + '</small></form></details>';
   }
   $d.addEventListener('submit', function (e) {
     var fm = e.target.closest && e.target.closest('[data-icref-link]');
@@ -2138,7 +2141,7 @@
     var say = function (t) { ir.msg[key] = t; icRedraw(key); setTimeout(function () { if (ir.msg[key] === t) { delete ir.msg[key]; icRedraw(key); } }, 8000); };
     if (!f) return say(got.err);
     if (files.indexOf(f) > -1) return say('To zdjęcie już jest wybrane.');
-    if (files.length >= 2) return say('Najwyżej 2 zdjęcia — najpierw odznacz jedno.');
+    if (files.length >= 2) files = files.slice(0, 1);   // najwyżej 2: nowy link zastępuje drugie zdjęcie
     files.push(f);
     icSave(key, files);
   });

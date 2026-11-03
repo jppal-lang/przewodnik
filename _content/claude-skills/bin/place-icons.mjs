@@ -675,9 +675,10 @@ async function cmdQueue() {
       try { stops = await ensureTrip(t.slug, { requireV2: !t.force }); } catch (e) { log(`${t.slug}: ${e.message}`); continue; }
       if (!stops) { log(`${t.slug}: brak opublikowanej wersji nowego procesu (workflow v2) — pomijam (force: true w place-icons-data.mjs wymusza)`); continue; }
     }
-    // JP wybrał w panelu inne zdjęcia dla ikony, która czeka na ocenę → nowa wersja z tymi zdjęciami (zaakceptowanych nie ruszamy)
+    // JP wybrał w panelu inne zdjęcia → nowa wersja z tymi zdjęciami: dla ikony czekającej na ocenę i (JP 2026-11-03) także dla
+    // zaakceptowanej — opublikowana zostaje na stronie, dopóki JP nie przyjmie nowej
     for (const [key, s] of Object.entries(loadState(t.slug).stops)) {
-      if (!s.v || !['review', 'fix-pending'].includes(s.status) || s.pending_notes) continue;
+      if (!s.v || !['review', 'fix-pending', 'ok'].includes(s.status) || s.pending_notes) continue;
       const g = await gateOf(t.slug, key), r = readJson(join(L.stopDir(WORK, t.slug, key), 'refs.json'));
       if (g.use === 'pick' && !(r?.selection === 'jp' && L.sameFiles(r.jp_files, g.files)))
         patchStop(t.slug, key, x => { x.pending_notes = 'nowe zdjęcia referencyjne'; x.status = 'fix-pending'; });
