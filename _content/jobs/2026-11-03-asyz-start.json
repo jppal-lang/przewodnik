@@ -1,0 +1,27 @@
+{
+ "script": "gemini-draft.mjs",
+ "args": [
+  "asyz",
+  "--name",
+  "Asyż",
+  "--region",
+  "umbria",
+  "--country",
+  "it",
+  "--duration",
+  "full_day",
+  "--fresh",
+  "--brief",
+  "trasa od zera w nowym procesie; stara treść Asyżu to archiwum; rodzina z dziećmi, start z parkingu, bazylika św. Franciszka i Santa Chiara, bez czasów dojazdu"
+ ],
+ "why": "Asyż od zera (Gemini research + szkic, kontrola Claude, panel). Kolejka ops.jobs nie przyjmuje zlecenia (CHECK workera), więc gemini-draft startuje bezpośrednio z tymi samymi argumentami. ≈20–40 wywołań Antigravity (abonament), 0 $ API.",
+ "title": "Nowa trasa: Asyż — start bezpośredni (z pominięciem kolejki)",
+ "est_usd": 0,
+ "est_limit": "≈20–40 wywołań Antigravity (AI Pro), ok. 15–25 % tygodniowego limitu",
+ "jp_ok": {
+  "date": "2026-11-03",
+  "quote": "czy masz nowe trasy, zobacz co nas blokuje"
+ },
+ "by": "Claude",
+ "timeout_min": 300
+}

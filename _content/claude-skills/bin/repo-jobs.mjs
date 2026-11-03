@@ -28,7 +28,8 @@ const WORK = join(BASE, 'work');
 const REG = join(WORK, 'repo-jobs.json'), LOCK = join(WORK, 'repo-jobs.lock');
 // skrypt → kontrola argumentów (true = wolno). Tylko to, co nie wymaga zgody JP: poprawki szkiców (nowa wersja do zatwierdzenia w panelu) i odczyty.
 export const ALLOWED = {
-  'gemini-draft.mjs': (a) => a.includes('--recheck') || a.includes('--revise') || isChoicesArgs(a),   // nowa trasa idzie przez kolejkę ops.jobs, nie tędy
+  // nowa trasa zwykle przez kolejkę ops.jobs; JP 2026-11-03: gdy kolejka nie przyjmuje zlecenia — bezpośrednio (te same argumenty co trip-enqueue)
+  'gemini-draft.mjs': (a) => a.includes('--recheck') || a.includes('--revise') || isChoicesArgs(a) || (isEnqueueArgs(a) && !a.includes('--dry')),
   'show-review.mjs': () => true,
   'usage-summary.mjs': () => true,
   // diagnostyka bazy tylko do odczytu (JP 2026-11-03: znaleźć, co blokuje nowe trasy)
