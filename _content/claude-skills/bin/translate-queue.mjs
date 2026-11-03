@@ -7,7 +7,7 @@
 // • tłumaczy tylko to, co się zmieniło (trip-translate liczy różnicę względem poprzedniej wersji),
 // • dzienny limit płatnych modeli wyczerpany → zlecenie wraca do kolejki na następny przebieg,
 // • wynik w wątku miasta, błąd także na kanale alarmów (ALERT_WEBHOOK).
-import { openSync, closeSync, existsSync, statSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import { openSync, closeSync, existsSync, statSync, unlinkSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { db, env, log, run, paidToday, DAILY_USD } from './lib.mjs';
 import { notify } from './draft-lib.mjs';
 
@@ -42,7 +42,7 @@ async function main() {
       FROM ops.jobs j LEFT JOIN ops.cities c ON c.slug = j.city_slug
      WHERE j.kind = 'translate' AND j.status = 'queued' AND j.city_slug IS NOT NULL
      ORDER BY j.created_at, j.id LIMIT 1`);
-  if (!jobRow) { said('kolejka pusta'); return; }
+  if (!jobRow) { if (!(await retryFailed())) said('kolejka pusta'); return; }
 
   const used = paidToday();
   if (used >= DAILY_USD) { log(`dzienny limit płatnych modeli ($${used.toFixed(2)}) — tłumaczenie ${jobRow.city_slug} poczeka`); said(`dzienny limit płatnych modeli ($${used.toFixed(2)} z $${DAILY_USD}) — ${jobRow.city_slug} czeka`); return; }
@@ -75,6 +75,35 @@ async function main() {
     if (jobRow.thread) await notify(jobRow.thread, `⚠️ ${jobRow.city_slug}: tłumaczenie nieudane (${min} min). ${why}`);
     await alert(`⚠️ Quolino: tłumaczenie ${jobRow.city_slug} (zlecenie ${jobRow.id}) nieudane: ${why}`);
   }
+}
+// JP 2026-11-03 („to ma być automat”): języki, które nie przeszły kontroli, jedna automatyczna ponowna próba (tylko te języki),
+// gdy kolejka jest pusta i jest jeszcze dzienny limit. EN nieudany = cała reszta wstrzymana — to zostaje dla człowieka.
+const RETRIED = `${WORK}/retried.json`;
+async function retryFailed() {
+  let done = []; try { done = JSON.parse(readFileSync(RETRIED, 'utf8')); } catch {}
+  const rows = await q(`SELECT id, city_slug, result FROM ops.jobs WHERE kind = 'translate' AND status = 'failed'
+      AND finished_at > now() - interval '7 days' AND city_slug IS NOT NULL ORDER BY finished_at`);
+  for (const j of rows) {
+    if (done.includes(String(j.id))) continue;
+    let res; try { res = JSON.parse(j.result); } catch { continue; }          // ucięty albo „EN nie przeszedł” → nie ruszamy
+    const langs = (res.failed ?? []).map(f => f.lang).filter(l => /^[a-z]{2}$/.test(l) && l !== 'en');
+    if (!langs.length) continue;
+    const [pub] = await q(`SELECT status FROM public.cities WHERE slug = $1`, [j.city_slug]);
+    if (pub?.status !== 'published') continue;
+    if (paidToday() >= DAILY_USD) { said(`ponowienie ${j.city_slug} (${langs.join(',')}) czeka na dzienny limit`); return true; }
+    writeFileSync(RETRIED, JSON.stringify([...done, String(j.id)].slice(-200)));
+    said(`ponawiam ${j.city_slug}: ${langs.join(', ')} (zlecenie ${j.id})`);
+    log(`ponawiam ${j.city_slug}: ${langs.join(', ')} (zlecenie ${j.id})`);
+    const r = await run(process.execPath, [new URL('./trip-translate.mjs', import.meta.url).pathname, j.city_slug, '--langs', langs.join(','), '--job', String(j.id)], { timeout: 3 * 3600e3 });
+    const [after] = await q(`SELECT status, result FROM ops.jobs WHERE id = $1`, [j.id]);
+    const [c2] = await q(`SELECT discord_thread_id AS thread FROM ops.cities WHERE slug = $1`, [j.city_slug]).catch(() => [{}]);
+    const msg = after?.status === 'done' ? `✅ ${j.city_slug}: ponowione tłumaczenie (${langs.join(', ')}) przeszło kontrolę.`
+      : `⚠️ ${j.city_slug}: ponowione tłumaczenie (${langs.join(', ')}) znów nie przeszło: ${String(after?.result || r.err).slice(-500)}`;
+    if (c2?.thread) await notify(c2.thread, msg);
+    if (after?.status !== 'done') await alert(`Quolino: ${msg}`);
+    return true;
+  }
+  return false;
 }
 try { await main(); } catch (e) {
   log('kolejka tłumaczeń:', e.message);
