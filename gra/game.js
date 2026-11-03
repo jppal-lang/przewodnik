@@ -501,7 +501,9 @@
      skok: odbicie / apogeum / opadanie / lądowanie. Klatki wyrównane do linii stóp (anchor), wysokość Quo jak dotychczasowe pozy.
      Panorama: daleki plan terenów z listy w manifeście (przez ART_SRC), kafle i drobiazgi: zamiast rysowania kodem.
      Brak manifestu, pliku albo błąd wczytania = wszystko jak dawniej (pozy z media/icons, kafle i tła kodem). */
-  var ART = { A: null, run: null, jump: null, tiles: {}, props: {}, tileFor: {} };
+  var ART = { A: null, run: null, jump: null, sh: {}, tiles: {}, props: {}, tileFor: {} };
+  // wysokość stojącego Quo w px klatki 512 dla paczek, w których najwyższa klatka to nie stojący Quo (balonik nad głową) — mediana by zawyżyła skalę
+  var PACK_H = { 'quo-pozy-02': 300 };
   var ART_H = 56; // wysokość Quo w biegu (j. świata) — jak poza „running” w atlasie póz
   function artWant(px) { return px * Math.max(1, (view.s || 1) * (view.dpr || window.devicePixelRatio || 1)); }
   function artImage(path, ok) { var im = new Image(); im.onload = function () { if (im.naturalWidth) ok(im); }; im.onerror = function () {}; im.src = 'art/' + path + (ART.A && ART.A.ver ? '?v=' + ART.A.ver : ''); return im; }
@@ -519,6 +521,12 @@
       var A = ART.A = window.QuoArt.parse(M); if (!A.any) return;
       if (A.run) artSheet('run', A.run);
       if (A.jump) artSheet('jump', A.jump);
+      Object.keys(A.sheets).forEach(function (pk) { // pozy v2: stoi, skok, sen, wspinanie, radość, tańce…
+        var S = A.sheets[pk];
+        artImage(window.QuoArt.pick(S.src, artWant(64) > 140 ? 512 : 256), function (im) {
+          ART.sh[pk] = { S: S, im: im, k: im.naturalHeight / S.fh, halo: makeHalo(im, im.naturalHeight), U: ART_H / (PACK_H[pk] || S.quoH) };
+        });
+      });
       Object.keys(A.pano).forEach(function (place) { artPano(A.pano[place]); });
       Object.keys(A.tiles).forEach(function (set) {
         var T = A.tiles[set], imgs = {}, left = Object.keys(T.tiles).length;
@@ -554,25 +562,54 @@
       } catch (e) { /* bez panoramy */ }
     });
   }
-  function artFrameFor(sk, so) { // { R: ART.run|ART.jump, i } albo null (wtedy pozy z atlasu)
-    var Q = window.QuoArt;
+  var artPw = null; // moc Quo przy rysowaniu gracza: najpierw klatka z akcesorium („lantern:idle_1”), potem zwykła
+  function artPz(name) { // klatka pozy v2 po nazwie (gra/art/manifest.json), gdy arkusz już wczytany
+    var A = ART.A, r = A && ((artPw && A.pz[artPw + ':' + name]) || A.pz[name]), R = r && ART.sh[r.p];
+    if (artPw && r && !ART.sh[r.p] && A.pz[name]) { r = A.pz[name]; R = ART.sh[r.p]; }
+    return R && r.i < R.S.frames ? { R: R, i: r.i } : null;
+  }
+  function artCycle(base, n, fps, t) { return artPz(base + '_' + (1 + Math.floor(Math.max(0, t) * fps) % n)); }
+  function artFrameFor(sk, so, t) { // { R: arkusz, i } albo null (wtedy pozy z atlasu)
+    var Q = window.QuoArt; so = so || {}; t = t || 0;
+    var pz = null;
+    switch (sk) {
+      case 'idle': // stoi: wdech co ~0,8 s, mrugnięcie co ~3,7 s, co ~5 s rozgląda się
+        pz = (t % 5.2) < .55 ? artPz((t % 10.4) < 5.2 ? 'idle_look_1' : 'idle_look_2') : (t % 3.7) < .14 ? artPz('idle_3') : artCycle('idle', 2, 1.25, t); break;
+      case 'jump': pz = (so.air || 0) < .1 ? artPz('jump_start') : (so.vy || 0) < -220 ? artPz('jump_up') : artPz('jump_apex'); break;
+      case 'fall': pz = (so.vy || 0) < 160 ? artPz('jump_apex') : artCycle('fall', 2, 6, t); break;
+      case 'land': pz = artPz('land'); break;
+      case 'glide': pz = artCycle('glide', 2, 4, t); break;
+      case 'hurt': pz = artPz('hurt'); break;
+      case 'nap': pz = (so.nap != null && so.nap < .45) ? artCycle('wake', 2, 2, t) : artCycle('sleep', 2, 1, t); break;
+      case 'climb': pz = artCycle('climb_ladder', 4, 1, (so.phase || 0) / Math.PI); break;
+      case 'cheer': pz = artCycle('cheer', 2, 3, t); break;
+      case 'dance0': pz = artCycle('dance_wave', 4, 5, t); break;
+      case 'dance1': pz = artCycle('dance_spin', 4, 5, t); break;
+      case 'dance2': pz = artCycle('dance_medal', 2, 4, t); break;
+      case 'dance3': pz = artCycle('dance_disco', 4, 4, t); break;
+    }
+    if (pz) return pz;
+    var ar = artPw && ART.A && ART.A.accRun[artPw] && ART.sh[ART.A.accRun[artPw]];
+    if (sk === 'walk' && ar) return { R: ar, i: Q.runFrame(so.phase, ar.S.frames) };
     if (sk === 'walk' && ART.run) return { R: ART.run, i: Q.runFrame(so.phase, ART.run.S.frames) };
     if (ART.jump && (sk === 'jump' || sk === 'fall' || sk === 'land')) return { R: ART.jump, i: Math.min(ART.jump.S.frames - 1, Q.jumpFrame(sk, so.vy, ART.jump.S.names)) };
     return null;
   }
-  function drawArtFrame(c, x, y, facing, F, sp, alpha) { // (x, y) = punkt między łapkami na ziemi; klatki patrzą w prawo
-    var R = F.R, S = R.S, k = R.k, U = R.U, ax = S.anchor[0], ay = S.anchor[1], sx = F.i * S.fw * k;
+  function drawArtFrame(c, x, y, facing, F, sp, alpha, mul) { // (x, y) = punkt między łapkami na ziemi; klatki patrzą w prawo; mul = skala ekranu nagrody
+    var R = F.R, S = R.S, k = R.k, U = R.U * (mul || 1), ax = S.anchor[0], ay = S.anchor[1], sx = F.i * S.fw * k;
     c.save();
     if (alpha != null) c.globalAlpha = alpha;
     c.translate(x, y); c.scale(facing * U, U);
     if (sp.halo) { c.globalAlpha = (alpha != null ? alpha : 1) * sp.halo; c.drawImage(R.halo, sx, 0, S.fw * k, S.fh * k, -ax, -ay, S.fw, S.fh); c.globalAlpha = alpha != null ? alpha : 1; }
     c.drawImage(R.im, sx, 0, S.fw * k, S.fh * k, -ax, -ay, S.fw, S.fh);
     var hd = S.heads[F.i];
-    if (curHat && hd) { c.scale(1 / U, 1 / U); c.translate((hd[0] - ax) * U - 2, (hd[1] - ay) * U + 13); c.scale(1.08, 1.08); drawHat(c, curHat); }
+    if (curHat && hd) { var m1 = mul || 1; c.scale(1 / U, 1 / U); c.translate((hd[0] - ax) * U - 2 * m1, (hd[1] - ay) * U + 13 * m1); c.scale(1.08 * m1, 1.08 * m1); drawHat(c, curHat); }
     c.restore();
   }
   /* Jedno wejście: sprite, a gdy atlasu nie ma — szkielet. kind jak w quoPose; o = { phase, land, air, vy, nap }. */
   function drawQuoAny(c, x, y, scale, facing, kind, t, o, alpha) {
+    var aF = artFrameFor(kind, o, t);
+    if (aF && aF.R !== ART.run) { drawArtFrame(c, x, y, facing, aF, { halo: 0 }, alpha, scale); return; }
     if (QS.ready) { drawQuoSprite(c, x, y, scale, facing, spriteFor(kind, t, o), alpha); return; }
     drawQuo(c, x, y, scale, facing, quoPose(kind === 'land' ? 'idle' : kind, t, o), alpha);
   }
@@ -3970,7 +4007,7 @@
       if (P.zip >= 0) sk = 'jump'; if (P.cart >= 0) sk = 'cheer'; if (P.climb) { sk = 'climb'; so.phase = P.y / 9; }
       if (sk === 'idle' && P.land > .3) sk = 'land';
       sp = spriteFor(sk, P.t, so); sp.halo = .45 + .5 * caveWeight(P.x); // poświata: lekka w dzień, mocna w jaskini
-      artF = artFrameFor(sk, so); // klatki z gra/art (bieg, skok), gdy są
+      artPw = P.power || null; artF = artFrameFor(sk, so, P.t); artPw = null; // klatki z gra/art (pozy v2, akcesoria mocy, bieg, skok), gdy są
       quoExtras(null, kind);
     } else {
       pose = quoPose(kind, P.t, { phase: P.phase, land: P.land });

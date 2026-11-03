@@ -115,6 +115,32 @@ export default {
       hint: 'Disco: łapka w górę po skosie, biodro w bok, na zmianę. 4 klatki w pętli.',
       prompt: sheet(4, 2, 2, 'A disco dance loop: 1 one front paw pointing diagonally up to the sky and the other on the hip, hip pushed to the side; 2 both paws in front of the chest, knees bent; ' +
         '3 the other front paw pointing diagonally up, hip pushed the other way; 4 both paws in front of the chest again, knees bent, so 4 flows back into 1.') }),
+    // ── akcesoria v2 (gra/art/pozy-quo.json „trzymane”; JP 2026-11-03 „wygeneruj nowe kolejne pozy”). Czapki gra rysuje kodem na głowie — bez osobnych klatek.
+    pz({ name: 'quo-acc-latarka', role: 'acc-lantern', title: 'Quo v2 — z latarką (stoi, skok, upadek)', grid: [5, 2], expect: 10,
+      frameNames: ['idle_1', 'idle_2', 'idle_3', 'jump_start', 'jump_up', 'jump_apex', 'fall_1', 'fall_2', 'land', 'hurt'],
+      hint: 'Moc w jaskini: latarka w przedniej łapce. Rząd 1: stoi ×3 (wdech, mrugnięcie), odbicie, lot w górę. Rząd 2: szczyt skoku, spadanie ×2, lądowanie, uderzenie. Światło latarki rysuje też gra (krąg wokół Quo).',
+      prompt: sheet(10, 5, 2, 'In every frame he holds a small hand lantern with a warm glowing light held in his front paw (the paw nearer to the viewer); the other paws as described. Frame 1 standing calmly holding the lantern forward. Frame 2 the same with a gentle breath in, eyes open. Frame 3 the same blinking. ' +
+        'Frame 4 crouched like a spring before a jump. Frame 5 flying straight up, the lantern raised high above his head, tail pointing down. Frame 6 top of the jump, curled up, lantern held close to the chest. ' +
+        'Frames 7–8 falling, the free paw up, ears and tail lifted by the air, lantern held tight; 8 slightly lower. Frame 9 landing in a deep squash, lantern held out for balance. Frame 10 hurt: facing right but knocked backwards to the left, surprised, still holding the lantern.',
+        'The lantern is the same small lantern in every frame. No beam of light, no glow rays, no other props.') }),
+    pz({ name: 'quo-acc-latarka-bieg', role: 'acc-lantern-run', title: 'Quo v2 — bieg z latarką (8 klatek)', grid: [4, 2], expect: 8,
+      frameNames: ['contact', 'down', 'pass', 'up', 'contact2', 'down2', 'pass2', 'up2'],
+      hint: 'Pełny cykl biegu w prawo z latarką w przedniej łapce (jaskinia). Ocena: czy biegnie przodem w prawo i czy 8 → 1 się zapętla.',
+      prompt: sheet(8, 4, 2, 'ONE complete fast run cycle moving to the RIGHT while holding a small hand lantern with a warm glowing light held in his front paw (the paw nearer to the viewer), the lantern swinging slightly forward and back with the stride, body leaning forward, ears swept back, tail stretched out behind. ' +
+        'Frame 1 contact, 2 down, 3 passing, 4 up (both feet off the ground), 5–8 the same four phases with the other leg leading, so frame 8 flows smoothly back into frame 1. The free front paw pumps opposite to the legs.',
+        'The lantern is the same small lantern in every frame. No beam of light, no glow rays.') }),
+    pz({ name: 'quo-acc-magnes', role: 'acc-magnet', title: 'Quo v2 — z magnesem (stoi, skok, upadek)', grid: [5, 2], expect: 10,
+      frameNames: ['idle_1', 'idle_2', 'idle_3', 'jump_start', 'jump_up', 'jump_apex', 'fall_1', 'fall_2', 'land', 'hurt'],
+      hint: 'Moc: czerwony magnes podkowa w łapce (przyciąga kamyczki). Te same pozy co z latarką.',
+      prompt: sheet(10, 5, 2, 'In every frame he holds a small red horseshoe magnet with silver tips in his front paw (the paw nearer to the viewer), tips pointing forward. Frame 1 standing proudly holding the magnet forward. Frame 2 the same with a gentle breath in. Frame 3 the same blinking. ' +
+        'Frame 4 crouched like a spring before a jump. Frame 5 flying straight up, the magnet raised above his head. Frame 6 top of the jump, curled up, magnet held close. ' +
+        'Frames 7–8 falling, free paw up, ears and tail lifted by the air; 8 slightly lower. Frame 9 landing in a deep squash. Frame 10 hurt: facing right but knocked backwards to the left, surprised, still holding the magnet.',
+        'The magnet is the same in every frame. No magnetic lines, no sparks, no pebbles, no other props.') }),
+    pz({ name: 'quo-acc-lisc', role: 'acc-glide', title: 'Quo v2 — szybowanie na liściu (4 klatki)', grid: [2, 2], expect: 4, aspect: '1:1',
+      frameNames: ['glide_1', 'glide_2', 'fall_1', 'fall_2'],
+      hint: 'Moc szybowania: duży zielony liść nad głową jak lotnia. 1–2 szybuje (lekkie falowanie), 3–4 spada z liściem.',
+      prompt: sheet(4, 2, 2, 'He holds one big fresh green leaf above his head with both front paws, like a hang glider. Frames 1–2 gliding forward to the right, body almost horizontal, legs and tail stretched back; in 2 the leaf tilts slightly and the body sways. ' +
+        'Frames 3–4 drifting down more steeply under the leaf, legs dangling; 4 slightly lower than 3.', 'The leaf is the same in every frame. No wind lines.') }),
     {
       name: 'spello-panorama', title: 'Spello — panorama (daleki plan)', kind: 'panorama', place: 'spello', aspect: '16:9',
       terrains: ['olive', 'gate', 'alley', 'belvedere'],

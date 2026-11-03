@@ -1,0 +1,17 @@
+{
+ "script": "game-art.mjs",
+ "args": [
+  "gen",
+  "quo-acc-latarka-bieg"
+ ],
+ "title": "Pozy Quo v2 — akcesoria: bieg z latarką",
+ "why": "Kolejne pozy do gry (bieg z latarką) z gra/art/pozy-quo.json. Antigravity, abonament, 0 $; podgląd do oceny w panelu (Grafiki).",
+ "est_usd": 0,
+ "est_limit": "1 wywołanie Antigravity (AI Pro)",
+ "jp_ok": {
+  "date": "2026-11-03",
+  "quote": "ok wygeneruj nowe kolejne pozy do gry"
+ },
+ "by": "Claude",
+ "timeout_min": 20
+}

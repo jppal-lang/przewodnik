@@ -32,7 +32,7 @@
   function terrains(t) { return Array.isArray(t) ? t.filter(function (x) { return typeof x === 'string' && NAME.test(x); }) : []; }
   var TILE_ITEMS = ['top', 'mid', 'left', 'right', 'float', 'crumble'];
   function parse(M) {
-    var A = { run: null, jump: null, pano: {}, tiles: {}, props: {}, any: false, ver: '' };
+    var A = { run: null, jump: null, sheets: {}, pz: {}, accRun: {}, pano: {}, tiles: {}, props: {}, any: false, ver: '' };
     var P = M && typeof M === 'object' && M.packs && typeof M.packs === 'object' ? M.packs : null;
     if (!P) return A;
     A.ver = typeof M.updated_at === 'string' ? M.updated_at.replace(/[^0-9TZ]/g, '').slice(0, 20) : ''; // do adresów plików: po nowej akceptacji przeglądarka nie bierze starej kopii
@@ -40,6 +40,15 @@
       if (!Object.prototype.hasOwnProperty.call(P, k) || !NAME.test(k)) continue;
       var e = P[k]; if (!e || typeof e !== 'object') continue;
       if (e.kind === 'frames' && (e.role === 'run' || e.role === 'jump')) { var f = frames(e); if (f) { A[e.role] = f; A.any = true; } }
+      if (e.kind === 'frames' && NAME.test(e.role || '') && e.role !== 'run' && e.role !== 'jump') { // pozy v2 (JP 2026-11-03): każda klatka po nazwie
+        var fz = frames(e);
+        if (fz && fz.names.length) {
+          A.sheets[k] = fz; A.any = true;
+          var mr = /^acc-([a-z]+)-run$/.exec(e.role), ma = /^acc-([a-z]+)$/.exec(e.role);   // akcesoria: „latarka:idle_1”, bieg z latarką osobno
+          if (mr) A.accRun[mr[1]] = k;
+          else fz.names.forEach(function (nm, i) { if (nm && NAME.test(nm.replace(/_/g, '-'))) A.pz[(e.role === 'walk' ? 'walk:' : ma ? ma[1] + ':' : '') + nm] = { p: k, i: i }; });
+        }
+      }
       else if (e.kind === 'panorama' && NAME.test(e.place || '')) {
         var s = srcMap(e.src);
         if (s && num(e.w, 64, 8192) && num(e.h, 32, 8192)) { A.pano[e.place] = { src: s, w: e.w, h: e.h, ground: num(e.ground, .3, 1) ? e.ground : .86, terrains: terrains(e.terrains) }; A.any = true; }
