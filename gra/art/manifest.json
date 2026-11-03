@@ -1124,7 +1124,57 @@
     "alley",
     "belvedere"
    ]
+  },
+  "tiles-spello": {
+   "pack": "tiles-spello",
+   "v": 1,
+   "accepted_at": "2026-11-03T21:32:16.141Z",
+   "kind": "tiles",
+   "set": "spello",
+   "terrains": [
+    "olive",
+    "gate",
+    "alley",
+    "belvedere"
+   ],
+   "sizes": [
+    32,
+    64,
+    128
+   ],
+   "tiles": {
+    "top": {
+     "32": "tiles-spello/top-32.webp",
+     "64": "tiles-spello/top-64.webp",
+     "128": "tiles-spello/top-128.webp"
+    },
+    "mid": {
+     "32": "tiles-spello/mid-32.webp",
+     "64": "tiles-spello/mid-64.webp",
+     "128": "tiles-spello/mid-128.webp"
+    },
+    "left": {
+     "32": "tiles-spello/left-32.webp",
+     "64": "tiles-spello/left-64.webp",
+     "128": "tiles-spello/left-128.webp"
+    },
+    "right": {
+     "32": "tiles-spello/right-32.webp",
+     "64": "tiles-spello/right-64.webp",
+     "128": "tiles-spello/right-128.webp"
+    },
+    "float": {
+     "32": "tiles-spello/float-32.webp",
+     "64": "tiles-spello/float-64.webp",
+     "128": "tiles-spello/float-128.webp"
+    },
+    "crumble": {
+     "32": "tiles-spello/crumble-32.webp",
+     "64": "tiles-spello/crumble-64.webp",
+     "128": "tiles-spello/crumble-128.webp"
+    }
+   }
   }
  },
- "updated_at": "2026-11-03T21:28:32.175Z"
+ "updated_at": "2026-11-03T21:32:16.141Z"
 }
