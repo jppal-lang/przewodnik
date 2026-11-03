@@ -1174,7 +1174,54 @@
      "128": "tiles-spello/crumble-128.webp"
     }
    }
+  },
+  "tiles-frasassi": {
+   "pack": "tiles-frasassi",
+   "v": 1,
+   "accepted_at": "2026-11-03T22:37:37.062Z",
+   "kind": "tiles",
+   "set": "frasassi",
+   "terrains": [
+    "cave"
+   ],
+   "sizes": [
+    32,
+    64,
+    128
+   ],
+   "tiles": {
+    "top": {
+     "32": "tiles-frasassi/top-32.webp",
+     "64": "tiles-frasassi/top-64.webp",
+     "128": "tiles-frasassi/top-128.webp"
+    },
+    "mid": {
+     "32": "tiles-frasassi/mid-32.webp",
+     "64": "tiles-frasassi/mid-64.webp",
+     "128": "tiles-frasassi/mid-128.webp"
+    },
+    "left": {
+     "32": "tiles-frasassi/left-32.webp",
+     "64": "tiles-frasassi/left-64.webp",
+     "128": "tiles-frasassi/left-128.webp"
+    },
+    "right": {
+     "32": "tiles-frasassi/right-32.webp",
+     "64": "tiles-frasassi/right-64.webp",
+     "128": "tiles-frasassi/right-128.webp"
+    },
+    "float": {
+     "32": "tiles-frasassi/float-32.webp",
+     "64": "tiles-frasassi/float-64.webp",
+     "128": "tiles-frasassi/float-128.webp"
+    },
+    "crumble": {
+     "32": "tiles-frasassi/crumble-32.webp",
+     "64": "tiles-frasassi/crumble-64.webp",
+     "128": "tiles-frasassi/crumble-128.webp"
+    }
+   }
   }
  },
- "updated_at": "2026-11-03T21:32:16.141Z"
+ "updated_at": "2026-11-03T22:37:37.062Z"
 }
