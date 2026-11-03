@@ -1,0 +1,17 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 15,
+ "jp_ok": {
+  "date": "2026-11-03",
+  "quote": "czy masz nowe trasy, zobacz co nas blokuje"
+ },
+ "args": [
+  "ok",
+  "quo-pozy-06"
+ ],
+ "title": "Pozy Quo v2 paczka 6 do gry (dźwignia bez drążka, pchanie)",
+ "why": "Pozy Quo v2 paczka 6 do gry (dźwignia bez drążka, pchanie). Sprawdzone przez Claude; bez AI, 0 $.",
+ "est_limit": "0 wywołań"
+}

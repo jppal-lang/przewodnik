@@ -1,0 +1,17 @@
+{
+ "script": "game-art.mjs",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 15,
+ "jp_ok": {
+  "date": "2026-11-03",
+  "quote": "czy masz nowe trasy, zobacz co nas blokuje"
+ },
+ "args": [
+  "recut",
+  "quo-pozy-02"
+ ],
+ "title": "Pozy Quo v2 paczka 2: ponowne cięcie (uderzenie odbite w prawo)",
+ "why": "Pozy Quo v2 paczka 2: ponowne cięcie (uderzenie odbite w prawo). Sprawdzone przez Claude; bez AI, 0 $.",
+ "est_limit": "0 wywołań"
+}
