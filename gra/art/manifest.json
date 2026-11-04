@@ -1357,7 +1357,77 @@
     "256": "quo-acc-magnes/acc-magnet-256.webp",
     "512": "quo-acc-magnes/acc-magnet-512.webp"
    }
+  },
+  "quo-acc-lisc": {
+   "pack": "quo-acc-lisc",
+   "v": 1,
+   "accepted_at": "2026-11-04T06:15:00.809Z",
+   "kind": "frames",
+   "role": "acc-glide",
+   "frames": 4,
+   "names": [
+    "glide_1",
+    "glide_2",
+    "fall_1",
+    "fall_2"
+   ],
+   "cols": 4,
+   "fw": 512,
+   "fh": 512,
+   "anchor": [
+    256,
+    471
+   ],
+   "quoH": 386,
+   "heads": [
+    [
+     372,
+     252
+    ],
+    [
+     334,
+     248
+    ],
+    [
+     308,
+     151
+    ],
+    [
+     330,
+     124
+    ]
+   ],
+   "boxes": [
+    [
+     29,
+     207,
+     463,
+     264
+    ],
+    [
+     47,
+     202,
+     444,
+     269
+    ],
+    [
+     91,
+     85,
+     359,
+     386
+    ],
+    [
+     115,
+     53,
+     352,
+     418
+    ]
+   ],
+   "src": {
+    "256": "quo-acc-lisc/acc-glide-256.webp",
+    "512": "quo-acc-lisc/acc-glide-512.webp"
+   }
   }
  },
- "updated_at": "2026-11-04T06:14:46.483Z"
+ "updated_at": "2026-11-04T06:15:00.809Z"
 }
