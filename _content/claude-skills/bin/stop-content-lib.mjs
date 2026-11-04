@@ -240,6 +240,21 @@ export function blocksLine(rec) {
 // ── tekst standardu i pytania researchu (wspólne: stop-content.mjs, gemini-draft.mjs) ──
 export const SIGHT_QS = new Set(['monument', 'church', 'museum', 'castle', 'house', 'synagogue']);
 
+// JP 2026-11-04: „humanizer ma pomagać w budowaniu tekstów” — te zasady idą do KAŻDEGO pisania i przepisywania treści (Gemini/Claude),
+// nie do kontroli (kontrola nie robi z nich flag dla JP). Źródło: humanizer (github.com/blader/humanizer, MIT), wersja polska.
+export const HUMAN_PL = `PISZ JAK CZŁOWIEK (humanizer, wersja polska) — każde zdanie ma dodać informację, której czytelnik jeszcze nie ma:
+- bez kontrastu z nikim („nie tylko X, ale i Y”, „to nie X, to Y”) — napisz Y wprost;
+- bez puenty powtarzającej akapit („I to jest prawdziwa magia.”) i bez złotych myśli („w gruncie rzeczy”, „prawdziwe serce miasta”);
+- bez zapowiedzi zamiast treści („Zanurzmy się”, „Przygotujcie się na…”) — zacznij od rzeczy;
+- bez triad z rozpędu: tyle przykładów i przymiotników, ile ma treść (często dwa, nie trzy);
+- bez słów-wydmuszek: kluczowy, wyjątkowy, niezwykły, magiczny, malowniczy, urokliwy, zachwycający, niezapomniany, tętniący życiem,
+  bogata historia, prawdziwa perełka, w sercu (miasta), świadectwo, odcisnął piętno — zamiast przymiotnika konkret (data, wymiar, nazwa, kolor);
+- bez doczepek imiesłowowych („…, podkreślając wyjątkowość miejsca”, „…, tworząc niepowtarzalny klimat”);
+- „jest”, „ma” zamiast „stanowi”, „pełni funkcję”, „szczyci się”, „oferuje”;
+- zdania różnej długości; nie zaczynaj kilku z rzędu tak samo („Tu…”, „Tu…”);
+- bez pauzy „—” i półpauzy „–”; przecinek, dwukropek albo nowe zdanie.
+Niczego nie dopisuj, żeby brzmiało „ludzko” — tylko fakty z materiału.`;
+
 export const STANDARD = `STANDARD TREŚCI PRZYSTANKU (docs/TRESC-PRZYSTANKU.md, JP 2026-10-18):
 - Opis (desc_paragraphs, publiczny): hak, historia i ludzie, „Kim był/była…”, co oglądać z dokładnym miejscem. Legenda, ciekawostka
   i popkultura NIE wchodzą do opisu — mają własne bloki; w opisie najwyżej jedno zdanie-zapowiedź, a blok jest rozwinięciem (nie powtarza zdania).

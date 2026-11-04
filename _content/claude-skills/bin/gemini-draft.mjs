@@ -27,7 +27,7 @@ import { triageErrors, gateErrors } from './jev.mjs';
 import { sourceCheck } from './source-check.mjs';
 import { stopWikidata, dist } from './wikidata.mjs';
 import { whoIs, namesFromProblem } from './kimbyl.mjs';
-import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
+import { validateStop, normalizeRecord, blocksLine, stripRefs, noDash, PRACTICAL_CATS, STANDARD, HUMAN_PL, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 import { CHOICE_RULE, CHOICE_MAX, cleanChoices, choiceOk, choiceOnlyDiff, choiceTargets, pickChoices, openRevisionRequests, EXIT_LATER, choicesLost, BASE_VERSION_SQL } from './kids-choice-lib.mjs';   // pytanie z wyborem w misji (JP 2026-10-31)
 import { SKILLS } from './lib.mjs';
 import { createLive } from './live-status.mjs';   // praca AI na żywo dla panelu (ops.status_snapshot 'live', JP 2026-10-31)
@@ -345,6 +345,7 @@ stop_key: krótki, stały, małe litery i myślniki (parking-…, nazwa-zabytku)
 async function writeTrip(research) {
   log(`${slug}: ② szkic wycieczki (Gemini)`);
   const trip = await geminiJson(`Napisz po polsku szkic wycieczki Quolino na podstawie researchu poniżej — WYŁĄCZNIE z faktów z researchu.
+${HUMAN_PL}
 ${name}, ${duration === 'full_day' ? 'cały dzień' : 'pół dnia'}. Życzenia JP: ${brief || 'brak szczególnych'}.
 Rodzic dostaje plan dnia od parkingu po finał, dziecko — misję i zadanie foto na każdym przystanku.
 ${RULES}
@@ -394,6 +395,7 @@ Wynik: Markdown, pytanie → odpowiedź + URL albo „brak — sprawdzono: …�
     const raw = await geminiJson(`Napisz treść przystanku Quolino po polsku według standardu — WYŁĄCZNIE z faktów z researchu poniżej.
 Przystanek: ${pl.name} (kategoria ${cat}). Trasa: ${cityTitle}.
 ${STANDARD}
+${HUMAN_PL}
 ${DEPTH_TEXT}
 Opis (desc_paragraphs) przepisz z przypisami [n] na bazie obecnego opisu szkicu i researchu; legendy, ciekawostki i popkultury w opisie nie opowiadaj.
 ${fix ? `POPRAW BŁĘDY WALIDATORA (zmień tylko to, co trzeba):\n${fix.errors.map(e => `- ${e.block ?? ''}: ${e.problem}${e.fix ? ' → ' + e.fix : ''}`).join('\n')}\nOBECNY REKORD:\n${JSON.stringify(fix.rec)}\n` : ''}
@@ -939,6 +941,7 @@ Odpowiedz JSON-em: {"city": {…tylko zmienione pola…}, "day_plan": {…tylko 
 ${who === 'Claude' ? 'POPRAWKI Z KONTROLI: NIE dodawaj żadnych nowych faktów, liczb, dat ani nazw. Poprawka = usuń zdanie, przepisz je bez błędu albo przenieś. Fakt bez potwierdzenia w źródle = usuń zdanie. Spójność godzin: time_label i day_plan muszą się zgadzać.\n' : ''}Uwaga do opisu, legendy, ciekawostki, popkultury albo fun factu = popraw rekord bloków (z przypisami [n], źródła z listy). Nowe fakty tylko z researchu poniżej
 albo — jeśli JP sam podał fakt w uwadze — z uwagi JP (wtedy bez przypisu, opisz to w "summary").
 ${STANDARD}
+${HUMAN_PL}
 ${DEPTH_TEXT}
 ${RULES}
 ${rulesText()}

@@ -73,6 +73,9 @@ Odpowiadasz **wyłącznie JSON-em** w tym kształcie, z `lang` ustawionym na ję
   `correct` kopiujesz bez zmian (skrypt i tak bierze go ze źródła). `null` zostaje `null`.
   Opcje mają zostać 4 różne i jednoznaczne w języku docelowym; nazwy własne w oryginale.
 
+- **Brzmi jak człowiek w języku docelowym** (humanizer, 2026-11-04): nie dodawaj ozdobników, których nie ma w polskim
+  („breathtaking”, „nestled”, „in the heart of”, „hidden gem”, „not just… but…”); tłumacz konkret konkretem, bez pauz „—”.
+
 ## Kontrola
 
 Przed oddaniem sprawdź sam, a skrypt sprawdzi ponownie:

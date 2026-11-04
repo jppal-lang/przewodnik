@@ -24,7 +24,7 @@ import { join } from 'node:path';
 import { claude, claudeJson, openrouterJson, JSON_QUOTE_RULE, env, log, db, spent, SKILLS, paidToday, DAILY_USD } from './lib.mjs';
 import { WORK, DEPTH_TEXT, loadResearch, notify } from './draft-lib.mjs';
 import { loadRules, rulesText, learnFromErrors } from './quality-lib.mjs';
-import { validateStop, normalizeRecord, blocksLine, PRACTICAL_CATS, BLOCK_PL, SIGHT_QS, STANDARD, recordFormat, researchQuestions } from './stop-content-lib.mjs';
+import { validateStop, normalizeRecord, blocksLine, PRACTICAL_CATS, BLOCK_PL, SIGHT_QS, STANDARD, HUMAN_PL, recordFormat, researchQuestions } from './stop-content-lib.mjs';
 export { validateStop } from './stop-content-lib.mjs';
 
 const argv = process.argv.slice(2);
@@ -110,6 +110,7 @@ async function write(stop, city, researchMd, { current = null, errors = [], by =
 Trasa: ${city.title}. Przystanek: ${stop.name} (stop_id ${stop.id}, kategoria ${stop.category}${stop.year_built ? `, ${stop.year_built}` : ''}).
 ${errors.length ? `POPRAW KAŻDY BŁĄD (walidator i kontrola Claude) — reszta zostaje bez zmian:\n${errors.map(e => `- [${e.block ?? '?'}] ${e.problem}${e.fix ? ' → ' + e.fix : ''}`).join('\n')}\n` : ''}
 ${STANDARD}
+${HUMAN_PL}
 
 ${DEPTH_TEXT}
 Progi liczą się bez przypisów [n]. Końcowy krótki akapit „Praktycznie: …” (ubiór, wózki) jest dozwolony.
