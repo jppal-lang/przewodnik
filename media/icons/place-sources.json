@@ -305,6 +305,29 @@
    }
   ]
  },
+ "spello/via-giulia": {
+  "trip": "spello",
+  "stop_key": "via-giulia",
+  "n": 6,
+  "name": "Via Giulia — Ślad Rzymski",
+  "trip_version": 21,
+  "icon_version": 1,
+  "accepted_at": "2026-11-04T06:14:22.765Z",
+  "icons": {
+   "64": "media/icons/place-spello-via-giulia-64.webp",
+   "128": "media/icons/place-spello-via-giulia-128.webp",
+   "256": "media/icons/place-spello-via-giulia-256.webp",
+   "512": "media/icons/place-spello-via-giulia-512.webp"
+  },
+  "rights": "© Quolino (quolino.com). Ilustracja nowa; zdjęcia poniżej służyły wyłącznie jako informacja wizualna o wyglądzie obiektu.",
+  "references": [
+   {
+    "url": "https://c8.alamy.com/comp/E1A5PM/medieval-house-in-via-giulia-spello-umbria-italy-E1A5PM.jpg",
+    "file_url": "https://c8.alamy.com/comp/E1A5PM/medieval-house-in-via-giulia-spello-umbria-italy-E1A5PM.jpg",
+    "source": "link JP"
+   }
+  ]
+ },
  "spello/villa-dei-mosaici": {
   "trip": "spello",
   "stop_key": "villa-dei-mosaici",
