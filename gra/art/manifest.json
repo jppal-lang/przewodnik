@@ -1677,7 +1677,43 @@
     "256": "quo-acc-latarka-bieg/acc-lantern-run-256.webp",
     "512": "quo-acc-latarka-bieg/acc-lantern-run-512.webp"
    }
+  },
+  "props": {
+   "pack": "props",
+   "v": 1,
+   "accepted_at": "2026-11-04T06:15:51.124Z",
+   "kind": "props",
+   "sizes": [
+    64,
+    128
+   ],
+   "props": {
+    "flower-red": {
+     "64": "props/flower-red-64.webp",
+     "128": "props/flower-red-128.webp"
+    },
+    "flower-yellow": {
+     "64": "props/flower-yellow-64.webp",
+     "128": "props/flower-yellow-128.webp"
+    },
+    "flower-white": {
+     "64": "props/flower-white-64.webp",
+     "128": "props/flower-white-128.webp"
+    },
+    "crystal": {
+     "64": "props/crystal-64.webp",
+     "128": "props/crystal-128.webp"
+    },
+    "drop": {
+     "64": "props/drop-64.webp",
+     "128": "props/drop-128.webp"
+    },
+    "puddle": {
+     "64": "props/puddle-64.webp",
+     "128": "props/puddle-128.webp"
+    }
+   }
   }
  },
- "updated_at": "2026-11-04T06:15:39.976Z"
+ "updated_at": "2026-11-04T06:15:51.124Z"
 }
