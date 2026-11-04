@@ -45,6 +45,15 @@ def text(where, a, b, long_check=True):
         return
     # każda liczba ze źródła musi zostać (dodatkowe wolno: „XIII wiek” → „13th century”)
     missing = nums(a) - nums(b)
+    # JP 2026-11-04 (Frasassi #109: „1” → „one”): małe liczby 0–12 stojące osobno (nie P1, nie godzina, nie cena, nie jednostka)
+    # tłumacz może napisać słowem — to uwaga, nie błąd. Ceny, daty, godziny, oznaczenia jak P1 nadal muszą zostać co do cyfry.
+    soft = [n for n in list(missing.elements()) if n.isdigit() and int(n) <= 12 and re.search(
+        r"(?<![\w€$£:./-])" + n + r"(?![\w%:./-])(?!\s?(?:€|eur|euro|zł|pln|\$|£|%|min|godz|h\b|km|m\b|cm|kg|lat\b|rok))", a or "", re.I)]
+    for n in soft:
+        missing[n] -= 1
+    missing = +missing
+    if soft:
+        warnings.append(f"{where}: liczby {sorted(soft)} zapisane słownie albo pominięte — sprawdź sens (ceny, daty, godziny bez zmian)")
     if missing:
         errors.append(f"{where}: brakuje liczb ze źródła {sorted(missing.elements())} — ceny, daty, godziny i liczby bez zmian")
     if EMOJI.search(b) and not EMOJI.search(a):

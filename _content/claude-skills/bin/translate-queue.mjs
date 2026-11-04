@@ -85,20 +85,23 @@ async function retryFailed() {
       AND finished_at > now() - interval '7 days' AND city_slug IS NOT NULL ORDER BY finished_at`);
   for (const j of rows) {
     if (done.includes(String(j.id))) continue;
-    let res; try { res = JSON.parse(j.result); } catch { continue; }          // ucięty albo „EN nie przeszedł” → nie ruszamy
-    const langs = (res.failed ?? []).map(f => f.lang).filter(l => /^[a-z]{2}$/.test(l) && l !== 'en');
-    if (!langs.length) continue;
+    // EN nie przeszedł kontroli → cała reszta wstrzymana; jedna ponowna próba całości (JP 2026-11-04, Frasassi #109)
+    const enFail = /^EN nie przeszedł kontroli/.test(String(j.result ?? ''));
+    let res = null; if (!enFail) { try { res = JSON.parse(j.result); } catch { continue; } }   // ucięty wynik → nie ruszamy
+    const langs = enFail ? [] : (res.failed ?? []).map(f => f.lang).filter(l => /^[a-z]{2}$/.test(l) && l !== 'en');
+    if (!enFail && !langs.length) continue;
     const [pub] = await q(`SELECT status FROM public.cities WHERE slug = $1`, [j.city_slug]);
     if (pub?.status !== 'published') continue;
     if (paidToday() >= DAILY_USD) { said(`ponowienie ${j.city_slug} (${langs.join(',')}) czeka na dzienny limit`); return true; }
     writeFileSync(RETRIED, JSON.stringify([...done, String(j.id)].slice(-200)));
-    said(`ponawiam ${j.city_slug}: ${langs.join(', ')} (zlecenie ${j.id})`);
-    log(`ponawiam ${j.city_slug}: ${langs.join(', ')} (zlecenie ${j.id})`);
-    const r = await run(process.execPath, [new URL('./trip-translate.mjs', import.meta.url).pathname, j.city_slug, '--langs', langs.join(','), '--job', String(j.id)], { timeout: 3 * 3600e3 });
+    const what = enFail ? 'wszystkie języki (EN odpadł)' : langs.join(', ');
+    said(`ponawiam ${j.city_slug}: ${what} (zlecenie ${j.id})`);
+    log(`ponawiam ${j.city_slug}: ${what} (zlecenie ${j.id})`);
+    const r = await run(process.execPath, [new URL('./trip-translate.mjs', import.meta.url).pathname, j.city_slug, ...(enFail ? [] : ['--langs', langs.join(',')]), '--job', String(j.id)], { timeout: 4 * 3600e3 });
     const [after] = await q(`SELECT status, result FROM ops.jobs WHERE id = $1`, [j.id]);
     const [c2] = await q(`SELECT discord_thread_id AS thread FROM ops.cities WHERE slug = $1`, [j.city_slug]).catch(() => [{}]);
-    const msg = after?.status === 'done' ? `✅ ${j.city_slug}: ponowione tłumaczenie (${langs.join(', ')}) przeszło kontrolę.`
-      : `⚠️ ${j.city_slug}: ponowione tłumaczenie (${langs.join(', ')}) znów nie przeszło: ${String(after?.result || r.err).slice(-500)}`;
+    const msg = after?.status === 'done' ? `✅ ${j.city_slug}: ponowione tłumaczenie (${what}) przeszło kontrolę.`
+      : `⚠️ ${j.city_slug}: ponowione tłumaczenie (${what}) znów nie przeszło: ${String(after?.result || r.err).slice(-500)}`;
     if (c2?.thread) await notify(c2.thread, msg);
     if (after?.status !== 'done') await alert(`Quolino: ${msg}`);
     return true;
