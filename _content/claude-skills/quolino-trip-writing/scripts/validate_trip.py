@@ -25,6 +25,10 @@ import re
 import sys
 from pathlib import Path
 
+# lokale (JP 2026-11-04): żadnych linków do blogów, porównywarek, agregatorów i przewodników — strona musi należeć do lokalu
+NOT_OWN = re.compile(r"tripadvisor\.|thefork\.|lafourchette|yelp\.|google\.[a-z.]+/(maps|search)|maps\.app\.goo\.gl|g\.page/|"
+                     r"booking\.com|restaurantguru|gambero|2spaghi|paginegialle|virgilio\.|wanderlog|tiktok\.|"
+                     r"blogspot\.|wordpress\.com|medium\.com|substack\.|/blog/|\bblog\.", re.I)
 CATEGORIES = {"parking", "monument", "church", "museum", "house", "viewpoint",
               "restaurant", "icecream", "sweets", "photo", "street", "castle", "synagogue", "park"}
 EMERGENCY  = {"pharmacy", "hospital", "toilet", "playground"}
@@ -304,8 +308,14 @@ def validate_city(folder: Path):
         if s.get("category") in ("restaurant", "icecream", "sweets"):
             if not s.get("phone"):
                 err(slug, f"{k}: lokal bez telefonu — pole 'phone' jest obowiazkowe")
-            if not s.get("website"):
-                err(slug, f"{k}: lokal bez strony — pole 'website' jest obowiazkowe")
+            # JP 2026-11-04: strona musi należeć do lokalu; brak własnej strony = pole puste (nie szukamy linku na siłę)
+            w = str(s.get("website") or "")
+            if w and NOT_OWN.search(w):
+                err(slug, f"{k}: 'website' lokalu wskazuje blog, porównywarkę albo agregator ({w}) — tylko strona należąca do lokalu, inaczej null")
+            for fld in ("verify_url",):
+                v = str(s.get(fld) or "")
+                if v and NOT_OWN.search(v):
+                    err(slug, f"{k}: '{fld}' lokalu wskazuje blog, porównywarkę albo agregator ({v}) — tylko strona lokalu, inaczej null")
         if s.get("reservation") in ("required", "recommended") and not (s.get("phone") or s.get("whatsapp")):
             err(slug, f"{k}: rezerwacja '{s['reservation']}' bez telefonu i bez WhatsAppa — nie ma jak zarezerwowac")
         # Dane, ktore ida wprost na strone (IMPORT §4b)

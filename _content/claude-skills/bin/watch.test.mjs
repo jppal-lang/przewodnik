@@ -277,16 +277,31 @@ test('linki: 404, przekierowanie na inną domenę, podstrona → główna; chwil
   };
   const trips = tripOf([stop({ stop_key: 's', name: 'S', verify_url: 'https://ok.example/a', website: 'https://dead.example/x',
     sources: ['https://old.example/page', 'https://site.example/sub/page', 'https://www.same.example/p', 'https://down.example/'] })]);
-  const recorded = [];
+  const recorded = [], fixes = [];
   const c = ctxFor({ pages, trips }); c.recordLink = async (u, r) => recorded.push([u, r.status]); c.prevLinkBad = async (u) => false;
+  c.saveFix = async (u, n, how) => fixes.push([u, n, how]);
   await W.guardLinks(c);
+  // JP 2026-11-04: martwy link i podstrona → główna bez pytania do JP (archiwalny, ukryty na stronie); pytanie tylko przy innej domenie
   const types = c.store.rows.map(r => r.proposal.type).sort();
-  assert.deepEqual(types, ['dead', 'home', 'moved']);
+  assert.deepEqual(types, ['moved']);
   assert.equal(recorded.length, 6, 'wynik w link_checks');
-  const c2 = ctxFor({ pages, trips, store: c.store }); c2.prevLinkBad = async (u) => u === 'https://down.example/';
+  assert.deepEqual(fixes.map(f => f[0]).sort(), ['https://dead.example/x', 'https://site.example/sub/page']);
+  assert.equal(fixes.find(f => f[0] === 'https://site.example/sub/page')[2], 'source', 'źródło (przypis) bez szukania zastępstwa');
+  const c2 = ctxFor({ pages, trips, store: c.store }); c2.prevLinkBad = async (u) => u === 'https://down.example/'; c2.saveFix = async (u, n, how) => fixes.push([u, n, how]);
   await W.guardLinks(c2);
-  assert.ok(c.store.rows.some(r => r.proposal.type === 'down'));
-  assert.equal(c.store.rows.length, 4);
+  assert.ok(fixes.some(f => f[0] === 'https://down.example/'), 'drugi raz bez odpowiedzi → ukryty');
+  assert.equal(c.store.rows.length, 1);
+});
+test('zastępstwo martwego linku: podstrona z cenami na stronie głównej tej samej domeny, inaczej strona główna', async () => {
+  const pages = {
+    'https://museo.example/': html('<a href="/oferta">Oferta i bilety</a> <a href="https://blog.example/museo">blog</a> <a href="/kontakt">Kontakt</a>'),
+    'https://museo.example/oferta': 'ok',
+    'https://bar.example/': html('<a href="/menu">Menu</a>'),
+  };
+  const c = ctxFor({ pages, trips: tripOf([]) });
+  assert.deepEqual(await W.findReplacement(c, 'https://museo.example/cennik'), { url: 'https://museo.example/oferta', how: 'home-page-match' });
+  assert.deepEqual(await W.findReplacement(c, 'https://bar.example/stara'), { url: 'https://bar.example/', how: 'home' });
+  assert.deepEqual(await W.findReplacement(c, 'https://nie-ma.example/x'), { url: null, how: 'none' });
 });
 
 // ── lokale ─────────────────────────────────────────────────────────────────────────────────────────

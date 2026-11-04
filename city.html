@@ -379,6 +379,13 @@ function savePref(l) { try { localStorage.setItem('quolino_lang', l); } catch(e)
 // ── HTML escape ────────────────────────────────────────
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function safeUrl(u) { u = String(u == null ? '' : u).trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+// martwe linki (public.dead_links, strażnik linków): zastępczy adres ze strony głównej albo nic — przycisk znika
+var DEAD = {};
+// lokale (JP 2026-11-04): tylko strona należąca do lokalu — linki do blogów, porównywarek i agregatorów nie trafiają do rodziny
+var FOOD_CAT = { restaurant: 1, icecream: 1, sweets: 1, cafe: 1, bar: 1, food: 1 };
+var NOT_OWN = /tripadvisor\.|thefork\.|lafourchette|yelp\.|google\.[a-z.]+\/(maps|search)|maps\.app\.goo\.gl|g\.page\/|booking\.com|restaurantguru|gambero|2spaghi|paginegialle|virgilio\.|wanderlog|tiktok\.|blogspot\.|wordpress\.com|medium\.com|substack\.|\/blog\/|\bblog\./i;
+function stopUrl(s, u) { u = liveUrl(u); return u && FOOD_CAT[s.category] && NOT_OWN.test(u) ? '' : u; }
+function liveUrl(u) { u = safeUrl(u); if (u && Object.prototype.hasOwnProperty.call(DEAD, u)) return safeUrl(DEAD[u]); return u; }
 
 // ── Get UI string ──────────────────────────────────────
 function ui(key, fallback) { return uiStrings[key] || (window.QUI && window.QUI.t(key)) || fallback || key; }
@@ -480,6 +487,7 @@ function loadPage(lang) {
     sb('region_translations', 'select=region_slug,lang,name,description&lang=eq.' + lang),
     sb('country_translations', 'select=country_slug,lang,name&lang=eq.' + lang),
     sb('countries', 'select=slug,flag_code,sort_order,continent'),
+    sb('dead_links', 'select=url,new_url').catch(function() { return []; }),   // JP 2026-11-04: martwy link nie trafia do rodziny
   ]));
   (QD ? liveP : withOffline(liveP, lang)).then(function(results) {
     offlineShown = results.offlineAt || 0;
@@ -498,6 +506,7 @@ function loadPage(lang) {
     var regionTrs  = results[4];
     var countryTrs = results[5];
     var countries  = results[6];
+    DEAD = {}; (Array.isArray(results[7]) ? results[7] : []).forEach(function(d) { if (d && d.url) DEAD[d.url] = d.new_url || ''; });
 
     if (QD && QD.info) citySlug = QD.info.city_slug;
     if (!city) { showError('Nie znaleziono wycieczki: ' + esc(citySlug)); return; }
@@ -839,10 +848,10 @@ function render(d) {
 
     // Extra links
     var extraLinks = [];
-    if (safeUrl(s.website)) extraLinks.push('<a class="qc-btn qc-btn--sm" href="' + esc(safeUrl(s.website)) + '" target="_blank" rel="noopener">' + esc(ui('btn.www', 'WWW')) + '</a>');
+    if (stopUrl(s, s.website)) extraLinks.push('<a class="qc-btn qc-btn--sm" href="' + esc(stopUrl(s, s.website)) + '" target="_blank" rel="noopener">' + esc(ui('btn.www', 'WWW')) + '</a>');
     if (s.phone) extraLinks.push('<a class="qc-btn qc-btn--sm" href="tel:' + esc(String(s.phone).replace(/[^0-9+]/g, '')) + '">' + esc(ui('btn.call', 'Zadzwoń')) + '</a>');
     if (s.whatsapp) extraLinks.push('<a class="qc-btn qc-btn--sm" href="https://wa.me/' + encodeURIComponent(String(s.whatsapp).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + esc(ui(s.reservation ? 'btn.reserve' : 'btn.write', s.reservation ? 'Rezerwuj' : 'Napisz')) + '</a>');
-    if (safeUrl(s.verify_url)) extraLinks.push('<a class="qc-btn qc-btn--sm" href="' + esc(safeUrl(s.verify_url)) + '" target="_blank" rel="noopener">' + esc(ui('btn.verify', 'Sprawdź')) + '</a>');
+    if (stopUrl(s, s.verify_url)) extraLinks.push('<a class="qc-btn qc-btn--sm" href="' + esc(stopUrl(s, s.verify_url)) + '" target="_blank" rel="noopener">' + esc(ui('btn.verify', 'Sprawdź')) + '</a>');
     if (extraLinks.length) html += '<div class="qc-links">' + extraLinks.join('') + '</div>';
 
     // Prose (adult description)
@@ -1130,7 +1139,7 @@ function ustawMeta(city, cityTr, stops) {
     var miejsce = { '@type': 'TouristAttraction', name: t.name || ('Przystanek ' + (i + 1)) };
     if (t.desc_paragraphs && t.desc_paragraphs.length) miejsce.description = t.desc_paragraphs[0];
     if (s.lat && s.lon) miejsce.geo = { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lon };
-    if (s.website) miejsce.url = s.website;
+    if (stopUrl(s, s.website)) miejsce.url = stopUrl(s, s.website);
     if (s.phone) miejsce.telephone = s.phone;
     return { '@type': 'ListItem', position: i + 1, item: miejsce };
   });

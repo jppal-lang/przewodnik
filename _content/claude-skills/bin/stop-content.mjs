@@ -153,7 +153,7 @@ ${STANDARD}
 
 Sprawdź:
 1. PRZYPISY — OTWÓRZ każde źródło z sources (WebFetch) i sprawdź, czy fakty oznaczone jego numerem naprawdę tam są. Brak faktu = błąd
-   z poprawką (inne źródło albo usunięcie zdania). Martwy link (404, brak strony) = błąd. Gdy strona nie daje się otworzyć z powodu blokady
+   z poprawką (inne źródło albo usunięcie zdania). Martwy link (404, brak strony) to nie błąd i nie pytanie do JP: link był aktualny w chwili pisania; zostaje jako archiwalny, strona go nie pokazuje (strażnik linków). Przy cenach i godzinach muzeum wskaż stronę główną tej samej instytucji albo jej nowy adres z cenami. Gdy strona nie daje się otworzyć z powodu blokady
    (403, paywall), a fakt ma drugie źródło, które go potwierdza — uwaga, nie błąd.
 2. POWTÓRZENIA — opis vs legenda vs ciekawostka vs popkultura vs fun fact: ten sam fakt w dwóch blokach = błąd (zostaje w jednym; w opisie
    najwyżej jedno zdanie-zapowiedź; fun fact może rozwijać ciekawostkę dla dziecka, byle nie tym samym zdaniem).

@@ -207,6 +207,15 @@ z zewnątrz bez ograniczeń tylko wtedy, gdy mówi to źródło. Nie szukamy lin
 (portal noclegowy, agregator). Fakty historyczne nadal ze źródłem (Wikipedia, gmina). Link jest obowiązkowy, gdy punkt ma
 godziny, bilet albo wnętrze do zwiedzania, a lokal: zawsze telefon i strona.
 
+## Linki (2026-11-04)
+
+- **Martwy link** (404, strona zniknęła) to nie błąd treści i nie pytanie do JP. Link był aktualny w chwili pisania, więc zostaje w
+  danych jako archiwalny; strona go nie pokazuje (strażnik linków + `public.dead_links`). Zastępstwo automat szuka sam na stronie
+  głównej tej samej instytucji (muzeum zmieniło `/cennik` na `/oferta`), a gdy nie znajdzie, przycisk prowadzi na stronę główną.
+- **Muzea, ceny, bilety**: przy cenach i godzinach lepiej strona główna instytucji niż głęboki link, który zmienia się co sezon.
+- **Lokale** (restauracje, gelaterie, cukiernie, kawiarnie): strona musi należeć do lokalu. Zakaz blogów, porównywarek i agregatorów
+  (TripAdvisor, TheFork, Google Maps, Restaurant Guru, przewodniki). Lokal bez własnej strony: `website` = `null`, bez szukania na siłę.
+
 ## Brzmi jak człowiek (2026-11-02)
 
 Na podstawie skilla Humanizer (github.com/blader/humanizer, licencja MIT), przeniesione na polski. Obowiązuje w Trybie A

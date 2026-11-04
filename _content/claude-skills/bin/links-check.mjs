@@ -71,7 +71,7 @@ try {
 
   const byCity = {};
   const add = (city, thread, line) => { (byCity[city] ??= { thread, lines: [] }).lines.push(line); };
-  for (const d of dead) for (const r of d.refs) add(r.city_slug, r.discord_thread_id, `🔗 martwy link (${d.res.status || d.res.error}) przy ${r.stop_key}: ${d.url}`);
+  for (const d of dead) for (const r of d.refs) add(r.city_slug, r.discord_thread_id, `🗄️ link archiwalny (${d.res.status || d.res.error}) przy ${r.stop_key}: ${d.url} — strona go nie pokazuje, nic do zrobienia`);
   for (const m of moved) for (const r of m.refs) add(r.city_slug, r.discord_thread_id, `↪️ podstrona zniknęła (przekierowanie na główną) przy ${r.stop_key}: ${m.url}`);
   for (const r of stale) add(r.city_slug, r.discord_thread_id, `🕒 ${r.stop_key}: godziny otwarcia ${r.hours_status === 'unverified' ? 'niepotwierdzone' : 'sprawdzane ponad pół roku temu'} — sprawdzić na stronie oficjalnej`);
 

@@ -200,6 +200,7 @@ export async function runWatch({ log = (...a) => console.error(new Date().toISOS
       cursor: only ? 0 : state.cursor[name] ?? 0, log, sleep: (ms) => new Promise(r => setTimeout(r, ms)), touched: new Set(), found: [], notify: dry ? null : notify,
       prevLinkBad: async (url) => { const [r] = await q(`SELECT status FROM public.link_checks WHERE url = $1 ORDER BY checked_at DESC LIMIT 1`, [url]).catch(() => []); return !!r && (r.status === 0 || r.status === 404 || r.status === 410 || r.status >= 500); },
       recordLink: dry ? null : async (url, r, cities) => q(`INSERT INTO public.link_checks (url, status, final_url, error, city_slugs) VALUES ($1, $2, $3, $4, $5)`, [url, r.status, r.final ?? null, r.error ?? null, cities]).catch(() => {}),
+      saveFix: dry ? null : async (url, newUrl, how) => q(`INSERT INTO ops.link_fixes (url, new_url, how) VALUES ($1, $2, $3) ON CONFLICT (url) DO UPDATE SET new_url = EXCLUDED.new_url, how = EXCLUDED.how, found_at = now()`, [url, newUrl, how]).catch(() => {}),
       gastroStatus: async (cs, sk) => (await q(`SELECT business_status FROM public.gastro_checks WHERE city_slug = $1 AND stop_key = $2 ORDER BY checked_at DESC LIMIT 1`, [cs, sk]).catch(() => []))[0]?.business_status ?? null,
       usage: () => usage(q) };
     if (dry) ctx.store = { ...W.memoryStore(), tracked: store.tracked, get: store.get, dueRechecks: store.dueRechecks };

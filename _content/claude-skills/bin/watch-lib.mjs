@@ -609,6 +609,29 @@ export async function guardTrack(ctx) {
   return { checked: list.length };
 }
 
+// zastępczy adres na stronie głównej tej samej domeny: podstrona z cenami/biletami/godzinami (muzeum: /cennik → /oferta),
+// a gdy takiej nie ma — sama strona główna. Nic spoza domeny lokalu/muzeum (żadnych blogów i porównywarek).
+const FIX_WORDS = /cennik|ceny|bilet|prezz|tariff|bigliett|ticket|price|preis|eintritt|tarif|entrada|offert|oferta|orari|godzin|opening|hours|visit|zwiedz|info/i;
+export async function findReplacement(ctx, url, r = {}) {
+  let origin; try { origin = new URL(url).origin; } catch { return { url: null, how: 'none' }; }
+  let home = null;   // surowy HTML (ctx.get oddaje sam tekst, bez odnośników)
+  try { const rr = await ctx.fetch(origin + '/', { redirect: 'follow', headers: UA, signal: AbortSignal.timeout(25_000) }); if (rr.ok) home = { ok: true, text: await rr.text() }; } catch { home = null; }
+  if (!home?.ok || !home.text) return { url: null, how: 'none' };
+  const dom = regDomain(url), oldTok = (new URL(url).pathname.split('/').filter(Boolean).pop() ?? '').toLowerCase().replace(/\.[a-z]+$/, '').split(/[-_]/).filter(t => t.length > 3);
+  const cand = new Map();
+  for (const m of home.text.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
+    let u; try { u = new URL(m[1], origin + '/').href; } catch { continue; }
+    if (!/^https?:/.test(u) || regDomain(u) !== dom || u.replace(/\/+$/, '') === origin) continue;
+    const text = m[2].replace(/<[^>]+>/g, ' ');
+    const score = (FIX_WORDS.test(u) ? 3 : 0) + (FIX_WORDS.test(text) ? 2 : 0) + oldTok.filter(t => u.toLowerCase().includes(t) || text.toLowerCase().includes(t)).length * 2;
+    if (score >= 3 && (cand.get(u) ?? 0) < score) cand.set(u, score);
+  }
+  for (const [u] of [...cand.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)) {
+    const c = await checkLink(ctx.fetch, u);
+    if (c.status && c.status < 400 && new URL(c.final).pathname.replace(/\/+$/, '') !== '') return { url: c.final, how: 'home-page-match' };
+  }
+  return { url: origin + '/', how: 'home' };
+}
 export async function guardLinks(ctx) {
   const urls = new Map();
   for (const t of ctx.trips) for (const s of t.stops) {
@@ -626,6 +649,15 @@ export async function guardLinks(ctx) {
     else if (r.status && r.status < 400 && regDomain(r.final) && regDomain(r.final) !== regDomain(url)) type = 'moved';
     else if (r.status && r.status < 400 && new URL(r.final).pathname.replace(/\/+$/, '') === '' && new URL(url).pathname.replace(/\/+$/, '') !== '') type = 'home';
     if (!type) continue;
+    // JP 2026-11-04: martwy link to nie pytanie do JP. Link zostaje w trasie jako archiwalny (w chwili pisania działał), strona go
+    // nie pokazuje (public.dead_links); przy linku z przycisku przystanku automat szuka zastępstwa na stronie głównej tej samej domeny.
+    if (type === 'dead' || type === 'home' || type === 'down') {
+      const shown = refs.some(x => x.s.website === url || x.s.verify_url === url);
+      const fx = shown ? await findReplacement(ctx, url, r) : { url: null, how: 'source' };
+      await ctx.saveFix?.(url, fx.url, fx.how);
+      ctx.log?.(`link ${url}: ${type} (${r.status || r.error}) → ${fx.url ? 'zastępstwo ' + fx.url : 'archiwalny, ukryty na stronie'}`);
+      continue;
+    }
     const where = refs.map(x => `${x.t.title}: ${x.s.name}`).slice(0, 6).join('; ');
     const label = { dead: `martwy link (${r.status})`, down: `strona nie odpowiada drugi raz z rzędu (${r.status || r.error})`, moved: `przekierowanie na inną domenę (${regDomain(r.final)})`, home: 'podstrona zniknęła (przekierowanie na stronę główną)' }[type];
     await put(ctx, { kind: 'link', city_slug: refs[0].s.city_slug, stop_key: refs[0].s.stop_key, dedupe_key: `link:${url}:${type}`, url, quote: null,

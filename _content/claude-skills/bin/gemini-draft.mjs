@@ -327,7 +327,7 @@ meta = {
  "stops": [ {"stop_key": "parking-…", "stop_number": 1, "category": "parking", "optional": false, "sunset_spot": false,
           "lat": 0, "lon": 0, "time_label": "HH:MM", "visit_duration": "<minuty>", "price": null, "price_status": "confirmed|unverified",
           "opening_hours": null, "hours_status": "confirmed|unverified", "ztl": null, "year_built": null, "wiki_article": null,
-          "maps_query": "Nazwa, Miejscowość, Italia", "verify_url": "https://… albo null (zabytek pod gołym niebem bez godzin i biletów, bez własnej strony — nie szukaj linku na siłę)", "whatsapp": null, "website": null, "phone": null,
+          "maps_query": "Nazwa, Miejscowość, Italia", "verify_url": "https://… albo null (zabytek pod gołym niebem bez godzin i biletów, bez własnej strony — nie szukaj linku na siłę)", "whatsapp": null, "website": "null albo strona należąca do tego lokalu/obiektu (lokale: nigdy blog, TripAdvisor, TheFork, Google, porównywarka, przewodnik)", "phone": null,
           "rating": null, "reviews_count": null, "reservation": null, "parking_cost": null, "sources": ["https://…"]}, … ],
  "emergency": [ {"type": "pharmacy|hospital|toilet|playground", "maps_query": "…"} ]
 }
@@ -457,7 +457,7 @@ async function check(pl, cat, cityTitle, rec) {
 Treść napisał Gemini w nowym procesie. Trasa: ${cityTitle}. Przystanek: ${pl.name} (kategoria ${cat}).
 ${STANDARD}
 Sprawdź:
-1. PRZYPISY — OTWÓRZ każde źródło (WebFetch) i sprawdź, czy fakty z jego numerem naprawdę tam są. Brak faktu = błąd. Martwy link = błąd.
+1. PRZYPISY — OTWÓRZ każde źródło (WebFetch) i sprawdź, czy fakty z jego numerem naprawdę tam są. Brak faktu = błąd. Martwy link (404, brak strony) to nie błąd i nie pytanie do JP: link był aktualny w chwili pisania; zostaje jako archiwalny, strona go nie pokazuje (strażnik linków). Przy cenach i godzinach muzeum wskaż stronę główną tej samej instytucji albo jej nowy adres z cenami.
    Blokada (403, paywall) przy fakcie z drugim źródłem — uwaga, nie błąd.
 2. POWTÓRZENIA — ten sam fakt w dwóch blokach = błąd.
 3. SENS — chronologia, sprzeczności, legenda nie jako fakt, ciekawostka zaskakuje i ma kontekst, fun fact dla 9-latka.
