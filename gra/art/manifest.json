@@ -1563,7 +1563,121 @@
     "256": "quo-acc-latarka/acc-lantern-256.webp",
     "512": "quo-acc-latarka/acc-lantern-512.webp"
    }
+  },
+  "quo-acc-latarka-bieg": {
+   "pack": "quo-acc-latarka-bieg",
+   "v": 1,
+   "accepted_at": "2026-11-04T06:15:39.976Z",
+   "kind": "frames",
+   "role": "acc-lantern-run",
+   "frames": 8,
+   "names": [
+    "contact",
+    "down",
+    "pass",
+    "up",
+    "contact2",
+    "down2",
+    "pass2",
+    "up2"
+   ],
+   "cols": 8,
+   "fw": 512,
+   "fh": 512,
+   "anchor": [
+    256,
+    471
+   ],
+   "quoH": 434,
+   "heads": [
+    [
+     307,
+     119
+    ],
+    [
+     315,
+     149
+    ],
+    [
+     315,
+     123
+    ],
+    [
+     324,
+     107
+    ],
+    [
+     297,
+     107
+    ],
+    [
+     323,
+     130
+    ],
+    [
+     322,
+     112
+    ],
+    [
+     331,
+     97
+    ]
+   ],
+   "boxes": [
+    [
+     59,
+     47,
+     388,
+     424
+    ],
+    [
+     55,
+     83,
+     388,
+     388
+    ],
+    [
+     62,
+     52,
+     398,
+     419
+    ],
+    [
+     71,
+     32,
+     391,
+     439
+    ],
+    [
+     60,
+     33,
+     394,
+     438
+    ],
+    [
+     66,
+     60,
+     406,
+     411
+    ],
+    [
+     63,
+     38,
+     411,
+     434
+    ],
+    [
+     78,
+     20,
+     406,
+     451
+    ]
+   ],
+   "src": {
+    "256": "quo-acc-latarka-bieg/acc-lantern-run-256.webp",
+    "512": "quo-acc-latarka-bieg/acc-lantern-run-512.webp"
+   }
   }
  },
- "updated_at": "2026-11-04T06:15:21.746Z"
+ "updated_at": "2026-11-04T06:15:39.976Z"
 }
