@@ -114,6 +114,13 @@ policz ją z planu (poprzedni przystanek + czas zwiedzania + przejście) albo zo
 opcjonalności czy dniu tygodnia idzie do `practical_note` (lub `optional: true`), nie do godziny.
 Główna atrakcja z konkretnym slotem → trasa budowana wokół niego. Nie zakładaj startu o 10:00.
 
+**Pora dnia — popołudnie i kolacja o zachodzie (JP 2026-11-04).** Wycieczka Quolino to włoskie popołudnie, nie zwiedzanie
+w samo południe. Pół dnia: parking ok. 14:30–15:30; muzea i wnętrza najpierw (zamykają się zwykle 18:00–19:00, godziny
+z `opening_hours`); potem spacer, lody albo aperitivo, punkt widokowy w złotej godzinie; finał = kolacja ok. 19:30–20:00
+(kuchnie rzadko ruszają przed 19:00), klimat zachodu słońca i gwarnych uliczek. Bez obiadu w środku trasy. Cały dzień:
+start przed południem, obiad, popołudnie, finał kolacją tak samo. Zima: zachód ok. 17:00 — tekst nie obiecuje zachodu
+słońca przy kolacji, chyba że godzina na to pozwala (zasada 11).
+
 ### Parking
 Punkt 01 = parking: nazwa, lokalizacja, koszt (`parking_cost`), ZTL, godziny, Maps, dojście do centrum.
 

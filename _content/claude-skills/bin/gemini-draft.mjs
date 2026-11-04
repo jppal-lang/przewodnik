@@ -294,7 +294,11 @@ tylko ze źródłem, inaczej „sprawdź na miejscu”. Bez porównań do innych
 bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.
 Tekst ma brzmieć naturalnie, jak pisany przez człowieka: NIE używaj długiej pauzy „—” ani półpauzy „–”; zamiast nich zwykły łącznik „-”,
 przecinek albo nowe zdanie. Bez sztuczek tekstów AI: „nie tylko X, ale Y” z nikim, puenty powtarzające akapit, złote myśli, zapowiedzi
-(„zanurzmy się”), triady z rozpędu, słowa-wydmuszki (wyjątkowy, magiczny, urokliwy, w sercu, prawdziwa perełka), „stanowi/pełni funkcję” zamiast „jest”.`;
+(„zanurzmy się”), triady z rozpędu, słowa-wydmuszki (wyjątkowy, magiczny, urokliwy, w sercu, prawdziwa perełka), „stanowi/pełni funkcję” zamiast „jest”.
+PORA DNIA (JP 2026-11-04): wycieczka jest POPOŁUDNIOWA, nie zwiedzanie w samo południe. Pół dnia: parking ok. 14:30-15:30, muzea i wnętrza
+najpierw (zamykają się zwykle 18:00-19:00, sprawdź godziny otwarcia z researchu), potem spacer i punkt widokowy w złotej godzinie,
+finał = kolacja ok. 19:30-20:00 (włoskie lokale rzadko podają kolację przed 19:00) w klimacie zachodu słońca i gwarnych uliczek.
+Bez obiadu w środku dnia; po drodze najwyżej lody albo aperitivo. Cały dzień: start przed południem, obiad, popołudnie, finał kolacją tak samo.`;
 
 // ── ① research miasta ─────────────────────────────────────────────────────────────────────────
 async function researchCity() {
