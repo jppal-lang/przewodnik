@@ -199,6 +199,14 @@ pisanie, walidator, kontrola Claude, zapis do `ops.stop_research`; publikacja (`
 
 ---
 
+## Miejsca bez własnej strony (2026-11-04)
+
+Brama, mury, wieże, plac, ulica, punkt widokowy pod gołym niebem: wstęp wolny, bez godzin i biletów. Takie miejsce często nie ma
+strony oficjalnej i jej nie potrzebuje. Wtedy `verify_url` i `website` zostają puste (`null`), godziny opisujemy jako dostępne
+z zewnątrz bez ograniczeń tylko wtedy, gdy mówi to źródło. Nie szukamy linku na siłę i nie podstawiamy przypadkowej strony
+(portal noclegowy, agregator). Fakty historyczne nadal ze źródłem (Wikipedia, gmina). Link jest obowiązkowy, gdy punkt ma
+godziny, bilet albo wnętrze do zwiedzania, a lokal: zawsze telefon i strona.
+
 ## Brzmi jak człowiek (2026-11-02)
 
 Na podstawie skilla Humanizer (github.com/blader/humanizer, licencja MIT), przeniesione na polski. Obowiązuje w Trybie A

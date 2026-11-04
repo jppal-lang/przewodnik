@@ -327,7 +327,7 @@ meta = {
  "stops": [ {"stop_key": "parking-…", "stop_number": 1, "category": "parking", "optional": false, "sunset_spot": false,
           "lat": 0, "lon": 0, "time_label": "HH:MM", "visit_duration": "<minuty>", "price": null, "price_status": "confirmed|unverified",
           "opening_hours": null, "hours_status": "confirmed|unverified", "ztl": null, "year_built": null, "wiki_article": null,
-          "maps_query": "Nazwa, Miejscowość, Italia", "verify_url": "https://…", "whatsapp": null, "website": null, "phone": null,
+          "maps_query": "Nazwa, Miejscowość, Italia", "verify_url": "https://… albo null (zabytek pod gołym niebem bez godzin i biletów, bez własnej strony — nie szukaj linku na siłę)", "whatsapp": null, "website": null, "phone": null,
           "rating": null, "reviews_count": null, "reservation": null, "parking_cost": null, "sources": ["https://…"]}, … ],
  "emergency": [ {"type": "pharmacy|hospital|toilet|playground", "maps_query": "…"} ]
 }

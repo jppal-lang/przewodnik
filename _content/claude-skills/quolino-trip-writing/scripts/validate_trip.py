@@ -279,8 +279,12 @@ def validate_city(folder: Path):
             err(slug, f"{k}: podana cena bez price_status ({sorted(VERIF)})")
         if s.get("opening_hours") and s.get("hours_status") not in VERIF:
             err(slug, f"{k}: podane godziny bez hours_status")
-        if not s.get("verify_url"):
-            err(slug, f"{k}: brak verify_url — każdy punkt musi mieć link do samodzielnego sprawdzenia (§3)")
+        # JP 2026-11-04: zabytek pod gołym niebem (brama, mury, plac, punkt widokowy) bez godzin i biletów nie ma czego sprawdzać
+        # i często nie ma własnej strony — link nie jest wtedy wymagany; nie dopisujemy go na siłę
+        OPEN_AIR = {"monument", "viewpoint", "street", "photo", "park"}
+        needs_link = not (s.get("category") in OPEN_AIR and not s.get("opening_hours") and not s.get("price"))
+        if needs_link and not s.get("verify_url"):
+            err(slug, f"{k}: brak verify_url — punkt z godzinami, biletem albo wnętrzem musi mieć link do samodzielnego sprawdzenia (§3)")
         if not s.get("maps_query"):
             err(slug, f"{k}: brak maps_query")
         elif (c.get("country") or "").lower() not in ("gb", "uk", "ie", "en") and EN_PLACE.search(str(s["maps_query"])):
