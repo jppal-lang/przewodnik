@@ -660,6 +660,35 @@ async function cmdSync({ quiet = false } = {}) {
   }
   return r;
 }
+// „Generuj” przy ikonie przystanku (panel → ops.icon_regen, SQL 2026-11-04-ikona-generuj.sql): nowa wersja z bieżącymi zdjęciami JP
+// (albo automatem); uwaga JP jako wskazówka. Zwraca liczbę zużytych wywołań.
+async function regenRequests(budget) {
+  let c, used = 0;
+  try {
+    c = await db();
+    const { rows } = await c.query(`SELECT trip, stop_key, note FROM ops.icon_regen WHERE done_at IS NULL
+        AND (started_at IS NULL OR started_at < now() - interval '2 hours') ORDER BY requested_at LIMIT $1`, [Math.max(0, budget)]);
+    for (const r of rows) {
+      await c.query(`UPDATE ops.icon_regen SET started_at = now() WHERE trip = $1 AND stop_key = $2`, [r.trip, r.stop_key]);
+      let res;
+      try {
+        if (!stopMeta(r.trip, r.stop_key)) await ensureTrip(r.trip, { requireV2: false });
+        if (selCache) delete selCache[r.trip];
+        await one(r.trip, r.stop_key, r.note || null); used++;
+        res = 'ok: nowa wersja do oceny w panelu (Grafiki)';
+      } catch (e) {
+        const g = await onGenError(r.trip, r.stop_key, e);
+        if (g === 'quota') { await c.query(`UPDATE ops.icon_regen SET started_at = NULL WHERE trip = $1 AND stop_key = $2`, [r.trip, r.stop_key]); break; }
+        if (g !== 'wait') used++;
+        res = `błąd: ${String(e.message).slice(0, 300)}`;
+      }
+      await c.query(`UPDATE ops.icon_regen SET done_at = now(), result = $3 WHERE trip = $1 AND stop_key = $2`, [r.trip, r.stop_key, res]);
+      log(`Generuj ${r.trip}/${r.stop_key}: ${res}`);
+    }
+  } catch (e) { if (!/icon_regen/.test(e.message)) log(`Generuj: ${String(e.message).slice(0, 160)}`); }
+  finally { try { await c?.end(); } catch {} }
+  return used;
+}
 async function cmdQueue() {
   const max = +(opt('--max') ?? CFG.max ?? 3), maxPending = CFG.maxPending ?? 6;
   if (agyQuotaOut()) { log(`kolejka ikon miejsc: ${quotaMsg(agyQuotaOut())} — czekam`); return; }
@@ -667,6 +696,8 @@ async function cmdQueue() {
   try { await cmdSync(); } catch (e) { log(`sync ikon miejsc: ${e.message}`); }   // bez kosztów: zaakceptowane ikony zawsze podpięte do przystanków
   log(`kolejka ikon miejsc: do ${max} przystanków; Antigravity w ostatnich 7 dniach: ${agyWeekCalls()} wywołań`);
   let budget = max;
+  budget -= await regenRequests(budget);   // JP 2026-11-04: „Generuj” w panelu ma pierwszeństwo przed kolejką
+  if (budget <= 0) return;
   const listed = CFG.trips.map(t => t.slug);
   const extra = Object.entries(allStates()).filter(([k, st]) => !listed.includes(k) && Object.values(st.stops).some(s => s.pending_notes)).map(([k]) => ({ slug: k, onlyPending: true }));
   outer: for (const t of [...CFG.trips, ...extra]) {

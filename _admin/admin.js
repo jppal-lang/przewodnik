@@ -1992,7 +1992,7 @@
   var PRACTICAL = { parking: 1, restaurant: 1, icecream: 1, sweets: 1 };
   var IC_THUMB = /^https:\/\/(upload|thumb)\.wikimedia\.org\/wikipedia\/commons\//, IC_PAGE = /^https:\/\/commons\.wikimedia\.org\/wiki\/File(:|%3A)/i;
   function loadIconRefs(slug) {
-    var ir = state.icref = { slug: slug, cand: null, sel: {}, selApi: false, msg: {}, pub: null };
+    var ir = state.icref = { slug: slug, cand: null, sel: {}, selApi: false, msg: {}, pub: null, regen: {} };
     // opublikowane ikony miejsc (place-icons.mjs ok): media/icons/place-sources.json — status „podpięta” liczy się ze stops.icon w wersji
     var pub = DEMO ? Promise.resolve(null) : fetch('../media/icons/place-sources.json?t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', redirect: 'manual' })
       .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
@@ -2002,7 +2002,10 @@
         .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
     var sel = api('/icon_refs?trip=eq.' + encodeURIComponent(slug) + '&select=stop_key,mode,files,updated_at')
       .then(function (rows) { ir.selApi = true; return rows || []; }, function (e) { ir.selErr = e.message; return []; });
-    return Promise.all([cand, sel, pub]).then(function (res) {
+    // „Generuj” (JP 2026-11-04): otwarte prośby o nową wersję ikony (SQL 2026-11-04-ikona-generuj.sql); bez widoku — przycisk i tak działa
+    var rg = DEMO ? Promise.resolve([]) : api('/icon_regen?trip=eq.' + encodeURIComponent(slug) + '&select=stop_key,note,requested_at,started_at,done_at,result').catch(function () { return []; });
+    rg.then(function (rows) { (rows || []).forEach(function (r) { ir.regen[r.stop_key] = r; }); });
+    return Promise.all([cand, sel, pub, rg]).then(function (res) {
       ir.cand = res[0] && res[0].stops ? res[0] : null;
       res[1].forEach(function (r) { ir.sel[r.stop_key] = { mode: r.mode, files: Array.isArray(r.files) ? r.files : [] }; });
     });
@@ -2049,7 +2052,7 @@
       return h + '<p class="adm-icref__st">' + (!ir.cand ? 'Kandydaci zdjęć jeszcze nie gotowi — serwer pobiera je z Wikimedia Commons.' : 'Commons nie dał zdjęć bez ludzi i z wolną licencją.') +
         (files.length ? '' : ' Bez Twojego linku ikona powstanie automatycznie.') + '</p>' + own0 + icLinkHtml(key, files, off) +
         (ir.msg[key] || files.length ? '<p class="adm-icref__st" role="status">' + esc(icStatus(key, list)) + '</p>' : '') +
-        (sel ? '<div class="adm-icref__bar"><button type="button" class="adm-linkbtn" data-icref-clear="' + esc(key) + '"' + (off ? ' disabled' : '') + '>Cofnij decyzję</button></div>' : '') + '</div>';
+        (sel ? '<div class="adm-icref__bar"><button type="button" class="adm-linkbtn" data-icref-clear="' + esc(key) + '"' + (off ? ' disabled' : '') + '>Cofnij decyzję</button></div>' : '') + icRegenHtml(key) + '</div>';
     }
     h += '<ul class="adm-icref__list">' + list.map(function (c, i) {
       var on = files.indexOf(c.title) > -1, nm = c.title.replace(/^File:/, '');
@@ -2063,7 +2066,7 @@
         ' <button type="button" class="adm-icref__lnk adm-icref__zoom" data-zoom="' + esc(/^https:\/\/upload\.wikimedia\.org\//.test(String(c.thumb)) ? 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(nm.replace(/ /g, '_')) + '?width=1280' : String(c.thumb)) + '" data-zoom-group="cand-' + esc(key) + '" data-zoom-caption="' + esc(nm + ' · ' + (c.author || 'autor nieznany') + ' · ' + (c.license || 'licencja?')) + '">powiększ</button></li>';
     }).join('') + '</ul>';
     var titles = list.map(function (c) { return c.title; });
-    h += icOwnHtml(key, files.filter(function (f) { return titles.indexOf(f) < 0; }), off) + icLinkHtml(key, files, off);
+    h += icOwnHtml(key, files.filter(function (f) { return titles.indexOf(f) < 0; }), off) + icLinkHtml(key, files, off) + icRegenHtml(key);
     h += '<div class="adm-icref__bar"><button type="button" class="qc-btn qc-btn--sm adm-icref__auto' + (sel && sel.mode === 'auto' ? ' is-on' : '') + '" data-icref-auto="' + esc(key) + '"' +
       (off ? ' disabled' : '') + ' aria-pressed="' + !!(sel && sel.mode === 'auto') + '">Automat</button>' +
       (sel ? '<button type="button" class="adm-linkbtn" data-icref-clear="' + esc(key) + '"' + (off ? ' disabled' : '') + '>Cofnij decyzję</button>' : '') +
@@ -2134,6 +2137,24 @@
         '<button type="button" class="adm-linkbtn" data-icref-pick="' + esc(key) + '" data-file="' + esc(f) + '"' + (off ? ' disabled' : '') + ' aria-label="Usuń zdjęcie ' + esc(nm) + '">usuń</button></li>';
     }).join('') + '</ul>';
   }
+  // „Generuj” — prośba o nową wersję ikony tego miejsca (zablokowało się, poprawka, nowy link źródłowy); kolejka place-icons co ~30 min
+  function icRegenHtml(key) {
+    var ir = state.icref, r = ir && ir.regen[key];
+    var st = !r ? '' : r.done_at ? (/^ok/.test(r.result || '') ? 'Nowa wersja gotowa — oceń w Grafikach.' : 'Nie wyszło: ' + (r.result || '').replace(/^błąd:\s*/, '')) :
+      r.started_at ? 'Generuję…' : 'W kolejce — ikona powstanie przy najbliższym przebiegu (do 30 min).';
+    return '<div class="adm-icref__gen"><input type="text" class="adm-icref__gnote" data-icgen-note="' + esc(key) + '" maxlength="600" placeholder="Uwaga do generatora (opcjonalnie), np. więcej nieba, bez rusztowań">' +
+      '<button type="button" class="qc-btn qc-btn--sm qc-btn--primary" data-icgen="' + esc(key) + '"' + (r && !r.done_at ? ' disabled' : '') + '>Generuj ikonę</button>' +
+      (st ? '<span class="adm-icref__st" role="status">' + esc(st) + '</span>' : '') + '</div>';
+  }
+  $d.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-icgen]'); if (!b || b.disabled || !state.icref) return;
+    var ir = state.icref, key = b.getAttribute('data-icgen'), inp = $d.querySelector('[data-icgen-note="' + key.replace(/"/g, '') + '"]');
+    b.disabled = true; b.textContent = 'Zlecam…';
+    var done = function (r) { ir.regen[key] = r; icRedraw(key); };
+    (DEMO ? Promise.resolve({}) : api('/rpc/admin_icon_regen', { method: 'POST', body: { p_trip: ir.slug, p_stop_key: key, p_note: inp ? inp.value.trim() : null } }))
+      .then(function () { done({ stop_key: key, requested_at: new Date().toISOString() }); },
+        function (err) { done({ stop_key: key, done_at: new Date().toISOString(), result: 'błąd: ' + (/admin_icon_regen|404|function/i.test(err.message) ? 'baza jeszcze bez funkcji „Generuj” (wchodzi automatem, spróbuj za kilka minut)' : err.message) }); });
+  });
   function icLinkHtml(key, files, off) {
     // JP 2026-11-03: link także przy gotowej ikonie (→ nowa wersja ikony do oceny) i przy 2 zdjęciach (nowy zastępuje drugie)
     var ir = state.icref, pub = ir && placeIconState(ir.slug, { stop_key: key });

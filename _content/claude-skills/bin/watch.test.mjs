@@ -313,7 +313,7 @@ test('lokale: „chiuso definitivamente” i status Google; przyjęcie usuwa lok
   await W.guardVenues(c);
   const v = c.store.rows.find(r => r.stop_key === 'trattoria');
   assert.equal(v.kind, 'venue'); assert.equal(v.proposal.recommended, 1);
-  assert.equal(c.store.rows.find(r => r.stop_key === 'bar').proposal.recommended, 2, 'sama niedziałająca strona — słaby sygnał');
+  assert.equal(c.store.rows.find(r => r.stop_key === 'bar'), undefined, 'JP 2026-11-04: sama niedziałająca strona lokalu nie jest decyzją (link znika ze strony)');
   const t = { meta: { stops: [{ stop_key: 'p' }, { stop_key: 'trattoria' }] }, content: { stops: { p: {}, trattoria: { name: 'T' } } } };
   const r = W.applyFinding(t, { ...v, decided_option: 1 });
   assert.deepEqual(r.trip.meta.stops.map(s => s.stop_key), ['p']); assert.match(r.needsAi, /zamiennik/);

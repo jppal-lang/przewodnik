@@ -681,6 +681,10 @@ export async function guardVenues(ctx) {
       else if ([404, 410, 0].includes(pg.status) && !sig) { sig = 'site'; quote = `Strona lokalu nie działa (${pg.status || pg.error})`; url = u; }
     }
     if (!sig) continue;
+    // JP 2026-11-04: niedziałająca strona lokalu to nie decyzja dla JP — link znika ze strony (dead_links), lokal zostaje
+    if (sig === 'site') { if (url) await ctx.saveFix?.(url, null, 'venue-site'); continue; }
+    // mocny sygnał „zamknięte na stałe”: najpierw Jev (szybka klasyfikacja), dopiero pewne zamknięcie trafia do JP
+    if (ctx.jevVenue) { const v = await ctx.jevVenue({ name: s.name, quote }).catch(() => null); if (v && v.choice === 'false_alarm' && v.confidence >= 0.8) continue; }
     const strong = sig !== 'site';
     await put(ctx, { kind: 'venue', city_slug: s.city_slug, stop_key: s.stop_key, dedupe_key: `venue:${s.city_slug}:${s.stop_key}:${sig}`, url, quote,
       title: `${t.title}: ${s.name} — ${strong ? 'lokal zamknięty na stałe?' : 'strona lokalu nie działa'}`, detail: quote,
