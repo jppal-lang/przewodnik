@@ -1680,3 +1680,15 @@ body.has-walk .ad-content,body.has-phone .ad-content{max-width:none}
 .tv-pubres__n{margin:6px 0 0;font-size:18px;line-height:1.4;color:var(--muted)}
 @media(max-width:899px){.tv-gate{text-align:left;margin-left:0;max-width:none}}
 .tv-gamebtn{text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+/* etapy trasy (JP 2026-11-04) */
+.adm-tc .adm-chip.adm-ph--ai,.adm-chip.adm-ph--ai{background:var(--page);color:var(--ink2)}
+.adm-tc .adm-chip.adm-ph--review,.adm-chip.adm-ph--review{background:var(--sun-50);color:var(--ad-warn-ink)}
+.adm-tc .adm-chip.adm-ph--approved,.adm-chip.adm-ph--approved{background:var(--azzurro-50);color:var(--azzurro-ink)}
+.adm-tc .adm-chip.adm-ph--tr,.adm-chip.adm-ph--tr{background:var(--azzurro-50);color:var(--azzurro-ink)}
+.adm-tc .adm-chip.adm-ph--pl,.adm-chip.adm-ph--pl{background:var(--verde-50);color:var(--verde)}
+.adm-tc .adm-chip.adm-ph--langs,.adm-chip.adm-ph--langs{background:var(--verde);color:#fff}
+.adm-tc .adm-chip.adm-ph--rejected,.adm-chip.adm-ph--rejected{background:var(--rosso-50);color:var(--bad-ink)}
+.adm-tc .adm-chip.adm-ph--archived,.adm-chip.adm-ph--archived{background:var(--page);color:var(--muted)}
+.adm-ph__dot{width:8px;height:8px;border-radius:50%;background:currentColor;animation:admPh 1.4s ease-in-out infinite}
+@keyframes admPh{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.adm-ph__dot{animation:none}}

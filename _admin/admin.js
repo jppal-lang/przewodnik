@@ -340,8 +340,23 @@
   var FILTERS = 'adm.filters';          // stan filtrów (tylko wygoda; nowy klucz, adm.outbox bez zmian)
   var COUNTRY_PL = { it: 'Włochy', pl: 'Polska', hr: 'Chorwacja', fr: 'Francja', de: 'Niemcy', at: 'Austria', es: 'Hiszpania',
     pt: 'Portugalia', si: 'Słowenia', cz: 'Czechy', sk: 'Słowacja', gr: 'Grecja', ch: 'Szwajcaria', sm: 'San Marino', va: 'Watykan', mt: 'Malta' };
-  var TST = { draft: 'Do zatwierdzenia', published: 'Opublikowane', rejected: 'Odrzucone', archived: 'Archiwum' };
-  var TST_ORDER = ['draft', 'published', 'rejected', 'archived'];
+  // etapy trasy (JP 2026-11-04): kto ma ruch i co widzi rodzina — liczone z wersji, uwag, tłumaczeń i stanu serwera (ops_status)
+  var TST = { ai: 'Szkic · pracuje AI', review: 'Szkic · do zatwierdzenia', approved: 'Zatwierdzona · czeka na tłumaczenie', pl: 'Opublikowana PL',
+    tr: 'W tłumaczeniu', langs: 'Opublikowana w językach', rejected: 'Odrzucona', archived: 'Archiwum' };
+  var TST_ORDER = ['review', 'ai', 'approved', 'tr', 'pl', 'langs', 'rejected', 'archived'];
+  var TST_OLD = { draft: ['review', 'ai'], published: ['approved', 'tr', 'pl', 'langs'] };   // zapisane filtry sprzed zmiany
+  function phaseOf(t) {
+    var live = snap('live'), q = snap('queue'), open = q && Array.isArray(q.open) ? q.open : [];
+    var tj = open.filter(function (j) { return j.kind === 'translate' && j.city_slug === t.slug; });
+    var gq = open.concat((snap('jobs') && snap('jobs').queue) || []).some(function (j) { return j && j.kind === 'draft' && j.city_slug === t.slug && (j.status === 'queued' || j.status === 'running'); });
+    if (t.draft != null) return (t.working > 0 || gq || (live && live.trip === t.slug && live.status === 'running')) ? 'ai' : 'review';
+    if (t.published != null) {
+      if (tj.some(function (j) { return j.status === 'running'; })) return 'tr';
+      if (tj.some(function (j) { return j.status === 'queued'; })) return 'approved';
+      var li = langsInfo(t); return li && li.ok.length ? 'langs' : 'pl';
+    }
+    return t.status === 'rejected' ? 'rejected' : 'archived';
+  }
   var FLAGS = { working: 'Hermes poprawia', unsent: 'Niewysłane uwagi' };
   // Wytyczne (JP 2026-10-24): „nowe” = najnowsza wersja powstała w nowym procesie (Gemini research → szkic → kontrola),
   // znacznik content.workflow = 'v2' ustawia pipeline przy zapisie wersji. Wszystko bez znacznika = stare wytyczne (archiwum).
@@ -375,7 +390,7 @@
     var f = state.f;
     if (!f) {
       var s = lsGet(FILTERS) || {};
-      f = state.f = { countries: Array.isArray(s.countries) ? s.countries : [], statuses: Array.isArray(s.statuses) ? s.statuses : ['draft'],
+      f = state.f = { countries: Array.isArray(s.countries) ? s.countries : [], statuses: Array.isArray(s.statuses) ? [].concat.apply([], s.statuses.map(function (x) { return TST_OLD[x] || [x]; })) : ['review', 'ai'],
         flags: Array.isArray(s.flags) ? s.flags : [], std: Array.isArray(s.std) ? s.std.filter(function (k) { return k === 'old' || /^v\d{2}$/.test(k); }) : [], sort: SORTS[s.sort] ? s.sort : 'new', letter: typeof s.letter === 'string' ? s.letter : '', q: typeof s.q === 'string' ? s.q : '' };
     }
     return f;
@@ -455,15 +470,15 @@
   }
   function loadTrips() {
     return state.tripsP = Promise.all([api('/admin_trips?order=city_slug.asc').then(function (rows) { state.tripsApi = true; return rows; },
-      function (e) { if (e.session) throw e; state.tripsApi = false; return tripsFallback(); }), loadLangs()])
+      function (e) { if (e.session) throw e; state.tripsApi = false; return tripsFallback(); }), loadLangs(), loadOps().catch(function () { return null; })])
       .then(function (both) {
         var rows = both[0], box = outboxBy();
-        state.trips = (rows || []).map(function (r) { var t = tripOf(r, box); var li = langsInfo(t); if (li) t.langs = ['pl'].concat(li.ok); return t; });
+        state.trips = (rows || []).map(function (r) { var t = tripOf(r, box); var li = langsInfo(t); if (li) t.langs = ['pl'].concat(li.ok); t.phase = phaseOf(t); return t; });
         var f = filters(), have = {};
-        state.trips.forEach(function (t) { have['c:' + t.country] = 1; have['s:' + t.status] = 1; });
+        state.trips.forEach(function (t) { have['c:' + t.country] = 1; have['s:' + t.phase] = 1; });
         f.countries = f.countries.filter(function (c) { return have['c:' + c]; });     // kraj, którego już nie ma, nie chowa wszystkiego
         if (f.statuses.length && !f.statuses.some(function (s) { return have['s:' + s]; })) f.statuses = [];
-        var nd = state.trips.filter(function (t) { return t.status === 'draft'; }).length;
+        var nd = state.trips.filter(function (t) { return t.phase === 'review'; }).length;
         $count.textContent = nd; $count.classList.toggle('is-zero', !nd);
         renderList();
       }).catch(function (e) {
@@ -475,7 +490,7 @@
 
   function match(t, f, skip) {
     if (skip !== 'countries' && f.countries.length && f.countries.indexOf(t.country) < 0) return false;
-    if (skip !== 'statuses' && f.statuses.length && f.statuses.indexOf(t.status) < 0) return false;
+    if (skip !== 'statuses' && f.statuses.length && f.statuses.indexOf(t.phase) < 0) return false;
     if (skip !== 'std' && f.std.length && f.std.indexOf(t.std) < 0) return false;
     if (skip !== 'flags' && f.flags.length && !f.flags.some(function (k) { return t[k] > 0; })) return false;
     if (skip !== 'letter' && f.letter && t.letter !== f.letter) return false;
@@ -487,7 +502,7 @@
     state.trips.forEach(function (t) {
       if (!match(t, f, group)) return;
       if (group === 'flags') keys.forEach(function (k) { if (t[k] > 0) cnt[k] = (cnt[k] || 0) + 1; });
-      else { var k = group === 'countries' ? t.country : group === 'std' ? t.std : t.status; cnt[k] = (cnt[k] || 0) + 1; }
+      else { var k = group === 'countries' ? t.country : group === 'std' ? t.std : t.phase; cnt[k] = (cnt[k] || 0) + 1; }
     });
     return keys.map(function (k) {
       var on = f[group].indexOf(k) > -1, n = cnt[k] || 0;
@@ -499,8 +514,7 @@
     var f = filters(), T = state.trips || [];
     var countries = {}; T.forEach(function (t) { countries[t.country] = 1; });
     var ck = Object.keys(countries).sort(function (a, b) { return !a ? 1 : !b ? -1 : countryName(a).localeCompare(countryName(b), 'pl'); });
-    var sk = TST_ORDER.filter(function (s) { return T.some(function (t) { return t.status === s; }); });
-    T.forEach(function (t) { if (sk.indexOf(t.status) < 0) sk.push(t.status); });
+    var sk = TST_ORDER.filter(function (s) { return T.some(function (t) { return t.phase === s; }) || f.statuses.indexOf(s) > -1; });
     var fk = Object.keys(FLAGS).filter(function (k) { return T.some(function (t) { return t[k] > 0; }) || f.flags.indexOf(k) > -1; });
     document.getElementById('fCountry').innerHTML = facet('countries', ck, countryName, f);
     document.getElementById('fStatus').innerHTML = facet('statuses', sk, function (s) { return TST[s] || VST[s] || s; }, f);
@@ -547,10 +561,9 @@
     emit('adm:list', { shown: shown.length });
   }
   function cardHtml(t, byDate) {
-    var chip = t.status === 'draft'
-      ? '<span class="adm-chip ' + (t.published == null ? 'adm-chip--new">nowa · szkic v' : 'adm-chip--chg">zmiana · szkic v') + esc(t.draft) + '</span>'
-      : t.status === 'published' ? '<span class="adm-chip adm-chip--new">na stronie v' + esc(t.published) + '</span>'
-      : '<span class="adm-chip' + (t.status === 'rejected' ? ' adm-chip--del' : '') + '">' + esc(VST[t.status] || t.status) + '</span>';
+    var ph = t.phase || phaseOf(t);
+    var chip = '<span class="adm-chip adm-ph adm-ph--' + ph + '">' + (ph === 'ai' || ph === 'tr' ? '<i class="adm-ph__dot" aria-hidden="true"></i>' : '') + esc(TST[ph] || ph) + '</span>' +
+      (t.draft != null && t.published != null ? '<span class="adm-chip adm-chip--chg">na stronie v' + esc(t.published) + '</span>' : '');
     var extra = (t.working ? '<span class="adm-tc__flag">Hermes poprawia: ' + t.working + '</span>' : '') +
       (t.unsent ? '<span class="adm-tc__flag adm-tc__flag--unsent">Niewysłane: ' + t.unsent + '</span>' : '');
     return '<a class="adm-tc" href="#/' + encodeURIComponent(t.slug) + '" style="--team:' + esc(t.color) + '">' +
