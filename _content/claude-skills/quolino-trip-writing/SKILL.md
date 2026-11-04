@@ -207,6 +207,34 @@ z zewnątrz bez ograniczeń tylko wtedy, gdy mówi to źródło. Nie szukamy lin
 (portal noclegowy, agregator). Fakty historyczne nadal ze źródłem (Wikipedia, gmina). Link jest obowiązkowy, gdy punkt ma
 godziny, bilet albo wnętrze do zwiedzania, a lokal: zawsze telefon i strona.
 
+## Wnioski z poprawek JP — Asyż (2026-11-04)
+
+Z 35 uwag JP do Asyżu (v10). Obowiązuje przy pisaniu (Tryb A) i przy kontroli (Tryb B).
+
+**Pisanie**
+1. **Zdanie zawsze do końca.** Nigdy „…uległa utlenieniu, przez co.” Gdy skrócenie do części pewnej urwałoby myśl, usuń cały człon
+   albo całe zdanie. Walidator i source-check odrzucają zdania kończące się spójnikiem, zaimkiem względnym albo przecinkiem.
+2. **Ciekawostka i lokalny smaczek mówią „i co z tego?”.** Fakt + skutek albo znaczenie, które widać dziś lub które coś zmieniło:
+   fresk Cimabuego → biel ołowiowa utleniła się → całe malowidło wygląda jak negatyw; Goethe zobaczył tylko świątynię Minerwy →
+   w „Podróży włoskiej” opisał ją, a bazylikę pominął. Skutek tylko ze źródła.
+3. **Pusty blok przy istniejącym materiale to brak, nie neutralność.** Jeśli źródła podają film, wizytę sławnej osoby, makietę,
+   przeznaczenie miejsca — wpisz to (z przypisem). Pusty blok zostaje pusty tylko, gdy materiału naprawdę nie ma.
+4. **Zaimek wskazuje właściwy rzeczownik** („miasto, pod którym…”, nie „góra, pod którą…”, gdy chodzi o miasto). Szyk ustawiaj tak,
+   żeby nie trzeba było zgadywać.
+5. **Zadanie foto: dziecko z telefonem wie, co i skąd.** Obiekt widoczny gołym okiem, opisany zwykłymi słowami, z miejscem stania
+   („z płyty Piazza del Comune: portyk świątyni i wieża obok”). Bez specjalistycznych detali, których trzeba szukać z przewodnikiem.
+6. **Plan dnia bez wariantów** („lub obiad w wariancie 12:00–14:30”): jedna decyzja, jedna godzina.
+7. **Informacje praktyczne konkretnie:** toalety, wejścia, kasy — każde miejsce osobno i tylko to, co potwierdza źródło.
+8. **Szczegóły biograficzne bez źródła wypadają** (wiek, liczby, „miał 16 lat”), nawet jeśli brzmią wiarygodnie.
+9. **Żadnych nazw technicznych ani „null” w tekście** (local_flavor, kids_box) — ani w treści, ani w uwagach dla JP.
+
+**Kontrola — format uwagi, który JP chwali (pożądane działanie)**
+- Każda uwaga: numer zasady („Zasada #7”), co jest nie tak, **konkretny materiał ze źródła z numerem przypisu**
+  („źródło [4]: w 1972 kręcono tu sceny filmu „Fratello sole, sorella luna” Zeffirellego”).
+- Do każdej uwagi **gotowa propozycja tekstu** (pełne zdania, z przypisem), żeby JP mógł kliknąć „Popraw według propozycji”
+  bez dopisywania. Uwaga bez propozycji tylko wtedy, gdy decyzja naprawdę należy do JP — wtedy jedno pytanie z opcjami.
+- Pusty blok + materiał w źródłach → uwaga z gotową treścią, nie samo „blok pusty”.
+
 ## Linki (2026-11-04)
 
 - **Martwy link** (404, strona zniknęła) to nie błąd treści i nie pytanie do JP. Link był aktualny w chwili pisania, więc zostaje w

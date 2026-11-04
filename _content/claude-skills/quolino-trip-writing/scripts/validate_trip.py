@@ -93,6 +93,10 @@ MEAL_NAME = re.compile(r"^\s*(kolacja|obiad|lunch|śniadanie|przerwa|finał)\b",
 SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+")
 STOPWORDS = set("które który która których tylko także przez jednak bardzo można miasta miasto jeszcze kiedy gdzie wtedy dzisiaj potem właśnie".split())
 
+# JP 2026-11-04 (Asyż, San Francesco: „…uległa utlenieniu, przez co.”): zdanie urwane w pół — kończy się spójnikiem albo zaimkiem,
+# po którym musi coś nastąpić. Powstaje przy skracaniu „do części pewnej”. Błąd: skrócić całe zdanie albo dopisać je do końca.
+DANGLING = re.compile(r"(?:,|\b(?:przez co|dlatego|ponieważ|bo|oraz|który|która|które|którą|których|którego|której|którym|gdzie|dokąd|kiedy|że|aby|żeby|"
+                      r"choć|chociaż|jednak|więc|czyli|dzięki|w wyniku|na skutek|z powodu|w rezultacie|a także|natomiast|zaś|lecz|ale|i|a))\s*[.!?…:;]?\s*$", re.I)
 VAGUE = re.compile(r"\b(kilk\w*|parę|paru|chwil\w*)\b(?!.*\d)", re.I)
 CHOICE_MAX, CHOICE_MAX_TR = 40, 56   # znaki na opcję pytania z wyborem: PL / tłumaczenie (to samo co bin/kids-choice-lib.mjs)
 
@@ -156,6 +160,11 @@ def check_emoji(city, where, obj, skip=("icon",)):
 def check_banned(city, where, text):
     if not isinstance(text, str):
         return
+    t = text.strip()
+    if t and t.lower() not in ("null", "none") and DANGLING.search(t):
+        err(city, f"{where}: zdanie urwane w pół („…{t[-40:]}”) — dokończ je według źródła albo usuń całe zdanie")
+    if re.search(r"\b(local_flavor|kids_box|desc_paragraphs|practical_note|photo_task)\b", t) or t in ("null", "undefined", "None"):
+        err(city, f"{where}: techniczna nazwa pola albo „null” w tekście („{t[:60]}”) — w treści tylko słowa dla rodziny")
     for rx, label in BANNED:
         for m in rx.finditer(text):
             # JP 2026-10-28: przybliżenie bez liczby jest OK („kilka minut autem”, „kilka do kilkunastu minut autem”)

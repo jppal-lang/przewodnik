@@ -465,9 +465,16 @@ Sprawdź:
 3. SENS — chronologia, sprzeczności, legenda nie jako fakt, ciekawostka zaskakuje i ma kontekst, fun fact dla 9-latka.
 4. ZGŁĘBIENIE — superlatywy w opisie i legendzie z dwoma niezależnymi źródłami. Ciekawostka i fun fact „z przymrużeniem oka”: jedno źródło wystarczy (JP 2026-10-24) — brak drugiego źródła to NIE błąd.
 5. Zakazy: czasy dojazdu/kilometry, porównania do krajów i nacji, fakty bez źródła, literówki.
+6. ZUPEŁNOŚĆ (JP 2026-11-04, Asyż) — błąd: zdanie urwane w pół („…, przez co.”), techniczna nazwa pola albo „null” w tekście,
+   zaimek wskazujący zły rzeczownik („pod którym” → góra zamiast miasta). Uwaga: pusty blok (ciekawostka, lokalny smaczek, fun fact),
+   choć w źródłach jest materiał; ciekawostka bez skutku i znaczenia („…i co z tego wynikło?”); zadanie foto niezrozumiałe dla dziecka
+   z telefonem (co dokładnie i skąd fotografować); w planie dnia warianty „lub…” zamiast jednej decyzji.
+FORMAT KAŻDEJ UWAGI (to JP lubi, tak ma być zawsze): "problem" = numer zasady, jeśli jest („Zasada #7: …”), co jest nie tak + konkretny
+materiał ze źródła z numerem przypisu („źródło [4] podaje, że w 1972 kręcono tu sceny filmu…”); "fix" = GOTOWY tekst do wstawienia
+(pełne zdania, z przypisem), tak by JP mógł kliknąć „Popraw według propozycji” bez dopisywania czegokolwiek.
 Misja i zadanie foto — tylko uwagi (warnings, block "quest").
 Odpowiedz WYŁĄCZNIE JSON-em: {"verdict": "ok"|"fix", "summary": "1–2 zdania", "errors": [{"block": "…", "problem": "…", "fix": "…"}],
- "warnings": [{"block": "…", "problem": "…"}], "sources_checked": [{"n": 1, "ok": true, "note": "…"}]}
+ "warnings": [{"block": "…", "problem": "…", "fix": "gotowy tekst albo null"}], "sources_checked": [{"n": 1, "ok": true, "note": "…"}]}
 "ok" tylko bez błędów. ${JSON_QUOTE_RULE}
 
 MISJA: ${pl.kids_box ?? 'brak'}

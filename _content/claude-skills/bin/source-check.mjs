@@ -31,6 +31,8 @@ import { choiceFact } from './kids-choice-lib.mjs';
 
 // ── rozpoznanie uwag ─────────────────────────────────────────────────────────────────────────────
 const ADD_RE = /dodaj\p{L}*[^.]{0,40}po potwierdzeniu|po potwierdzeniu w źródle|dopisz\p{L}*[^.]{0,40}po potwierdzeniu/iu;
+// zdanie urwane w pół (kończy się spójnikiem/zaimkiem/przecinkiem) — ta sama reguła co validate_trip.py (DANGLING)
+export const DANGLING = /(?:,|(?:^|[\s(])(?:przez co|dlatego|ponieważ|bo|oraz|który|która|które|którą|których|którego|której|którym|gdzie|dokąd|kiedy|że|aby|żeby|choć|chociaż|jednak|więc|czyli|dzięki|w wyniku|na skutek|z powodu|w rezultacie|a także|natomiast|zaś|lecz|ale|i|a))\s*[.!?…:;]?\s*$/i;
 const UNSOURCED_RE = /bez źródła|bez potwierdzenia|do potwierdzenia|niepotwierdzon|nie ma w źródle|nie stoi w źródle|nie stoją w źródle|brak źródła|potrzebny link|nie ma (żadnego )?oparcia w źródł/iu;
 export function issueKind(e) {
   if (e?.resolved) return null;                              // już rozstrzygnięte (poprzedni przebieg)
@@ -335,7 +337,8 @@ export async function sourceCheck({ trip, blocks = {}, review, workDir = null, f
     const prompt = `Sprawdzasz fakty rodzinnego przewodnika Quolino WYŁĄCZNIE na podstawie fragmentów źródeł podanych przy każdej pozycji. Nie korzystaj z pamięci ani wyszukiwarki.
 Dla każdej pozycji:
 - "potwierdza": true tylko wtedy, gdy fragment źródła mówi to samo co fakt (inny język i inne słowa są w porządku). Wtedy "zrodlo" = numer źródła, "cytat" = dosłowny fragment tego źródła (do 200 znaków), skopiowany znak w znak.
-- rodzaj "dodaj" i potwierdzone: "zdanie" = jedno krótkie zdanie po polsku do pola (styl rodzinny, prosto, tylko fakt ze źródła, bez długich myślników „—” i „–”, bez przymiotników-wypełniaczy). Jeśli pole ma już treść, zdanie ma ją uzupełniać, nie powtarzać.
+- Każde "zdanie" i "replace" to PEŁNE zdanie: nigdy nie kończ na „przez co”, „dlatego”, „który”, przecinku; skracając usuń cały człon albo całe zdanie, a skutek („przez co…”) dopisz tylko, gdy stoi w źródle.
+- rodzaj "dodaj" i potwierdzone: "zdanie" = jedno pełne zdanie po polsku do pola (styl rodzinny, prosto, tylko fakt ze źródła, bez długich myślników „—” i „–”, bez przymiotników-wypełniaczy). Jeśli pole ma już treść, zdanie ma ją uzupełniać, nie powtarzać.
 - FAKTY PRAKTYCZNE (cena, bilet, parking, ZTL, godziny otwarcia, dni zamknięcia, telefon, adres, rezerwacja, długość zwiedzania) NIGDY nie łagodzimy słowami „podobno”, „mówi się”, „według tradycji”. Bez potwierdzenia: "replace" = to samo miejsce bez konkretnej liczby/danej, z odesłaniem „sprawdź na miejscu” albo „aktualne ceny/godziny na stronie atrakcji” (np. „Parking jest płatny, aktualną cenę sprawdź na miejscu.”). Ostrożne słowa wolno tylko w historii, legendach i ciekawostkach.
 - "sprzeczne": true tylko wtedy, gdy fragment źródła mówi co innego niż fakt (np. inna data, inna osoba). Brak informacji w źródle to NIE sprzeczność.
 - rodzaj "odpowiedz" (pytanie z wyborem dla dziecka): fakt = poprawna odpowiedź. "potwierdza" jak wyżej; "sprzeczne": true, gdy źródło podaje inną odpowiedź ALBO gdy według źródła któraś z "bledne_opcje" też jest prawdziwa. Bez "quote" i "replace".
@@ -369,6 +372,7 @@ ${JSON.stringify(payload)}`;
     if (confirmed && it.kind === 'add' && addedTo.has(`${it.sk}|${it.field}`)) { it.resolved = { action: 'dropped', why: 'to pole uzupełniono już w tym przebiegu (ta sama propozycja z kontroli i z polecenia)' }; stats.dropped++; continue; }
     if (confirmed && it.kind === 'add') {
       const zd = noDash(String(r.zdanie ?? '').trim());
+      if (DANGLING.test(zd)) { it.resolved = { action: 'dropped', why: 'zdanie do dopisania było urwane w pół' }; stats.dropped++; continue; }
       const tgt = it.sk ? trip.content.stops?.[it.sk] : trip.content.city;
       if (zd.length > 10 && tgt) {
         const before = tgt[it.field] ?? null;
@@ -403,6 +407,11 @@ ${JSON.stringify(payload)}`;
     if (rep && PRACTICAL.test(`${it.fact} ${q ?? ''} ${it.field ?? ''}`) && HEDGE.test(rep)) {
       notes.push({ stop_key: it.sk, field: 'f', note: `Fakt praktyczny bez źródła (zostawione, do weryfikacji redakcji): „${String(it.fact).slice(0, 160)}”` });
       it.resolved = { action: 'kept', why: 'fakt praktyczny bez źródła — nie łagodzimy słowem „podobno”; tekst bez zmian, notatka redakcyjna' }; stats.kept = (stats.kept ?? 0) + 1; continue;
+    }
+    // JP 2026-11-04 (Asyż: „…uległa utlenieniu, przez co.”): skrócenie nie może urwać zdania — wtedy tekst zostaje, notatka redakcyjna
+    if (rep && DANGLING.test(rep)) {
+      notes.push({ stop_key: it.sk, field: 'f', note: `Złagodzenie urwałoby zdanie („…${rep.slice(-50)}”) — zostawione bez zmian: „${String(it.fact).slice(0, 140)}”` });
+      it.resolved = { action: 'kept', why: 'proponowane złagodzenie urywało zdanie w pół — tekst bez zmian, notatka redakcyjna' }; stats.kept = (stats.kept ?? 0) + 1; continue;
     }
     if (q && rep != null) {
       const n = applyQuote(targetsOf(trip, blocks, it.sk), q, rep);
