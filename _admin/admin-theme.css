@@ -1,0 +1,156 @@
+/* Quolino admin — warstwa wyglądu narzędzia pracy (JP 2026-11-04: „ma wyglądać jak nowoczesny panel, nie trzymaj się wzorca strony”).
+   Ładowana jako ostatnia: krój Geist, skala 13–14 px, zwarte odstępy, neutralne szarości, jeden akcent. Nie dotyczy podglądu telefonu
+   i „Zagraj jak dziecko” (te celowo wyglądają jak strona). */
+@font-face{font-family:"Geist";src:url("/media/fonts/geist-variable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("/media/fonts/geist-mono-variable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+
+.adm{
+  --ad-font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --ad-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* neutralne szarości (cynk) + jeden akcent */
+  --ad-bg:#FAFAFA;--card:#FFFFFF;--page:#F4F4F5;--slot:#F4F4F5;
+  --ink:#18181B;--ink2:#3F3F46;--muted:#71717A;--rule:#E4E4E7;--rule2:#D4D4D8;
+  --azzurro:#2563EB;--azzurro-ink:#1D4ED8;--azzurro-50:#EFF4FF;
+  --verde:#15803D;--verde-50:#ECFDF3;--sun:#F59E0B;--sun-50:#FFF7E6;--ad-warn-ink:#92400E;
+  --rosso:#DC2626;--rosso-50:#FEF2F2;--bad:#DC2626;--bad-ink:#991B1B;--warn:#D97706;--warn-dot:#F59E0B;
+  --ad-top-h:52px;--ad-side-w:232px;
+  --ad-shadow:0 1px 2px rgba(24,24,27,.04);--lift-1:0 1px 2px rgba(24,24,27,.05);--lift-2:0 8px 24px rgba(24,24,27,.08);
+  --r-pill:999px;
+  font-family:var(--ad-font);font-size:14px;line-height:1.5;color:var(--ink);background:var(--ad-bg);
+  font-feature-settings:"ss01","cv11";-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility
+}
+@media (prefers-color-scheme:dark){
+  .adm{--ad-bg:#09090B;--card:#111113;--page:#18181B;--slot:#1C1C1F;--ink:#FAFAFA;--ink2:#D4D4D8;--muted:#A1A1AA;--rule:#27272A;--rule2:#3F3F46;
+    --azzurro:#60A5FA;--azzurro-ink:#93C5FD;--azzurro-50:#172036;--verde:#4ADE80;--verde-50:#0F2A1B;--sun-50:#2A2110;--ad-warn-ink:#FCD34D;
+    --rosso:#F87171;--rosso-50:#2A1214;--bad-ink:#FCA5A5}
+}
+.adm,.adm button,.adm input,.adm select,.adm textarea,.adm .qc-btn,.adm .ad-btn{font-family:var(--ad-font)}
+.adm code,.adm kbd,.adm .adm-mono,.adm .nt-in--mono{font-family:var(--ad-mono);font-size:.92em}
+.adm .ad-kpi__v,.adm .adm-n,.adm .ad-badge,.adm .adm-tc__ver,.adm .adm-check__n,.adm .adm-stat b,.adm .pg-kpi dd,.adm .ad-cost dd{font-variant-numeric:tabular-nums}
+
+/* ── nagłówki: mniejsze, cięższe, ciasne ── */
+.adm h1,.adm .ad-title{font-size:18px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.adm h2,.adm .ad-card__h h2,.adm .tv-name{font-size:15px;font-weight:600;letter-spacing:-.005em}
+.adm .tv-name{font-size:22px;letter-spacing:-.02em}
+.adm h3,.adm h4,.adm .tv-card__h,.adm .tv-ready__h h3{font-size:14px;font-weight:600}
+.adm b,.adm strong{font-weight:600}
+.adm small,.adm .adm-src,.adm .adm-fn,.adm .adm-tc__meta,.adm .adm-item__meta{color:var(--muted)}
+
+/* ── boczny pasek ── */
+.adm .ad-side{width:var(--ad-side-w);padding:14px 10px 16px;background:var(--card);border-right:1px solid var(--rule)}
+.adm .ad-brand{font-size:15px;font-weight:650;letter-spacing:-.01em;padding:4px 10px 14px}
+.adm .ad-brand__tld{font-size:12px;font-weight:500;color:var(--muted);margin-left:4px}
+.adm .ad-nav__a{min-height:32px;padding:5px 10px;margin:1px 0;border-radius:6px;gap:10px;font-size:13.5px;font-weight:500;color:var(--ink2)}
+.adm .ad-nav__a:hover{background:var(--page);color:var(--ink)}
+.adm .ad-nav__a[aria-current="page"]{background:var(--page);color:var(--ink);font-weight:600;box-shadow:inset 2px 0 0 var(--azzurro)}
+.adm .ad-nav__a svg{width:16px;height:16px;stroke-width:1.8;color:var(--muted)}
+.adm .ad-nav__a[aria-current="page"] svg{color:var(--azzurro)}
+.adm .ad-nav__h{margin:16px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.adm .ad-badge{min-width:20px;height:18px;padding:0 6px;border-radius:5px;font-size:11.5px;font-weight:600;line-height:18px;background:var(--page);color:var(--ink2)}
+.adm .ad-badge--hot:not(.is-zero){background:var(--azzurro);color:#fff}
+.adm .ad-side__views,.adm .ad-side__views a{font-size:12.5px}
+
+/* ── górny pasek ── */
+.adm .ad-top{min-height:var(--ad-top-h);padding:0 24px;gap:12px;background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(10px);backdrop-filter:saturate(1.6) blur(10px);border-bottom:1px solid var(--rule)}
+.adm .ad-top .ad-title{font-size:15px}
+.adm .adm-env{font-size:12px;padding:3px 10px;border-radius:6px;box-shadow:inset 0 0 0 1px var(--rule)}
+.adm .ad-crumbs,.adm .ad-crumbs a{font-size:13.5px}
+
+/* ── powierzchnie ── */
+.adm .ad-card,.adm .ad-kpi,.adm .tv-card,.adm .tv-ready,.adm .tv-toc,.adm .pg-card,.adm .pg-head,.adm .adm-sheet,.adm .adm-fbox,.adm .adm-tc,
+.adm .tv .adm-stopx,.adm .tv-pv,.adm .adm-placeholder,.adm .pg-queue,.adm .tv-cmp{border-radius:10px;background:var(--card);box-shadow:0 0 0 1px var(--rule),var(--ad-shadow)}
+.adm .ad-card{padding:16px 18px}
+.adm .ad-card__h{margin-bottom:10px}
+.adm .ad-kpi{padding:14px 16px}
+.adm .ad-kpi__l,.adm .ad-kpi__k{font-size:12.5px;font-weight:500;color:var(--muted)}
+.adm .ad-kpi__v{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.15;color:var(--ink)}
+
+/* ── karty tras ── */
+.adm .adm-cards{gap:12px}
+.adm .adm-tc{padding:14px 16px 12px;transition:box-shadow .15s,transform .15s}
+.adm .adm-tc:hover{box-shadow:0 0 0 1px var(--rule2),0 4px 14px rgba(24,24,27,.06);transform:translateY(-1px)}
+.adm .adm-tc__name{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.adm .adm-tc__ver{font-size:12.5px;font-weight:600;color:var(--muted);font-family:var(--ad-mono)}
+.adm .adm-tc__meta{gap:6px 10px;font-size:12.5px}
+.adm .adm-cgroup__h,.adm .adm-results__h{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* ── znaczniki: zdania zamiast WERSALIKÓW ── */
+.adm .adm-chip,.adm .adm-std,.adm .adm-tc__meta .adm-chip{min-height:20px;padding:1px 8px;border-radius:6px;font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;font-stretch:100%;line-height:18px;box-shadow:inset 0 0 0 1px rgba(24,24,27,.06)}
+.adm .adm-std{background:var(--page);color:var(--ink2)}
+
+/* ── przyciski ── */
+.adm .qc-btn,.adm .ad-btn{min-height:32px;padding:5px 12px;border-radius:7px;font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;border:1px solid var(--rule2);background:var(--card);color:var(--ink);box-shadow:0 1px 1px rgba(24,24,27,.04);gap:6px}
+.adm .qc-btn:hover,.adm .ad-btn:hover{background:var(--page);border-color:var(--rule2)}
+.adm .qc-btn--sm{min-height:28px;padding:3px 10px;font-size:12.5px}
+.adm .qc-btn--primary,.adm .adm-btn-ok,.adm .ad-btn--primary,.adm .nt-btn{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.adm .qc-btn--primary:hover,.adm .adm-btn-ok:hover,.adm .nt-btn:hover{background:#27272A;border-color:#27272A}
+.adm .adm-btn-send{background:var(--azzurro);border-color:var(--azzurro);color:#fff}
+.adm .adm-btn-no{color:var(--bad-ink);border-color:color-mix(in srgb,var(--rosso) 35%,var(--rule2))}
+.adm .ad-btn--ghost{background:transparent;border-color:transparent;box-shadow:none;color:var(--ink2)}
+.adm .adm-linkbtn{font-size:12.5px}
+
+/* ── pola ── */
+.adm input:not([type=checkbox]):not([type=radio]),.adm select,.adm textarea,.adm .adm-search,.adm .nt-in{min-height:34px;padding:6px 10px;border:1px solid var(--rule2);border-radius:7px;background:var(--card);font-size:13.5px;color:var(--ink);box-shadow:0 1px 1px rgba(24,24,27,.03)}
+.adm textarea{line-height:1.55}
+.adm input:focus,.adm select:focus,.adm textarea:focus{outline:none;border-color:var(--azzurro);box-shadow:0 0 0 3px color-mix(in srgb,var(--azzurro) 18%,transparent)}
+.adm input[type=checkbox],.adm input[type=radio]{width:15px;height:15px;accent-color:var(--azzurro)}
+
+/* ── filtry tras ── */
+.adm .adm-fbox{padding:14px 14px 10px}
+.adm .adm-fbox__sum{min-height:28px;padding:0;font-size:14px}
+.adm .adm-check{min-height:28px;gap:8px;font-size:13px}
+.adm .adm-check__n{font-size:12px;color:var(--muted)}
+.adm .adm-abc{gap:4px}
+.adm .adm-abc__b{min-width:28px;height:28px;padding:0 6px;border-radius:6px;font-size:12.5px;font-weight:500;box-shadow:0 0 0 1px var(--rule);background:var(--card)}
+.adm .adm-abc__b[aria-pressed="true"]{background:var(--ink);color:var(--card);box-shadow:none}
+
+/* ── listy, tabele, wiersze ── */
+.adm table{font-size:13px}
+.adm th{font-size:12px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
+.adm td,.adm th{padding:7px 10px}
+.adm .ad-tr{min-height:40px}
+.adm .adm-n{font-size:11.5px;min-width:18px;height:18px;line-height:18px;border-radius:5px}
+
+/* ── widok trasy ── */
+.adm .tv-ready{padding:14px 16px}
+.adm .tv-ready li,.adm .tv-ready__row{min-height:36px;font-size:13px}
+.adm .tv-seg{border-radius:8px;padding:2px;background:var(--page);box-shadow:none}
+.adm .tv-seg button{min-height:28px;padding:3px 12px;border-radius:6px;font-size:13px;font-weight:500;background:transparent;box-shadow:none;color:var(--ink2)}
+.adm .tv-seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(24,24,27,.08),0 0 0 1px var(--rule)}
+.adm .tv-card{padding:14px 16px}
+.adm .adm-stopx{padding:14px 16px}
+.adm .adm-field__l,.adm label.adm-l,.adm .nt-l{font-size:12.5px;font-weight:500;color:var(--ink2)}
+.adm .tv .adm-p,.adm .adm-stopx p{font-size:14px;line-height:1.6}
+
+/* ── telefon: wygodne cele dotyku bez wracania do „strony” ── */
+@media (max-width:899px){
+  .adm .qc-btn,.adm .ad-btn,.adm input:not([type=checkbox]):not([type=radio]),.adm select{min-height:40px}
+  .adm .ad-nav__a,.adm .adm-check,.adm .adm-abc__b{min-height:40px}
+  .adm .ad-top{padding:0 14px}
+}
+
+/* ── dociśnięcie elementów, które miały wysokość „strony” (44–52 px) ── */
+@media (min-width:900px){
+  .adm .ad-top__k{min-height:32px;padding:4px 10px;border-radius:7px;font-size:13px;border:1px solid var(--rule);background:var(--page);box-shadow:none}
+  .adm .ad-top__k kbd{font-size:11px;padding:1px 5px;border-radius:4px}
+  .adm .adm-cmp__sel,.adm .tv-ver select{min-height:32px;padding:4px 28px 4px 10px;font-size:13px}
+  .adm .tv-ver__f{gap:2px}
+  .adm .tv-ver__f > span,.adm .tv-ver label{font-size:12px;color:var(--muted);font-weight:500}
+  .adm .tv-ready__h{min-height:32px}
+  .adm .tv-ready__it{min-height:34px;padding:6px 8px;border-radius:6px}
+  .adm .tv-ready li{min-height:0}
+  .adm .tv-ready__it:hover{background:var(--page)}
+  .adm .tv-toc__s{min-height:32px}
+  .adm .tv-toc__it{min-height:36px;padding:6px 8px;border-radius:6px;font-size:13px}
+  .adm .tv-more__a{min-height:32px;font-size:13px}
+  .adm .ad-brand{min-height:32px}
+  .adm .ad-side__views a{min-height:28px;display:inline-flex;align-items:center}
+  .adm .lv-banner{padding:10px 14px;border-radius:10px}
+  .adm .tv-tools{gap:8px}
+  .adm .tv-head__id{gap:4px}
+}
+.adm .tv-ready__it svg,.adm .tv-ready li svg{width:16px;height:16px}
+.adm .lv-banner{font-size:13px}
+.adm .td-greet{font-size:26px;font-weight:600;letter-spacing:-.025em;font-stretch:100%;margin-top:2px}
+.adm .td-date{font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.adm .adm-abc__b:first-child{text-transform:none}
