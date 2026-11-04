@@ -224,9 +224,9 @@
   "stop_key": "porta-venere",
   "n": 7,
   "name": "Porta Venere + Torri di Properzio",
-  "trip_version": 17,
+  "trip_version": 21,
   "icon_version": 1,
-  "accepted_at": "2026-10-31T22:48:23.115Z",
+  "accepted_at": "2026-11-04T06:14:11.253Z",
   "icons": {
    "64": "media/icons/place-spello-porta-venere-64.webp",
    "128": "media/icons/place-spello-porta-venere-128.webp",
