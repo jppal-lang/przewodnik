@@ -54,3 +54,21 @@ Legenda zabezpieczeń: **W** — walidator (`quolino-trip-writing/scripts/valida
    łapane (W/S/K), a które nie — i proponuje zmianę walidatora lub umiejętności (instrukcja Hermesa, `trips-section.md`).
 3. **Raz w tygodniu** (piątek) w podsumowaniu: 3 najczęściej łamane reguły i liczba uwag JP na szkic — cel: spada z miesiąca na miesiąc.
 4. Ten plik aktualizujemy przy każdej nowej kategorii błędu.
+
+## 5. Asyż v10 — 35 uwag JP (2026-11-04)
+
+| # | Błąd (gdzie) | Przyczyna | Zabezpieczenie |
+|---|---|---|---|
+| 24 | Zdanie urwane w pół: „…biała farba ołowiowa z czasem uległa utlenieniu, przez co.” (Bazylika św. Franciszka, lokalny smaczek) | automatyczne łagodzenie faktu „skróciło do części pewnej” i ucięło skutek | **W (nowe)**: zdanie kończące się spójnikiem/zaimkiem/przecinkiem = błąd; **P**: source-check odrzuca takie skrócenie i takie dopisanie; S (Asyż 1), K (zupełność) |
+| 25 | Ciekawostka pusta, choć źródło ma materiał (Rocca: film Zeffirellego; Minerwa: Goethe; Forum: makieta 1:50, tabernae) | autor zostawiał pusty blok jako „neutralny” | S (Asyż 3), K: uwaga z gotową treścią ze źródła |
+| 26 | Ciekawostka bez „i co z tego?” („Jakie były tego konsekwencje?” — Goethe, fresk Cimabuego) | fakt bez skutku i znaczenia | S (Asyż 2), K |
+| 27 | Zaimek wskazujący zły rzeczownik w podtytule („pod którym” → góra zamiast miasta) | szyk zdania | S (Asyż 4), K = błąd |
+| 28 | Zadanie foto niezrozumiałe (wzorce miar cegieł w przyziemiu sąsiedniego budynku) | detal z przewodnika zamiast tego, co dziecko widzi | S (Asyż 5), K (uwaga) |
+| 29 | Plan dnia z wariantem „(lub obiad w wariancie 12:00–14:30)” | autor zostawiał decyzję rodzinie | S (Asyż 6), K (uwaga) |
+| 30 | Toalety „zbiorczo” zamiast konkretnych miejsc ze źródła (parking Mojano) | uogólnienie | S (Asyż 7) |
+| 31 | Detal biograficzny bez źródła („w którym miał 16 lat młody Franciszek”) | dopowiedzenie modelu | S (Asyż 8), K (fakty) |
+| 32 | „local_flavor: null” w uwadze dla JP | nazwa techniczna przeciekła do tekstu | **W (nowe)**: nazwa pola albo „null” w tekście = błąd; S (Asyż 9) |
+
+**Pożądane działanie (JP chwali):** uwaga kontroli z numerem zasady, konkretnym materiałem ze źródła z przypisem i gotowym tekstem
+do wstawienia — JP klika „Popraw według propozycji”. Wpisane do kontroli szkicu (`gemini-draft.mjs`, punkt 6 i format uwag) i do
+`quolino-trip-writing/SKILL.md` („Wnioski z poprawek JP — Asyż”).
