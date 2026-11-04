@@ -34,6 +34,8 @@ export const ALLOWED = {
   'usage-summary.mjs': () => true,
   // diagnostyka bazy tylko do odczytu (JP 2026-11-03: znaleźć, co blokuje nowe trasy)
   'db-diag.mjs': (a) => a.length === 0,
+  // raport uwag JP i flag kontroli do analizy redakcji (tylko odczyt, plik w repo)
+  'comments-dump.mjs': (a) => a.length === 1 && /^[a-z0-9][a-z0-9-]{1,62}$/.test(a[0]),
   // ponowienie tłumaczenia opublikowanej trasy (te same kontrole jakości co w kolejce; bez --dry/--job z zewnątrz)
   // kandydaci zdjęć do ikon miejsc (tylko odczyt Commons + plik JSON w repo): dokładnie jeden argument — slug trasy
   'place-candidates.mjs': (a) => a.length === 1 && /^[a-z0-9][a-z0-9-]{0,62}$/.test(a[0]),

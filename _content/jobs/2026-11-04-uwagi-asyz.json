@@ -1,0 +1,11 @@
+{
+ "script": "comments-dump.mjs",
+ "args": [
+  "asyz"
+ ],
+ "title": "Raport uwag JP: Asyż",
+ "why": "Analiza uwag JP do Asyżu (ulepszenie redakcji). Tylko odczyt, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 10
+}
