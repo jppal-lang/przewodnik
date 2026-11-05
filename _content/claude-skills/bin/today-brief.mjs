@@ -24,7 +24,7 @@ const WORK = join(BASE, 'work');
 const REPO = process.env.QUOLINO_REPO ?? '/opt/data/repo/przewodnik';
 const AGY = '/opt/data/home/.local/bin/agy';
 export const MAX_ITEMS = 14;
-export const MIN_AI_GAP_MS = 30 * 60_000;      // nie częściej niż co 30 min — Antigravity to wspólny limit z pisaniem tras
+export const MIN_AI_GAP_MS = 3 * 3600_000;     // JP 2026-11-05: najwyżej co 3 h (było 30 min, 68 wywołań/tydz. — więcej niż grafiki); wspólny limit z trasami
 export const REFRESH_MS = 6 * 3600_000;         // bez zmian danych: odświeżenie najpóźniej co 6 h
 
 // ── pomocnicze ─────────────────────────────────────────────────────────────────
@@ -277,7 +277,8 @@ export async function writeBrief({ force = false, noAi = false, log = () => {}, 
     if (!force && !changed && !stale) return { ok: true, skipped: true, hash };
     let brief = autoBrief(facts, snap, now), aiAt = prev?.meta?.ai_at ?? null;
     let alert = {}; try { alert = JSON.parse(readFileSync(join(BASE, 'agy-alert.json'), 'utf8')); } catch { /* brak */ }
-    const canAi = !noAi && facts.length && existsSync(AGY) && !lib.agyQuotaOut() && !(alert.lvl >= 80) && (force || !aiAt || now - t_(aiAt) > MIN_AI_GAP_MS);
+    const canAi = !noAi && facts.length && existsSync(AGY) && !lib.agyQuotaOut() && !(alert.lvl >= 80) && (force || !aiAt || now - t_(aiAt) > MIN_AI_GAP_MS)
+      && (force || !(await lib.tripsFirst?.()));   // trasa w toku → meldunek bez AI (pierwszeństwo tras)
     if (canAi) {
       try {
         const raw = await agyAsk(aiPrompt(facts), lib.aiUsage);
