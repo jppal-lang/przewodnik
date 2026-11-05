@@ -1,0 +1,9 @@
+{
+ "script": "usage-summary.mjs",
+ "args": ["7"],
+ "title": "Zużycie AI 7 dni: grafiki vs trasy",
+ "why": "JP 2026-11-05: zbadaj balans między grafikami a nową trasą. Tylko odczyt, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 5
+}
