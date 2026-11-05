@@ -4,6 +4,7 @@
 --   Spello v22: błędy kontroli (35, zdania-wypełniacze „brak informacji…”, składnia, misje) → popraw wg propozycji;
 --     ostrzeżenia: „Fakt bez źródła” (fakty z opublikowanej wersji) → zostaw; pozostałe (wskazówki, agregatory w źródłach lodziarni,
 --     godziny lodziarni, reklama) → popraw wg propozycji. Jedna prośba na trasę; weryfikacja jak po kliknięciu w panelu.
+-- (b) pierwsza wersja padła: review.*.resolved to obiekt, rzut ::boolean wycofał cały plik.
 DO $$
 DECLARE s text; v int; rv jsonb; ids bigint[]; rid bigint; i int; e jsonb; b text;
 BEGIN
@@ -14,14 +15,14 @@ BEGIN
     ids := '{}';
     FOR i IN 0 .. coalesce(jsonb_array_length(rv->'errors'), 0) - 1 LOOP
       e := rv->'errors'->i;
-      IF coalesce((e->>'resolved')::boolean, false) THEN CONTINUE; END IF;
+      IF coalesce(e->'resolved', 'null'::jsonb) NOT IN ('null'::jsonb, 'false'::jsonb) THEN CONTINUE; END IF;   -- resolved to obiekt {why/url}, nie boolean
       INSERT INTO public.draft_comments (city_slug, city_version, stop_key, field, field_label, body, status)
       VALUES (s, v, e->>'stop_key', 'review.e.' || i, 'pytanie z kontroli', '✓ Popraw według propozycji', 'sent') RETURNING id INTO rid;
       ids := ids || rid;
     END LOOP;
     FOR i IN 0 .. coalesce(jsonb_array_length(rv->'warnings'), 0) - 1 LOOP
       e := rv->'warnings'->i;
-      IF coalesce((e->>'resolved')::boolean, false) THEN CONTINUE; END IF;
+      IF coalesce(e->'resolved', 'null'::jsonb) NOT IN ('null'::jsonb, 'false'::jsonb) THEN CONTINUE; END IF;   -- resolved to obiekt {why/url}, nie boolean
       b := CASE WHEN e->>'problem' LIKE 'Fakt bez źródła%' THEN '✗ Zostaw bez zmian' ELSE '✓ Popraw według propozycji' END;
       INSERT INTO public.draft_comments (city_slug, city_version, stop_key, field, field_label, body, status)
       VALUES (s, v, e->>'stop_key', 'review.w.' || i, 'pytanie z kontroli', b, 'sent') RETURNING id INTO rid;
