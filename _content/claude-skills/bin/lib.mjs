@@ -277,3 +277,22 @@ export function agyQuotaOut() {
 export function agyWeekCalls() {
   try { const since = Date.now() - 7 * 86400_000; return readFileSync(COSTS, 'utf8').split('\n').reduce((n, l) => { try { const j = JSON.parse(l); return n + (j.provider === 'gemini' && j.billing === 'abonament' && Date.parse(j.at) > since ? 1 : 0); } catch { return n; } }, 0); } catch { return 0; }
 }
+// Pierwszeństwo tras (JP 2026-11-05 „nowa trasa ma pierwszeństwo”): grafiki gry na tym samym abonamencie Antigravity
+// czekają, gdy trasa jest w kolejce/w toku albo czeka poprawka szkicu, i nie ruszają rezerwy tygodniowej zostawionej trasom.
+export const AGY_WEEKLY = +(process.env.QUOLINO_AGY_WEEKLY_CALLS ?? 150);
+export const AGY_TRIP_RESERVE = +(process.env.QUOLINO_AGY_TRIP_RESERVE ?? 0.3);   // 30 % tygodnia tylko dla tras
+export async function tripsFirst() {
+  let busy = 0;
+  try {
+    const c = await db();
+    try {
+      const [r] = (await c.query(`SELECT (SELECT count(*) FROM ops.jobs WHERE worker = 'gemini' AND kind = 'draft' AND status IN ('queued', 'running'))::int
+                                     + (SELECT count(*) FROM public.draft_revision_requests WHERE status IN ('new', 'working'))::int AS n`)).rows;
+      busy = r?.n ?? 0;
+    } finally { await c.end(); }
+  } catch { /* baza niedostępna — nie blokujemy */ }
+  if (busy) return `${busy} ${busy === 1 ? 'trasa/poprawka' : 'tras/poprawek'} w kolejce — trasy mają pierwszeństwo`;
+  const used = agyWeekCalls(), cap = Math.floor(AGY_WEEKLY * (1 - AGY_TRIP_RESERVE));
+  if (used >= cap) return `Antigravity: ${used} wywołań w 7 dni, rezerwa ${Math.round(AGY_TRIP_RESERVE * 100)} % tygodnia zostaje dla tras`;
+  return null;
+}

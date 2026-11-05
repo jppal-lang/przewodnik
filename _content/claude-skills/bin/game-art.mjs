@@ -15,7 +15,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { env, log, run, aiUsage, agyQuotaOut, agyQuotaHit, agyWeekCalls } from './lib.mjs';
+import { env, log, run, aiUsage, agyQuotaOut, agyQuotaHit, agyWeekCalls, tripsFirst } from './lib.mjs';
 import { ensureChannel, notify } from './draft-lib.mjs';
 import CFG from './game-art-data.mjs';
 import * as L from './game-art-lib.mjs';
@@ -263,6 +263,7 @@ async function cmdGen(name) {
   if (s?.v && s.status !== 'queued' && !flag('--force')) { log(`${name}: już jest v${s.v} (${s.status}) — poprawki: fix, nowa wersja: --force`); return 0; }
   if (flag('--wait-review')) { const w = L.waitingReview(st).filter(k => k !== name && !CFG.packs.find(p => p.name === k)?.superseded); if (w.length) { log(`${name}: czeka — JP ocenia ${w.join(', ')}`); return EXIT_LATER; } }
   if (agyQuotaOut()) { patchPack(name, x => { x.status = x.v ? x.status : 'queued'; }); log(`${name}: ${quotaMsg(agyQuotaOut())}`); return EXIT_LATER; }
+  { const why = flag('--force') ? null : await tripsFirst(); if (why) { log(`${name}: czeka — ${why}`); return EXIT_LATER; } }
   if (!lock()) { log(`${name}: inny proces generuje (agy.lock) — później`); return EXIT_LATER; }
   try { await one(pack); return 0; } catch (e) { return onGenError(pack, e); }
 }
@@ -270,9 +271,10 @@ async function cmdFix(name, notes) {
   if (!notes) throw new Error('fix <paczka> "uwagi"');
   const pack = packOf(name);
   await AR.closePending('game_art', name, 'fix', `uwagi spoza panelu (Discord/konsola): ${notes.slice(0, 200)}`);
-  if (agyQuotaOut() || !lock()) {
+  const tripWhy = await tripsFirst();
+  if (agyQuotaOut() || tripWhy || !lock()) {
     patchPack(name, x => { x.pending_notes = notes.slice(0, 800); x.status = 'fix-pending'; });
-    await say(`🕓 Poprawka ${name} zapisana: „${notes.slice(0, 200)}”. ${agyQuotaOut() ? quotaMsg(agyQuotaOut()) + ' — wygeneruję po odnowieniu.' : 'Teraz generuje się coś innego — zrobię ją za kilka minut.'}`);
+    await say(`🕓 Poprawka ${name} zapisana: „${notes.slice(0, 200)}”. ${agyQuotaOut() ? quotaMsg(agyQuotaOut()) + ' — wygeneruję po odnowieniu.' : tripWhy ? tripWhy + ' — zrobię ją po trasie.' : 'Teraz generuje się coś innego — zrobię ją za kilka minut.'}`);
     return 0;
   }
   try { await one(pack, notes.slice(0, 800)); return 0; } catch (e) { return onGenError(pack, e, notes.slice(0, 800)); }
@@ -390,7 +392,7 @@ async function cmdWatch() {
       }
     }
     // zaległe: poprawki i paczki odłożone przez limit — jedna na przebieg, gdy Antigravity wolny
-    if (!agyQuotaOut()) {
+    if (!agyQuotaOut() && !(await tripsFirst())) {   // trasy mają pierwszeństwo (JP 2026-11-05) — zaległe grafiki po nich
       const st = loadState();
       const pend = ORDER.find(p => st.packs[p]?.status === 'fix-pending' && st.packs[p]?.pending_notes && (st.packs[p].errors ?? 0) < 3);
       const queued = ORDER.find(p => st.packs[p]?.status === 'queued');
