@@ -30,7 +30,9 @@ const AGY_BUDGET = +(process.env.QUOLINO_AGY_WEEKLY_CALLS ?? 150);
     writeFileSync(stF, JSON.stringify({ lvl, at: new Date().toISOString() }));
     if (lvl) await notify(ADMIN, `⚠️ Antigravity (AI Pro): ${used} wywołań w 7 dni ≈ ${pct}% przyjętego limitu ${AGY_BUDGET}. ${lvl >= 90 ? 'Nowe wycieczki czekają; rozpoczęte kończy Claude.' : 'Pilnuję.'}`).catch(() => {});
   }
-  globalThis.__agyFull = pct >= 90 || !!agyQuotaOut();
+  // JP 2026-11-05: nowa trasa czekała 2 dni na nasz własny próg 90 % (zjadły go grafiki gry). Próg = tylko ostrzeżenie;
+  // trasę wstrzymuje wyłącznie realny brak limitu (agyQuotaOut — godzina odnowienia z błędu Antigravity).
+  globalThis.__agyFull = !!agyQuotaOut();
 }
 // zlecenia z repo (_content/jobs/*.json, repo-jobs.mjs): jednorazowe zadania z białej listy, bez konsoli JP (JP 2026-10-30) — także w dzień
 try { const { runRepoJobs } = await import('./repo-jobs.mjs'); await runRepoJobs({ log }); } catch (e) { log(`zlecenia z repo: ${String(e.message).slice(0, 160)}`); }
