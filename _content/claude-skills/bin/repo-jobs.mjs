@@ -49,6 +49,10 @@ export const ALLOWED = {
   'game-art.mjs': (a) => isGameArtArgs(a),
   // nowa trasa do kolejki Gemini (JP 2026-11-01): ten sam wiersz ops.jobs co qdb job-add / panel; kolejka zużyje limit Antigravity → COSTLY (jp_ok)
   'trip-enqueue.mjs': (a) => isEnqueueArgs(a),
+  // zatwierdzenie szkicu na polecenie JP (2026-11-05 „jeśli nie ma błędów krytycznych … zatwierdź”): to samo admin_approve co panel,
+  // bramka publikacji liczona na serwerze (twardo); publikacja uruchamia tłumaczenie → COSTLY (jp_ok). Bez --reject.
+  'trip-approve.mjs': (a) => /^[a-z0-9][a-z0-9-]{1,62}$/.test(a[0] ?? '') && a.slice(1).every((x, i, r) =>
+    x === '--version' || x === '--note' || x === '--no-social' || (r[i - 1] === '--version' && /^\d{1,4}$/.test(x)) || (r[i - 1] === '--note' && x.length <= 200 && !x.startsWith('--'))),
 };
 // <slug> --name "…" --region <slug> [--country xx] [--duration half_day|full_day] [--brief "…"] [--fresh] [--dry]; każda opcja najwyżej raz
 export function isEnqueueArgs(a) {
@@ -102,7 +106,7 @@ export function afterExit(prev, code, tail, now = new Date().toISOString()) {
 // Skrypty, które wydają pieniądze albo limit AI (OpenRouter, Claude, Gemini). JP 2026-10-30: „dbaj o moje środki”.
 // Zlecenie takiego skryptu musi nieść zgodę JP: pole jp_ok = { date: 'RRRR-MM-DD', quote: 'dosłowne słowa JP z czatu' },
 // nie starszą niż 3 dni. Bez tego serwer odrzuca zlecenie (status rejected), zanim cokolwiek wyda.
-export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs', 'game-art.mjs', 'trip-enqueue.mjs']);
+export const COSTLY = new Set(['gemini-draft.mjs', 'trip-translate.mjs', 'game-art.mjs', 'trip-enqueue.mjs', 'trip-approve.mjs']);
 export function jpOkError(job, now = Date.now()) {
   const ok = job?.jp_ok;
   if (!ok || typeof ok !== 'object' || typeof ok.quote !== 'string' || ok.quote.trim().length < 2 || !/^\d{4}-\d{2}-\d{2}$/.test(ok.date ?? '')) return 'brak zgody JP (jp_ok {date, quote}) dla zlecenia, które kosztuje';
