@@ -1,0 +1,9 @@
+{
+ "script": "comments-dump.mjs",
+ "args": ["spello"],
+ "title": "Raport uwag i kontroli: spello",
+ "why": "JP 2026-11-05: przejrzyj uwagi, bez krytycznych błędów zatwierdź Asyż i Spello. Tylko odczyt, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 10
+}
