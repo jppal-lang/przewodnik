@@ -218,7 +218,7 @@ def check_schedule(slug, meta, pl):
         dh = c.get("duration_hours")
         if isinstance(dh, (int, float)) and dh and abs(dh - span) > 0.75:
             err(slug, f"city.duration_hours = {dh}, a plan od {stops[0].get('time_label')} do końca ostatniego przystanku trwa ok. {span:.1f} h — ustaw {round(span * 2) / 2}")
-        want = "half_day" if span <= 5 else "full_day"
+        want = "half_day" if span <= 6 else "full_day"   # JP 2026-11-05: popołudnie z kolacją ≈ 6 h to wciąż pół dnia
         if c.get("duration_type") and c.get("duration_type") != want:
             warn(slug, f"city.duration_type = {c.get('duration_type')}, plan trwa {span:.1f} h — pasuje {want}")
     dp = (pl or {}).get("day_plan") or {}

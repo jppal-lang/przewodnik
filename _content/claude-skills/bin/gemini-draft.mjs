@@ -667,6 +667,22 @@ function applyReplacements(trip, blocks, errors) {
   return { done, changes };
 }
 
+// godzina na początku linii planu dnia ≠ time_label → time_label = godzina z planu (tylko w poprawkach; w nowym szkicu wygrywa time_label)
+export function planTimesFromText(trip, before = {}) {
+  const dp = trip?.content?.day_plan, out = [];
+  if (!dp || typeof dp !== 'object') return out;
+  const lead = (l) => String(l ?? '').match(/^\s*(\d{1,2}):(\d{2})/);
+  for (const s of trip.meta?.stops ?? []) {
+    const m = lead(dp[s.stop_key]); if (!m) continue;
+    const t = `${m[1].padStart(2, '0')}:${m[2]}`, cur = String(s.time_label ?? '');
+    if (cur === t || cur.replace(/^(\d):/, '0$1:') === t) continue;
+    out.push({ path: `meta.stops.${s.stop_key}.time_label`, before: cur, after: t, why: lead(before?.[s.stop_key])?.[0]?.trim() === m[0].trim() ? 'godzina z planu dnia (kod)' : 'godzina z poprawionego planu dnia (kod)', auto: true });
+    s.time_label = t;
+  }
+  if (out.length) log(`${slug}: ${out.length} godzin przystanków wzięte z planu dnia`);
+  return out;
+}
+
 // ── plan dnia poprawiany kodem (JP 2026-10-26): godziny dotarcia rosną, starcza czasu na przejście, day_plan = time_label,
 // duration_hours/duration_type z planu. Te same progi co walidator (pieszo 3 km/h, >2 km auto 40 km/h + 10 min). Bez AI.
 function fixSchedule(trip) {
@@ -690,7 +706,7 @@ function fixSchedule(trip) {
   if (ts.length && trip.meta.city) {
     const span = (ts.at(-1)[0] + (Number.isFinite(ts.at(-1)[1]) ? ts.at(-1)[1] : 0) - ts[0][0]) / 60, want = Math.round(span * 2) / 2;
     if (typeof trip.meta.city.duration_hours === 'number' && Math.abs(trip.meta.city.duration_hours - span) > 0.75) { changes.push({ path: 'meta.city.duration_hours', before: String(trip.meta.city.duration_hours), after: String(want), why: 'czas trasy z planu (kod)', auto: true }); trip.meta.city.duration_hours = want; }
-    const type = span <= 5 ? 'half_day' : 'full_day';
+    const type = span <= 6 ? 'half_day' : 'full_day';   // popołudnie z kolacją ≈ 6 h = pół dnia (JP 2026-11-05)
     if (trip.meta.city.duration_type && trip.meta.city.duration_type !== type) { changes.push({ path: 'meta.city.duration_type', before: trip.meta.city.duration_type, after: type, why: 'rodzaj trasy z planu (kod)', auto: true }); trip.meta.city.duration_type = type; }
   }
   if (changes.length) log(`${slug}: plan dnia poprawiony kodem: ${changes.length} zmian`);
@@ -847,6 +863,7 @@ async function recheckMain() {
   if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu${fromLabel ? ` ${fromLabel}` : ''}`);
   if (!channel) channel = (await q('SELECT discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(() => []))[0]?.discord_thread_id ?? null;
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
+  const dayPlan0 = JSON.parse(JSON.stringify(cur.trip.content?.day_plan ?? {}));   // plan dnia przed poprawką (godziny z tekstu → time_label)
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle; STOPS_N = trip.meta.stops.length;
   await loadRules(q);
@@ -1073,6 +1090,9 @@ async function reviseMain() {
   const [nl] = await q(`SELECT count(*)::int AS n FROM public.city_versions WHERE city_slug = $1 AND content->>'label' ~ $2`, [slug, `^v${base}[a-z]$`]);
   const label = `v${base}${String.fromCharCode(97 + nl.n)}`;
   { const scv = await sourceCheckStep(trip, blocks, rv); changes.push(...(scv.changes ?? [])); }
+  // godziny (JP 2026-11-05, Asyż v13/v14): poprawka zmienia zwykle tekst planu dnia, a time_label zostaje stary → 10 błędów walidatora.
+  // W poprawce wygrywa godzina z planu dnia (to ją JP czyta i poprawia); potem ten sam kod co przy szkicu: przejścia, czas trasy.
+  changes.push(...planTimesFromText(trip, dayPlan0), ...fixSchedule(trip));
   cleanChoices(trip.content, trip.meta, log);
   const saved = await saveDraft(q, trip, { note: `${label}: poprawki JP (${comments.length} uwag${answered.size ? `, w tym ${answered.size} odpowiedzi na pytania z kontroli` : ''})`, source: 'revise', changes, review: rv });
   await q(`UPDATE public.city_versions SET content = content || jsonb_build_object('workflow', 'v2', 'workflow_model', $3::text, 'stop_blocks_v2', $4::jsonb, 'label', $5::text),
