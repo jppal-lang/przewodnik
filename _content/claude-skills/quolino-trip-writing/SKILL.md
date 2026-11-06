@@ -87,7 +87,7 @@ strona gminy/diecezji/muzeum, lokalne przewodniki). Bez tej linijki research jes
 legendą („Legenda mówi…”, „Według tradycji…”); `legend.trace` — ślad na miejscu i gdzie dokładnie; `legend.history` — co wiadomo
 historycznie (FAKT oddzielony od LEGENDY). Legenda nigdy nie jest podana jako fakt. Brak legendy = stan `none` z `checked`.
 **„Według tradycji” tylko dla legend** (JP 2026-11-06): przy niepewnym fakcie (gdzie ktoś się urodził, mieszkał, zmarł, kto coś
-zbudował) pisz „prawdopodobnie” / „przypuszczalnie” / „najpewniej”. Urodzić się „według tradycji” nie można. Kod poprawia to sam.
+zbudował, do czego służył przedmiot: „kamień, na którym rozcierano barwnik”) pisz „prawdopodobnie” / „przypuszczalnie” / „najpewniej”. Urodzić się ani rozcierać barwnika „według tradycji” nie można. Tradycja = obyczaj („według tradycji składa się tu kwiaty”). Kod poprawia to sam.
 
 ### Popkultura — obowiązkowy research
 Szukaj: filmy, seriale, teledyski, piosenki o mieście/miejscu, muzycy, artyści, pisarze i książki,

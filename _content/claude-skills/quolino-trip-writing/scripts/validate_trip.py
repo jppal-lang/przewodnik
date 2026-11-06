@@ -74,7 +74,7 @@ FILLERS = re.compile(
     r"|niepowtarzaln\w+ (atmosfer\w+|klimat\w*)|obowiązkow\w+ punkt)\b", re.I)
 LEGEND_WORD = re.compile(r"\b(legend\w*|podani\w+|według tradycji)\b", re.I)
 LEGEND_OPEN = re.compile(r"^\s*(Legenda mówi|Według tradycji)", re.I)
-TRADITION_FACT = re.compile(r"\b(według|wedle) tradycji\b[^.!?]*?\b(urodził|urodziła|przyszł?a? na świat|mieszkał|zmarł|umarł|pochowan|zbudował|wybudował|zbudowan|wzniesion|ufundował|założył|zaprojektował|namalował|wyrzeźbił|stworzył|pracował|powstał|pochodzi|należał)", re.I)
+TRADITION_FACT = re.compile(r"\b(według|wedle) tradycji\b[^.!?]*?\b(urodził|urodziła|przyszł?a? na świat|mieszkał|zmarł|umarł|pochowan|zbudował|wybudował|zbudowan|wzniesion|ufundował|założył|zaprojektował|namalował|wyrzeźbił|stworzył|pracował|powstał|pochodzi|należał|służył|używał|\w+(ano|ono|ęto|yto)\b)", re.I)
 WORD = re.compile(r"\w+", re.UNICODE)
 
 # ── Lekcje z poprawek JP (Rimini, Rawenna, Asyż, Ancona, Perugia; 2026-10-12…17) — docs/WNIOSKI-Z-POPRAWEK.md ──

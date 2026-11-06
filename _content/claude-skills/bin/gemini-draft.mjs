@@ -293,7 +293,8 @@ wyjazdu z bazy — tylko czas zwiedzania na miejscu, godziny otwarcia, kolejnoś
 tylko ze źródłem, inaczej „sprawdź na miejscu”. Bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika, bez emoji,
 bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.
 „WEDŁUG TRADYCJI” TYLKO DLA LEGEND (JP 2026-11-06): nie pisz „według tradycji / tradycja głosi / wedle tradycji” przy faktach, które mogą być
-prawdą, ale nie są pewne (gdzie ktoś się urodził, mieszkał, zmarł, kto coś zbudował lub namalował). Urodzić się „wg tradycji” nie można.
+prawdą, ale nie są pewne (gdzie ktoś się urodził, mieszkał, zmarł, kto coś zbudował lub namalował, do czego służył przedmiot: „kamień, na którym rozcierano barwnik”).
+Urodzić się ani rozcierać barwnika „wg tradycji” nie można. Tradycja to obyczaj (np. „według tradycji składa się tu kwiaty”).
 Pisz „prawdopodobnie”, „przypuszczalnie”, „najpewniej”. „Według tradycji” zostaje tylko dla prawdziwych legend (cuda, zjawy, smoki).
 PARKING BEZ QUESTU (JP 2026-11-06): parking nie ma misji, wskazówki, zadania foto ani pytania z wyborem (kids_box, hint, photo_task,
 kids_choice = null). Wyjątek tylko, gdy sam parking jest naprawdę niezwykłym miejscem (np. stoi przy zabytku albo ma widok, dla którego warto
@@ -691,7 +692,7 @@ export function planTimesFromText(trip, before = {}) {
 
 // „Według tradycji” przy niepewnym fakcie (JP 2026-11-06: „jak można urodzić się wg tradycji?”) → „prawdopodobnie”. Tylko zdania
 // z czasownikiem faktu (urodził, mieszkał, zmarł, zbudował…); legendy (bloki legend) bez zmian. Bez AI.
-export const TRADITION_FACT = /(?:^|(?<=[.!?]\s))[^.!?]*?\b(?:według|wedle) tradycji\b[^.!?]*?\b(?:urodził|urodziła|urodzi|przyszedł na świat|przyszła na świat|mieszkał|mieszkała|zmarł|zmarła|umarł|pochowan|spał|spała|zbudował|wybudował|zbudowan|wzniesion|wzniósł|ufundował|założył|zaprojektował|namalował|wyrzeźbił|stworzył|pracował|uczył|modlił|powstał|powstała|pochodzi|należał)/iu;
+export const TRADITION_FACT = /(?:^|(?<=[.!?]\s))[^.!?]*?\b(?:według|wedle) tradycji\b[^.!?]*?\b(?:urodził|urodziła|urodzi|przyszedł na świat|przyszła na świat|mieszkał|mieszkała|zmarł|zmarła|umarł|pochowan|spał|spała|zbudował|wybudował|zbudowan|wzniesion|wzniósł|ufundował|założył|zaprojektował|namalował|wyrzeźbił|stworzył|pracował|uczył|modlił|powstał|powstała|pochodzi|należał|służył|używał|przechowywał|\p{L}+(?:ano|ono|ęto|yto)\b)/iu;   // + bezosobowe „rozcierano, robiono” (JP: kamień do barwnika)
 export function fixTradition(content) {
   const changes = [];
   const fix = (s) => s.split(/(?<=[.!?])\s+/).map(z => {
