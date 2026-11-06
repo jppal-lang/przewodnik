@@ -74,6 +74,7 @@ FILLERS = re.compile(
     r"|niepowtarzaln\w+ (atmosfer\w+|klimat\w*)|obowiązkow\w+ punkt)\b", re.I)
 LEGEND_WORD = re.compile(r"\b(legend\w*|podani\w+|według tradycji)\b", re.I)
 LEGEND_OPEN = re.compile(r"^\s*(Legenda mówi|Według tradycji)", re.I)
+TRADITION_FACT = re.compile(r"\b(według|wedle) tradycji\b[^.!?]*?\b(urodził|urodziła|przyszł?a? na świat|mieszkał|zmarł|umarł|pochowan|zbudował|wybudował|zbudowan|wzniesion|ufundował|założył|zaprojektował|namalował|wyrzeźbił|stworzył|pracował|powstał|pochodzi|należał)", re.I)
 WORD = re.compile(r"\w+", re.UNICODE)
 
 # ── Lekcje z poprawek JP (Rimini, Rawenna, Asyż, Ancona, Perugia; 2026-10-12…17) — docs/WNIOSKI-Z-POPRAWEK.md ──
@@ -470,6 +471,8 @@ def validate_city(folder: Path):
                         m = FILLERS.search(ptxt)
                         if m:
                             warn(slug, f"{code}: {key} desc[{i}] — zdanie-wypełniacz „{m.group(0)}”: podaj fakt zamiast przymiotnika")
+                        if TRADITION_FACT.search(ptxt):
+                            warn(slug, f"{code}: {key} desc[{i}] — „według tradycji” przy niepewnym fakcie (urodził się, zbudował…): pisz „prawdopodobnie” (JP 2026-11-06); „według tradycji” tylko dla legend")
                         if LEGEND_WORD.search(ptxt) and not LEGEND_OPEN.match(ptxt):
                             warn(slug, f"{code}: {key} desc[{i}] — wzmianka o legendzie/tradycji w akapicie, który nie zaczyna się od "
                                        f"„Legenda mówi…” / „Według tradycji…” (legenda ma mieć własny, oznaczony akapit)")

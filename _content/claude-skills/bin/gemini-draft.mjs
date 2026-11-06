@@ -292,6 +292,9 @@ const RULES = `TWARDE ZASADY QUOLINO: rodzinna wycieczka piesza dla rodziców z 
 wyjazdu z bazy — tylko czas zwiedzania na miejscu, godziny otwarcia, kolejność przystanków. Nie wymyślaj faktów: ceny, godziny, telefony
 tylko ze źródłem, inaczej „sprawdź na miejscu”. Bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika, bez emoji,
 bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.
+„WEDŁUG TRADYCJI” TYLKO DLA LEGEND (JP 2026-11-06): nie pisz „według tradycji / tradycja głosi / wedle tradycji” przy faktach, które mogą być
+prawdą, ale nie są pewne (gdzie ktoś się urodził, mieszkał, zmarł, kto coś zbudował lub namalował). Urodzić się „wg tradycji” nie można.
+Pisz „prawdopodobnie”, „przypuszczalnie”, „najpewniej”. „Według tradycji” zostaje tylko dla prawdziwych legend (cuda, zjawy, smoki).
 PARKING BEZ QUESTU (JP 2026-11-06): parking nie ma misji, wskazówki, zadania foto ani pytania z wyborem (kids_box, hint, photo_task,
 kids_choice = null). Wyjątek tylko, gdy sam parking jest naprawdę niezwykłym miejscem (np. stoi przy zabytku albo ma widok, dla którego warto
 się zatrzymać): wtedy w meta.stops tego parkingu ustaw "parking_quest": true i napisz misję o tym, co tam widać.
@@ -686,6 +689,28 @@ export function planTimesFromText(trip, before = {}) {
   return out;
 }
 
+// „Według tradycji” przy niepewnym fakcie (JP 2026-11-06: „jak można urodzić się wg tradycji?”) → „prawdopodobnie”. Tylko zdania
+// z czasownikiem faktu (urodził, mieszkał, zmarł, zbudował…); legendy (bloki legend) bez zmian. Bez AI.
+export const TRADITION_FACT = /(?:^|(?<=[.!?]\s))[^.!?]*?\b(?:według|wedle) tradycji\b[^.!?]*?\b(?:urodził|urodziła|urodzi|przyszedł na świat|przyszła na świat|mieszkał|mieszkała|zmarł|zmarła|umarł|pochowan|spał|spała|zbudował|wybudował|zbudowan|wzniesion|wzniósł|ufundował|założył|zaprojektował|namalował|wyrzeźbił|stworzył|pracował|uczył|modlił|powstał|powstała|pochodzi|należał)/iu;
+export function fixTradition(content) {
+  const changes = [];
+  const fix = (s) => s.split(/(?<=[.!?])\s+/).map(z => {
+    if (!TRADITION_FACT.test(z)) return z;
+    let o = z.replace(/^(?:Według|Wedle) tradycji,?\s+/u, 'Prawdopodobnie ').replace(/,?\s*(?:według|wedle) tradycji,?\s*/iu, ' prawdopodobnie ');
+    return o.replace(/^\s+/, '');
+  }).join(' ');
+  const walk = (o, path) => {
+    if (!o || typeof o !== 'object') return;
+    for (const [k, v] of Object.entries(o)) {
+      if (/legend/i.test(k)) continue;
+      if (typeof v === 'string') { const n = fix(v); if (n !== v) { changes.push({ path: `${path}.${k}`, before: v, after: n, why: '„według tradycji” przy fakcie → „prawdopodobnie” (JP 2026-11-06, kod)', auto: true }); o[k] = n; } }
+      else walk(v, `${path}.${k}`);
+    }
+  };
+  walk(content, 'content');
+  return changes;
+}
+
 // ── plan dnia poprawiany kodem (JP 2026-10-26): godziny dotarcia rosną, starcza czasu na przejście, day_plan = time_label,
 // duration_hours/duration_type z planu. Te same progi co walidator (pieszo 3 km/h, >2 km auto 40 km/h + 10 min). Bez AI.
 function fixSchedule(trip) {
@@ -700,6 +725,7 @@ function fixSchedule(trip) {
     const d = km(a, b), need = d <= 2 ? Math.round(d / 3 * 60) : Math.round(d / 40 * 60) + 10;
     if (tb - (ta + va) < need - 5) { const nt = Math.ceil((ta + va + need) / 5) * 5; changes.push({ path: `meta.stops.${b.stop_key}.time_label`, before: b.time_label, after: hhmm(nt), why: 'plan dnia: za mało czasu na przejście (kod)', auto: true }); b.time_label = hhmm(nt); }
   }
+  changes.push(...fixTradition(trip.content));
   // parking bez questu (JP 2026-11-06), chyba że AI oznaczyło go jako niezwykłe miejsce (meta.stops[].parking_quest = true)
   for (const m of trip.meta.stops ?? []) {
     const c = trip.content.stops?.[m.stop_key];
