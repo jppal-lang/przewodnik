@@ -55,7 +55,7 @@
   // Sesja panelu (bramka admin-gate) wygasa po 30 min bez ruchu albo 2 h od wejścia — wtedy bramka odsyła przekierowanie.
   // Wykrywamy to od razu (redirect: 'manual'), zamiast czekać na błąd sieci; każde zapytanie ma limit czasu.
   var SESSION_MSG = 'Sesja panelu wygasła (30 min bez ruchu albo 2 h od wejścia). Uwagi są bezpieczne w tej przeglądarce. ' +
-    'Napisz „link” na #admin, wejdź z nowego linku w tej samej przeglądarce i kliknij jeszcze raz.';
+    'Odśwież stronę, wpisz kod z Google Authenticatora (albo wejdź z linku z #admin) w tej samej przeglądarce i kliknij jeszcze raz.';
   function api(path, opts) {
     if (DEMO) return demo(path, opts);
     opts = opts || {};
@@ -1352,6 +1352,17 @@
     if (ok) setTimeout(function () { t.hidden = true; }, 12000);
   }
   document.addEventListener('click', function (e) { if (e.target.closest('[data-toast-close]')) document.getElementById('admToast').hidden = true; });
+  // Statystyki bez osobnego logowania (JP 2026-11-06): panel prosi bazę o jednorazowy link (1 min) i sam go otwiera.
+  // Karta otwierana od razu (blokada wyskakujących okien), adres podstawiany po odpowiedzi; przy błędzie zwykły adres stats.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-stats]'); if (!a || DEMO) return;
+    e.preventDefault();
+    var w = window.open('about:blank', '_blank');
+    api('/rpc/stats_link', { method: 'POST', body: {} }).then(function (t) {
+      var url = typeof t === 'string' && /^[A-Za-z0-9_-]{40,}$/.test(t) ? 'https://stats.quolino.com/_gate/login?t=' + t : a.href;
+      if (w) { w.opener = null; w.location.href = url; } else location.href = url;
+    }, function (er) { if (w) w.close(); sendNote('Statystyki: ' + er.message, false); });
+  });
   function setSendLabel(txt) { [].forEach.call(document.querySelectorAll('[data-send]'), function (b) { b.textContent = txt; }); }
   function sendAll(btn) {
     var it = state.current, n = unsent().length;
@@ -3913,7 +3924,7 @@
 
     // ─ Zdrowie ─
     h += '<div class="ad-health">' + serverCard(I, runs, queue) + watchCard(I) + costCard(D.usage, I) +
-      '<a class="ad-card ad-card--link" href="https://stats.quolino.com/" target="_blank" rel="noopener"><span class="ad-card--link__ic">' + IC.ext + '</span>' +
+      '<a class="ad-card ad-card--link" href="https://stats.quolino.com/" target="_blank" rel="noopener" data-stats><span class="ad-card--link__ic">' + IC.ext + '</span>' +
       '<span><b>Statystyki odwiedzin</b><small>stats.quolino.com — otwiera nową kartę</small></span></a></div>';
     h += '</div>';
 

@@ -29,13 +29,16 @@ services:
       - traefik.http.routers.quolino-umami-collect.tls.certresolver=letsencrypt
       - traefik.http.routers.quolino-umami-collect.service=quolino-umami
       - traefik.http.services.quolino-umami.loadbalancer.server.port=3000
-  # Panel stats.quolino.com tylko przez jednorazowy link z Discorda (#admin: „stats”, JP 2026-10-17).
+  # Panel stats.quolino.com przez jednorazowy link: od 2026-11-06 wydaje go panel admina (przycisk „Statystyki”), dawniej Discord „stats”.
   # Ta sama bramka co admin.quolino.com (gate/admin-gate.mjs), inny cel linku i inne ciasteczko. Bez sesji → quolino.com.
   # Hermes czyta Umami wewnętrznie (http://quolino-umami-umami-1:3000), bramka go nie dotyczy.
   stats-gate:
     image: node:22-alpine
     restart: unless-stopped
     command: ["node", "/app/admin-gate.mjs"]
+    env_file:                               # UMAMI_SHARE_ID → po wejściu widok udostępniony (JP 2026-11-06); plik pisze install.sh
+      - path: ../secrets/stats-gate.env
+        required: false
     volumes:
       - /root/quolino-web/gate/admin-gate.mjs:/app/admin-gate.mjs:ro
     environment:

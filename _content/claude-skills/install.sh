@@ -63,6 +63,20 @@ if ! cmp -s "$SRC/gate/admin-gate.mjs" /root/quolino-web/gate/admin-gate.mjs; th
   docker ps --format '{{.Names}}' | grep -q '^quolino-web-admin-gate-1$' && docker restart quolino-web-admin-gate-1 >/dev/null && echo "bramka admina: zrestartowana"
   docker ps --format '{{.Names}}' | grep -q '^quolino-umami-stats-gate-1$' && docker restart quolino-umami-stats-gate-1 >/dev/null && echo "bramka statystyk: zrestartowana"
 fi
+# statystyki z panelu bez logowania do Umami (JP 2026-11-06): token udostępnienia (tylko odczyt) dla bramki stats → secrets/stats-gate.env
+SG=/root/quolino-web/secrets/stats-gate.env; SID=$(grep -E '^UMAMI_SHARE_ID=' /root/quolino-web/.env 2>/dev/null | tail -1 | cut -d= -f2-)
+if [ -n "$SID" ] && [ "$(cat "$SG" 2>/dev/null)" != "UMAMI_SHARE_ID=$SID" ]; then
+  (umask 077; printf 'UMAMI_SHARE_ID=%s\n' "$SID" > "$SG")
+  docker compose -f /root/quolino-web/ops/umami-compose.yml up -d --no-deps stats-gate >/dev/null 2>&1 && echo "bramka statystyk: widok udostępniony po wejściu" || echo "bramka statystyk: NIE przeładowana — docker compose -f /root/quolino-web/ops/umami-compose.yml up -d stats-gate"
+fi
+# Google Authenticator w panelu (JP 2026-11-06): gdy bramka już umie kody, a sekretu jeszcze nie ma — jedna prośba o link włączenia do JP
+docker exec -i postgresql-5bap-postgresql-1 sh -c 'psql -U "$POSTGRES_USER" -d quolino -qtA' >/dev/null 2>&1 <<'SQL'
+INSERT INTO ops.admin_link_requests (requested_by, purpose)
+SELECT 'Claude: włączenie Authenticatora', 'totp'
+WHERE to_regclass('ops.admin_totp') IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM ops.admin_totp WHERE secret IS NOT NULL)
+  AND NOT EXISTS (SELECT 1 FROM ops.admin_link_requests WHERE purpose = 'totp' AND requested_at > now() - interval '1 day');
+SQL
 # bramka rejestracji kont (ALTCHA przed GoTrue, JP 2026-10-18)
 if ! cmp -s "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs; then
   cp "$SRC/gate/auth-gate.mjs" /root/quolino-web/gate/auth-gate.mjs

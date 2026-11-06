@@ -12,10 +12,12 @@ import { db, env, log } from './lib.mjs';
 const argv = process.argv.slice(2);
 const by = (() => { const i = argv.indexOf('--by'); return i > -1 ? String(argv[i + 1] ?? '').slice(0, 80) : '?'; })();
 const purpose = (() => { const i = argv.indexOf('--purpose'); return i > -1 ? String(argv[i + 1] ?? '') : 'admin'; })();
-if (!['admin', 'stats'].includes(purpose)) { console.error('--purpose: admin albo stats'); process.exit(2); }
+if (!['admin', 'stats', 'totp'].includes(purpose)) { console.error('--purpose: admin, stats albo totp'); process.exit(2); }
 const TARGET = {
   admin: { base: env('QUOLINO_ADMIN_URL') || 'https://admin.quolino.com', path: '/login', name: 'panelu Quolino' },
   stats: { base: env('QUOLINO_STATS_URL') || 'https://stats.quolino.com', path: '/_gate/login', name: 'statystyk Quolino (Umami)' },
+  // włączenie Google Authenticatora w panelu (JP 2026-11-06): strona z kodem QR i kluczem, działa raz
+  totp: { base: env('QUOLINO_ADMIN_URL') || 'https://admin.quolino.com', path: '/totp-setup', name: 'włączenia Google Authenticatora w panelu Quolino' },
 };
 const token = env('DISCORD_BOT_TOKEN');
 const H = { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' };

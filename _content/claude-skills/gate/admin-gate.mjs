@@ -1,6 +1,9 @@
 // Bramka panelu admina (decyzja JP 2026-10-11): dostęp tylko z jednorazowego linku z Discorda (#admin → DM do JP).
 // Link (token) działa raz i przez 10 minut; po wejściu powstaje sesja (ciasteczko), która wygasa po SESSION_IDLE_MIN
 // bez ruchu albo po SESSION_MAX_MIN od zalogowania, a także po zamknięciu przeglądarki. Potem trzeba nowego linku.
+// Od 2026-11-06 (JP): panel admina (PURPOSE=admin) wpuszcza też kodem z Google Authenticatora (TOTP): bez sesji adres panelu
+// pokazuje pole na 6 cyfr, baza liczy kod (admin.totp_verify — sekret nie wychodzi z bazy). Włączenie: jednorazowy link
+// /totp-setup?t=… z Discorda → QR, przycisk otpauth:// i klucz. Link z Discorda działa dalej jako zapas.
 // Bez zależności. Za Traefikiem (HTTPS). Przepuszcza do admin-web (statyczny panel + /api → admin-api).
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -14,7 +17,10 @@ const IDLE = (+process.env.SESSION_IDLE_MIN || 30) * 60e3;
 //   GATE_PATH — prefiks ścieżek bramki (stats: /_gate, bo Umami ma własne /login i /logout),
 //   KEEP_AUTH=1 — przepuszcza nagłówek Authorization i ciasteczka aplikacji (Umami loguje się tokenem).
 const PURPOSE = process.env.PURPOSE || 'admin';
-const AFTER = process.env.AFTER_LOGIN || '/_admin/';
+// statystyki (JP 2026-11-06): po wejściu od razu widok udostępniony Umami (tylko odczyt), bez drugiego logowania do Umami.
+// UMAMI_SHARE_ID z secrets/stats-gate.env (pisze install.sh z .env); bez niego — jak dotąd AFTER_LOGIN (logowanie Umami).
+const SHARE = /^[A-Za-z0-9]{6,64}$/.test(process.env.UMAMI_SHARE_ID || '') ? process.env.UMAMI_SHARE_ID : '';
+const AFTER = PURPOSE === 'stats' && SHARE ? `/share/${SHARE}/Quolino` : (process.env.AFTER_LOGIN || '/_admin/');
 const CK = process.env.COOKIE || 'qadm';
 const GP = process.env.GATE_PATH || '';
 const KEEP_AUTH = process.env.KEEP_AUTH === '1';
@@ -44,10 +50,76 @@ function page(res, code, msg) {
 <h1 style="font-size:22px">Panel Quolino</h1><p>${msg}</p></body></html>`);
 }
 
+const rpc = async (fn, args) => {
+  try {
+    const r = await fetch(`${API}/rpc/${fn}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) });
+    return r.ok ? await r.json() : null;
+  } catch (e) { log('rpc', fn, e.message); return null; }
+};
+const readBody = async (req) => { let b = ''; for await (const ch of req) { b += ch; if (b.length > 2000) break; } return new URLSearchParams(b); };
+const newSession = (res, ip, how) => {
+  const id = crypto.randomBytes(32).toString('base64url');
+  sessions.set(id, { start: Date.now(), last: Date.now() });
+  log('nowa sesja', how, ip);
+  res.writeHead(303, { 'Set-Cookie': `${CK}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: AFTER,
+    'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+  res.end();
+};
+const HEAD = `<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Panel Quolino</title><body style="font:18px/1.5 system-ui,sans-serif;max-width:24em;margin:12vh auto;padding:0 16px;color:#0E1A2B;text-align:center">`;
+const codeForm = (msg) => `${HEAD}<h1 style="font-size:24px">Panel Quolino</h1>${msg ? `<p style="color:#B42318">${msg}</p>` : ''}
+<form method="post" action="/code"><label for="c">Kod z Google Authenticatora</label><br>
+<input id="c" name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus
+ style="font:600 28px ui-monospace,monospace;letter-spacing:.3em;width:8em;text-align:center;margin:12px 0;padding:10px;min-height:44px">
+<br><button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Wejdź</button></form></body></html>`;
+const html = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+  'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' }); res.end(body); };
+const TOTP = PURPOSE === 'admin';
+
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
 
+  if (TOTP) {
+    // biblioteka QR z panelu (plik publiczny) — potrzebna stronie włączenia, zanim jest sesja
+    if (u.pathname === '/qrcode.js' && req.method === 'GET' && !valid(cookie(req))) {
+      const p = http.request({ hostname: UP.hostname, port: UP.port || 80, path: '/qrcode.js', method: 'GET', headers: { host: UP.host } }, (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); });
+      p.on('error', () => away(res)); return p.end();
+    }
+    // logowanie kodem: formularz pod adresem panelu, gdy nie ma sesji
+    if (req.method === 'GET' && (u.pathname === '/' || u.pathname === AFTER || u.pathname === '/login' && !u.searchParams.get('t')) && !valid(cookie(req))) {
+      return (await rpc('totp_enabled')) === true ? html(res, 200, codeForm('')) : away(res);
+    }
+    if (u.pathname === '/code' && req.method === 'POST') {
+      const c = String((await readBody(req)).get('c') || '').replace(/\s/g, '');
+      if ((await rpc('totp_verify', { p_code: c, p_ip: ip })) === true) return newSession(res, ip, 'kod');
+      log('zły kod', ip);
+      return html(res, 403, codeForm('Kod się nie zgadza albo był już użyty. Wpisz nowy (po kilku błędach blokada na 15 minut).'));
+    }
+    // włączenie Authenticatora: GET nic nie zużywa (podglądy linków), dopiero POST zużywa jednorazowy link
+    if (u.pathname === '/totp-setup' && req.method === 'GET') {
+      const t = u.searchParams.get('t') || '';
+      if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
+      return html(res, 200, `${HEAD}<form method="post" action="/totp-setup"><input type="hidden" name="t" value="${t}"><button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Dalej</button></form><script>document.forms[0].submit()</script></body></html>`);
+    }
+    if (u.pathname === '/totp-setup' && req.method === 'POST') {
+      const t = (await readBody(req)).get('t') || '';
+      if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
+      const uri = await rpc('totp_setup', { p_hash: sha(t), p_ip: ip });
+      if (typeof uri !== 'string' || !uri.startsWith('otpauth://')) { log('odrzucony link totp', ip); return away(res); }
+      const key = (uri.match(/secret=([A-Z2-7]+)/) || [])[1] || '';
+      log('włączanie Authenticatora', ip);
+      return html(res, 200, `${HEAD}<h1 style="font-size:24px">Google Authenticator</h1>
+<p>Na telefonie: <a href="${uri}" style="display:inline-block;padding:12px 20px;min-height:44px;font-weight:600">Dodaj do Authenticatora</a></p>
+<p>Na komputerze: zeskanuj kod aplikacją.</p><div id="qr" style="display:inline-block;background:#fff;padding:12px"></div>
+<p style="font-size:16px">Albo wpisz klucz ręcznie:<br><code style="font-size:18px;word-break:break-all">${key.replace(/(.{4})/g, '$1 ').trim()}</code></p>
+<p>Na koniec wpisz pierwszy kod z aplikacji — to go zatwierdzi i od razu Cię wpuści. Ta strona działa tylko raz.</p>
+<form method="post" action="/code"><input name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required
+ style="font:600 28px ui-monospace,monospace;letter-spacing:.3em;width:8em;text-align:center;margin:12px 0;padding:10px;min-height:44px">
+<br><button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Zatwierdź</button></form>
+<script src="/qrcode.js"></script><script>try{var q=qrcode(0,'M');q.addData(${JSON.stringify(uri)});q.make();document.getElementById('qr').innerHTML=q.createSvgTag(6,0);}catch(e){}</script></body></html>`);
+    }
+  }
   // /login: GET niczego nie zużywa (podglądy linków Discorda/komunikatorów odwiedzają adres automatycznie);
   // przeglądarka sama odsyła formularz (POST) skryptem — dopiero POST zużywa jednorazowy link.
   if (u.pathname === GP + '/login' && req.method === 'GET') {
@@ -61,22 +133,10 @@ http.createServer(async (req, res) => {
 <script>document.forms[0].submit()</script></body></html>`);
   }
   if (u.pathname === GP + '/login' && req.method === 'POST') {
-    let body = ''; for await (const ch of req) { body += ch; if (body.length > 2000) break; }
-    const t = new URLSearchParams(body).get('t') || '';
+    const t = (await readBody(req)).get('t') || '';
     if (!/^[A-Za-z0-9_-]{40,}$/.test(t)) return away(res);
-    let ok = false;
-    try {
-      const r = await fetch(`${API}/rpc/redeem_link`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_hash: sha(t), p_ip: ip, p_purpose: PURPOSE }) });
-      ok = r.ok && (await r.json()) === true;
-    } catch (e) { log('redeem error', e.message); }
-    if (!ok) { log('odrzucony link', ip); return away(res); }
-    const id = crypto.randomBytes(32).toString('base64url');
-    sessions.set(id, { start: Date.now(), last: Date.now() });
-    log('nowa sesja', ip);
-    res.writeHead(303, { 'Set-Cookie': `${CK}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: AFTER,
-      'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-    return res.end();
+    if ((await rpc('redeem_link', { p_hash: sha(t), p_ip: ip, p_purpose: PURPOSE })) !== true) { log('odrzucony link', ip); return away(res); }
+    return newSession(res, ip, 'link');
   }
   if (u.pathname === GP + '/logout') {
     const id = cookie(req); if (id) sessions.delete(id);
