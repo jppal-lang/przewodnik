@@ -96,7 +96,9 @@ Nie wymyślaj związków.**
 ### C — DZIECKO: quest
 Wykonywany na miejscu, wynika z researchu. Preferuj: znajdź, zauważ, wskaż, policz, porównaj,
 dopasuj, rozpoznaj, odtwórz, zinterpretuj, zadanie zespołowe. Nie quiz encyklopedyczny.
-Ciekawy dla 9-latka, nieinfantylny dla 15-latka. Parking i restauracja nie muszą mieć questu.
+Ciekawy dla 9-latka, nieinfantylny dla 15-latka. Restauracja nie musi mieć questu.
+**Parking NIE ma questu** (JP 2026-11-06): bez misji, wskazówki, zadania foto i pytania z wyborem. Wyjątek: parking sam
+jest niezwykłym miejscem (przy zabytku, z widokiem) — wtedy `meta.stops[].parking_quest: true` i misja o tym, co tam widać.
 
 ### D — WSKAZÓWKA
 Pomaga rozwiązać quest, nie powtarza go: gdzie patrzeć, czego szukać, który detal jest kluczowy.

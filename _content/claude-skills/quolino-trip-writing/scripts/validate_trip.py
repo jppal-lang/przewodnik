@@ -362,6 +362,7 @@ def validate_city(folder: Path):
     if c.get("status") == "published":
         warn(slug, "city.status = published — dokument niezatwierdzony przez JP ma mieć status draft")
     cat_of = {s.get("stop_key"): s.get("category") for s in stops}
+    quest_ok = {s.get("stop_key"): s.get("parking_quest") is True for s in stops}
     _plf = next(iter(folder.glob("*.pl.json")), None)
     check_schedule(slug, meta, load(_plf) if _plf else None)
 
@@ -505,6 +506,8 @@ def validate_city(folder: Path):
                         err(slug, f"{code}: {key} — brak wskazówki (hint) do questu")
                     elif st.get("kids_box") and st["hint"].strip() == st["kids_box"].strip():
                         err(slug, f"{code}: {key} — wskazówka powtarza quest; ma mówić, gdzie patrzeć")
+            if cat == "parking" and not quest_ok.get(key) and any(st.get(f) for f in ("kids_box", "hint", "photo_task", "kids_choice")):
+                warn(slug, f"{code}: {key} — parking z questem: parking nie ma misji (JP 2026-11-06), chyba że to niezwykłe miejsce (parking_quest: true)")
             ch = st.get("kids_choice")
             if ch is not None:
                 for p in choice_problems(ch, CHOICE_MAX if code == "pl" else CHOICE_MAX_TR):

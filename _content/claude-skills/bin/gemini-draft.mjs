@@ -292,6 +292,9 @@ const RULES = `TWARDE ZASADY QUOLINO: rodzinna wycieczka piesza dla rodziców z 
 wyjazdu z bazy — tylko czas zwiedzania na miejscu, godziny otwarcia, kolejność przystanków. Nie wymyślaj faktów: ceny, godziny, telefony
 tylko ze źródłem, inaczej „sprawdź na miejscu”. Bez porównań do innych krajów i nacji, bez odwołań do narodowości czytelnika, bez emoji,
 bez wypełniaczy („zachwyca”, „warto zobaczyć”) — zamiast przymiotnika fakt. Nazwy własne w oryginale. Przystanek 01 = parking.
+PARKING BEZ QUESTU (JP 2026-11-06): parking nie ma misji, wskazówki, zadania foto ani pytania z wyborem (kids_box, hint, photo_task,
+kids_choice = null). Wyjątek tylko, gdy sam parking jest naprawdę niezwykłym miejscem (np. stoi przy zabytku albo ma widok, dla którego warto
+się zatrzymać): wtedy w meta.stops tego parkingu ustaw "parking_quest": true i napisz misję o tym, co tam widać.
 Tekst ma brzmieć naturalnie, jak pisany przez człowieka: NIE używaj długiej pauzy „—” ani półpauzy „–”; zamiast nich zwykły łącznik „-”,
 przecinek albo nowe zdanie. Bez sztuczek tekstów AI: „nie tylko X, ale Y” z nikim, puenty powtarzające akapit, złote myśli, zapowiedzi
 („zanurzmy się”), triady z rozpędu, słowa-wydmuszki (wyjątkowy, magiczny, urokliwy, w sercu, prawdziwa perełka), „stanowi/pełni funkcję” zamiast „jest”.
@@ -696,6 +699,12 @@ function fixSchedule(trip) {
     if (ta == null || tb == null || !Number.isFinite(va)) continue;
     const d = km(a, b), need = d <= 2 ? Math.round(d / 3 * 60) : Math.round(d / 40 * 60) + 10;
     if (tb - (ta + va) < need - 5) { const nt = Math.ceil((ta + va + need) / 5) * 5; changes.push({ path: `meta.stops.${b.stop_key}.time_label`, before: b.time_label, after: hhmm(nt), why: 'plan dnia: za mało czasu na przejście (kod)', auto: true }); b.time_label = hhmm(nt); }
+  }
+  // parking bez questu (JP 2026-11-06), chyba że AI oznaczyło go jako niezwykłe miejsce (meta.stops[].parking_quest = true)
+  for (const m of trip.meta.stops ?? []) {
+    const c = trip.content.stops?.[m.stop_key];
+    if (m.category !== 'parking' || m.parking_quest === true || !c) continue;
+    for (const f of ['kids_box', 'hint', 'photo_task', 'kids_choice']) if (c[f] != null) { changes.push({ path: `content.stops.${m.stop_key}.${f}`, before: c[f], after: null, why: 'parking bez questu (JP 2026-11-06, kod)', auto: true }); c[f] = null; }
   }
   const dp = trip.content.day_plan;
   if (dp && typeof dp === 'object') for (const s of st) {
