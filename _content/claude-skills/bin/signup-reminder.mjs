@@ -19,7 +19,7 @@ async function main() {
       SELECT u.id, u.email FROM auth.users u
        WHERE u.deleted_at IS NULL AND u.email_confirmed_at IS NULL AND u.email IS NOT NULL
          AND u.created_at < now() - make_interval(hours => $1::int) AND u.created_at > now() - interval '44 hours'
-         AND NOT EXISTS (SELECT 1 FROM ops.signup_reminders r WHERE r.user_id = u.id)
+         AND NOT EXISTS (SELECT 1 FROM ops.signup_reminders r WHERE r.user_id = u.id AND (r.ok OR r.sent_at > now() - interval '3 hours'))   -- nieudane: kolejna próba po 3 h
        ORDER BY u.created_at LIMIT 20`, [H]);
     let ok = 0, bad = 0;
     for (const u of rows) {
@@ -30,7 +30,7 @@ async function main() {
           body: JSON.stringify({ type: 'signup', email: u.email }), signal: AbortSignal.timeout(20_000) });
         good = r.ok; if (!r.ok) note = `HTTP ${r.status}`;
       } catch (e) { note = e.message.slice(0, 120); }
-      await c.query(`INSERT INTO ops.signup_reminders (user_id, ok, note) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO NOTHING`, [u.id, good, note]);
+      await c.query(`INSERT INTO ops.signup_reminders (user_id, ok, note) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET ok = EXCLUDED.ok, note = EXCLUDED.note, sent_at = now() WHERE NOT ops.signup_reminders.ok`, [u.id, good, note]);
       good ? ok++ : bad++;
     }
     if (rows.length) log(`signup-reminder: ${DRY ? '[próba] ' : ''}wysłane ${ok}, błędy ${bad}`);

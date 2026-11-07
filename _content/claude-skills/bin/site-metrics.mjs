@@ -32,7 +32,7 @@ async function main() {
   if (U.share) { const { token, websiteId } = await jfetch(`${U.url}/api/share/${encodeURIComponent(U.share)}`); U.site ||= websiteId; H = { 'x-umami-share-token': token }; }
   else { const { token } = await jfetch(`${U.url}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: U.user, password: U.pass }) }); H = { Authorization: `Bearer ${token}` }; }
   const get = (p, q) => jfetch(`${U.url}/api/websites/${U.site}/${p}?${new URLSearchParams(q)}`, { headers: H });
-  const metric = async (types, w) => { for (const type of [].concat(types)) { try { return await get('metrics', { ...w, type, limit: 500 }); } catch { /* następny typ */ } } return []; };
+  const metric = async (types, w) => { for (const type of [].concat(types)) { try { return await get('metrics', { ...w, type, limit: 500 }); } catch { /* następny typ */ } } throw new Error(`Umami: brak metryki ${[].concat(types).join('/')}`); };   // błąd = dzień zostaje nietknięty (nie kasujemy rozbicia)
 
   const c = await db();
   try {
@@ -43,6 +43,7 @@ async function main() {
       const paths = await jfetch(`${env('QUOLINO_SITE_URL') || 'https://quolino.com'}/pl/paths/`);
       for (const [slug, m] of Object.entries(paths ?? {})) for (const u of Object.values(m ?? {})) byPath[norm(u)] = slug;
     } catch (e) { log(`site-metrics: mapa adresów niedostępna (${e.message}) — bez rankingu miast`); }
+    const mapOk = Object.keys(byPath).length > 0;
     const cityKey = (p) => byPath[norm(p)] ?? null;
 
     // pierwszy przebieg: miesiąc wstecz, żeby panel od razu miał lejek i ranking
@@ -69,7 +70,7 @@ async function main() {
       const direct = Math.max(0, v('visits') - counted);
       if (direct) { const r = out.find(r => r[0] === 'channel' && r[1] === 'Bezpośrednio / nieznane'); if (r) r[2] += direct; else out.push(['channel', 'Bezpośrednio / nieznane', direct, 0]); }
       await c.query('BEGIN');
-      await c.query(`DELETE FROM ops.site_daily WHERE day = $1`, [day]);
+      await c.query(`DELETE FROM ops.site_daily WHERE day = $1 AND ($2 OR dim <> 'city')`, [day, mapOk]);   // bez mapy adresów zostaje stary ranking miast
       for (const [dim, key, vis, pv] of out)
         await c.query(`INSERT INTO ops.site_daily (day, dim, key, visitors, pageviews) VALUES ($1, $2, $3, $4, $5)
                        ON CONFLICT (day, dim, key) DO UPDATE SET visitors = EXCLUDED.visitors, pageviews = EXCLUDED.pageviews, updated_at = now()`, [day, dim, key, vis, pv]);
