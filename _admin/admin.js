@@ -606,7 +606,7 @@
   // #/ pulpit · #/trasy lista · #/<miasto> najnowsza wersja · #/<miasto>/v<N> starsza · #/decyzje · #/straznicy · #/ikony
   // #/postep · #/koszty · #/zgloszenia · #/baza-wiedzy. Boczny pasek (desktop) i dolny pasek (telefon) — index.html.
   var SECTIONS = { dzis: 'Dziś', pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', grafiki: 'Grafiki', postep: 'Postęp prac',
-    koszty: 'Koszty AI', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
+    koszty: 'Koszty AI', uzytkownicy: 'Użytkownicy', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
   var $title = document.getElementById('secTitle'), $crumbs = document.getElementById('crumbs');
   // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
   function setHead(key, title, crumbs) {
@@ -637,7 +637,7 @@
     var h = location.hash;
     moreClose();
     emit('adm:route', { hash: h });
-    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
+    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|uzytkownicy|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
     // „Dziś” (admin-today.js) jako start panelu: #/ → meldunek; Pulpit zostaje pod #/pulpit (JP 2026-10-31)
@@ -650,6 +650,7 @@
     if (h === '#/baza-wiedzy') { setHead('baza-wiedzy'); showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { setHead('postep'); showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     if (h === '#/koszty') { setHead('koszty'); showDetail(); window.scrollTo(0, 0); openCosts(); return; }
+    if (h === '#/uzytkownicy') { setHead('uzytkownicy'); showDetail(); window.scrollTo(0, 0); openUsers(); return; }
     if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
     var ext = window.AdminExt && window.AdminExt.routes && window.AdminExt.routes[h];   // #/pipeline (admin-pipeline.js), #/mapa (admin-map.js)
     if (ext) { ext(); return; }
@@ -2773,6 +2774,64 @@
     (DEMO ? Promise.resolve(demoCosts()) : api('/ai_usage_daily?order=day.desc&limit=5000')).then(function (r) { rows = r || []; draw(); })
       .catch(function (e) { err = e.message; draw(); });
     document.title = 'Koszty AI · Quolino admin';
+  }
+
+  // ── Użytkownicy i przychody (JP 2026-11-07: „ilu się zarejestrowało, ilu wpisało @, ale nie potwierdziło”; „ile zarobiliśmy”) ──
+  // Źródło: rpc users_overview + revenue_overview (SQL 2026-11-07-panel-uzytkownicy.sql). E-maile to dane osobowe: tylko esc(), bez kopiowania gdzie indziej.
+  function openUsers() {
+    state.current = null; state.trip = null; clearInterval(state.poll);
+    var D = null, R = null, err = null, q = '', only = '';
+    function n(x) { return (+x || 0).toLocaleString('pl-PL'); }
+    function eur(x) { return (+x || 0).toLocaleString('pl-PL', { style: 'currency', currency: 'EUR' }); }
+    function day(iso) { return iso ? new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+    function draw() {
+      var h = '<section class="pg">';
+      if (err) { $d.innerHTML = h + '<p class="adm-empty">Użytkownicy niedostępni: ' + esc(err) + '<br>Potrzebny SQL 2026-11-07-panel-uzytkownicy.sql.</p></section>'; return; }
+      var T = D.totals || {}, rt = (R && R.totals) || {};
+      h += '<header class="pg-head"><div><p class="label">Użytkownicy</p><h2>Konta rodziców i przychody</h2></div></header>';
+      h += '<section class="ad-kpis" aria-label="Konta">' +
+        kpi('#/uzytkownicy', 'Konta', n(T.all), '', 'nowe: ' + n(T.new_7d) + ' w 7 dni · ' + n(T.new_30d) + ' w 30 dni') +
+        kpi('#/uzytkownicy', 'Potwierdzone', n(T.confirmed), 'ok', T.all ? Math.round(100 * T.confirmed / T.all) + '% kont' : '') +
+        kpi('#/uzytkownicy', 'Bez potwierdzenia', n(T.unconfirmed), T.unconfirmed_old ? 'warn' : '', n(T.unconfirmed_old) + ' czeka dłużej niż 2 dni') +
+        kpi('#/uzytkownicy', 'Logowania', n(T.active_7d), '', 'w 7 dni · ' + n(T.active_30d) + ' w 30 dni') +
+        kpi('#/uzytkownicy', 'Ruszyli w trasę', n(T.with_trip), '', 'konta z kodem QR dla dziecka') + '</section>';
+      h += '<div class="pg-card"><p class="pg-step__now"><small>Przychody</small></p>' + (R && R.enabled ?
+        '<dl class="pg-big"><div><dt>Razem netto</dt><dd>' + eur(rt.net) + '</dd><p>' + n(rt.orders) + ' zakupów · ' + n(rt.buyers) + ' kupujących · zwroty ' + eur(rt.refunds) + '</p></div>' +
+        '<div><dt>Ostatnie 30 dni</dt><dd>' + eur(rt.gross_30d) + '</dd><p>' + n(rt.orders_30d) + ' zakupów</p></div></dl>' +
+        ((R.monthly || []).length ? '<table class="pg-tab"><thead><tr><th scope="col">Miesiąc</th><th scope="col">Przychód</th><th scope="col">Zakupy</th></tr></thead><tbody>' +
+          R.monthly.map(function (m) { return '<tr><th scope="row">' + esc(m.month) + '</th><td>' + eur(m.gross) + '</td><td>' + n(m.orders) + '</td></tr>'; }).join('') + '</tbody></table>' : '')
+        : '<p class="pg-trend">0 € — płatności jeszcze nie działają. Wszystko jest darmowe do ' + esc(day((R && R.starts) || '2027-06-01')) + ', potem 4 € za trasę. Ta karta pokaże przychód sama, gdy ruszą płatności.</p>') + '</div>';
+      var days = (D.daily || []).slice(-30);
+      if (days.length) {
+        var mx = Math.max.apply(null, days.map(function (x) { return x.signups; })) || 1;
+        h += '<h3 class="pg-h3">Rejestracje — ostatnie 30 dni z ruchem</h3><div class="pg-card"><table class="pg-tab"><thead><tr><th scope="col">Dzień</th><th scope="col">Rejestracje</th><th scope="col">Potwierdzone</th><th scope="col">Skala</th></tr></thead><tbody>' +
+          days.slice().reverse().map(function (x) { return '<tr><th scope="row">' + esc(day(x.day)) + '</th><td>' + n(x.signups) + '</td><td>' + n(x.confirmed) + '</td><td><span aria-hidden="true" style="display:inline-block;height:10px;border-radius:5px;background:currentColor;opacity:.5;width:' + Math.max(4, Math.round(120 * x.signups / mx)) + 'px"></span></td></tr>'; }).join('') +
+          '</tbody></table></div>';
+      }
+      var U = (D.users || []).filter(function (u) {
+        if (only === 'unconfirmed' && u.confirmed_at) return false;
+        if (only === 'trip' && !u.runs) return false;
+        return !q || (u.email || '').toLowerCase().indexOf(q) >= 0;
+      });
+      h += '<h3 class="pg-h3">Konta (najnowsze ' + n((D.users || []).length) + ')</h3><div class="pg-card">' +
+        '<div class="pg-seg" role="group" aria-label="Pokaż">' + [['', 'Wszystkie'], ['unconfirmed', 'Bez potwierdzenia'], ['trip', 'Ruszyli w trasę']].map(function (o) {
+          return '<button type="button" data-uonly="' + o[0] + '" aria-pressed="' + (only === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+        '<p><label>Szukaj e-maila <input type="search" id="uQ" value="' + esc(q) + '" style="min-height:44px;font-size:18px"></label></p>' +
+        (U.length ? '<table class="pg-tab"><thead><tr><th scope="col">E-mail</th><th scope="col">Rejestracja</th><th scope="col">Potwierdzone</th><th scope="col">Ostatnie logowanie</th><th scope="col">Trasy z dzieckiem</th></tr></thead><tbody>' +
+          U.map(function (u) { return '<tr><th scope="row">' + esc(u.email || '—') + (u.banned ? ' <span class="pg-pill pg-pill--bad">zablokowane</span>' : '') + '</th><td>' + esc(day(u.created_at)) + '</td><td>' +
+            (u.confirmed_at ? esc(day(u.confirmed_at)) : '<span class="pg-pill pg-pill--bad">nie</span>') + '</td><td>' + esc(u.last_sign_in_at ? when(u.last_sign_in_at) : 'nigdy') + '</td><td>' +
+            (u.runs ? n(u.trips) + ' (' + n(u.runs) + '×, ostatnio ' + esc(day(u.last_run)) + ')' : '—') + '</td></tr>'; }).join('') + '</tbody></table>'
+          : '<p class="adm-empty">Brak kont' + (q || only ? ' dla tego filtra' : ' — nikt się jeszcze nie zarejestrował') + '.</p>') + '</div>';
+      $d.innerHTML = h + '</section>';
+    }
+    $d.onclick = function (e) { var b = e.target.closest && e.target.closest('[data-uonly]'); if (!b) return; only = b.getAttribute('data-uonly'); draw(); };
+    $d.oninput = function (e) { if (e.target.id !== 'uQ') return; q = e.target.value.trim().toLowerCase(); var pos = e.target.selectionStart; draw(); var i = document.getElementById('uQ'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } };
+    $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję użytkowników…</p></div>';
+    var demoU = { totals: { all: 0, confirmed: 0, unconfirmed: 0, unconfirmed_old: 0, new_7d: 0, new_30d: 0, active_7d: 0, active_30d: 0, with_trip: 0 }, daily: [], users: [] };
+    Promise.all([DEMO ? demoU : api('/rpc/users_overview', { method: 'POST', body: {} }),
+      DEMO ? { enabled: false, starts: '2027-06-01' } : api('/rpc/revenue_overview', { method: 'POST', body: {} }).catch(function () { return null; })])
+      .then(function (r) { D = r[0] || demoU; R = r[1]; draw(); }, function (e) { err = e.message; draw(); });
+    document.title = 'Użytkownicy · Quolino admin';
   }
 
   // ── Zgłoszenia (JP 2026-10-25): zgłoszenia przy przystankach, opinie, formularz — kategoria i priorytet od Jev ──
