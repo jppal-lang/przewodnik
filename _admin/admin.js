@@ -439,7 +439,7 @@
   function loadLangs() {
     var q = api('/translation_quality?select=city_slug,lang,score').catch(function () { return []; });
     var pub = function (u) { return fetch('https://api.quolino.com/' + u, { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }); };
-    var all = pub('languages?select=code&enabled=eq.true');
+    var all = DEMO ? Promise.resolve([]) : pub('languages?select=code&enabled=eq.true');
     var live = DEMO ? Promise.resolve([]) : pub('public_stops?select=city_slug,lang');   // języki faktycznie opublikowane na stronie (bez oceny → liczone jako gotowe)
     return Promise.all([q, all, live]).then(function (r) {
       var by = {};
@@ -611,6 +611,7 @@
   // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
   function setHead(key, title, crumbs) {
     if ($title) $title.textContent = title || SECTIONS[key] || '';
+    document.title = (title || SECTIONS[key] || 'Panel') + ' · Quolino admin';   // każdy widok ma swój tytuł (test agentów 2026-11-07)
     if ($crumbs) {
       $crumbs.hidden = !(crumbs && crumbs.length);
       $crumbs.innerHTML = crumbs && crumbs.length ? '<ol>' + crumbs.map(function (c, i) {
@@ -680,7 +681,15 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $more && !$more.hidden) moreClose(true); });
   document.addEventListener('click', function (e) { if ($more && !$more.hidden && !e.target.closest('#moreMenu, #moreBtn')) moreClose(); });
   if ($more) $more.addEventListener('click', function (e) { if (e.target.closest('a')) moreClose(); });
-  window.addEventListener('hashchange', function () { var h = location.hash; if (!h || h === '#' || h.indexOf('#/') === 0) route(); });
+  window.addEventListener('hashchange', function () {
+    var h = location.hash; if (!(!h || h === '#' || h.indexOf('#/') === 0)) return;
+    route();
+    // po zmianie widoku fokus na tytuł (czytnik ekranu słyszy nowy widok); nie przy ticketach otwieranych klawiaturą
+    if ($title && (document.activeElement === document.body || (document.activeElement && document.activeElement.closest('.ad-nav, #moreMenu, .ad-tabbar, .pal-shade')))) { $title.setAttribute('tabindex', '-1'); $title.focus({ preventScroll: true }); }
+  });
+  // „Przejdź do treści” bez zmiany adresu (adres #adMain psuł widok i skróty)
+  var skip = document.querySelector('.ad-skip');
+  if (skip) skip.addEventListener('click', function (e) { e.preventDefault(); var m = document.getElementById('adMain'); if (m) m.focus(); });
   // kotwice w szkicu (#st-…, #send) przewijamy ręcznie — adres zostaje #/<miasto>, więc „wstecz” i odświeżenie działają
   document.addEventListener('click', function (e) {
     var a = e.target.closest('a[href^="#st-"], a[href^="#cmp-"], a[href="#send"]');
@@ -3046,9 +3055,10 @@
       return (DEMO ? Promise.resolve(DM) : rpc('tickets_list', { p_status: filt === 'active' ? null : filt })).then(function (r) { L = r || { tickets: [] }; err = null; draw(); }, function (e) { err = e.message; draw(); });
     }
     function loadTpl() { return (DEMO ? Promise.resolve(DM.templates) : rpc('ticket_templates')).then(function (r) { tpl = r || []; draw(); }, function () { /* bez szablonów */ }); }
-    function openOne(no) {
+    function openOne(no, kb) {
       cur = no; T = null; msg = ''; draw();
-      (DEMO ? Promise.resolve(DM.get) : rpc('ticket_get', { p_number: no })).then(function (r) { T = r; draw(); var x = document.getElementById('tkReply'); if (x) x.focus(); }, function (e) { msg = e.message; draw(); });
+      (DEMO ? Promise.resolve(DM.get) : rpc('ticket_get', { p_number: no })).then(function (r) { T = r; draw();
+        var x = kb ? $d.querySelector('[data-tk="' + no + '"]') : document.getElementById('tkReply'); if (x) x.focus(); }, function (e) { msg = e.message; draw(); });
     }
     function pill(st) { return '<span class="pg-pill pg-pill--' + (st === 'new' ? 'bad' : st === 'open' ? 'running' : st === 'waiting' ? 'warn' : 'done') + '">' + esc(TK_ST[st] || st) + '</span>'; }
     function draw() {
@@ -3066,7 +3076,7 @@
       var list = L.tickets || [];
       h += '<div class="tk-wrap" style="display:grid;gap:16px;grid-template-columns:minmax(0,1fr)' + (cur ? ' minmax(0,1.4fr)' : '') + '">';
       h += '<div class="pg-card" style="padding:0">' + (list.length ? list.map(function (x) {
-        return '<button type="button" data-tk="' + esc(x.number) + '" aria-current="' + (cur === x.number) + '" style="display:block;width:100%;text-align:left;padding:14px 16px;min-height:44px;border:0;border-bottom:1px solid var(--line,#e5e5e5);background:' + (cur === x.number ? 'var(--hover,#f3f4f6)' : 'transparent') + ';font:inherit;cursor:pointer">' +
+        return '<button type="button" data-tk="' + esc(x.number) + '" aria-current="' + (cur === x.number) + '" style="display:block;width:100%;text-align:left;padding:14px 16px;min-height:44px;border:0;border-bottom:1px solid var(--rule);background:' + (cur === x.number ? 'var(--slot)' : 'transparent') + ';color:var(--ink);font:inherit;cursor:pointer">' +
           '<span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>' + esc(x.subject) + '</b>' + pill(x.status) + (x.priority === 1 ? '<span class="pg-pill pg-pill--bad">P1</span>' : '') + '</span>' +
           '<small style="display:block;opacity:.75">' + esc(x.number) + ' · ' + esc(TK_SRC[x.source] || x.source) + (x.city_slug ? ' · ' + esc(titleCase(x.city_slug)) : '') + ' · ' + esc(when(x.updated_at)) +
           (x.has_account ? ' · konto' : x.has_email ? ' · e-mail' : ' · bez kontaktu') + '</small>' +
@@ -3086,7 +3096,7 @@
         '<button type="button" class="qc-btn qc-btn--sm" data-tkclose aria-label="Zamknij podgląd">✕</button></header>' +
         '<div class="tk-thread" style="display:grid;gap:10px;margin:12px 0">' + (T.messages || []).map(function (m) {
           var team = m.author === 'team', note = m.author === 'note';
-          return '<div style="padding:10px 14px;border-radius:12px;max-width:92%;' + (team ? 'margin-left:auto;background:var(--acc-soft,#e8f0fe)' : note ? 'background:#fff7e0;border:1px dashed #d9a400' : 'background:var(--hover,#f3f4f6)') + '">' +
+          return '<div style="padding:10px 14px;border-radius:12px;max-width:92%;' + (team ? 'margin-left:auto;background:var(--azzurro-50)' : note ? 'background:var(--sun-50);border:1px dashed var(--warn)' : 'background:var(--slot)') + ';color:var(--ink)">' +
             '<small style="display:block;opacity:.75">' + esc(TK_AUTH[m.author] || m.author) + ' · ' + esc(when(m.at)) + '</small><div style="white-space:pre-wrap">' + esc(m.body) + '</div></div>';
         }).join('') + '</div>' +
         ((T.mails || []).length ? '<p class="fb-meta">E-maile: ' + T.mails.map(function (x) { return x.sent_at ? 'wysłany ' + esc(when(x.sent_at)) : x.error ? 'błąd: ' + esc(x.error) : 'w kolejce'; }).join(' · ') + '</p>' : '') +
@@ -3128,7 +3138,7 @@
       if ((b = el.closest('[data-tkmode]'))) { submitter = b.getAttribute('data-tkmode'); return; }
       if ((b = el.closest('[data-tkf]'))) { filt = b.getAttribute('data-tkf'); try { localStorage.setItem('adm.tkFilt', filt); } catch (x) { /* brak */ } loadList(); return; }
       if (el.closest('[data-tktpl]')) { showTpl = !showTpl; editTpl = null; draw(); return; }
-      if (el.closest('[data-tkcsv]') && window.AdminHub) { AdminHub.csv(L.tickets, [['number', 'numer'], ['subject', 'temat'], ['status', 'status'], ['source', 'źródło'], ['city_slug', 'trasa'], ['priority', 'priorytet'], ['category', 'kategoria'], ['created_at', 'utworzony'], ['updated_at', 'zmiana'], ['preview', 'ostatnia wiadomość']], 'zgloszenia'); return; }
+      if (el.closest('[data-tkcsv]') && window.AdminHub) { AdminHub.csv(L.tickets, [['number', 'numer'], ['subject', 'temat'], [function (r) { return TK_ST[r.status] || r.status; }, 'status'], [function (r) { return TK_SRC[r.source] || r.source; }, 'źródło'], ['city_slug', 'trasa'], ['priority', 'priorytet'], ['category', 'kategoria'], ['created_at', 'utworzony'], ['updated_at', 'zmiana'], ['preview', 'ostatnia wiadomość']], 'zgloszenia'); return; }
       if ((b = el.closest('[data-tk]'))) { openOne(b.getAttribute('data-tk')); return; }
       if (el.closest('[data-tkclose]')) { cur = null; T = null; draw(); return; }
       if ((b = el.closest('[data-tkst]'))) { if (DEMO) { T.status = b.getAttribute('data-tkst'); draw(); return; } after(rpc('ticket_set', { p_number: cur, p_status: b.getAttribute('data-tkst') }), 'Status zmieniony.'); return; }
@@ -3136,7 +3146,7 @@
       if (el.closest('[data-tplcancel]')) { editTpl = null; draw(); return; }
       if ((b = el.closest('[data-tpldel]'))) {
         if (!window.confirm('Usunąć tę gotową odpowiedź?')) return;
-        rpc('ticket_template_save', { p_id: +b.getAttribute('data-tpldel'), p_title: '-', p_body: '-', p_delete: true }).then(loadTpl); return;
+        rpc('ticket_template_save', { p_id: +b.getAttribute('data-tpldel'), p_title: '-', p_body: '-', p_delete: true }).then(loadTpl, function (er) { msg = 'Nie usunięto: ' + er.message; draw(); }); return;
       }
     };
     $d.onchange = function (e) {
@@ -3149,7 +3159,7 @@
       e.preventDefault();
       if (e.target.id === 'tplForm') {
         var tt = document.getElementById('tplTitle').value, bb = document.getElementById('tplBody').value, ll = document.getElementById('tplLang').value || 'pl';
-        rpc('ticket_template_save', { p_id: editTpl ? editTpl.id : null, p_title: tt, p_body: bb, p_lang: ll }).then(function () { editTpl = null; return loadTpl(); });
+        rpc('ticket_template_save', { p_id: editTpl ? editTpl.id : null, p_title: tt, p_body: bb, p_lang: ll }).then(function (r) { if (r && r.error) throw new Error(r.error); editTpl = null; msg = 'Szablon zapisany.'; return loadTpl(); }).catch(function (er) { msg = 'Nie zapisano: ' + er.message; draw(); });
         return;
       }
       if (e.target.id !== 'tkForm') return;
@@ -3170,7 +3180,7 @@
       if (e.ctrlKey && e.key === 'Enter' && document.activeElement && document.activeElement.id === 'tkReply') { e.preventDefault(); var f = document.getElementById('tkForm'); if (f) f.requestSubmit(f.querySelector('[data-tkmode="reply"]')); return; }
       if (typing || e.ctrlKey) return;
       var btns = [].slice.call($d.querySelectorAll('[data-tk]')), i = btns.findIndex(function (b) { return b.getAttribute('aria-current') === 'true'; });
-      if (e.key === 'j' || e.key === 'k') { e.preventDefault(); var nb = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === 'j' ? 1 : -1)))]; if (nb) nb.click(); }
+      if (e.key === 'j' || e.key === 'k') { e.preventDefault(); var nb = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === 'j' ? 1 : -1)))]; if (nb) openOne(nb.getAttribute('data-tk'), true); }
       else if (e.key === 'r') { var ta = document.getElementById('tkReply'); if (ta) { e.preventDefault(); ta.focus(); } }
       else if (e.key === 'Escape') { var c = $d.querySelector('[data-tkclose]'); if (c) c.click(); }
     }); }

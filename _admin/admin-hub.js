@@ -18,9 +18,21 @@
   var R = window.AdminExt.routes;
   window.AdminExt.prefixes = window.AdminExt.prefixes || [];
   var esc = function (s) { return H().esc(s); };
+  var tname = function (slug) { var h = H(), k = ((h.state && h.state.trips) || []).filter(function (x) { return x.slug === slug; })[0]; return k && k.name ? k.name : h.titleCase(slug); };
   var n = function (x) { return (+x || 0).toLocaleString('pl-PL'); };
   var day = function (iso) { return iso ? new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; };
   function rpc(fn, body) { return H().api('/rpc/' + fn, { method: 'POST', body: body || {} }); }
+  // akcja z komunikatem: błąd sieci, odmowa roli albo {error} z bazy → widoczny komunikat zamiast cichej porażki (test agentów 2026-11-07)
+  function act(p, ok, after) {
+    return p.then(function (r) { if (r && r.error) throw new Error(r.error); if (r && r.ok === false) throw new Error('nic nie zmieniono'); flash(ok || 'Zapisane.'); if (after) after(r); return r; })
+      .catch(function (er) { flash('Nie udało się: ' + (er && er.message || er), true); });
+  }
+  function flash(s, bad) {
+    var el = document.getElementById('hubFlash');
+    if (!el) { el = document.createElement('p'); el.id = 'hubFlash'; el.setAttribute('role', 'status'); el.style.cssText = 'position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:60;padding:12px 18px;border-radius:12px;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:90vw'; document.body.appendChild(el); }
+    el.textContent = s; el.style.background = bad ? 'var(--rosso-50)' : 'var(--card)'; el.style.color = bad ? 'var(--bad-ink)' : 'var(--ink)'; el.style.border = '1px solid ' + (bad ? 'var(--rosso)' : 'var(--rule)'); el.hidden = false;
+    clearTimeout(flash.t); flash.t = setTimeout(function () { el.hidden = true; }, 5000);
+  }
   function sec(title, sub) { return '<header class="pg-head"><div><p class="label">' + esc(title) + '</p><h2>' + esc(sub) + '</h2></div></header>'; }
   function errBox(e, sql) { return '<p class="adm-empty">Niedostępne: ' + esc(e && e.message || e) + (sql ? '<br>Potrzebny SQL ' + esc(sql) + '.' : '') + '</p>'; }
   var SQLF = '2026-11-07-zz-panel-calosc.sql';
@@ -28,7 +40,7 @@
 
   // ── CSV ──
   function csv(rows, cols, name) {
-    var q = function (v) { v = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var q = function (v) { v = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     var out = '﻿' + cols.map(function (c) { return q(c[1]); }).join(';') + '\r\n' + (rows || []).map(function (r) { return cols.map(function (c) { return q(typeof c[0] === 'function' ? c[0](r) : r[c[0]]); }).join(';'); }).join('\r\n');
     var url = URL.createObjectURL(new Blob([out], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
     a.href = url; a.download = (name || 'quolino') + '-' + new Date().toISOString().slice(0, 10) + '.csv'; document.body.appendChild(a); a.click(); a.remove();
@@ -97,8 +109,8 @@
       x += '<h3 class="pg-h3">Zgłoszenia</h3><div class="pg-card">' + ((c.tickets || []).length ? '<table class="pg-tab"><tbody>' + c.tickets.map(function (t) {
         return '<tr><th scope="row"><a href="#/zgloszenia" data-open-ticket="' + esc(t.number) + '">' + esc(t.subject) + '</a><small>' + esc(t.number) + '</small></th><td>' + esc(ST[t.status] || t.status) + '</td><td>' + esc(h.when(t.updated_at)) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p>Brak zgłoszeń.</p>') + '</div>';
       x += '<h3 class="pg-h3">Trasy</h3><div class="pg-card">' + ((c.runs || []).length || (c.opens || []).length ? '<table class="pg-tab"><tbody>' +
-        (c.runs || []).map(function (r) { return '<tr><th scope="row"><a href="#/opinie/' + esc(r.trip) + '">' + esc(h.titleCase(r.trip)) + '</a></th><td>z dzieckiem (kod QR)</td><td>' + esc(h.when(r.at)) + '</td></tr>'; }).join('') +
-        (c.opens || []).map(function (r) { return '<tr><th scope="row">' + esc(h.titleCase(r.trip)) + '</th><td>otwarcia pełnej trasy: ' + n(r.n) + '</td><td>' + esc(h.when(r.last)) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p>Jeszcze nie ruszył w trasę.</p>') + '</div>';
+        (c.runs || []).map(function (r) { return '<tr><th scope="row"><a href="#/opinie/' + esc(r.trip) + '">' + esc(tname(r.trip)) + '</a></th><td>z dzieckiem (kod QR)</td><td>' + esc(h.when(r.at)) + '</td></tr>'; }).join('') +
+        (c.opens || []).map(function (r) { return '<tr><th scope="row">' + esc(tname(r.trip)) + '</th><td>otwarcia pełnej trasy: ' + n(r.n) + '</td><td>' + esc(h.when(r.last)) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p>Jeszcze nie ruszył w trasę.</p>') + '</div>';
       x += '<h3 class="pg-h3">Kupony</h3><div class="pg-card">' + ((c.coupons || []).length ? '<table class="pg-tab"><tbody>' + c.coupons.map(function (k) {
         return '<tr><th scope="row">' + esc(k.code) + '</th><td>' + n(k.percent) + '%</td><td>' + esc(k.used_at ? 'wykorzystany' : new Date(k.expires_at) < new Date() ? 'wygasł' : 'ważny do ' + day(k.expires_at)) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p>Brak kuponów.</p>') +
         (c.account && ROLE.role === 'owner' ? '<p><a class="qc-btn" href="#/kupony" data-coupon-for="' + esc(c.email) + '" style="min-height:44px">Wydaj kupon temu klientowi</a></p>' : '') + '</div>';
@@ -119,12 +131,12 @@
   // ── karta trasy: zgłoszenia, oceny, ruch ──
   window.AdminExt.prefixes.push(['#/opinie/', function (rest) {
     var h = H(), slug = decodeURIComponent(rest || '');
-    h.enter('ruch', 'Opinie i zgłoszenia: ' + h.titleCase(slug)); document.title = 'Opinie · Quolino admin';
+    h.enter('ruch', 'Opinie i zgłoszenia: ' + tname(slug)); document.title = 'Opinie · Quolino admin';
     h.$d.innerHTML = h.loadingHtml('Ładuję…');
     (h.DEMO ? Promise.resolve({ slug: slug, tickets: [{ number: 'Q-7KX4-92PM', subject: 'Zamknięte — Rocca', status: 'new', source: 'report', stop: 'Rocca Maggiore', updated_at: new Date().toISOString(), preview: 'Zamknięte w poniedziałek.' }],
       ratings: { avg: 4.5, n: 4, dist: [0, 0, 1, 0, 3] }, comments: [{ stars: 5, comment: 'Dzieci zachwycone!', lang: 'pl', at: new Date().toISOString() }], views_30d: 120, runs_30d: 5, opens_30d: 14 }) : rpc('trip_feedback', { p_slug: slug })).then(function (f) {
       var r = f.ratings || {}, mx = Math.max.apply(null, (r.dist || [0]).concat(1));
-      var x = '<section class="pg">' + sec('Opinie i zgłoszenia', h.titleCase(slug)) +
+      var x = '<section class="pg">' + sec('Opinie i zgłoszenia', tname(slug)) +
         '<p><a class="qc-btn" href="#/' + esc(slug) + '" style="min-height:44px">Otwórz trasę</a></p>' +
         '<div class="pg-card"><dl class="pg-big"><div><dt>Ocena rodzin</dt><dd>' + (r.n ? '★ ' + String(r.avg).replace('.', ',') : '—') + '</dd><p>' + n(r.n) + ' ocen</p></div>' +
         '<div><dt>Wejścia na stronę</dt><dd>' + n(f.views_30d) + '</dd><p>30 dni</p></div><div><dt>Trasy z dzieckiem</dt><dd>' + n(f.runs_30d) + '</dd><p>30 dni · otwarcia pełnej trasy: ' + n(f.opens_30d) + '</p></div></dl>' +
@@ -145,8 +157,8 @@
       if (!S) { h.$d.innerHTML = h.loadingHtml('Ładuję ustawienia…'); return; }
       if (S.error) { h.$d.innerHTML = errBox(S.error, SQLF); return; }
       var x = '<section class="pg">' + sec('Ustawienia', 'Limity, harmonogramy i zespół') + '<p id="setMsg" role="status">' + esc(msg) + '</p><div class="pg-card"><table class="pg-tab"><tbody>' + S.map(function (s) {
-        var inp = s.kind === 'onoff' ? '<select data-set="' + esc(s.name) + '" style="' + INP + '"><option value="on"' + (s.value === 'on' ? ' selected' : '') + '>włączone</option><option value="off"' + (s.value === 'off' ? ' selected' : '') + '>wyłączone</option></select>'
-          : '<input data-set="' + esc(s.name) + '" value="' + esc(s.value) + '" style="' + INP + ';width:' + (s.kind === 'date' ? '14em' : '7em') + '"' + (s.kind === 'date' ? '' : ' inputmode="decimal"') + '>';
+        var inp = s.kind === 'onoff' ? '<select data-set="' + esc(s.name) + '" aria-label="' + esc(s.label) + '" style="' + INP + '"><option value="on"' + (s.value === 'on' ? ' selected' : '') + '>włączone</option><option value="off"' + (s.value === 'off' ? ' selected' : '') + '>wyłączone</option></select>'
+          : '<input data-set="' + esc(s.name) + '" aria-label="' + esc(s.label) + '" value="' + esc(s.value) + '" style="' + INP + ';width:' + (s.kind === 'date' ? '14em' : '7em') + '"' + (s.kind === 'date' ? '' : ' inputmode="decimal"') + '>';
         return '<tr><th scope="row">' + esc(s.label) + '<small>' + esc(s.help) + (s.updated_at ? ' · zmienione ' + esc(h.when(s.updated_at)) : '') + '</small></th><td>' + inp + ' <button type="button" class="qc-btn qc-btn--sm" data-setsave="' + esc(s.name) + '" style="min-height:44px">Zapisz</button></td></tr>';
       }).join('') + '<tr><th scope="row">Dzienny limit płatnych modeli (tłumaczenia, strażnicy)<small>Stała decyzja JP: $0,50 dziennie. Zmienia się w pliku .env na serwerze (QUOLINO_DAILY_USD), nie w panelu.</small></th><td>$0,50</td></tr></tbody></table></div>';
       x += '<h3 class="pg-h3">Zespół</h3><div class="pg-card"><p>Każda osoba loguje się własnym Authenticatorem. <b>Obsługa klienta</b> widzi tylko zgłoszenia, klientów i partnerów. <b>Redakcja</b> pracuje na trasach, bez kont, RODO, kosztów, wdrożeń, publikacji i ustawień. Uprawnienia sprawdza serwer.</p>' +
@@ -172,9 +184,9 @@
       } else if (b.hasAttribute('data-team-off') || b.hasAttribute('data-team-on')) {
         var on = b.hasAttribute('data-team-on');
         if (!on && !window.confirm('Wyłączyć dostęp tej osobie? Zalogowana sesja wygaśnie najpóźniej po 30 minutach bez ruchu.')) return;
-        rpc('team_set', { p_id: +(b.getAttribute('data-team-off') || b.getAttribute('data-team-on')), p_active: on }).then(load);
+        act(rpc('team_set', { p_id: +(b.getAttribute('data-team-off') || b.getAttribute('data-team-on')), p_active: on }), on ? 'Dostęp włączony.' : 'Dostęp wyłączony.', load);
       } else {
-        rpc('team_invite', { p_name: b.getAttribute('data-team-invite'), p_role: b.getAttribute('data-role') }).then(function (r) { link = r && r.link || ''; msg = r && r.error ? r.error : ''; load(); });
+        act(rpc('team_invite', { p_name: b.getAttribute('data-team-invite'), p_role: b.getAttribute('data-role') }), 'Nowy link gotowy — stary telefon stracił dostęp.', function (r) { link = r && r.link || ''; load(); });
       }
     };
     h.$d.onsubmit = function (e) {
@@ -218,7 +230,7 @@
       var b = e.target.closest && e.target.closest('[data-cp-revoke],[data-csv]'); if (!b) return;
       if (b.hasAttribute('data-csv')) { csv(D.coupons, [['code', 'kod'], ['email', 'klient'], ['percent', 'rabat %'], ['trip', 'trasa'], ['source', 'skąd'], ['state', 'stan'], ['expires_at', 'ważny do'], ['used_at', 'wykorzystany'], ['note', 'notatka']], 'kupony'); return; }
       if (!window.confirm('Unieważnić kupon ' + b.getAttribute('data-cp-revoke') + '?')) return;
-      rpc('coupon_revoke', { p_code: b.getAttribute('data-cp-revoke') }).then(load);
+      act(rpc('coupon_revoke', { p_code: b.getAttribute('data-cp-revoke') }), 'Kupon unieważniony.', load);
     };
     draw(); load();
   };
@@ -237,7 +249,7 @@
         '<div class="pg-card" style="overflow-x:auto"><table class="pg-tab"><thead><tr><th scope="col">Trasa</th>' + L.map(function (l) { return '<th scope="col">' + esc(l.toUpperCase()) + '</th>'; }).join('') + '<th scope="col">Ostatnie zlecenie</th><th scope="col"></th></tr></thead><tbody>' +
         T.map(function (t) {
           var c = t.cells || {}, miss = L.filter(function (l) { return c[l] !== 'ok'; }).length, j = t.last_job;
-          return '<tr><th scope="row"><a href="#/' + esc(t.slug) + '">' + esc(h.titleCase(t.slug)) + '</a><small>' + (miss ? n(miss) + ' do zrobienia' : 'komplet') + '</small></th>' +
+          return '<tr><th scope="row"><a href="#/' + esc(t.slug) + '">' + esc(tname(t.slug)) + '</a><small>' + (miss ? n(miss) + ' do zrobienia' : 'komplet') + '</small></th>' +
             L.map(function (l) { var v = CELL[c[l]] || CELL.none; return '<td title="' + esc(l + ': ' + v[1]) + '"><span class="pg-pill pg-pill--' + v[2] + '">' + v[0] + '</span></td>'; }).join('') +
             '<td>' + (j ? esc(j.status === 'failed' ? 'błąd: ' : j.status === 'done' ? 'zrobione ' : j.status + ' ') + '<small>' + esc((j.result || '').slice(0, 140)) + '</small>' : '—') + '</td>' +
             '<td>' + (miss && ROLE.role === 'owner' ? '<button type="button" class="qc-btn qc-btn--sm" data-tr="' + esc(t.slug) + '" style="min-height:44px">Przetłumacz</button>' : '') + '</td></tr>';
@@ -293,15 +305,15 @@
       if (b.hasAttribute('data-cm-edit')) { ed = c; draw(); window.scrollTo(0, 0); return; }
       if (b.hasAttribute('data-cm-test')) {
         var to = window.prompt('Adres do testu:', ''); if (!to) return;
-        rpc('campaign_send', { p_id: id, p_test_email: to }).then(function (r) { msg = r && r.ok ? 'Test w kolejce — przyjdzie w ciągu kilku minut.' : 'Nie wysłano: ' + (r && r.error || ''); load(); }); return;
+        act(rpc('campaign_send', { p_id: id, p_test_email: to }), 'Test w kolejce — przyjdzie w ciągu kilku minut.', load); return;
       }
       if (b.hasAttribute('data-cm-send')) {
         var cnt = (D.audiences || {})[c.audience] || 0;
         if (!window.confirm('Wysłać „' + c.subject + '” do ' + cnt + ' osób (' + AUD[c.audience] + ')? Tego nie da się cofnąć.')) return;
-        rpc('campaign_send', { p_id: id }).then(function (r) { msg = r && r.ok ? 'Wysyłka ruszyła: ' + n(r.recipients) + ' adresów.' : 'Nie wysłano: ' + (r && r.error || ''); load(); }); return;
+        act(rpc('campaign_send', { p_id: id }), 'Wysyłka ruszyła.', load); return;
       }
       if (!window.confirm('Anulować / zatrzymać tę wiadomość? Niewysłane maile zostaną usunięte z kolejki.')) return;
-      rpc('campaign_cancel', { p_id: id }).then(load);
+      act(rpc('campaign_cancel', { p_id: id }), 'Zatrzymane.', load);
     };
     draw(); load();
   };
@@ -324,7 +336,7 @@
       h.$d.innerHTML = x + '</section>';
     }
     function load() { (h.DEMO ? Promise.resolve([{ number: 'Q-H3RT-6WQA', subject: 'Współpraca', stage: 'rozmowa', email: 'hotel@example.com', preview: 'Hotel w Asyżu, chcemy polecać wasze trasy gościom.' }]) : rpc('partners_list')).then(function (r) { D = r || []; draw(); }, function (e) { D = { error: e }; draw(); }); }
-    h.$d.onchange = function (e) { var s = e.target; if (!s.hasAttribute('data-pstage')) return; rpc('partner_stage', { p_number: s.getAttribute('data-pstage'), p_stage: s.value }).then(load); };
+    h.$d.onchange = function (e) { var s = e.target; if (!s.hasAttribute('data-pstage')) return; act(rpc('partner_stage', { p_number: s.getAttribute('data-pstage'), p_stage: s.value }), 'Etap zmieniony.', load).then(function (r) { if (!r) load(); }); };
     h.$d.onclick = function (e) { if (e.target.closest && e.target.closest('[data-csv]')) csv(D, [['number', 'ticket'], ['subject', 'temat'], ['stage', 'etap'], ['email', 'e-mail'], ['created_at', 'od'], ['updated_at', 'zmiana'], ['preview', 'treść']], 'partnerzy'); };
     draw(); load();
   };

@@ -165,3 +165,8 @@
 .adm .ad-tab .ad-badge{position:absolute;top:4px;right:calc(50% - 22px);font-size:12px;min-width:18px;padding:0 5px}
 .adm .ad-tab .ad-badge.is-zero{display:none}
 .adm .ad-crumbs__extra{font-weight:600}
+/* telefon: cele dotykowe min. 44 px (zasada 4 CLAUDE.md; na komputerze zostaje gęsty układ) — test agentów 2026-11-07 */
+@media (max-width:620px){
+  .adm .qc-btn,.adm .qc-btn--sm,.adm button,.adm select,.adm input:not([type=checkbox]):not([type=radio]),.adm summary,.adm .pg-seg>button{min-height:44px}
+  .adm .tk-seg + .pg-trend{display:none}
+}
