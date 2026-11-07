@@ -31,6 +31,8 @@ export const ALLOWED = {
   // nowa trasa zwykle przez kolejkę ops.jobs; JP 2026-11-03: gdy kolejka nie przyjmuje zlecenia — bezpośrednio (te same argumenty co trip-enqueue)
   'gemini-draft.mjs': (a) => a.includes('--recheck') || a.includes('--revise') || isChoicesArgs(a) || (isEnqueueArgs(a) && !a.includes('--dry')),
   'show-review.mjs': () => true,
+  // ponowna kontrola gotowej poprawki (np. po zmianie walidatora) — bez nowej poprawki i bez Discorda (2026-11-07)
+  'verify-revision.mjs': (a) => a.length === 4 && a[0] === '--request' && /^\d+$/.test(a[1]) && a.includes('--no-retry') && a.includes('--no-notify'),
   'usage-summary.mjs': () => true,
   // diagnostyka bazy tylko do odczytu (JP 2026-11-03: znaleźć, co blokuje nowe trasy)
   'db-diag.mjs': (a) => a.length === 0,

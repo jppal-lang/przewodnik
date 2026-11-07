@@ -364,6 +364,7 @@ def validate_city(folder: Path):
         warn(slug, "city.status = published — dokument niezatwierdzony przez JP ma mieć status draft")
     cat_of = {s.get("stop_key"): s.get("category") for s in stops}
     quest_ok = {s.get("stop_key"): s.get("parking_quest") is True for s in stops}
+    cat_map = {s.get("stop_key"): s.get("category") for s in stops}
     _plf = next(iter(folder.glob("*.pl.json")), None)
     check_schedule(slug, meta, load(_plf) if _plf else None)
 
@@ -435,7 +436,8 @@ def validate_city(folder: Path):
             litery = [c for c in nm if c.isalpha()]
             if len(litery) > 3 and all(c.isupper() for c in litery):
                 err(slug, f"{code}: {key} — nazwa wersalikami ('{nm}'); wielkosc liter ustawia CSS")
-            if not st.get("photo_task"):
+            # parking bez questu (JP 2026-11-06) — zadanie foto nieobowiązkowe, chyba że parking_quest
+            if not st.get("photo_task") and not (cat_map.get(key) == "parking" and not quest_ok.get(key)):
                 err(slug, f"{code}: {key} — brak 'photo_task', a zadanie foto jest obowiazkowe")
             dc = (st.get("dress_code") or "").lower()
             if dc and re.search(r"brak (szczeg|wymog)|dowoln|bez wymog", dc):

@@ -70,7 +70,9 @@ async function revise(slug, rows, thread) {
   writeFileSync(ctxFile, rows.map(r => `JP (panel, ${r.field_label ?? r.field ?? 'całość'}${r.stop_key ? ', ' + r.stop_key : ''}): ${r.body}`).join('\n'));
   // szkic nowego procesu (content.workflow = 'v2', gemini-draft.mjs) → poprawki przez Gemini na AI Pro + kontrola Claude (JP 2026-10-24)
   const [v] = await q(`SELECT content->>'workflow' AS wf FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
-  const v2 = v?.wf === 'v2';
+  // odpowiedzi na flagi kontroli (review.e/w.N) rozumie tylko gemini-draft (dosłowne podmiany stare → nowe) — także dla starszych tras
+  // bez znacznika workflow (Spello: 85 odpowiedzi odrzuconych przez stary tor „GPT nie zaproponował”, 2026-11-07)
+  const v2 = v?.wf === 'v2' || rows.some(r => /^review\.[ew]\.\d+/.test(r.field ?? ''));
   const cmFile = join(dir, 'comments.json');
   if (v2) writeFileSync(cmFile, JSON.stringify(rows.map(r => ({ id: r.id, city_version: r.city_version ?? null, stop_key: r.stop_key ?? null, field: r.field ?? null, field_label: r.field_label ?? null, body: r.body }))));
   try {
