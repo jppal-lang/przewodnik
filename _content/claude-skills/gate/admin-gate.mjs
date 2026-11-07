@@ -163,7 +163,7 @@ async function handle(req, res) {
   if (PURPOSE === 'admin' && S.role !== 'owner' && /^\/api(\/|$)/i.test(u.pathname)) {
     const ep = u.pathname.slice(4);
     const okSupport = /^\/(rpc\/(tickets_list|ticket_get|ticket_reply|ticket_set|ticket_templates|ticket_template_save|customer|search|nav_counts|today_numbers|partners_list|partner_stage)|feedback_ai)$/.test(ep);
-    const denyEditor = /^\/rpc\/(team_|user_delete|user_export|setting_save|admin_setting_set|coupon_|campaign_|admin_deploy_decide|admin_cost_decide|translation_request|admin_approve|admin_publish|admin_reject|totp_|stats_link|audit_list|users_overview)|^(\/(cost_requests|deploy_requests|ai_budget|ai_usage_daily)?)?$/i.test(ep);
+    const denyEditor = /^\/rpc\/(team_|user_delete|user_export|setting_save|admin_setting_set|coupon_|campaign_|admin_deploy_decide|admin_cost_decide|translation_request|admin_approve|admin_publish|admin_reject|totp_|stats_link|audit_list|users_overview|customer|coupons_list|campaigns_list|search)|^(\/(cost_requests|deploy_requests|ai_budget|ai_usage_daily)?)?$/i.test(ep);
     if (S.role === 'support' ? !okSupport : denyEditor) { log('rola', S.role, S.who, 'zablokowane', ep); res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end('{"message":"Brak uprawnień dla tej roli."}'); }
   }
   const h = { ...req.headers, host: UP.host };

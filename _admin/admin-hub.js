@@ -39,7 +39,7 @@
   // ── rola (bramka) i liczniki w pasku ──
   var ROLE = { who: 'JP', role: 'owner' };
   var HIDE = { support: ['pulpit', 'decyzje', 'trasy', 'straznicy', 'ikony', 'grafiki', 'baza-wiedzy', 'mapa', 'ruch', 'uzytkownicy', 'pipeline', 'koszty', 'ustawienia', 'kupony', 'tlumaczenia', 'wiadomosci', 'dziennik'],
-               editor: ['uzytkownicy', 'ustawienia', 'kupony', 'wiadomosci', 'dziennik', 'koszty'] };
+               editor: ['uzytkownicy', 'ustawienia', 'kupony', 'wiadomosci', 'dziennik', 'koszty', 'partnerzy'] };
   function applyRole() {
     document.body.setAttribute('data-role', ROLE.role);
     var hide = HIDE[ROLE.role] || [];
