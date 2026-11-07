@@ -15,7 +15,7 @@
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
 <script src="/kid-reward.js?v=6"></script>
-<script src="/auth.js?v=3"></script>
+<script src="/auth.js?v=4"></script>
 </head>
 <body class="acc">
 <!--
@@ -159,10 +159,12 @@
       <p class="acc-sec__sub" data-t="page.account.priv_sub">Przechowujemy tylko Twój adres e-mail. Serwer stoi w UE.</p>
       <ul class="acc-priv">
         <li><b data-t="page.account.priv_server_h">Na serwerze</b><span data-t="page.account.priv_server">Adres e-mail, a przy nim to, które wycieczki macie odblokowane i zdobyte (miasto i data) oraz kody rabatowe. Bez tego konto nie zadziała.</span></li>
+        <li><b data-t="page.account.priv_src_h">Skąd do nas trafiłeś</b><span data-t="page.account.priv_src">Przy koncie zapisujemy też nazwę źródła z pierwszego wejścia (np. kampania z linku albo strona, która nas poleciła) i język strony. Bez śledzenia i bez identyfikatorów.</span></li>
         <li><b data-t="page.account.priv_phone_h">Tylko w telefonie</b><span data-t="page.account.priv_phone">Ksywki i awatary dzieci, postęp misji, zdjęcia z zadań foto. Nie wysyłamy ich na serwer.</span></li>
         <li><b data-t="page.account.priv_none_h">Czego nie zbieramy</b><span data-t="page.account.priv_none">Imion, nazwisk, wieku, zdjęć, telefonu ani lokalizacji. Z konta Google bierzemy tylko e-mail.</span></li>
         <li><b data-t="page.account.priv_track_h">Bez śledzenia</b><span data-t="page.account.priv_track">Żadnych reklam, pikseli ani cookies śledzących. Statystyki odwiedzin liczymy bez identyfikatorów.</span></li>
         <li><b data-t="page.account.priv_pay_h">Płatności</b><span data-t="page.account.priv_pay">Obsługuje je operator płatności jako sprzedawca (Merchant of Record) — danych karty nie widzimy.</span></li>
+        <li id="accWaitRow" hidden><label class="acc-check"><input type="checkbox" id="accWait"> <span data-t="page.account.priv_waitlist">Napisz do mnie raz, gdy ruszy pełna wersja Quolino (od czerwca 2027). Jeden e-mail, bez newslettera.</span></label></li>
         <li><label class="acc-check"><input type="checkbox" id="accNews"> <span data-t="page.account.priv_news">Newsletter o nowych wycieczkach (raz w miesiącu). Możesz wypisać się w każdej chwili.</span></label></li>
       </ul>
       <div class="acc-priv__acts">
@@ -575,6 +577,37 @@
   else if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
   if (window.PT && PT.lang !== 'pl') PT.ready.then(function () { if (window.QAccAs) paint(); else if (window.QAuth) QAuth.ready.then(paint); });
 })();
+/* Lista chętnych na pełną wersję (JP 2026-11-07): zgoda zapisana na serwerze przy koncie (RPC waitlist_join / waitlist_status,
+   token sesji w treści jak trip_member). Tylko prawdziwa sesja. Jeden e-mail na start płatnej wersji, zgodę można cofnąć. */
+(function () {
+  'use strict';
+  var row = document.getElementById('accWaitRow'), box = document.getElementById('accWait');
+  if (!row || !box || window.QAccAs || !window.QAuth) return;
+  var API = 'https://api.quolino.com/rest/v1';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+  function rpc(fn, body) {
+    return fetch(API + '/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  function sync() {
+    QAuth.session().then(function (s) {
+      if (!s || !s.at) { row.hidden = true; return; }
+      return rpc('waitlist_status', { p_token: s.at }).then(function (r) { if (r && !r.error) { box.checked = !!r.on; row.hidden = false; } });
+    }).catch(function () { row.hidden = true; });
+  }
+  box.addEventListener('change', function () {
+    var want = box.checked; box.disabled = true;
+    QAuth.session().then(function (s) {
+      if (!s || !s.at) throw new Error('no_session');
+      return rpc('waitlist_join', { p_token: s.at, p_lang: (window.PT && PT.lang) || 'pl', p_on: want });
+    }).then(function (r) { if (!r || r.error) throw new Error('x'); box.checked = !!r.on; })
+      .catch(function () { box.checked = !want; })
+      .then(function () { box.disabled = false; });
+  });
+  QAuth.ready.then(sync); document.addEventListener('qauth', sync);
+})();
+</script>
+<script>
 /* Ustaw hasło (opcjonalnie) — JP 2026-10-29, D-1. Tylko prawdziwa sesja (bez podglądu ?as=). PUT /user przez QAuth.setPassword. */
 (function () {
   'use strict';

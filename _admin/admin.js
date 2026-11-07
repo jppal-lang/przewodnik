@@ -606,7 +606,7 @@
   // #/ pulpit · #/trasy lista · #/<miasto> najnowsza wersja · #/<miasto>/v<N> starsza · #/decyzje · #/straznicy · #/ikony
   // #/postep · #/koszty · #/zgloszenia · #/baza-wiedzy. Boczny pasek (desktop) i dolny pasek (telefon) — index.html.
   var SECTIONS = { dzis: 'Dziś', pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', grafiki: 'Grafiki', postep: 'Postęp prac',
-    koszty: 'Koszty AI', uzytkownicy: 'Użytkownicy', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
+    koszty: 'Koszty AI', ruch: 'Ruch i trasy', uzytkownicy: 'Użytkownicy', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
   var $title = document.getElementById('secTitle'), $crumbs = document.getElementById('crumbs');
   // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
   function setHead(key, title, crumbs) {
@@ -637,7 +637,7 @@
     var h = location.hash;
     moreClose();
     emit('adm:route', { hash: h });
-    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|uzytkownicy|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
+    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|ruch|uzytkownicy|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
     // „Dziś” (admin-today.js) jako start panelu: #/ → meldunek; Pulpit zostaje pod #/pulpit (JP 2026-10-31)
@@ -650,6 +650,7 @@
     if (h === '#/baza-wiedzy') { setHead('baza-wiedzy'); showDetail(); window.scrollTo(0, 0); openRules(); return; }
     if (h === '#/postep') { setHead('postep'); showDetail(); window.scrollTo(0, 0); openProgress(); return; }
     if (h === '#/koszty') { setHead('koszty'); showDetail(); window.scrollTo(0, 0); openCosts(); return; }
+    if (h === '#/ruch') { setHead('ruch'); showDetail(); window.scrollTo(0, 0); openTraffic(); return; }
     if (h === '#/uzytkownicy') { setHead('uzytkownicy'); showDetail(); window.scrollTo(0, 0); openUsers(); return; }
     if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
     var ext = window.AdminExt && window.AdminExt.routes && window.AdminExt.routes[h];   // #/pipeline (admin-pipeline.js), #/mapa (admin-map.js)
@@ -2792,7 +2793,9 @@
       h += '<section class="ad-kpis" aria-label="Konta">' +
         kpi('#/uzytkownicy', 'Konta', n(T.all), '', 'nowe: ' + n(T.new_7d) + ' w 7 dni · ' + n(T.new_30d) + ' w 30 dni') +
         kpi('#/uzytkownicy', 'Potwierdzone', n(T.confirmed), 'ok', T.all ? Math.round(100 * T.confirmed / T.all) + '% kont' : '') +
-        kpi('#/uzytkownicy', 'Bez potwierdzenia', n(T.unconfirmed), T.unconfirmed_old ? 'warn' : '', n(T.unconfirmed_old) + ' czeka dłużej niż 2 dni') +
+        kpi('#/uzytkownicy', 'Bez potwierdzenia', n(T.unconfirmed), T.unconfirmed ? 'warn' : '', 'przypomnienie po 20 h · ' + n(T.reminded_30d) + ' w 30 dni') +
+        kpi('#/uzytkownicy', 'Nie potwierdzili', n(T.expired_30d), '', 'skasowane po 48 h w 30 dni · razem ' + n(T.expired_all)) +
+        kpi('#/uzytkownicy', 'Chcą pełnej wersji', n(T.waitlist), '', 'lista chętnych (mail na start płatności)') +
         kpi('#/uzytkownicy', 'Logowania', n(T.active_7d), '', 'w 7 dni · ' + n(T.active_30d) + ' w 30 dni') +
         kpi('#/uzytkownicy', 'Ruszyli w trasę', n(T.with_trip), '', 'konta z kodem QR dla dziecka') + '</section>';
       h += '<div class="pg-card"><p class="pg-step__now"><small>Przychody</small></p>' + (R && R.enabled ?
@@ -2817,21 +2820,115 @@
         '<div class="pg-seg" role="group" aria-label="Pokaż">' + [['', 'Wszystkie'], ['unconfirmed', 'Bez potwierdzenia'], ['trip', 'Ruszyli w trasę']].map(function (o) {
           return '<button type="button" data-uonly="' + o[0] + '" aria-pressed="' + (only === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
         '<p><label>Szukaj e-maila <input type="search" id="uQ" value="' + esc(q) + '" style="min-height:44px;font-size:18px"></label></p>' +
-        (U.length ? '<table class="pg-tab"><thead><tr><th scope="col">E-mail</th><th scope="col">Rejestracja</th><th scope="col">Potwierdzone</th><th scope="col">Ostatnie logowanie</th><th scope="col">Trasy z dzieckiem</th></tr></thead><tbody>' +
+        (U.length ? '<table class="pg-tab"><thead><tr><th scope="col">E-mail</th><th scope="col">Rejestracja</th><th scope="col">Potwierdzone</th><th scope="col">Ostatnie logowanie</th><th scope="col">Trasy z dzieckiem</th><th scope="col">Skąd · język</th></tr></thead><tbody>' +
           U.map(function (u) { return '<tr><th scope="row">' + esc(u.email || '—') + (u.banned ? ' <span class="pg-pill pg-pill--bad">zablokowane</span>' : '') + '</th><td>' + esc(day(u.created_at)) + '</td><td>' +
             (u.confirmed_at ? esc(day(u.confirmed_at)) : '<span class="pg-pill pg-pill--bad">nie</span>') + '</td><td>' + esc(u.last_sign_in_at ? when(u.last_sign_in_at) : 'nigdy') + '</td><td>' +
-            (u.runs ? n(u.trips) + ' (' + n(u.runs) + '×, ostatnio ' + esc(day(u.last_run)) + ')' : '—') + '</td></tr>'; }).join('') + '</tbody></table>'
+            (u.runs ? n(u.trips) + ' (' + n(u.runs) + '×, ostatnio ' + esc(day(u.last_run)) + ')' : '—') + '</td><td>' +
+            esc([u.src || '—', u.lang || ''].filter(Boolean).join(' · ')) + (u.waitlist ? ' <span class="pg-pill pg-pill--done">chce pełnej</span>' : '') +
+            (!u.confirmed_at && u.reminded_at ? '<small>przypomnienie ' + esc(day(u.reminded_at)) + '</small>' : '') + '</td></tr>'; }).join('') + '</tbody></table>'
           : '<p class="adm-empty">Brak kont' + (q || only ? ' dla tego filtra' : ' — nikt się jeszcze nie zarejestrował') + '.</p>') + '</div>';
+      h += '<h3 class="pg-h3">RODO: dane jednej osoby</h3><div class="pg-card"><p>Wpisz adres z prośby (mail, formularz). <b>Pobierz dane</b> zapisuje plik JSON do odesłania tej osobie. ' +
+        '<b>Usuń konto</b> kasuje konto i wszystko przy nim na zawsze — trzeba wpisać adres drugi raz.</p>' +
+        '<form id="uGdpr" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end"><label>E-mail<br><input type="email" id="uGdprMail" required autocomplete="off" style="min-height:44px;font-size:18px;min-width:16em"></label>' +
+        '<button type="submit" class="qc-btn qc-btn--primary" data-gdpr="export" style="min-height:44px">Pobierz dane (JSON)</button>' +
+        '<button type="button" class="qc-btn adm-btn-no" data-gdpr="delete" style="min-height:44px">Usuń konto na zawsze…</button></form><p id="uGdprMsg" role="status"></p></div>';
       $d.innerHTML = h + '</section>';
     }
-    $d.onclick = function (e) { var b = e.target.closest && e.target.closest('[data-uonly]'); if (!b) return; only = b.getAttribute('data-uonly'); draw(); };
+    function gdprMsg(s, bad) { var m = document.getElementById('uGdprMsg'); if (m) { m.textContent = s; m.className = bad ? 'adm-msg adm-msg--err' : 'adm-msg adm-msg--ok'; } }
+    function gdprErr(r) { return { not_found: 'Nie ma konta z tym adresem.', confirm_mismatch: 'Adres w potwierdzeniu się nie zgadza — nic nie usunięto.', admin_account: 'To konto administratora — nie usuwam.' }[r && r.error] || 'Nie udało się.'; }
+    $d.onsubmit = function (e) {
+      if (e.target.id !== 'uGdpr') return; e.preventDefault();
+      var mail = document.getElementById('uGdprMail').value.trim(); if (!mail) return;
+      api('/rpc/user_export', { method: 'POST', body: { p_email: mail } }).then(function (r) {
+        if (!r || r.error) return gdprMsg(gdprErr(r), true);
+        var url = URL.createObjectURL(new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' })), a = document.createElement('a');
+        a.href = url; a.download = 'quolino-dane-' + mail.replace(/[^a-z0-9]+/gi, '-') + '.json'; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+        gdprMsg('Plik zapisany. Odeślij go tej osobie.');
+      }, function (er) { gdprMsg(er.message, true); });
+    };
+    $d.onclick = function (e) {
+      var g = e.target.closest && e.target.closest('[data-gdpr="delete"]');
+      if (g) {
+        var mail = document.getElementById('uGdprMail').value.trim(); if (!mail) { gdprMsg('Najpierw wpisz adres.', true); return; }
+        var again = window.prompt('Usunięcie konta jest NIEODWRACALNE: konto, trasy z dzieckiem, kupony i zgody znikną.\nWpisz adres jeszcze raz, żeby potwierdzić:', '');
+        if (again == null) return;
+        api('/rpc/user_delete', { method: 'POST', body: { p_email: mail, p_confirm: again } }).then(function (r) {
+          if (!r || r.error) return gdprMsg(gdprErr(r), true);
+          gdprMsg('Konto usunięte.'); D.users = (D.users || []).filter(function (u) { return (u.email || '').toLowerCase() !== mail.toLowerCase(); }); draw(); gdprMsg('Konto usunięte.');
+        }, function (er) { gdprMsg(er.message, true); });
+        return;
+      }
+      var b = e.target.closest && e.target.closest('[data-uonly]'); if (!b) return; only = b.getAttribute('data-uonly'); draw();
+    };
     $d.oninput = function (e) { if (e.target.id !== 'uQ') return; q = e.target.value.trim().toLowerCase(); var pos = e.target.selectionStart; draw(); var i = document.getElementById('uQ'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } };
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję użytkowników…</p></div>';
-    var demoU = { totals: { all: 0, confirmed: 0, unconfirmed: 0, unconfirmed_old: 0, new_7d: 0, new_30d: 0, active_7d: 0, active_30d: 0, with_trip: 0 }, daily: [], users: [] };
+    var demoU = { totals: { all: 3, confirmed: 2, unconfirmed: 1, new_7d: 2, new_30d: 3, active_7d: 1, active_30d: 2, with_trip: 1, expired_30d: 4, expired_all: 6, reminded_30d: 3, waitlist: 1 },
+      daily: [{ day: '2026-11-06', signups: 2, confirmed: 1 }, { day: '2026-11-07', signups: 1, confirmed: 1 }],
+      users: [{ email: 'anna@example.com', created_at: '2026-11-06T10:00:00Z', confirmed_at: '2026-11-06T10:05:00Z', last_sign_in_at: '2026-11-07T09:00:00Z', src: 'facebook/social', lang: 'pl', waitlist: true, runs: 2, trips: 1, last_run: '2026-11-07T09:10:00Z' },
+        { email: 'tom@example.com', created_at: '2026-11-07T08:00:00Z', confirmed_at: null, reminded_at: null, src: null, lang: 'en', runs: 0, trips: 0 }] };
     Promise.all([DEMO ? demoU : api('/rpc/users_overview', { method: 'POST', body: {} }),
       DEMO ? { enabled: false, starts: '2027-06-01' } : api('/rpc/revenue_overview', { method: 'POST', body: {} }).catch(function () { return null; })])
       .then(function (r) { D = r[0] || demoU; R = r[1]; draw(); }, function (e) { err = e.message; draw(); });
     document.title = 'Użytkownicy · Quolino admin';
+  }
+
+  // ── Ruch i trasy (JP 2026-11-07): lejek wejścia → rejestracja → potwierdzenie → pierwsza trasa, kanały, źródła rejestracji,
+  // języki (strona / konta / używane w trasach), kraje, ranking tras (wejścia, otwarcia, trasy z dzieckiem, ocena „Jak wam poszło?”).
+  // Źródło: rpc traffic_overview (SQL 2026-11-07-ruch-konta-rodo.sql); liczby ze strony wlewa site-metrics.mjs (Umami) co 3 h.
+  function openTraffic() {
+    state.current = null; state.trip = null; clearInterval(state.poll);
+    var days = 30, D = null, err = null;
+    try { days = +localStorage.getItem('adm.trafficDays') || 30; } catch (e) { /* brak */ }
+    function n(x) { return (+x || 0).toLocaleString('pl-PL'); }
+    function pct(a, b) { return b ? Math.round(100 * a / b) + '%' : '—'; }
+    function tripName(s) { var k = (state.trips || []).filter(function (t) { return t.slug === s; })[0]; return k ? k.name : titleCase(s); }
+    function bar(v, mx) { return '<span aria-hidden="true" style="display:inline-block;height:10px;border-radius:5px;background:currentColor;opacity:.45;width:' + Math.max(3, Math.round(140 * v / (mx || 1))) + 'px"></span>'; }
+    var LN = { pl: 'polski', en: 'angielski', de: 'niemiecki', cs: 'czeski', sk: 'słowacki', it: 'włoski', fr: 'francuski', es: 'hiszpański', nl: 'niderlandzki', da: 'duński', sv: 'szwedzki', no: 'norweski', nb: 'norweski', hu: 'węgierski', ro: 'rumuński', hr: 'chorwacki', pt: 'portugalski', uk: 'ukraiński' };
+    function draw() {
+      var h = '<section class="pg">';
+      if (err) { $d.innerHTML = h + '<p class="adm-empty">Ruch niedostępny: ' + esc(err) + '<br>Potrzebny SQL 2026-11-07-ruch-konta-rodo.sql.</p></section>'; return; }
+      var F = D.funnel || {};
+      h += '<header class="pg-head"><div><p class="label">Ruch i trasy</p><h2>Skąd przychodzą rodziny i co wybierają</h2></div>' +
+        '<div class="pg-seg" role="group" aria-label="Okres">' + [7, 30, 90, 365].map(function (d) { return '<button type="button" data-tdays="' + d + '" aria-pressed="' + (days === d) + '">' + (d === 365 ? 'Rok' : d + ' dni') + '</button>'; }).join('') + '</div></header>';
+      if (!D.site_data_from) h += '<p class="pg-trend">Liczby ze strony (Umami) pojawią się po pierwszym przebiegu site-metrics (co 3 h). Konta i trasy liczą się już teraz.</p>';
+      var steps = [['Wejścia na stronę', F.visitors, 'odwiedzający (Umami)'], ['Rejestracje', F.signups, 'wpisali e-mail'], ['Potwierdzone', F.confirmed, 'kliknęli link z maila'], ['Pierwsza trasa z dzieckiem', F.first_trip, 'kod QR dla dziecka']];
+      h += '<h3 class="pg-h3">Lejek — ostatnie ' + n(D.days) + ' dni</h3><div class="pg-card"><table class="pg-tab"><thead><tr><th scope="col">Krok</th><th scope="col">Liczba</th><th scope="col">Z poprzedniego</th><th scope="col">Skala</th></tr></thead><tbody>' +
+        steps.map(function (s, i) { return '<tr><th scope="row">' + esc(s[0]) + '<small>' + esc(s[2]) + '</small></th><td>' + n(s[1]) + '</td><td>' + (i ? pct(s[1], steps[i - 1][1]) : '') + '</td><td>' + bar(s[1], steps[0][1] || steps[1][1]) + '</td></tr>'; }).join('') +
+        '</tbody></table><p class="pg-trend">Nie potwierdzili (konto skasowane po 48 h): <b>' + n(F.expired) + '</b>.</p></div>';
+      var T = D.trips || [], mxv = Math.max.apply(null, T.map(function (x) { return x.views; }).concat(1));
+      h += '<h3 class="pg-h3">Ranking tras</h3><div class="pg-card"><table class="pg-tab"><thead><tr><th scope="col">Trasa</th><th scope="col">Wejścia na stronę</th><th scope="col">Otwarcia pełnej trasy</th><th scope="col">Trasy z dzieckiem</th><th scope="col">Ocena rodzin</th></tr></thead><tbody>' +
+        (T.length ? T.map(function (x) { return '<tr><th scope="row"><a href="#/' + esc(x.slug) + '">' + esc(tripName(x.slug)) + '</a></th><td>' + n(x.views) + ' ' + bar(x.views, mxv) + '</td><td>' + n(x.opens) + '<small>' + n(x.members) + ' kont</small></td><td>' + n(x.runs) + '<small>' + n(x.parents) + ' rodzin</small></td><td>' +
+          (x.ratings ? '★ ' + esc(String(x.rating).replace('.', ',')) + '<small>' + n(x.ratings) + ' ocen</small>' : '—') + '</td></tr>'; }).join('') : '<tr><td colspan="5">Brak opublikowanych tras.</td></tr>') +
+        '</tbody></table><p class="pg-trend">Ocena to „Jak wam poszło?” na końcu trasy (1–5).</p></div>';
+      var L = D.langs || [];
+      h += '<h3 class="pg-h3">Języki</h3><div class="pg-card"><table class="pg-tab"><thead><tr><th scope="col">Język</th><th scope="col">Wejścia (przeglądarka)</th><th scope="col">Nowe konta</th><th scope="col">Konta w trasach</th></tr></thead><tbody>' +
+        (L.length ? L.map(function (x) { return '<tr><th scope="row">' + esc(LN[x.key] || x.key) + '</th><td>' + n(x.visitors) + '</td><td>' + n(x.signups) + '</td><td>' + n(x.members) + '</td></tr>'; }).join('') : '<tr><td colspan="4">Brak danych.</td></tr>') +
+        '</tbody></table><p class="pg-trend">Tłumacz najpierw języki z ruchem — reszta może poczekać.</p></div>';
+      var C = D.channels || [], S = D.sources || [];
+      h += '<div class="pg-ai"><article class="pg-card"><h3 class="pg-h3">Kanały wejść</h3><table class="pg-tab"><tbody>' +
+        (C.length ? C.map(function (x) { return '<tr><th scope="row">' + esc(x.key) + '</th><td>' + n(x.visitors) + '</td></tr>'; }).join('') : '<tr><td>Brak danych ze strony.</td></tr>') + '</tbody></table></article>' +
+        '<article class="pg-card"><h3 class="pg-h3">Skąd przyszły konta</h3><table class="pg-tab"><thead><tr><th scope="col">Źródło</th><th scope="col">Rejestracje</th><th scope="col">Potwierdzone</th></tr></thead><tbody>' +
+        (S.length ? S.map(function (x) { return '<tr><th scope="row">' + esc(x.key) + '</th><td>' + n(x.signups) + '</td><td>' + n(x.confirmed) + '</td></tr>'; }).join('') : '<tr><td colspan="3">Brak rejestracji.</td></tr>') +
+        '</tbody></table><p class="pg-trend">Źródło z linku: dodaj <code>?utm_source=nazwa</code> (np. influencer, partner) — pierwsze wejście zostaje przy koncie.</p></article>' +
+        '<article class="pg-card"><h3 class="pg-h3">Kraje</h3><table class="pg-tab"><tbody>' +
+        ((D.countries || []).length ? D.countries.map(function (x) { return '<tr><th scope="row">' + esc(x.key) + '</th><td>' + n(x.visitors) + '</td></tr>'; }).join('') : '<tr><td>Brak danych ze strony.</td></tr>') + '</tbody></table></article></div>';
+      var DL = (D.daily || []).slice(-31);
+      if (DL.length) { var mx = Math.max.apply(null, DL.map(function (x) { return x.visitors; }).concat(1));
+        h += '<h3 class="pg-h3">Odwiedzający dzień po dniu</h3><div class="pg-card"><table class="pg-tab"><tbody>' + DL.slice().reverse().map(function (x) {
+          return '<tr><th scope="row">' + esc(new Date(x.day).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })) + '</th><td>' + n(x.visitors) + '<small>' + n(x.pageviews) + ' odsłon</small></td><td>' + bar(x.visitors, mx) + '</td></tr>'; }).join('') + '</tbody></table></div>'; }
+      $d.innerHTML = h + '</section>';
+    }
+    function load() {
+      $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję ruch…</p></div>';
+      (DEMO ? Promise.resolve({ days: days, site_data_from: null, funnel: { visitors: 420, signups: 18, confirmed: 11, expired: 5, first_trip: 4 }, trips: [{ slug: 'asyz', views: 120, opens: 14, members: 6, runs: 3, parents: 2, rating: 4.7, ratings: 3 }, { slug: 'spello', views: 60, opens: 4, members: 2, runs: 1, parents: 1, rating: null, ratings: 0 }],
+        langs: [{ key: 'pl', visitors: 300, signups: 12, members: 5 }, { key: 'de', visitors: 60, signups: 2, members: 0 }], channels: [{ key: 'Social', visitors: 200 }], sources: [{ key: 'facebook', signups: 9, confirmed: 6 }], countries: [{ key: 'PL', visitors: 330 }], daily: [] })
+        : api('/rpc/traffic_overview', { method: 'POST', body: { p_days: days } })).then(function (r) { D = r || {}; err = null; draw(); }, function (e) { err = e.message; draw(); });
+    }
+    $d.onclick = function (e) { var b = e.target.closest && e.target.closest('[data-tdays]'); if (!b) return; days = +b.getAttribute('data-tdays'); try { localStorage.setItem('adm.trafficDays', days); } catch (x) { /* brak */ } load(); };
+    $d.onsubmit = null; $d.oninput = null;
+    load();
+    document.title = 'Ruch i trasy · Quolino admin';
   }
 
   // ── Zgłoszenia (JP 2026-10-25): zgłoszenia przy przystankach, opinie, formularz — kategoria i priorytet od Jev ──

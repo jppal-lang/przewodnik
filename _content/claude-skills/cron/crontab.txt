@@ -7,6 +7,10 @@ H=hermes-quolino-hermes-agent-1
 */5 * * * *  /root/quolino-web/ops/hermes-watch.sh >> /root/quolino-web/hermes-watch.log 2>&1
 # konta: niepotwierdzone (bez kliknięcia w link) kasowane po 48 h (JP 2026-10-18)
 23 * * * *   /root/quolino-web/ops/auth-cleanup.sh >> /root/quolino-web/auth-cleanup.log 2>&1
+# przypomnienie o potwierdzeniu konta: jeden drugi mail po ~20 h (przed skasowaniem po 48 h), JP 2026-11-07
+19 * * * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node signup-reminder.mjs >> /root/quolino-web/signup-reminder.log 2>&1
+# ruch na stronie do panelu (Umami → ops.site_daily: lejek, języki, ranking tras, kanały), JP 2026-11-07
+33 */3 * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node site-metrics.mjs >> /root/quolino-web/site-metrics.log 2>&1
 # kopia bazy co noc (14 dni na VPS + poza serwerem, gdy skonfigurowane)
 41 3 * * *   /root/quolino-web/ops/backup-db.sh >> /root/quolino-web/backup.log 2>&1
 # zgłoszenia od rodzin → wątki miast

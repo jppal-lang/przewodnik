@@ -109,6 +109,7 @@ Wszystko zostaje na urządzeniu; „usuwa” = kod sam czyści klucz, inaczej kl
 | `qc.parent.shared` | `konto.html` | lista slugów udostępnionych wycieczek (wyzwanie 5 → 5%) | nigdy |
 | `qc.parent.codes` | `konto.html` | wpisane kody `QUO-XXXX-XXXX` (na razie podgląd) | nigdy |
 | `qc.parent.news` | `konto.html` | zgoda na newsletter | odznaczenie |
+| `qc.src` | `auth.js` | `{s, m, c, t, sent?}` — pierwsze źródło wejścia (utm_source / ref / host obcego referrera, medium, kampania, data); idzie do konta przy rejestracji i raz po zalogowaniu (RPC `account_meta`). JP 2026-11-07 | nigdy (pierwsze wejście wygrywa) |
 | `quolino_client` | `opinion.js`, `report-issue.js` | losowy identyfikator przeglądarki przy ocenie (jeden głos z urządzenia) | nigdy |
 | `quolino_rated_<miasto>` | `opinion.js` | wycieczka już oceniona (wartość = ocena) | nigdy |
 | `quolino_nostats` | `stats.js` (`?nostats=1/0`) | `'1'` = statystyki wyłączone (JP, testerzy) | `?nostats=0` |

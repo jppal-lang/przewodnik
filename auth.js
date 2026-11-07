@@ -89,12 +89,35 @@
       return result(r);
     });
   }
+  // skąd przyszła rodzina (JP 2026-11-07: „skąd przyszli”): pierwsze wejście z ?utm_source / ?ref / obcego referrera zapisujemy
+  // w localStorage „qc.src” (tylko nazwa źródła, kampania i data; bez identyfikatorów) i dołączamy do rejestracji jako metadane konta.
+  var SRC = 'qc.src';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';   // klucz publiczny (jak na stronach)
+  (function firstTouch() {
+    try {
+      if (localStorage.getItem(SRC)) return;
+      var q = new URLSearchParams(location.search), ref = '';
+      try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; } catch (e) { ref = ''; }
+      if (/(^|\.)quolino\.com$/.test(ref) || /(^|\.)auth\.quolino\.com$/.test(ref)) ref = '';
+      var s = q.get('utm_source') || q.get('ref') || ref;
+      if (!s) return;
+      var clean = function (v) { return String(v || '').toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 40); };
+      localStorage.setItem(SRC, JSON.stringify({ s: clean(s), m: clean(q.get('utm_medium')), c: clean(q.get('utm_campaign')), t: new Date().toISOString().slice(0, 10) }));
+    } catch (e) { /* prywatne okno */ }
+  })();
+  function signupMeta() {
+    var m = {}, v = null;
+    try { v = JSON.parse(localStorage.getItem(SRC) || 'null'); } catch (e) { v = null; }
+    if (v && v.s) m.src = [v.s, v.m, v.c].filter(Boolean).join('/').slice(0, 60);
+    var l = (document.documentElement.lang || '').toLowerCase().slice(0, 8); if (l) m.lang = l;
+    return m;
+  }
   // rejestracja: bramka sprawdza „Nie jestem robotem” (altcha), pułapkę (hp) i czas wypełnienia (ms); GoTrue wysyła link potwierdzający
   function signUp(email, password, check, next) {
     return safe(async function () {
       var c = check || {};
       return result(await call('/signup?redirect_to=' + encodeURIComponent(back(next, '/konto.html')), { method: 'POST',
-        body: JSON.stringify({ email: String(email || '').trim(), password: password, altcha: c.altcha, hp: c.hp || '', ms: c.ms || 0 }) }));
+        body: JSON.stringify({ email: String(email || '').trim(), password: password, data: signupMeta(), altcha: c.altcha, hp: c.hp || '', ms: c.ms || 0 }) }));
     });
   }
   // reset hasła: link prowadzi na /zaloguj.html (tam formularz „nowe hasło”)
@@ -175,4 +198,15 @@
     codeLogin: codeLogin, sendCode: sendCode, verifyCode: verifyCode, setPassword: setPassword, signOut: signOut, refresh: refresh, current: load,
     lastError: function () { return lastError; }, linkType: function () { return linkType; } };
   window.QAuth.ready = session().then(function () { paintNav(); emit(); });
+  // źródło i język przy koncie także dla logowania kodem z maila (tam rejestracja idzie bez metadanych): raz na urządzenie,
+  // serwer zapisuje tylko, gdy konto nie ma jeszcze źródła (RPC account_meta, token sesji w treści jak trip_member)
+  window.QAuth.ready.then(function () {
+    var s = load(), v = null; if (!s || !s.at) return;
+    try { v = JSON.parse(localStorage.getItem(SRC) || 'null'); } catch (e) { return; }
+    if (!v || !v.s || v.sent === s.sub) return;
+    var m = signupMeta();
+    fetch('https://api.quolino.com/rest/v1/rpc/account_meta', { method: 'POST', headers: { 'Content-Type': 'application/json',
+      apikey: ANON, Authorization: 'Bearer ' + ANON }, body: JSON.stringify({ p_token: s.at, p_src: m.src || null, p_lang: m.lang || null }) })
+      .then(function (r) { if (r.ok) { v.sent = s.sub; try { localStorage.setItem(SRC, JSON.stringify(v)); } catch (e) { /* prywatne okno */ } } }, function () { /* następnym razem */ });
+  });
 })();
