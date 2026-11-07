@@ -1,0 +1,9 @@
+{
+ "script": "verify-revision.mjs",
+ "args": ["--request", "19", "--no-retry", "--no-notify"],
+ "title": "Ponowna kontrola poprawki Asyż #19 (po zmianie walidatora: parking bez zadania foto)",
+ "why": "JP 2026-11-05: bez krytycznych błędów zatwierdź Asyż. Jedyny błąd v16 to reguła walidatora sprzeczna z zasadą JP „parking bez questu”. AI Pro, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 20
+}
