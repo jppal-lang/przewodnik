@@ -899,7 +899,6 @@ async function recheckMain() {
   if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu${fromLabel ? ` ${fromLabel}` : ''}`);
   if (!channel) channel = (await q('SELECT discord_thread_id FROM ops.cities WHERE slug = $1', [slug]).catch(() => []))[0]?.discord_thread_id ?? null;
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
-  const dayPlan0 = JSON.parse(JSON.stringify(cur.trip.content?.day_plan ?? {}));   // plan dnia przed poprawką (godziny z tekstu → time_label)
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle; STOPS_N = trip.meta.stops.length;
   await loadRules(q);
@@ -1045,6 +1044,7 @@ async function reviseMain() {
   const [cur] = await q(`SELECT version, trip, content, review FROM public.city_versions WHERE city_slug = $1 AND status = 'draft' ORDER BY version DESC LIMIT 1`, [slug]);
   if (!cur?.trip?.meta) throw new Error(`${slug}: brak szkicu do poprawy`);
   const trip = { meta: cur.trip.meta, content: cur.trip.content };
+  const dayPlan0 = JSON.parse(JSON.stringify(cur.trip.content?.day_plan ?? {}));   // plan dnia przed poprawką (godziny z tekstu → time_label)
   const blocks = cur.content?.stop_blocks_v2 ?? cur.trip.stop_blocks_v2 ?? {};
   const cityTitle = trip.content.city?.title ?? slug; name = cityTitle;
   await loadRules(q);
