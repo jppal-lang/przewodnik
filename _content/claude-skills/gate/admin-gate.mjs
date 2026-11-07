@@ -54,7 +54,7 @@ function page(res, code, msg) {
 
 const rpc = async (fn, args) => {
   try {
-    const r = await fetch(`${API}/rpc/${fn}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) });
+    const r = await fetch(`${API}/rpc/${fn}`, { signal: AbortSignal.timeout(5000), method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) });
     return r.ok ? await r.json() : null;
   } catch (e) { log('rpc', fn, e.message); return null; }
 };
@@ -77,15 +77,19 @@ const codeForm = (msg) => `${HEAD}<h1 style="font-size:24px">Panel Quolino</h1>$
 const html = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
   'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' }); res.end(body); };
 const TOTP = PURPOSE === 'admin';
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-http.createServer(async (req, res) => {
+http.createServer((req, res) => handle(req, res).catch((e) => { log('błąd', e.message); if (!res.headersSent) away(res); else res.destroy(); }))
+  .listen(8080, () => log(`gate ${PURPOSE} :8080`));
+async function handle(req, res) {
+  if (!req.url.startsWith('/') || req.url.startsWith('//')) return away(res);
   const u = new URL(req.url, 'http://x');
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
 
   if (TOTP) {
     // biblioteka QR z panelu (plik publiczny) — potrzebna stronie włączenia, zanim jest sesja
     if (u.pathname === '/qrcode.js' && req.method === 'GET' && !valid(cookie(req))) {
-      const p = http.request({ hostname: UP.hostname, port: UP.port || 80, path: '/qrcode.js', method: 'GET', headers: { host: UP.host } }, (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); });
+      const p = http.request({ hostname: UP.hostname, port: UP.port || 80, path: '/qrcode.js', method: 'GET', headers: { host: UP.host } }, (r) => { res.writeHead(r.statusCode, { 'Content-Type': r.headers['content-type'] || 'text/javascript', 'Cache-Control': 'no-store' }); r.pipe(res); });
       p.on('error', () => away(res)); return p.end();
     }
     // logowanie kodem: formularz pod adresem panelu, gdy nie ma sesji
@@ -96,7 +100,7 @@ http.createServer(async (req, res) => {
       const c = String((await readBody(req)).get('c') || '').replace(/\s/g, '');
       // od 2026-11-07: kod JP albo osoby z zespołu (admin.totp_login → {ok, who, role}); bez tej funkcji — jak dotąd tylko JP
       const lg = await rpc('totp_login', { p_code: c, p_ip: ip });
-      if (lg && typeof lg === 'object') { if (lg.ok) return newSession(res, ip, 'kod', String(lg.who || '?').slice(0, 40), lg.role === 'support' || lg.role === 'editor' ? lg.role : 'owner'); }
+      if (lg && typeof lg === 'object') { if (lg.ok && ['owner', 'support', 'editor'].includes(lg.role)) return newSession(res, ip, 'kod', String(lg.who || '?').slice(0, 40), lg.role); }
       else if ((await rpc('totp_verify', { p_code: c, p_ip: ip })) === true) return newSession(res, ip, 'kod');
       log('zły kod', ip);
       return html(res, 403, codeForm('Kod się nie zgadza albo był już użyty. Wpisz nowy (po kilku błędach blokada na 15 minut).'));
@@ -115,14 +119,14 @@ http.createServer(async (req, res) => {
       const key = (uri.match(/secret=([A-Z2-7]+)/) || [])[1] || '';
       log('włączanie Authenticatora', ip);
       return html(res, 200, `${HEAD}<h1 style="font-size:24px">Google Authenticator</h1>
-<p>Na telefonie: <a href="${uri}" style="display:inline-block;padding:12px 20px;min-height:44px;font-weight:600">Dodaj do Authenticatora</a></p>
+<p>Na telefonie: <a href="${esc(uri)}" style="display:inline-block;padding:12px 20px;min-height:44px;font-weight:600">Dodaj do Authenticatora</a></p>
 <p>Na komputerze: zeskanuj kod aplikacją.</p><div id="qr" style="display:inline-block;background:#fff;padding:12px"></div>
 <p style="font-size:16px">Albo wpisz klucz ręcznie:<br><code style="font-size:18px;word-break:break-all">${key.replace(/(.{4})/g, '$1 ').trim()}</code></p>
 <p>Na koniec wpisz pierwszy kod z aplikacji — to go zatwierdzi i od razu Cię wpuści. Ta strona działa tylko raz.</p>
 <form method="post" action="/code"><input name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required
  style="font:600 28px ui-monospace,monospace;letter-spacing:.3em;width:8em;text-align:center;margin:12px 0;padding:10px;min-height:44px">
 <br><button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Zatwierdź</button></form>
-<script src="/qrcode.js"></script><script>try{var q=qrcode(0,'M');q.addData(${JSON.stringify(uri)});q.make();document.getElementById('qr').innerHTML=q.createSvgTag(6,0);}catch(e){}</script></body></html>`);
+<script src="/qrcode.js"></script><script>try{var q=qrcode(0,'M');q.addData(${JSON.stringify(uri).replace(/</g, '\\u003c')});q.make();document.getElementById('qr').innerHTML=q.createSvgTag(6,0);}catch(e){}</script></body></html>`);
     }
   }
   // /login: GET niczego nie zużywa (podglądy linków Discorda/komunikatorów odwiedzają adres automatycznie);
@@ -153,10 +157,13 @@ http.createServer(async (req, res) => {
   if (u.pathname === '/_whoami') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ who: S.who || 'JP', role: S.role || 'owner' })); }
   // role: support = tylko tickety, klienci i partnerzy; editor = wszystko poza kontami, RODO, kosztami, wdrożeniami, publikacją i ustawieniami.
   // Sprawdzane TUTAJ (serwer), nie w panelu — ukrycie przycisków to tylko wygoda.
-  if (PURPOSE === 'admin' && S.role && S.role !== 'owner' && u.pathname.startsWith('/api/')) {
+  // konto zespołu: tylko ścieżka kanoniczna (bez %xx, //, \\, ./..) — to samo widzi bramka i nginx/PostgREST
+  const rawPath = req.url.split('?')[0];
+  if (PURPOSE === 'admin' && S.role !== 'owner' && (rawPath !== u.pathname || /%|\/\/|\\/.test(rawPath))) { res.writeHead(403); return res.end(); }
+  if (PURPOSE === 'admin' && S.role !== 'owner' && /^\/api(\/|$)/i.test(u.pathname)) {
     const ep = u.pathname.slice(4);
     const okSupport = /^\/(rpc\/(tickets_list|ticket_get|ticket_reply|ticket_set|ticket_templates|ticket_template_save|customer|search|nav_counts|today_numbers|partners_list|partner_stage)|feedback_ai)$/.test(ep);
-    const denyEditor = /^\/rpc\/(team_|user_delete|user_export|setting_save|admin_setting_set|coupon_|campaign_|admin_deploy_decide|admin_cost_decide|translation_request|admin_approve|admin_publish|admin_reject|totp_|stats_link|audit_list|users_overview)/.test(ep);
+    const denyEditor = /^\/rpc\/(team_|user_delete|user_export|setting_save|admin_setting_set|coupon_|campaign_|admin_deploy_decide|admin_cost_decide|translation_request|admin_approve|admin_publish|admin_reject|totp_|stats_link|audit_list|users_overview)|^(\/(cost_requests|deploy_requests|ai_budget|ai_usage_daily)?)?$/i.test(ep);
     if (S.role === 'support' ? !okSupport : denyEditor) { log('rola', S.role, S.who, 'zablokowane', ep); res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end('{"message":"Brak uprawnień dla tej roli."}'); }
   }
   const h = { ...req.headers, host: UP.host };
@@ -172,4 +179,4 @@ http.createServer(async (req, res) => {
   });
   p.on('error', () => page(res, 502, 'Panel chwilowo nie odpowiada.'));
   req.pipe(p);
-}).listen(8080, () => log(`gate ${PURPOSE} :8080`));
+}
