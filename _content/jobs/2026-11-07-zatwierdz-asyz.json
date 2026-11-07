@@ -1,0 +1,10 @@
+{
+ "script": "trip-approve.mjs",
+ "args": ["asyz"],
+ "title": "Zatwierdzenie Asyż v16 (0 błędów, wszystkie flagi z odpowiedzią, kontrola poprawki: gotowa)",
+ "why": "JP: zatwierdź Asyż, jeśli nie ma błędów krytycznych. Publikacja + tłumaczenia w dziennym limicie.",
+ "est_usd": 0.05,
+ "by": "Claude",
+ "timeout_min": 20,
+ "jp_ok": { "date": "2026-11-05", "quote": "przejrzyj uwagi jeśli nie ma błedów kreytycznych w asyzy u spello zatwierdź" }
+}
