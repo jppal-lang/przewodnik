@@ -176,6 +176,13 @@ export async function runWatch({ log = (...a) => console.error(new Date().toISOS
                        FROM public.city_versions b WHERE b.city_slug = $1 AND b.version = $3), '{}'::jsonb) || jsonb_build_object('label', $4::text, 'watch', true),
                      trip = n.trip || coalesce((SELECT jsonb_strip_nulls(jsonb_build_object('stop_blocks_v2', b.trip->'stop_blocks_v2')) FROM public.city_versions b WHERE b.city_slug = $1 AND b.version = $3), '{}'::jsonb)
                    WHERE n.city_slug = $1 AND n.version = $2`, [slug, saved.version, base.version, `v${bn}${String.fromCharCode(97 + Math.min(25, n.n))}`]).catch(e => log(`strażnicy: etykieta szkicu — ${e.message.slice(0, 120)}`));
+          // ta sama kontrola przechodzi na nową wersję → zamknięte odpowiedzi JP na jej flagi też (JP 2026-11-07: „teraz mam 85 flag”)
+          if (base.review && saved.version !== base.version)
+            await q(`INSERT INTO public.draft_comments (city_slug, city_version, stop_key, field, field_label, body, status)
+                     SELECT city_slug, $2, stop_key, field, field_label, body, status FROM public.draft_comments c
+                      WHERE c.city_slug = $1 AND c.city_version = $3 AND c.field LIKE 'review.%' AND c.status IN ('done', 'rejected')
+                        AND NOT EXISTS (SELECT 1 FROM public.draft_comments x WHERE x.city_slug = $1 AND x.city_version = $2 AND x.field = c.field)`,
+              [slug, saved.version, base.version]).catch(e => log(`strażnicy: odpowiedzi na flagi — ${e.message.slice(0, 120)}`));
           return saved;
         },
         costRequest: (x) => costRequest(q, x).catch(() => false),
