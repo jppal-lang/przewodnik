@@ -98,10 +98,10 @@
       if (localStorage.getItem(SRC)) return;
       var q = new URLSearchParams(location.search), ref = '';
       try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; } catch (e) { ref = ''; }
-      if (/(^|\.)quolino\.com$/.test(ref) || /(^|\.)auth\.quolino\.com$/.test(ref)) ref = '';
+      if (/(^|\.)(quolino|questini)\.com$/.test(ref)) ref = '';
       var s = q.get('utm_source') || q.get('ref') || ref;
-      if (!s) return;
-      var clean = function (v) { return String(v || '').toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 40); };
+      var clean = function (v) { return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9._-]/g, '').slice(0, 40); };
+      if (!clean(s)) return;
       localStorage.setItem(SRC, JSON.stringify({ s: clean(s), m: clean(q.get('utm_medium')), c: clean(q.get('utm_campaign')), t: new Date().toISOString().slice(0, 10) }));
     } catch (e) { /* prywatne okno */ }
   })();
@@ -207,6 +207,6 @@
     var m = signupMeta();
     fetch('https://api.quolino.com/rest/v1/rpc/account_meta', { method: 'POST', headers: { 'Content-Type': 'application/json',
       apikey: ANON, Authorization: 'Bearer ' + ANON }, body: JSON.stringify({ p_token: s.at, p_src: m.src || null, p_lang: m.lang || null }) })
-      .then(function (r) { if (r.ok) { v.sent = s.sub; try { localStorage.setItem(SRC, JSON.stringify(v)); } catch (e) { /* prywatne okno */ } } }, function () { /* następnym razem */ });
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && !j.error) { v.sent = s.sub; try { localStorage.setItem(SRC, JSON.stringify(v)); } catch (e) { /* prywatne okno */ } } }, function () { /* następnym razem */ });
   });
 })();

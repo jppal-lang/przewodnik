@@ -7,7 +7,7 @@
 <meta name="pt-title" content="page.unsub.title">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<link rel="stylesheet" href="/styles.css?v=43">
+<link rel="stylesheet" href="/styles.css?v=44">
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.unsub,page.common,page.footer"></script>
 </head>
@@ -18,7 +18,7 @@
   <div class="page-head"><h1 data-t="page.unsub.title">Wypisanie z wiadomości</h1></div>
   <p class="lead" id="unMsg" data-t="page.unsub.lead">Kliknij, a nie wyślemy Ci już wiadomości z tej listy.</p>
   <p><button type="button" class="qc-btn qc-btn--primary" id="unBtn" style="min-height:44px" data-t="page.unsub.btn">Wypisz mnie</button></p>
-  <p><a href="/" data-t="page.unsub.home">Wróć na stronę główną</a></p>
+  <p><a href="/" style="display:inline-flex;align-items:center;min-height:44px" data-t="page.unsub.home">Wróć na stronę główną</a></p>
 </main>
 <script>
 (function () {
@@ -26,11 +26,10 @@
   var t = (new URLSearchParams(location.search).get('t') || '').toLowerCase(), msg = document.getElementById('unMsg'), btn = document.getElementById('unBtn');
   var P = function (k, pl) { return window.PT ? PT(k, pl) : pl; };
   if (!/^[0-9a-f]{32}$/.test(t)) { msg.textContent = P('page.unsub.bad', 'Ten link jest niepełny. Skopiuj cały adres z wiadomości.'); btn.hidden = true; return; }
-  try { history.replaceState(null, '', location.pathname); } catch (e) { /* stare przeglądarki */ }
   btn.addEventListener('click', function () {
     btn.disabled = true;
-    fetch('https://api.quolino.com/rest/v1/rpc/mail_unsubscribe', { method: 'POST', headers: { apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo', Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo', 'Content-Type': 'application/json' }, body: JSON.stringify({ p_t: t }) })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    fetch('https://api.quolino.com/rest/v1/rpc/mail_unsubscribe', { signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined, method: 'POST', headers: { apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo', Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo', 'Content-Type': 'application/json' }, body: JSON.stringify({ p_t: t }) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (r) { btn.hidden = true; msg.textContent = r && r.ok ? P('page.unsub.ok', 'Gotowe — nie dostaniesz już wiadomości z tej listy.') : P('page.unsub.gone', 'Ten adres jest już wypisany.'); })
       .catch(function () { btn.disabled = false; msg.textContent = P('page.unsub.err', 'Nie udało się. Spróbuj za chwilę.'); });
   });

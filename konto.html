@@ -11,7 +11,7 @@
 <meta name="pt-title" content="page.account.title">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=43">
+<link rel="stylesheet" href="/styles.css?v=44">
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
 <script src="/kid-reward.js?v=6"></script>
@@ -582,34 +582,42 @@
     if (act === 'export') exportData();
   });
   // newsletter: zgoda na serwerze przy koncie (JP 2026-11-07: dotąd tylko w telefonie, więc nie dało się z niej wysłać maila);
-  // bez sesji — stary zapis lokalny, przeniesiony na serwer przy pierwszym logowaniu
+  // bez sesji — zapis lokalny; przy logowaniu przenoszony na serwer RAZ i kasowany z telefonu (potem źródłem prawdy jest serwer:
+  // wypisanie z linku w mailu nie może zostać nadpisane starym zapisem z telefonu — test agentów 2026-11-07)
   var news = document.getElementById('accNews');
   news.checked = !!lsGet('qc.parent.news');
+  function lsDrop(k) { try { localStorage.removeItem(k); } catch (e) { /* prywatne okno */ } }
   function newsRpc(fn, body) {
     return fetch(API + '/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
+  var newsSess = false;
   function newsSync() {
     if (AS || !window.QAuth) return;
     QAuth.session().then(function (s) {
-      if (!s || !s.at) return;
-      var local = !!lsGet('qc.parent.news');
+      if (!s || !s.at) { newsSess = false; return; }
+      newsSess = true;
+      var local = lsGet('qc.parent.news') === true;
       return newsRpc('newsletter_status', { p_token: s.at }).then(function (r) {
         if (!r || r.error) return;
-        if (local && !r.on) return newsRpc('newsletter_set', { p_token: s.at, p_on: true, p_lang: (window.PT && PT.lang) || 'pl' }).then(function () { news.checked = true; });
-        news.checked = !!r.on; lsSet('qc.parent.news', !!r.on);
+        var go = local && !r.on ? newsRpc('newsletter_set', { p_token: s.at, p_on: true, p_lang: (window.PT && PT.lang) || 'pl' }).then(function (x) { return !!(x && x.on); }) : Promise.resolve(!!r.on);
+        return go.then(function (on) { news.checked = on; lsDrop('qc.parent.news'); });
       });
     }).catch(function () { /* zostaje stan lokalny */ });
   }
   news.addEventListener('change', function () {
-    var want = news.checked; lsSet('qc.parent.news', want);
-    if (AS || !window.QAuth) return;
+    var want = news.checked;
+    if (AS || !window.QAuth || !newsSess) { lsSet('qc.parent.news', want); return; }
+    news.disabled = true;
     QAuth.session().then(function (s) {
-      if (!s || !s.at) return;
+      if (!s || !s.at) throw new Error('no_session');
       return newsRpc('newsletter_set', { p_token: s.at, p_on: want, p_lang: (window.PT && PT.lang) || 'pl' });
-    }).catch(function () { /* następnym razem */ });
+    }).then(function (r) { if (!r || r.error) throw new Error('x'); news.checked = !!r.on; },
+      function () { throw new Error('x'); })
+      .catch(function () { news.checked = !want; })
+      .then(function () { news.disabled = false; });
   });
-  if (window.QAuth) QAuth.ready.then(newsSync);
+  if (window.QAuth) { QAuth.ready.then(newsSync); document.addEventListener('qauth', newsSync); }
 
   renderPreview(); renderAlbum(); renderChallenges(); renderKids(); renderCodes();
   loadCatalog().then(renderAlbum);
@@ -666,6 +674,7 @@
     messages: [{ author: 'client', body: P('page.account.tk_demo_c', 'Na stronie jest 9:30, a pierwsze wejście było o 10:00.'), at: new Date(Date.now() - 864e5).toISOString() },
                { author: 'team', body: P('page.account.tk_demo_t', 'Dziękujemy! Poprawiliśmy godziny w trasie.'), at: new Date().toISOString() }] }];
   function drawList() {
+    if (!AS) form.hidden = false;
     if (!list.length) { box.innerHTML = '<p class="acc-empty">' + esc(P('page.account.tk_none', 'Nie masz jeszcze zgłoszeń.')) + '</p>'; return; }
     box.innerHTML = '<ul class="acc-tk">' + list.map(function (x) {
       return '<li><button type="button" class="acc-tk__row" data-tk="' + esc(x.number) + '"><b>' + esc(x.subject) + '</b>' +
@@ -674,6 +683,7 @@
   }
   function drawOne() {
     if (!one) return;
+    form.hidden = true;
     box.innerHTML = '<p><button type="button" class="qc-btn" data-tkback>← ' + esc(P('page.account.tk_back', 'Wszystkie zgłoszenia')) + '</button></p>' +
       '<h3>' + esc(one.subject) + '</h3><p class="acc-sec__sub">' + esc(one.number) + ' · ' + esc(ST(one.status)) + '</p>' +
       '<ol class="acc-tk__thread">' + (one.messages || []).map(function (m) {
@@ -689,16 +699,19 @@
       login.hidden = true; form.hidden = false;
       var dev = null; try { dev = localStorage.getItem('quolino_client'); } catch (e) { dev = null; }
       var first = linked ? Promise.resolve() : rpc('tickets_link', { p_token: t, p_client: /^[0-9a-f-]{36}$/i.test(dev || '') ? dev : null }).then(function () { linked = true; }, function () { /* bez przypięcia */ });
-      return first.then(function () { return rpc('my_tickets', { p_token: t }); }).then(function (r) { list = (r && r.tickets) || []; if (!cur) drawList(); });
+      if (!list.length && !cur) box.innerHTML = '<p class="acc-empty">' + esc(P('page.account.tk_loading', 'Ładuję zgłoszenia…')) + '</p>';
+      return first.then(function () { return rpc('my_tickets', { p_token: t }); }).then(function (r) {
+        if (r && r.error) { login.hidden = false; form.hidden = true; box.innerHTML = ''; return; }
+        list = (r && r.tickets) || []; if (!cur) drawList(); });
     }).catch(function () { box.innerHTML = '<p class="acc-empty">' + esc(P('page.account.tk_err', 'Nie udało się wczytać zgłoszeń. Spróbuj za chwilę.')) + '</p>'; });
   }
   function open(no) {
     cur = no;
     if (AS === 'member') { one = SAMPLE[0]; drawOne(); return; }
     token().then(function (t) { return t ? rpc('my_ticket', { p_token: t, p_number: no }) : null; }).then(function (r) {
-      if (!r || r.error) { cur = null; load(); return; }
+      if (!r || r.error) { cur = null; one = null; drawList(); box.insertAdjacentHTML('afterbegin', '<p class="acc-tk-msg" role="status">' + esc(P('page.account.tk_notfound', 'Nie znaleziono zgłoszenia.')) + '</p>'); return; }
       one = r; drawOne();
-    });
+    }, function () { cur = null; drawList(); box.insertAdjacentHTML('afterbegin', '<p class="acc-tk-msg" role="status">' + esc(P('page.account.tk_err', 'Nie udało się wczytać zgłoszeń. Spróbuj za chwilę.')) + '</p>'); });
   }
   box.addEventListener('click', function (e) {
     var b = e.target.closest('[data-tk]'); if (b) { open(b.getAttribute('data-tk')); return; }
@@ -709,36 +722,45 @@
     var ta = document.getElementById('accTkRe'), msg = document.getElementById('accTkReMsg'), body = ta.value.trim();
     if (body.length < 2) return;
     if (AS) { msg.textContent = P('page.account.tk_preview', 'To tylko podgląd.'); return; }
+    var sb = e.target.querySelector('button[type="submit"]'); if (sb.disabled) return; sb.disabled = true;
     token().then(function (t) { return rpc('ticket_reply', { p_token: t, p_number: cur, p_body: body }); }).then(function (r) {
+      sb.disabled = false;
       if (!r || r.error) { msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); return; }
       open(cur);
-    }, function () { msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); });
+    }, function () { sb.disabled = false; msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); });
   });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var s = document.getElementById('accTkSubj'), b = document.getElementById('accTkBody'), msg = document.getElementById('accTkMsg');
     if (s.value.trim().length < 3 || b.value.trim().length < 10) { msg.textContent = P('page.account.tk_short', 'Wpisz temat i co najmniej 10 znaków opisu.'); return; }
     if (AS) { msg.textContent = P('page.account.tk_preview', 'To tylko podgląd.'); return; }
+    var nb = form.querySelector('button[type="submit"]'); if (nb.disabled) return; nb.disabled = true;
     token().then(function (t) { return rpc('ticket_new', { p_token: t, p_subject: s.value.trim(), p_body: b.value.trim(), p_lang: LANG }); }).then(function (r) {
+      nb.disabled = false;
       if (!r || r.error) { msg.textContent = r && r.error === 'rate_limit' ? P('page.account.tk_limit', 'Na dziś to już wystarczy zgłoszeń — odpiszemy na wcześniejsze.') : P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); return; }
       s.value = ''; b.value = ''; msg.textContent = P('page.account.tk_sent', 'Wysłane. Numer zgłoszenia:') + ' ' + r.number;
-      load();
-    }, function () { msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); });
+      cur = null; one = null; load();
+    }, function () { nb.disabled = false; msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); });
   });
-  if (window.QAuth) { QAuth.ready.then(load); document.addEventListener('qauth', function () { linked = false; load(); }); } else load();
+  var lt = null; function soon() { clearTimeout(lt); lt = setTimeout(load, 50); }   // gotowość i zdarzenie qauth naraz → jedno wczytanie
+  if (window.QAuth) { QAuth.ready.then(soon); document.addEventListener('qauth', function () { linked = false; soon(); }); } else load();
 
   // usunięcie konta (RODO): tylko prawdziwa sesja; trzeba wpisać swój e-mail; konto, tickety, kupony i zgody znikają na zawsze
   var del = document.querySelector('[data-act="delete"]');
   if (del && !AS && window.QAuth) {
-    QAuth.ready.then(function () { var s = QAuth.current(); del.disabled = !s; });
+    var delState = function () { del.disabled = !QAuth.current(); };
+    QAuth.ready.then(delState); document.addEventListener('qauth', delState);
     del.addEventListener('click', function () {
       var s = QAuth.current(); if (!s) return;
       var c = window.prompt(P('page.account.delete_confirm', 'Usunięcie konta jest nieodwracalne: znikną konto, zgłoszenia, kupony i zgody. Wpisz swój adres e-mail, żeby potwierdzić:'), '');
       if (c == null) return;
       token().then(function (t) { return rpc('delete_my_account', { p_token: t, p_confirm: c }); }).then(function (r) {
-        if (r && r.ok) { (QAuth.signOut ? QAuth.signOut() : Promise.resolve()).then(function () { location.href = '/'; }); return; }
+        if (r && r.ok) {
+          ['qc.parent.news', 'qc.src'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { /* brak */ } });
+          (QAuth.signOut ? QAuth.signOut() : Promise.resolve()).then(function () { location.href = '/'; }); return;
+        }
         window.alert(r && r.error === 'confirm_mismatch' ? P('page.account.delete_mismatch', 'Adres się nie zgadza — konto nie zostało usunięte.') : P('page.account.delete_fail', 'Nie udało się usunąć konta. Napisz do nas przez formularz kontaktowy.'));
-      });
+      }, function () { window.alert(P('page.account.delete_fail', 'Nie udało się usunąć konta. Napisz do nas przez formularz kontaktowy.')); });
     });
   }
 })();
