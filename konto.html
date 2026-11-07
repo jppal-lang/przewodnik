@@ -11,7 +11,7 @@
 <meta name="pt-title" content="page.account.title">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=42">
+<link rel="stylesheet" href="/styles.css?v=43">
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
 <script src="/kid-reward.js?v=6"></script>
@@ -50,6 +50,8 @@
       <a role="tab" id="t-wyzwania" href="#wyzwania" aria-controls="wyzwania" data-tab="wyzwania" data-t="page.account.tab.challenges">Wyzwania</a>
       <a role="tab" id="t-dzieci" href="#dzieci" aria-controls="dzieci" data-tab="dzieci" data-t="page.account.tab.kids">Dzieci</a>
       <a role="tab" id="t-plan" href="#plan" aria-controls="plan" data-tab="plan" data-t="page.account.tab.plan">Plan i kody</a>
+      <a role="tab" id="t-zakupy" href="#zakupy" aria-controls="zakupy" data-tab="zakupy" data-t="page.account.tab.orders">Zakupy</a>
+      <a role="tab" id="t-zgloszenia" href="#zgloszenia" aria-controls="zgloszenia" data-tab="zgloszenia" data-t="page.account.tab.tickets">Zgłoszenia</a>
       <a role="tab" id="t-prywatnosc" href="#prywatnosc" aria-controls="prywatnosc" data-tab="prywatnosc" data-t="page.account.tab.privacy">Prywatność</a>
     </div>
   </div>
@@ -104,6 +106,34 @@
         <label class="acc-vh" for="accNick" data-t="page.account.kids_new">Nowy nick</label>
         <input id="accNick" maxlength="20" placeholder="np. Szybki Lis" data-t-ph="page.account.kids_ph">
         <button type="submit" class="qc-btn" data-t="page.account.kids_add">Dodaj</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ═══ ZAKUPY (JP 2026-11-07: konto jak w sklepie) ═══ -->
+  <section class="acc-panel" id="zakupy" role="tabpanel" aria-labelledby="t-zakupy" hidden>
+    <div class="acc-narrow">
+      <h2 data-t="page.account.tab.orders">Zakupy</h2>
+      <p class="acc-sec__sub" data-t="page.account.orders_sub">Tu zobaczysz swoje zakupy, faktury i zwroty. Do czerwca 2027 wszystkie wycieczki są za darmo, więc na razie nic tu nie ma.</p>
+      <p class="acc-empty" data-t="page.account.orders_empty">Brak zakupów.</p>
+    </div>
+  </section>
+
+  <!-- ═══ ZGŁOSZENIA (JP 2026-11-07: tickety; klient widzi tylko swoje — serwer sprawdza sesję, numer z adresu nic nie daje) ═══ -->
+  <section class="acc-panel" id="zgloszenia" role="tabpanel" aria-labelledby="t-zgloszenia" hidden>
+    <div class="acc-narrow">
+      <h2 data-t="page.account.tab.tickets">Zgłoszenia</h2>
+      <p class="acc-sec__sub" data-t="page.account.tk_sub">Twoje zgłoszenia błędów, opinie i wiadomości do nas — z odpowiedziami. Widzisz tylko swoje.</p>
+      <p class="acc-empty" id="accTkLogin" hidden data-t="page.account.tk_login">Zaloguj się, żeby zobaczyć swoje zgłoszenia i odpowiedzi.</p>
+      <div id="accTk"></div>
+      <form class="acc-tk-new" id="accTkNew" hidden novalidate>
+        <h3 data-t="page.account.tk_new_h">Nowe zgłoszenie</h3>
+        <label for="accTkSubj" data-t="page.account.tk_subj">Temat</label>
+        <input id="accTkSubj" maxlength="120" required>
+        <label for="accTkBody" data-t="page.account.tk_body">Opisz, w czym możemy pomóc</label>
+        <textarea id="accTkBody" rows="5" maxlength="2000" required></textarea>
+        <button type="submit" class="qc-btn qc-btn--primary" data-t="page.account.tk_send">Wyślij</button>
+        <p class="acc-tk-msg" id="accTkMsg" role="status"></p>
       </form>
     </div>
   </section>
@@ -169,7 +199,7 @@
       </ul>
       <div class="acc-priv__acts">
         <button type="button" class="qc-btn" data-act="export" data-t="page.account.export_btn">Pobierz moje dane (JSON)</button>
-        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled title="Wkrótce — na razie napisz do nas przez formularz kontaktowy" data-t="page.account.delete_btn">Usuń konto i dane</button>
+        <button type="button" class="qc-btn acc-danger" data-act="delete" disabled data-t="page.account.delete_btn">Usuń konto i dane</button>
       </div>
       <!-- hasło opcjonalne (JP 2026-10-29, D-1): logujesz się kodem z maila; kto chce, ustawia hasło. Tylko dla zalogowanego. -->
       <form class="acc-pass" id="accPass" novalidate hidden>
@@ -258,7 +288,7 @@
   }
 
   // ── zakładki ─────────────────────────────────────────
-  var TABS = ['album', 'wyzwania', 'dzieci', 'plan', 'prywatnosc'];
+  var TABS = ['album', 'wyzwania', 'dzieci', 'plan', 'zakupy', 'zgloszenia', 'prywatnosc'];
   function setTab(id, focus) {
     if (TABS.indexOf(id) < 0) id = 'album';
     TABS.forEach(function (t) {
@@ -528,8 +558,16 @@
 
   // ── eksport danych ───────────────────────────────────
   function exportData() {
-    var out = { exported_at: new Date().toISOString(), note: PT('page.account.export_note', 'Dane z tego urządzenia (konta jeszcze nie działają).'), album: local,
+    var out = { exported_at: new Date().toISOString(), note: PT('page.account.export_note2', 'Dane z tego urządzenia i, po zalogowaniu, z Twojego konta na serwerze.'), album: local,
       kid_nicks: lsGet('qc.kid.nicks') || [], shared_trips: lsGet('qc.parent.shared') || [], newsletter: !!lsGet('qc.parent.news') };
+    var srv = (!AS && window.QAuth) ? QAuth.session().then(function (s) {
+      if (!s || !s.at) return null;
+      return fetch(API + '/rpc/my_data', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: s.at }) })
+        .then(function (r) { return r.ok ? r.json() : null; });
+    }).catch(function () { return null; }) : Promise.resolve(null);
+    srv.then(function (d) { if (d && !d.error) out.account = d; saveJson(out); });
+  }
+  function saveJson(out) {
     var url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })), a = document.createElement('a');
     a.href = url; a.download = 'quolino-moje-dane.json'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
@@ -577,6 +615,109 @@
   else if (window.QAuth) { QAuth.ready.then(paint); document.addEventListener('qauth', paint); }
   if (window.PT && PT.lang !== 'pl') PT.ready.then(function () { if (window.QAccAs) paint(); else if (window.QAuth) QAuth.ready.then(paint); });
 })();
+/* Zgłoszenia (tickety) i usunięcie konta — JP 2026-11-07: konto jak w sklepie. Tylko sesja: serwer zwraca wyłącznie tickety tego konta
+   (my_tickets / my_ticket po sub z tokenu), cudzy numer = „nie ma”. Przy wejściu przypinamy do konta zgłoszenia z tego urządzenia
+   (quolino_client) i wiadomości z formularza wysłane z potwierdzonego adresu konta (tickets_link). Podgląd ?as=member — dane przykładowe. */
+(function () {
+  'use strict';
+  var box = document.getElementById('accTk'), login = document.getElementById('accTkLogin'), form = document.getElementById('accTkNew');
+  if (!box) return;
+  var API = 'https://api.quolino.com/rest/v1';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50d3BqY3VwZmZkb3pzdGJpamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzc5MTUsImV4cCI6MjEwMjgxMzkxNX0.OddjLt-gKKmj2H7wrEKJ14CXrsXu0L4UBO2GC9OiCGo';
+  var AS = window.QAccAs, LANG = (window.PT && PT.lang) || 'pl';
+  var P = function (k, pl) { return window.PT ? PT(k, pl) : pl; };
+  var ST = function (s) { return { 'new': P('page.account.tk_st_new', 'przyjęte'), open: P('page.account.tk_st_open', 'w trakcie'), waiting: P('page.account.tk_st_waiting', 'mamy odpowiedź'),
+    resolved: P('page.account.tk_st_resolved', 'rozwiązane'), closed: P('page.account.tk_st_closed', 'zamknięte') }[s] || s; };
+  var cur = null, list = [], one = null, linked = false;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function when(iso) { var d = new Date(iso); if (isNaN(d)) return ''; try { return d.toLocaleString(LANG, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return d.toLocaleString(); } }
+  function rpc(fn, body) {
+    return fetch(API + '/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  function token() { return window.QAuth ? QAuth.session().then(function (s) { return s && s.at; }) : Promise.resolve(null); }
+  var SAMPLE = [{ number: 'Q-7KX4-92PM', subject: P('page.account.tk_demo_s', 'Złe godziny — Grotte di Frasassi'), status: 'waiting', updated_at: new Date().toISOString(), unread: true,
+    messages: [{ author: 'client', body: P('page.account.tk_demo_c', 'Na stronie jest 9:30, a pierwsze wejście było o 10:00.'), at: new Date(Date.now() - 864e5).toISOString() },
+               { author: 'team', body: P('page.account.tk_demo_t', 'Dziękujemy! Poprawiliśmy godziny w trasie.'), at: new Date().toISOString() }] }];
+  function drawList() {
+    if (!list.length) { box.innerHTML = '<p class="acc-empty">' + esc(P('page.account.tk_none', 'Nie masz jeszcze zgłoszeń.')) + '</p>'; return; }
+    box.innerHTML = '<ul class="acc-tk">' + list.map(function (x) {
+      return '<li><button type="button" class="acc-tk__row" data-tk="' + esc(x.number) + '"><b>' + esc(x.subject) + '</b>' +
+        (x.unread ? ' <span class="acc-tk__new">' + esc(P('page.account.tk_unread', 'nowa odpowiedź')) + '</span>' : '') +
+        '<small>' + esc(x.number) + ' · ' + esc(ST(x.status)) + ' · ' + esc(when(x.updated_at)) + '</small></button></li>'; }).join('') + '</ul>';
+  }
+  function drawOne() {
+    if (!one) return;
+    box.innerHTML = '<p><button type="button" class="qc-btn" data-tkback>← ' + esc(P('page.account.tk_back', 'Wszystkie zgłoszenia')) + '</button></p>' +
+      '<h3>' + esc(one.subject) + '</h3><p class="acc-sec__sub">' + esc(one.number) + ' · ' + esc(ST(one.status)) + '</p>' +
+      '<ol class="acc-tk__thread">' + (one.messages || []).map(function (m) {
+        return '<li class="acc-tk__m acc-tk__m--' + (m.author === 'team' ? 'team' : 'me') + '"><small>' + esc(m.author === 'team' ? 'Quolino' : P('page.account.tk_you', 'Ty')) + ' · ' + esc(when(m.at)) + '</small><p>' + esc(m.body) + '</p></li>'; }).join('') + '</ol>' +
+      (one.status === 'closed' ? '' : '<form class="acc-tk-new" id="accTkReply"><label for="accTkRe">' + esc(P('page.account.tk_reply', 'Odpowiedz')) + '</label>' +
+        '<textarea id="accTkRe" rows="4" maxlength="2000" required></textarea><button type="submit" class="qc-btn qc-btn--primary">' + esc(P('page.account.tk_send', 'Wyślij')) + '</button><p class="acc-tk-msg" id="accTkReMsg" role="status"></p></form>');
+  }
+  function load() {
+    if (AS === 'member') { list = SAMPLE; login.hidden = true; form.hidden = false; return cur ? (one = SAMPLE[0], drawOne()) : drawList(); }
+    if (AS === 'guest') { login.hidden = false; form.hidden = true; box.innerHTML = ''; return; }
+    return token().then(function (t) {
+      if (!t) { login.hidden = false; form.hidden = true; box.innerHTML = ''; return; }
+      login.hidden = true; form.hidden = false;
+      var dev = null; try { dev = localStorage.getItem('quolino_client'); } catch (e) { dev = null; }
+      var first = linked ? Promise.resolve() : rpc('tickets_link', { p_token: t, p_client: /^[0-9a-f-]{36}$/i.test(dev || '') ? dev : null }).then(function () { linked = true; }, function () { /* bez przypięcia */ });
+      return first.then(function () { return rpc('my_tickets', { p_token: t }); }).then(function (r) { list = (r && r.tickets) || []; if (!cur) drawList(); });
+    }).catch(function () { box.innerHTML = '<p class="acc-empty">' + esc(P('page.account.tk_err', 'Nie udało się wczytać zgłoszeń. Spróbuj za chwilę.')) + '</p>'; });
+  }
+  function open(no) {
+    cur = no;
+    if (AS === 'member') { one = SAMPLE[0]; drawOne(); return; }
+    token().then(function (t) { return t ? rpc('my_ticket', { p_token: t, p_number: no }) : null; }).then(function (r) {
+      if (!r || r.error) { cur = null; load(); return; }
+      one = r; drawOne();
+    });
+  }
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tk]'); if (b) { open(b.getAttribute('data-tk')); return; }
+    if (e.target.closest('[data-tkback]')) { cur = null; one = null; load(); }
+  });
+  box.addEventListener('submit', function (e) {
+    if (e.target.id !== 'accTkReply') return; e.preventDefault();
+    var ta = document.getElementById('accTkRe'), msg = document.getElementById('accTkReMsg'), body = ta.value.trim();
+    if (body.length < 2) return;
+    if (AS) { msg.textContent = P('page.account.tk_preview', 'To tylko podgląd.'); return; }
+    token().then(function (t) { return rpc('ticket_reply', { p_token: t, p_number: cur, p_body: body }); }).then(function (r) {
+      if (!r || r.error) { msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); return; }
+      open(cur);
+    }, function () { msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); });
+  });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var s = document.getElementById('accTkSubj'), b = document.getElementById('accTkBody'), msg = document.getElementById('accTkMsg');
+    if (s.value.trim().length < 3 || b.value.trim().length < 10) { msg.textContent = P('page.account.tk_short', 'Wpisz temat i co najmniej 10 znaków opisu.'); return; }
+    if (AS) { msg.textContent = P('page.account.tk_preview', 'To tylko podgląd.'); return; }
+    token().then(function (t) { return rpc('ticket_new', { p_token: t, p_subject: s.value.trim(), p_body: b.value.trim(), p_lang: LANG }); }).then(function (r) {
+      if (!r || r.error) { msg.textContent = r && r.error === 'rate_limit' ? P('page.account.tk_limit', 'Na dziś to już wystarczy zgłoszeń — odpiszemy na wcześniejsze.') : P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); return; }
+      s.value = ''; b.value = ''; msg.textContent = P('page.account.tk_sent', 'Wysłane. Numer zgłoszenia:') + ' ' + r.number;
+      load();
+    }, function () { msg.textContent = P('page.account.tk_fail', 'Nie udało się wysłać. Spróbuj za chwilę.'); });
+  });
+  if (window.QAuth) { QAuth.ready.then(load); document.addEventListener('qauth', function () { linked = false; load(); }); } else load();
+
+  // usunięcie konta (RODO): tylko prawdziwa sesja; trzeba wpisać swój e-mail; konto, tickety, kupony i zgody znikają na zawsze
+  var del = document.querySelector('[data-act="delete"]');
+  if (del && !AS && window.QAuth) {
+    QAuth.ready.then(function () { var s = QAuth.current(); del.disabled = !s; });
+    del.addEventListener('click', function () {
+      var s = QAuth.current(); if (!s) return;
+      var c = window.prompt(P('page.account.delete_confirm', 'Usunięcie konta jest nieodwracalne: znikną konto, zgłoszenia, kupony i zgody. Wpisz swój adres e-mail, żeby potwierdzić:'), '');
+      if (c == null) return;
+      token().then(function (t) { return rpc('delete_my_account', { p_token: t, p_confirm: c }); }).then(function (r) {
+        if (r && r.ok) { (QAuth.signOut ? QAuth.signOut() : Promise.resolve()).then(function () { location.href = '/'; }); return; }
+        window.alert(r && r.error === 'confirm_mismatch' ? P('page.account.delete_mismatch', 'Adres się nie zgadza — konto nie zostało usunięte.') : P('page.account.delete_fail', 'Nie udało się usunąć konta. Napisz do nas przez formularz kontaktowy.'));
+      });
+    });
+  }
+})();
+</script>
+<script>
 /* Lista chętnych na pełną wersję (JP 2026-11-07): zgoda zapisana na serwerze przy koncie (RPC waitlist_join / waitlist_status,
    token sesji w treści jak trip_member). Tylko prawdziwa sesja. Jeden e-mail na start płatnej wersji, zgodę można cofnąć. */
 (function () {

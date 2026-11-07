@@ -156,3 +156,6 @@
 .adm .adm-abc__b:first-child{text-transform:none}
 .adm .adm-icref__gen{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule)}
 .adm .adm-icref__gnote{flex:1 1 240px;min-width:0}
+/* Tickety (2026-11-07): na wąskim ekranie rozmowa nad listą, przyciski filtrów w kilku rzędach */
+.adm .tk-seg{flex-wrap:wrap;height:auto}
+@media (max-width:900px){.adm .tk-wrap{grid-template-columns:minmax(0,1fr)!important}.adm .tk-wrap>article{order:-1}}

@@ -11,6 +11,8 @@ H=hermes-quolino-hermes-agent-1
 19 * * * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node signup-reminder.mjs >> /root/quolino-web/signup-reminder.log 2>&1
 # ruch na stronie do panelu (Umami → ops.site_daily: lejek, języki, ranking tras, kanały), JP 2026-11-07
 33 */3 * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node site-metrics.mjs >> /root/quolino-web/site-metrics.log 2>&1
+# tickety: odpowiedzi z panelu wysyłane e-mailem (SMTP Brevo), JP 2026-11-07
+*/2 * * * *  /root/quolino-web/ops/ticket-mail.sh >> /root/quolino-web/ticket-mail.log 2>&1
 # kopia bazy co noc (14 dni na VPS + poza serwerem, gdy skonfigurowane)
 41 3 * * *   /root/quolino-web/ops/backup-db.sh >> /root/quolino-web/backup.log 2>&1
 # zgłoszenia od rodzin → wątki miast

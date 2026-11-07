@@ -652,7 +652,7 @@
     if (h === '#/koszty') { setHead('koszty'); showDetail(); window.scrollTo(0, 0); openCosts(); return; }
     if (h === '#/ruch') { setHead('ruch'); showDetail(); window.scrollTo(0, 0); openTraffic(); return; }
     if (h === '#/uzytkownicy') { setHead('uzytkownicy'); showDetail(); window.scrollTo(0, 0); openUsers(); return; }
-    if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openFeedback(); return; }
+    if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openTickets(); return; }
     var ext = window.AdminExt && window.AdminExt.routes && window.AdminExt.routes[h];   // #/pipeline (admin-pipeline.js), #/mapa (admin-map.js)
     if (ext) { ext(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
@@ -2839,7 +2839,7 @@
     $d.onsubmit = function (e) {
       if (e.target.id !== 'uGdpr') return; e.preventDefault();
       var mail = document.getElementById('uGdprMail').value.trim(); if (!mail) return;
-      api('/rpc/user_export', { method: 'POST', body: { p_email: mail } }).then(function (r) {
+      api('/rpc/user_export_full', { method: 'POST', body: { p_email: mail } }).then(function (r) {
         if (!r || r.error) return gdprMsg(gdprErr(r), true);
         var url = URL.createObjectURL(new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' })), a = document.createElement('a');
         a.href = url; a.download = 'quolino-dane-' + mail.replace(/[^a-z0-9]+/gi, '-') + '.json'; document.body.appendChild(a); a.click(); a.remove();
@@ -3007,6 +3007,151 @@
     };
     $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję zgłoszenia…</p></div>';
     load(); state.poll = setInterval(function () { if (location.hash === '#/zgloszenia') load(); }, 60000);
+    document.title = 'Zgłoszenia · Quolino admin';
+  }
+
+  // ── Tickety (JP 2026-11-07: „zgłoszenia wylądowały w panelu i tak zostały” → helpdesk jak w sklepie) ──
+  // Lista (nowe, w toku, czekają na klienta, rozwiązane…), rozmowa z klientem, odpowiedź (konto klienta + e-mail), notatka wewnętrzna,
+  // status, priorytet, kategoria, gotowe odpowiedzi do edycji. Źródło: rpc tickets_list / ticket_get / ticket_reply / ticket_set /
+  // ticket_templates / ticket_template_save (SQL 2026-11-07-tickety.sql). Treść od klientów to dane: tylko esc().
+  var TK_ST = { 'new': 'nowe', open: 'w toku', waiting: 'czeka na klienta', resolved: 'rozwiązane', closed: 'zamknięte', spam: 'spam' };
+  var TK_SRC = { report: 'zgłoszenie przy przystanku', rating: 'opinia', contact: 'formularz', account: 'z konta rodzica' };
+  var TK_AUTH = { client: 'Klient', team: 'Quolino', note: 'Notatka wewnętrzna', system: 'System' };
+  function demoTickets() {
+    var now = Date.now(), iso = function (h) { return new Date(now - h * 3600000).toISOString(); };
+    return {
+      counts: { 'new': 2, open: 1, waiting: 1, resolved: 3 },
+      tickets: [{ number: 'Q-7KX4-92PM', source: 'report', subject: 'Złe godziny — Grotte di Frasassi', city_slug: 'frasassi', status: 'new', priority: 2, category: 'fakt_godziny', created_at: iso(2), updated_at: iso(2), has_account: true, has_email: true, messages: 1, preview: 'Na stronie jest 9:30, a pierwsze wejście było o 10:00.' },
+        { number: 'Q-H3RT-6WQA', source: 'contact', subject: 'Współpraca', status: 'open', priority: 3, category: 'wspolpraca', created_at: iso(30), updated_at: iso(5), has_account: false, has_email: true, messages: 2, preview: 'Hotel w Asyżu, chcemy polecać wasze trasy gościom.' },
+        { number: 'Q-M2ZD-8PCX', source: 'rating', subject: 'Opinia o wycieczce: 2/5', city_slug: 'spello', status: 'waiting', priority: 3, created_at: iso(50), updated_at: iso(20), has_account: false, has_email: false, messages: 2, preview: 'Za długo w jednym miejscu.' }],
+      get: { number: 'Q-7KX4-92PM', source: 'report', subject: 'Złe godziny — Grotte di Frasassi', city_slug: 'frasassi', stop: 'Grotte di Frasassi', status: 'new', priority: 2, category: 'fakt_godziny', lang: 'pl', email: 'anna@example.com', has_account: true, created_at: iso(2),
+        messages: [{ author: 'client', body: 'Na stronie jest 9:30, a pierwsze wejście było o 10:00. W niedzielę kolejka.', at: iso(2) }], mails: [] },
+      templates: [{ id: 1, title: 'Dziękujemy — poprawione', body: 'Dziękujemy za zgłoszenie! Sprawdziliśmy i poprawiliśmy to w trasie.', lang: 'pl' }, { id: 2, title: 'Potrzebujemy szczegółów', body: 'Dziękujemy! Którego dnia to było i co dokładnie się nie zgadzało?', lang: 'pl' }] };
+  }
+  function openTickets() {
+    state.current = null; state.trip = null; clearInterval(state.poll);
+    var filt = 'active', L = null, T = null, tpl = [], err = null, cur = null, msg = '', showTpl = false, editTpl = null;
+    try { filt = localStorage.getItem('adm.tkFilt') || 'active'; } catch (e) { /* brak */ }
+    var DM = DEMO ? demoTickets() : null;
+    function rpc(fn, body) { return DEMO ? Promise.resolve(null) : api('/rpc/' + fn, { method: 'POST', body: body || {} }); }
+    function loadList() {
+      return (DEMO ? Promise.resolve(DM) : rpc('tickets_list', { p_status: filt === 'active' ? null : filt })).then(function (r) { L = r || { tickets: [] }; err = null; draw(); }, function (e) { err = e.message; draw(); });
+    }
+    function loadTpl() { return (DEMO ? Promise.resolve(DM.templates) : rpc('ticket_templates')).then(function (r) { tpl = r || []; draw(); }, function () { /* bez szablonów */ }); }
+    function openOne(no) {
+      cur = no; T = null; msg = ''; draw();
+      (DEMO ? Promise.resolve(DM.get) : rpc('ticket_get', { p_number: no })).then(function (r) { T = r; draw(); var x = document.getElementById('tkReply'); if (x) x.focus(); }, function (e) { msg = e.message; draw(); });
+    }
+    function pill(st) { return '<span class="pg-pill pg-pill--' + (st === 'new' ? 'bad' : st === 'open' ? 'running' : st === 'waiting' ? 'warn' : 'done') + '">' + esc(TK_ST[st] || st) + '</span>'; }
+    function draw() {
+      var h = '<section class="pg">';
+      if (err) { $d.innerHTML = h + '<p class="adm-empty">Tickety niedostępne: ' + esc(err) + '<br>Potrzebny SQL 2026-11-07-tickety.sql.</p></section>'; return; }
+      if (!L) { $d.innerHTML = '<div class="adm-placeholder"><p>Ładuję zgłoszenia…</p></div>'; return; }
+      var C = L.counts || {};
+      h += '<header class="pg-head"><div><p class="label">Zgłoszenia</p><h2>Tickety od rodzin</h2></div>' +
+        '<dl class="pg-kpi"><div><dt>nowe</dt><dd>' + (C['new'] || 0) + '</dd></div><div><dt>w toku</dt><dd>' + (C.open || 0) + '</dd></div><div><dt>czekają na klienta</dt><dd>' + (C.waiting || 0) + '</dd></div><div><dt>rozwiązane</dt><dd>' + (C.resolved || 0) + '</dd></div></dl></header>';
+      h += '<div class="pg-seg tk-seg" role="group" aria-label="Pokaż">' + [['active', 'Otwarte'], ['new', 'Nowe'], ['waiting', 'Czekają na klienta'], ['resolved', 'Rozwiązane'], ['closed', 'Zamknięte'], ['spam', 'Spam'], ['all', 'Wszystkie']].map(function (o) {
+        return '<button type="button" data-tkf="' + o[0] + '" aria-pressed="' + (filt === o[0]) + '">' + o[1] + '</button>'; }).join('') +
+        '<button type="button" data-tktpl aria-pressed="' + showTpl + '">Gotowe odpowiedzi</button></div>';
+      if (showTpl) h += drawTpl();
+      var list = L.tickets || [];
+      h += '<div class="tk-wrap" style="display:grid;gap:16px;grid-template-columns:minmax(0,1fr)' + (cur ? ' minmax(0,1.4fr)' : '') + '">';
+      h += '<div class="pg-card" style="padding:0">' + (list.length ? list.map(function (x) {
+        return '<button type="button" data-tk="' + esc(x.number) + '" aria-current="' + (cur === x.number) + '" style="display:block;width:100%;text-align:left;padding:14px 16px;min-height:44px;border:0;border-bottom:1px solid var(--line,#e5e5e5);background:' + (cur === x.number ? 'var(--hover,#f3f4f6)' : 'transparent') + ';font:inherit;cursor:pointer">' +
+          '<span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>' + esc(x.subject) + '</b>' + pill(x.status) + (x.priority === 1 ? '<span class="pg-pill pg-pill--bad">P1</span>' : '') + '</span>' +
+          '<small style="display:block;opacity:.75">' + esc(x.number) + ' · ' + esc(TK_SRC[x.source] || x.source) + (x.city_slug ? ' · ' + esc(titleCase(x.city_slug)) : '') + ' · ' + esc(when(x.updated_at)) +
+          (x.has_account ? ' · konto' : x.has_email ? ' · e-mail' : ' · bez kontaktu') + '</small>' +
+          (x.preview ? '<span style="display:block;opacity:.85;margin-top:4px">' + esc(x.preview) + '</span>' : '') + '</button>';
+      }).join('') : '<p class="adm-empty">Brak zgłoszeń w tym widoku.</p>') + '</div>';
+      if (cur) h += drawOne();
+      h += '</div>';
+      $d.innerHTML = h + '</section>';
+    }
+    function drawOne() {
+      if (!T) return '<div class="pg-card"><p>Ładuję…</p></div>';
+      if (T.error) return '<div class="pg-card"><p class="adm-empty">Nie ma takiego ticketu.</p></div>';
+      var canMail = !!T.email;
+      return '<article class="pg-card" aria-label="Ticket ' + esc(T.number) + '"><header class="pg-card__head"><div><div class="pg-card__title"><b>' + esc(T.subject) + '</b> ' + pill(T.status) + '</div>' +
+        '<p class="fb-meta">' + esc(T.number) + ' · ' + esc(TK_SRC[T.source] || T.source) + (T.city_slug ? ' · <a href="#/' + esc(T.city_slug) + '">' + esc(titleCase(T.city_slug)) + '</a>' : '') + (T.stop ? ' · ' + esc(T.stop) : '') +
+        ' · ' + esc(when(T.created_at)) + (T.lang ? ' · język ' + esc(T.lang) : '') + '<br>' + (T.email ? 'Kontakt: ' + esc(T.email) + (T.has_account ? ' (konto)' : '') : 'Bez e-maila — odpowiedź zobaczy tylko w koncie, jeśli je założy na tym urządzeniu') + '</p></div>' +
+        '<button type="button" class="qc-btn qc-btn--sm" data-tkclose aria-label="Zamknij podgląd">✕</button></header>' +
+        '<div class="tk-thread" style="display:grid;gap:10px;margin:12px 0">' + (T.messages || []).map(function (m) {
+          var team = m.author === 'team', note = m.author === 'note';
+          return '<div style="padding:10px 14px;border-radius:12px;max-width:92%;' + (team ? 'margin-left:auto;background:var(--acc-soft,#e8f0fe)' : note ? 'background:#fff7e0;border:1px dashed #d9a400' : 'background:var(--hover,#f3f4f6)') + '">' +
+            '<small style="display:block;opacity:.75">' + esc(TK_AUTH[m.author] || m.author) + ' · ' + esc(when(m.at)) + '</small><div style="white-space:pre-wrap">' + esc(m.body) + '</div></div>';
+        }).join('') + '</div>' +
+        ((T.mails || []).length ? '<p class="fb-meta">E-maile: ' + T.mails.map(function (x) { return x.sent_at ? 'wysłany ' + esc(when(x.sent_at)) : x.error ? 'błąd: ' + esc(x.error) : 'w kolejce'; }).join(' · ') + '</p>' : '') +
+        '<form id="tkForm"><label for="tkReply"><b>Odpowiedź</b>' + (canMail ? ' (pójdzie też e-mailem)' : '') + '</label>' +
+        (tpl.length ? '<p><label>Gotowa odpowiedź <select id="tkTplPick" style="min-height:44px;font-size:18px"><option value="">— wybierz —</option>' + tpl.map(function (x) { return '<option value="' + x.id + '">' + esc(x.title) + (x.lang && x.lang !== 'pl' ? ' (' + esc(x.lang) + ')' : '') + '</option>'; }).join('') + '</select></label></p>' : '') +
+        '<textarea id="tkReply" rows="6" style="width:100%;font-size:18px;padding:10px" maxlength="4000"></textarea>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">' +
+        '<button type="submit" class="qc-btn qc-btn--primary" data-tkmode="reply" style="min-height:44px">Wyślij odpowiedź</button>' +
+        '<button type="submit" class="qc-btn" data-tkmode="resolve" style="min-height:44px">Wyślij i oznacz jako rozwiązane</button>' +
+        '<button type="submit" class="qc-btn" data-tkmode="note" style="min-height:44px">Dodaj notatkę wewnętrzną</button></div></form>' +
+        '<p id="tkMsg" role="status">' + esc(msg) + '</p>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px"><span>Status:</span>' + ['open', 'waiting', 'resolved', 'closed', 'spam'].map(function (s) {
+          return '<button type="button" class="qc-btn qc-btn--sm" data-tkst="' + s + '" aria-pressed="' + (T.status === s) + '" style="min-height:44px">' + esc(TK_ST[s]) + '</button>'; }).join('') +
+        '<label>Priorytet <select data-tkpri style="min-height:44px;font-size:18px"><option value="">—</option>' + [1, 2, 3].map(function (p) { return '<option value="' + p + '"' + (T.priority === p ? ' selected' : '') + '>P' + p + '</option>'; }).join('') + '</select></label>' +
+        '<label>Kategoria <select data-tkcat style="min-height:44px;font-size:18px"><option value="">—</option>' + Object.keys(FB_KAT).map(function (k) { return '<option value="' + k + '"' + (T.category === k ? ' selected' : '') + '>' + esc(FB_KAT[k]) + '</option>'; }).join('') + '</select></label></div></article>';
+    }
+    function drawTpl() {
+      return '<div class="pg-card"><h3 class="pg-h3">Gotowe odpowiedzi</h3><p>Wstawiasz je jednym wyborem przy odpowiedzi i poprawiasz przed wysłaniem.</p>' +
+        (tpl.length ? '<ul style="list-style:none;padding:0;display:grid;gap:8px">' + tpl.map(function (x) {
+          return '<li style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>' + esc(x.title) + '</b><small>' + esc(x.lang || 'pl') + '</small>' +
+            '<button type="button" class="qc-btn qc-btn--sm" data-tpledit="' + x.id + '" style="min-height:44px">Edytuj</button><button type="button" class="qc-btn qc-btn--sm adm-btn-no" data-tpldel="' + x.id + '" style="min-height:44px">Usuń</button></li>'; }).join('') + '</ul>' : '') +
+        '<form id="tplForm" style="display:grid;gap:8px;margin-top:12px"><label>Tytuł <input id="tplTitle" maxlength="80" value="' + esc(editTpl ? editTpl.title : '') + '" style="min-height:44px;font-size:18px;width:100%"></label>' +
+        '<label>Treść <textarea id="tplBody" rows="4" maxlength="4000" style="font-size:18px;width:100%">' + esc(editTpl ? editTpl.body : '') + '</textarea></label>' +
+        '<label>Język <input id="tplLang" maxlength="8" value="' + esc(editTpl ? editTpl.lang : 'pl') + '" style="min-height:44px;font-size:18px;width:6em"></label>' +
+        '<div><button type="submit" class="qc-btn qc-btn--primary" style="min-height:44px">' + (editTpl ? 'Zapisz zmiany' : 'Dodaj odpowiedź') + '</button>' +
+        (editTpl ? ' <button type="button" class="qc-btn" data-tplcancel style="min-height:44px">Anuluj</button>' : '') + '</div></form></div>';
+    }
+    function after(p, okMsg) {
+      return p.then(function (r) {
+        if (r && r.error) throw new Error({ not_found: 'nie ma takiego ticketu', length: 'za krótko albo za długo', status: 'zły status' }[r.error] || r.error);
+        return Promise.all([loadList(), cur ? rpc('ticket_get', { p_number: cur }) : null]);
+      }).then(function (v) { if (v[1]) T = v[1]; msg = okMsg || ''; draw(); })
+        .catch(function (e) { msg = 'Nie zapisano: ' + e.message; draw(); });
+    }
+    var submitter = null;
+    $d.onclick = function (e) {
+      var el = e.target.closest ? e.target : null; if (!el) return;
+      var b;
+      if ((b = el.closest('[data-tkmode]'))) { submitter = b.getAttribute('data-tkmode'); return; }
+      if ((b = el.closest('[data-tkf]'))) { filt = b.getAttribute('data-tkf'); try { localStorage.setItem('adm.tkFilt', filt); } catch (x) { /* brak */ } loadList(); return; }
+      if (el.closest('[data-tktpl]')) { showTpl = !showTpl; editTpl = null; draw(); return; }
+      if ((b = el.closest('[data-tk]'))) { openOne(b.getAttribute('data-tk')); return; }
+      if (el.closest('[data-tkclose]')) { cur = null; T = null; draw(); return; }
+      if ((b = el.closest('[data-tkst]'))) { if (DEMO) { T.status = b.getAttribute('data-tkst'); draw(); return; } after(rpc('ticket_set', { p_number: cur, p_status: b.getAttribute('data-tkst') }), 'Status zmieniony.'); return; }
+      if ((b = el.closest('[data-tpledit]'))) { var id = +b.getAttribute('data-tpledit'); editTpl = tpl.filter(function (x) { return x.id === id; })[0] || null; draw(); return; }
+      if (el.closest('[data-tplcancel]')) { editTpl = null; draw(); return; }
+      if ((b = el.closest('[data-tpldel]'))) {
+        if (!window.confirm('Usunąć tę gotową odpowiedź?')) return;
+        rpc('ticket_template_save', { p_id: +b.getAttribute('data-tpldel'), p_title: '-', p_body: '-', p_delete: true }).then(loadTpl); return;
+      }
+    };
+    $d.onchange = function (e) {
+      var s = e.target;
+      if (s.id === 'tkTplPick' && s.value) { var x = tpl.filter(function (y) { return String(y.id) === s.value; })[0], ta = document.getElementById('tkReply'); if (x && ta) { ta.value = ta.value ? ta.value + '\n\n' + x.body : x.body; ta.focus(); } return; }
+      if (s.hasAttribute('data-tkpri') && s.value) { after(rpc('ticket_set', { p_number: cur, p_priority: +s.value }), 'Priorytet zapisany.'); return; }
+      if (s.hasAttribute('data-tkcat') && s.value) { after(rpc('ticket_set', { p_number: cur, p_category: s.value }), 'Kategoria zapisana.'); return; }
+    };
+    $d.onsubmit = function (e) {
+      e.preventDefault();
+      if (e.target.id === 'tplForm') {
+        var tt = document.getElementById('tplTitle').value, bb = document.getElementById('tplBody').value, ll = document.getElementById('tplLang').value || 'pl';
+        rpc('ticket_template_save', { p_id: editTpl ? editTpl.id : null, p_title: tt, p_body: bb, p_lang: ll }).then(function () { editTpl = null; return loadTpl(); });
+        return;
+      }
+      if (e.target.id !== 'tkForm') return;
+      var mode = (e.submitter && e.submitter.getAttribute('data-tkmode')) || submitter || 'reply';
+      var body = document.getElementById('tkReply').value.trim(); if (!body) { msg = 'Wpisz treść.'; draw(); return; }
+      if (DEMO) { T.messages.push({ author: mode === 'note' ? 'note' : 'team', body: body, at: new Date().toISOString() }); if (mode !== 'note') T.status = mode === 'resolve' ? 'resolved' : 'waiting'; draw(); return; }
+      after(rpc('ticket_reply', { p_number: cur, p_body: body, p_note: mode === 'note', p_status: mode === 'resolve' ? 'resolved' : null }),
+        mode === 'note' ? 'Notatka dodana.' : T && T.email ? 'Odpowiedź wysłana (konto i e-mail).' : 'Odpowiedź zapisana.');
+    };
+    $d.oninput = null;
+    draw(); loadList(); loadTpl();
+    state.poll = setInterval(function () { if (location.hash === '#/zgloszenia' && !document.activeElement.closest('#tkForm, #tplForm')) loadList(); }, 60000);
     document.title = 'Zgłoszenia · Quolino admin';
   }
 
