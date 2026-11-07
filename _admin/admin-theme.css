@@ -159,3 +159,9 @@
 /* Tickety (2026-11-07): na wąskim ekranie rozmowa nad listą, przyciski filtrów w kilku rzędach */
 .adm .tk-seg{flex-wrap:wrap;height:auto}
 @media (max-width:900px){.adm .tk-wrap{grid-template-columns:minmax(0,1fr)!important}.adm .tk-wrap>article{order:-1}}
+/* hub (2026-11-07): licznik po terminie na czerwono, licznik na dolnym pasku, link „Opinie i zgłoszenia” przy trasie */
+.adm .ad-badge.is-warn{background:#c62828;color:#fff}
+.adm .ad-tab{position:relative}
+.adm .ad-tab .ad-badge{position:absolute;top:4px;right:calc(50% - 22px);font-size:12px;min-width:18px;padding:0 5px}
+.adm .ad-tab .ad-badge.is-zero{display:none}
+.adm .ad-crumbs__extra{font-weight:600}

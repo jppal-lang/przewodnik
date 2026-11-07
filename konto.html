@@ -581,9 +581,35 @@
     if (act === 'share-album') share(album.map(function (x) { return x.slug; }));
     if (act === 'export') exportData();
   });
+  // newsletter: zgoda na serwerze przy koncie (JP 2026-11-07: dotąd tylko w telefonie, więc nie dało się z niej wysłać maila);
+  // bez sesji — stary zapis lokalny, przeniesiony na serwer przy pierwszym logowaniu
   var news = document.getElementById('accNews');
   news.checked = !!lsGet('qc.parent.news');
-  news.addEventListener('change', function () { lsSet('qc.parent.news', news.checked); });
+  function newsRpc(fn, body) {
+    return fetch(API + '/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  function newsSync() {
+    if (AS || !window.QAuth) return;
+    QAuth.session().then(function (s) {
+      if (!s || !s.at) return;
+      var local = !!lsGet('qc.parent.news');
+      return newsRpc('newsletter_status', { p_token: s.at }).then(function (r) {
+        if (!r || r.error) return;
+        if (local && !r.on) return newsRpc('newsletter_set', { p_token: s.at, p_on: true, p_lang: (window.PT && PT.lang) || 'pl' }).then(function () { news.checked = true; });
+        news.checked = !!r.on; lsSet('qc.parent.news', !!r.on);
+      });
+    }).catch(function () { /* zostaje stan lokalny */ });
+  }
+  news.addEventListener('change', function () {
+    var want = news.checked; lsSet('qc.parent.news', want);
+    if (AS || !window.QAuth) return;
+    QAuth.session().then(function (s) {
+      if (!s || !s.at) return;
+      return newsRpc('newsletter_set', { p_token: s.at, p_on: want, p_lang: (window.PT && PT.lang) || 'pl' });
+    }).catch(function () { /* następnym razem */ });
+  });
+  if (window.QAuth) QAuth.ready.then(newsSync);
 
   renderPreview(); renderAlbum(); renderChallenges(); renderKids(); renderCodes();
   loadCatalog().then(renderAlbum);

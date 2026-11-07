@@ -193,7 +193,7 @@
       '<p class="pal__foot"><kbd>↑</kbd><kbd>↓</kbd> wybór · <kbd>Enter</kbd> wykonaj · <kbd>Esc</kbd> zamknij</p></div>';
     document.body.appendChild(el);
     pal.el = el; pal.q = el.querySelector('#palQ'); pal.list = el.querySelector('#palList');
-    pal.q.addEventListener('input', function () { pal.i = 0; render(); });
+    pal.q.addEventListener('input', function () { pal.i = 0; pal.remote = []; render(); remote(pal.q.value.trim()); });
     pal.q.addEventListener('keydown', onKey);
     el.addEventListener('keydown', function (e) { if (e.key === 'Tab') { e.preventDefault(); move(e.shiftKey ? -1 : 1); } });
     el.addEventListener('click', function (e) {
@@ -202,6 +202,25 @@
       if (e.target === el) close();
     });
     pal.list.addEventListener('mousemove', function (e) { var li = e.target.closest('.pal__it[data-i]'); if (li && +li.getAttribute('data-i') !== pal.i) { pal.i = +li.getAttribute('data-i'); paint(); } });
+  }
+  // JP 2026-11-07: także tickety (numer, temat), klienci (e-mail) i przystanki z bazy — admin.search, z opóźnieniem 250 ms
+  var rt = null;
+  function remote(q) {
+    clearTimeout(rt);
+    if (q.length < 2 || !window.AdminHub || A.DEMO) return;
+    rt = setTimeout(function () {
+      window.AdminHub.search(q).then(function (r) {
+        if (!pal.open || pal.q.value.trim() !== q || !r) return;
+        var out = [];
+        (r.tickets || []).forEach(function (x) { out.push({ id: 'tk:' + x.number, group: 'Zgłoszenia', icon: IC.flag, label: x.subject, hint: x.number + ' · ' + x.status,
+          run: function () { try { sessionStorage.setItem('adm.openTicket', x.number); } catch (e) { /* brak */ } if (location.hash === '#/zgloszenia') window.dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = '#/zgloszenia'; } }); });
+        (r.users || []).forEach(function (x) { out.push({ id: 'us:' + x.email, group: 'Klienci', icon: IC.sec, label: x.email, hint: x.confirmed ? 'konto potwierdzone' : 'niepotwierdzone',
+          run: function () { location.hash = '#/klient/' + encodeURIComponent(x.email); } }); });
+        (r.stops || []).forEach(function (x) { out.push({ id: 'st:' + x.city_slug + x.n, group: 'Przystanki (baza)', icon: IC.stop, label: x.name, hint: x.city_slug + ' · przystanek ' + x.n,
+          run: function () { location.hash = '#/' + x.city_slug; } }); });
+        pal.remote = out; render();
+      }, function () { /* brak dostępu albo SQL */ });
+    }, 250);
   }
   function recent() { return ss.get(RECENT) || []; }
   function remember(id) { var r = recent().filter(function (x) { return x !== id; }); r.unshift(id); ss.set(RECENT, r.slice(0, MAX_RECENT)); }
@@ -222,6 +241,7 @@
       order.sort(function (a, b) { return by[b][0].s - by[a][0].s; });
     }
     order.forEach(function (g) { by[g].slice(0, CAP).forEach(function (x) { out.push({ g: g, it: x.it }); }); });
+    if (q && pal.remote) pal.remote.forEach(function (it) { out.push({ g: it.group, it: it }); });
     pal.shown = out;
     if (pal.i >= out.length) pal.i = 0;
     var h = '', last = null;

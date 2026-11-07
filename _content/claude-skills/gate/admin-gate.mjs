@@ -4,6 +4,8 @@
 // Od 2026-11-06 (JP): panel admina (PURPOSE=admin) wpuszcza też kodem z Google Authenticatora (TOTP): bez sesji adres panelu
 // pokazuje pole na 6 cyfr, baza liczy kod (admin.totp_verify — sekret nie wychodzi z bazy). Włączenie: jednorazowy link
 // /totp-setup?t=… z Discorda → QR, przycisk otpauth:// i klucz. Link z Discorda działa dalej jako zapas.
+// Od 2026-11-07: konta zespołu (role support / editor, każdy z własnym Authenticatorem); rola sprawdzana w bramce dla /api,
+// kto zalogowany → nagłówek X-Admin-Who do API (dziennik zdarzeń), GET /_whoami dla panelu.
 // Bez zależności. Za Traefikiem (HTTPS). Przepuszcza do admin-web (statyczny panel + /api → admin-api).
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -24,7 +26,7 @@ const AFTER = PURPOSE === 'stats' && SHARE ? `/share/${SHARE}/Quolino` : (proces
 const CK = process.env.COOKIE || 'qadm';
 const GP = process.env.GATE_PATH || '';
 const KEEP_AUTH = process.env.KEEP_AUTH === '1';
-const sessions = new Map();                       // id → { start, last }
+const sessions = new Map();                       // id → { start, last, who, role }
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const cookie = (req) => ((req.headers.cookie || '').match(new RegExp('(?:^|;\\s*)' + CK + '=([A-Za-z0-9_-]{40,})')) || [])[1];
 const log = (...a) => console.log(new Date().toISOString(), ...a);
@@ -57,10 +59,10 @@ const rpc = async (fn, args) => {
   } catch (e) { log('rpc', fn, e.message); return null; }
 };
 const readBody = async (req) => { let b = ''; for await (const ch of req) { b += ch; if (b.length > 2000) break; } return new URLSearchParams(b); };
-const newSession = (res, ip, how) => {
+const newSession = (res, ip, how, who = 'JP', role = 'owner') => {
   const id = crypto.randomBytes(32).toString('base64url');
-  sessions.set(id, { start: Date.now(), last: Date.now() });
-  log('nowa sesja', how, ip);
+  sessions.set(id, { start: Date.now(), last: Date.now(), who, role });
+  log('nowa sesja', how, who, role, ip);
   res.writeHead(303, { 'Set-Cookie': `${CK}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: AFTER,
     'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
   res.end();
@@ -92,7 +94,10 @@ http.createServer(async (req, res) => {
     }
     if (u.pathname === '/code' && req.method === 'POST') {
       const c = String((await readBody(req)).get('c') || '').replace(/\s/g, '');
-      if ((await rpc('totp_verify', { p_code: c, p_ip: ip })) === true) return newSession(res, ip, 'kod');
+      // od 2026-11-07: kod JP albo osoby z zespołu (admin.totp_login → {ok, who, role}); bez tej funkcji — jak dotąd tylko JP
+      const lg = await rpc('totp_login', { p_code: c, p_ip: ip });
+      if (lg && typeof lg === 'object') { if (lg.ok) return newSession(res, ip, 'kod', String(lg.who || '?').slice(0, 40), lg.role === 'support' || lg.role === 'editor' ? lg.role : 'owner'); }
+      else if ((await rpc('totp_verify', { p_code: c, p_ip: ip })) === true) return newSession(res, ip, 'kod');
       log('zły kod', ip);
       return html(res, 403, codeForm('Kod się nie zgadza albo był już użyty. Wpisz nowy (po kilku błędach blokada na 15 minut).'));
     }
@@ -143,7 +148,20 @@ http.createServer(async (req, res) => {
     return away(res, { 'Set-Cookie': `${CK}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` });
   }
   if (!valid(cookie(req))) return away(res);
+  const S = sessions.get(cookie(req));
+  // kto jest zalogowany (panel chowa sekcje spoza roli) — JP 2026-11-07, konta zespołu
+  if (u.pathname === '/_whoami') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ who: S.who || 'JP', role: S.role || 'owner' })); }
+  // role: support = tylko tickety, klienci i partnerzy; editor = wszystko poza kontami, RODO, kosztami, wdrożeniami, publikacją i ustawieniami.
+  // Sprawdzane TUTAJ (serwer), nie w panelu — ukrycie przycisków to tylko wygoda.
+  if (PURPOSE === 'admin' && S.role && S.role !== 'owner' && u.pathname.startsWith('/api/')) {
+    const ep = u.pathname.slice(4);
+    const okSupport = /^\/(rpc\/(tickets_list|ticket_get|ticket_reply|ticket_set|ticket_templates|ticket_template_save|customer|search|nav_counts|today_numbers|partners_list|partner_stage)|feedback_ai)$/.test(ep);
+    const denyEditor = /^\/rpc\/(team_|user_delete|user_export|setting_save|admin_setting_set|coupon_|campaign_|admin_deploy_decide|admin_cost_decide|translation_request|admin_approve|admin_publish|admin_reject|totp_|stats_link|audit_list|users_overview)/.test(ep);
+    if (S.role === 'support' ? !okSupport : denyEditor) { log('rola', S.role, S.who, 'zablokowane', ep); res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end('{"message":"Brak uprawnień dla tej roli."}'); }
+  }
   const h = { ...req.headers, host: UP.host };
+  delete h['x-admin-who'];
+  if (PURPOSE === 'admin') h['x-admin-who'] = String(S.who || 'JP').replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 60);   // dziennik zdarzeń (ops.admin_audit)
   if (KEEP_AUTH) {                                 // aplikacja (Umami) dostaje swoje nagłówki, ale nie ciasteczko bramki
     const rest = String(h.cookie || '').split(/;\s*/).filter((c) => c && !c.startsWith(CK + '=')).join('; ');
     if (rest) h.cookie = rest; else delete h.cookie;

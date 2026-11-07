@@ -13,12 +13,14 @@ const BACK = `${env('QUOLINO_SITE_URL') || 'https://quolino.com'}/konto.html`;
 async function main() {
   const c = await db();
   try {
+    // godzina przypomnienia z Ustawień panelu (signup_reminder_hours, domyślnie 20; okno do 44 h, bo po 48 h konto znika)
+    const H = Math.min(40, Math.max(1, +((await c.query(`SELECT value FROM ops.app_settings WHERE name = 'signup_reminder_hours'`).catch(() => ({ rows: [] }))).rows[0]?.value ?? 20) || 20));
     const { rows } = await c.query(`
       SELECT u.id, u.email FROM auth.users u
        WHERE u.deleted_at IS NULL AND u.email_confirmed_at IS NULL AND u.email IS NOT NULL
-         AND u.created_at < now() - interval '20 hours' AND u.created_at > now() - interval '44 hours'
+         AND u.created_at < now() - make_interval(hours => $1::int) AND u.created_at > now() - interval '44 hours'
          AND NOT EXISTS (SELECT 1 FROM ops.signup_reminders r WHERE r.user_id = u.id)
-       ORDER BY u.created_at LIMIT 20`);
+       ORDER BY u.created_at LIMIT 20`, [H]);
     let ok = 0, bad = 0;
     for (const u of rows) {
       if (DRY) { ok++; continue; }

@@ -606,7 +606,7 @@
   // #/ pulpit · #/trasy lista · #/<miasto> najnowsza wersja · #/<miasto>/v<N> starsza · #/decyzje · #/straznicy · #/ikony
   // #/postep · #/koszty · #/zgloszenia · #/baza-wiedzy. Boczny pasek (desktop) i dolny pasek (telefon) — index.html.
   var SECTIONS = { dzis: 'Dziś', pulpit: 'Pulpit', trasy: 'Trasy', decyzje: 'Decyzje', straznicy: 'Strażnicy', ikony: 'Ikony', grafiki: 'Grafiki', postep: 'Postęp prac',
-    koszty: 'Koszty AI', ruch: 'Ruch i trasy', uzytkownicy: 'Użytkownicy', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
+    koszty: 'Koszty AI', ruch: 'Ruch i trasy', uzytkownicy: 'Użytkownicy', ustawienia: 'Ustawienia', kupony: 'Kupony', tlumaczenia: 'Tłumaczenia', wiadomosci: 'Wiadomości', partnerzy: 'Partnerzy', dziennik: 'Dziennik zdarzeń', zgloszenia: 'Zgłoszenia', 'baza-wiedzy': 'Baza wiedzy redakcji' };
   var $title = document.getElementById('secTitle'), $crumbs = document.getElementById('crumbs');
   // nagłówek: nazwa sekcji + okruszki (trasa: Trasy › kraj › miasto); aktywny link w obu paskach
   function setHead(key, title, crumbs) {
@@ -637,7 +637,7 @@
     var h = location.hash;
     moreClose();
     emit('adm:route', { hash: h });
-    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|ruch|uzytkownicy|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
+    document.body.classList.toggle('is-prog', /^#\/(postep|koszty|ruch|uzytkownicy|ustawienia|kupony|tlumaczenia|wiadomosci|partnerzy|dziennik|zgloszenia|decyzje|straznicy|ikony|grafiki|pipeline|mapa)$/.test(h));
     document.body.classList.toggle('is-dash', !h || h === '#' || h === '#/' || h === '#/pulpit');
     document.body.classList.remove('is-trip');
     // „Dziś” (admin-today.js) jako start panelu: #/ → meldunek; Pulpit zostaje pod #/pulpit (JP 2026-10-31)
@@ -653,6 +653,8 @@
     if (h === '#/ruch') { setHead('ruch'); showDetail(); window.scrollTo(0, 0); openTraffic(); return; }
     if (h === '#/uzytkownicy') { setHead('uzytkownicy'); showDetail(); window.scrollTo(0, 0); openUsers(); return; }
     if (h === '#/zgloszenia') { setHead('zgloszenia'); showDetail(); window.scrollTo(0, 0); openTickets(); return; }
+    var pre = (window.AdminExt && window.AdminExt.prefixes || []).filter(function (p) { return h.indexOf(p[0]) === 0; })[0];   // #/klient/…, #/opinie/… (admin-hub.js)
+    if (pre) { document.body.classList.add('is-prog'); pre[1](h.slice(pre[0].length)); return; }
     var ext = window.AdminExt && window.AdminExt.routes && window.AdminExt.routes[h];   // #/pipeline (admin-pipeline.js), #/mapa (admin-map.js)
     if (ext) { ext(); return; }
     var m = /^#\/([^/]+)(?:\/v(\d+))?$/.exec(h);
@@ -664,6 +666,8 @@
   }
   function tripHead(name, country, region) {
     setHead('trasy', name, [['Trasy', '#/trasy']].concat(country ? [[countryName(country), null]] : []).concat(region ? [[regionName(region), null]] : []));
+    var m = /^#\/([^/]+)/.exec(location.hash);   // JP 2026-11-07: z trasy prosto do jej zgłoszeń, ocen i ruchu
+    if ($crumbs && m) $crumbs.insertAdjacentHTML('beforeend', '<a class="ad-crumbs__extra" href="#/opinie/' + esc(m[1]) + '" style="margin-left:12px;display:inline-flex;align-items:center;min-height:44px">Opinie i zgłoszenia →</a>');
   }
   // telefon: menu „Więcej” nad dolnym paskiem
   var $more = document.getElementById('moreMenu'), $moreBtn = document.getElementById('moreBtn');
@@ -2819,9 +2823,9 @@
       h += '<h3 class="pg-h3">Konta (najnowsze ' + n((D.users || []).length) + ')</h3><div class="pg-card">' +
         '<div class="pg-seg" role="group" aria-label="Pokaż">' + [['', 'Wszystkie'], ['unconfirmed', 'Bez potwierdzenia'], ['trip', 'Ruszyli w trasę']].map(function (o) {
           return '<button type="button" data-uonly="' + o[0] + '" aria-pressed="' + (only === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
-        '<p><label>Szukaj e-maila <input type="search" id="uQ" value="' + esc(q) + '" style="min-height:44px;font-size:18px"></label></p>' +
+        '<p><label>Szukaj e-maila <input type="search" id="uQ" value="' + esc(q) + '" style="min-height:44px;font-size:18px"></label> <button type="button" class="qc-btn qc-btn--sm" data-ucsv style="min-height:44px">Pobierz CSV</button></p>' +
         (U.length ? '<table class="pg-tab"><thead><tr><th scope="col">E-mail</th><th scope="col">Rejestracja</th><th scope="col">Potwierdzone</th><th scope="col">Ostatnie logowanie</th><th scope="col">Trasy z dzieckiem</th><th scope="col">Skąd · język</th></tr></thead><tbody>' +
-          U.map(function (u) { return '<tr><th scope="row">' + esc(u.email || '—') + (u.banned ? ' <span class="pg-pill pg-pill--bad">zablokowane</span>' : '') + '</th><td>' + esc(day(u.created_at)) + '</td><td>' +
+          U.map(function (u) { return '<tr><th scope="row">' + (u.email ? '<a href="#/klient/' + encodeURIComponent(u.email) + '">' + esc(u.email) + '</a>' : '—') + (u.banned ? ' <span class="pg-pill pg-pill--bad">zablokowane</span>' : '') + '</th><td>' + esc(day(u.created_at)) + '</td><td>' +
             (u.confirmed_at ? esc(day(u.confirmed_at)) : '<span class="pg-pill pg-pill--bad">nie</span>') + '</td><td>' + esc(u.last_sign_in_at ? when(u.last_sign_in_at) : 'nigdy') + '</td><td>' +
             (u.runs ? n(u.trips) + ' (' + n(u.runs) + '×, ostatnio ' + esc(day(u.last_run)) + ')' : '—') + '</td><td>' +
             esc([u.src || '—', u.lang || ''].filter(Boolean).join(' · ')) + (u.waitlist ? ' <span class="pg-pill pg-pill--done">chce pełnej</span>' : '') +
@@ -2829,11 +2833,12 @@
           : '<p class="adm-empty">Brak kont' + (q || only ? ' dla tego filtra' : ' — nikt się jeszcze nie zarejestrował') + '.</p>') + '</div>';
       h += '<h3 class="pg-h3">RODO: dane jednej osoby</h3><div class="pg-card"><p>Wpisz adres z prośby (mail, formularz). <b>Pobierz dane</b> zapisuje plik JSON do odesłania tej osobie. ' +
         '<b>Usuń konto</b> kasuje konto i wszystko przy nim na zawsze — trzeba wpisać adres drugi raz.</p>' +
-        '<form id="uGdpr" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end"><label>E-mail<br><input type="email" id="uGdprMail" required autocomplete="off" style="min-height:44px;font-size:18px;min-width:16em"></label>' +
+        '<form id="uGdpr" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end"><label>E-mail<br><input type="email" id="uGdprMail" required autocomplete="off" value="' + esc(gdprPre) + '" style="min-height:44px;font-size:18px;min-width:16em"></label>' +
         '<button type="submit" class="qc-btn qc-btn--primary" data-gdpr="export" style="min-height:44px">Pobierz dane (JSON)</button>' +
         '<button type="button" class="qc-btn adm-btn-no" data-gdpr="delete" style="min-height:44px">Usuń konto na zawsze…</button></form><p id="uGdprMsg" role="status"></p></div>';
       $d.innerHTML = h + '</section>';
     }
+    var gdprPre = ''; try { gdprPre = sessionStorage.getItem('adm.gdprFor') || ''; sessionStorage.removeItem('adm.gdprFor'); } catch (x) { /* brak */ }
     function gdprMsg(s, bad) { var m = document.getElementById('uGdprMsg'); if (m) { m.textContent = s; m.className = bad ? 'adm-msg adm-msg--err' : 'adm-msg adm-msg--ok'; } }
     function gdprErr(r) { return { not_found: 'Nie ma konta z tym adresem.', confirm_mismatch: 'Adres w potwierdzeniu się nie zgadza — nic nie usunięto.', admin_account: 'To konto administratora — nie usuwam.' }[r && r.error] || 'Nie udało się.'; }
     $d.onsubmit = function (e) {
@@ -2859,6 +2864,7 @@
         }, function (er) { gdprMsg(er.message, true); });
         return;
       }
+      if (e.target.closest && e.target.closest('[data-ucsv]') && window.AdminHub) { AdminHub.csv(D.users, [['email', 'e-mail'], ['created_at', 'rejestracja'], ['confirmed_at', 'potwierdzone'], ['last_sign_in_at', 'ostatnie logowanie'], ['src', 'skąd'], ['lang', 'język'], ['runs', 'trasy z dzieckiem'], ['waitlist', 'lista chętnych']], 'konta'); return; }
       var b = e.target.closest && e.target.closest('[data-uonly]'); if (!b) return; only = b.getAttribute('data-uonly'); draw();
     };
     $d.oninput = function (e) { if (e.target.id !== 'uQ') return; q = e.target.value.trim().toLowerCase(); var pos = e.target.selectionStart; draw(); var i = document.getElementById('uQ'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } };
@@ -2898,9 +2904,9 @@
         '</tbody></table><p class="pg-trend">Nie potwierdzili (konto skasowane po 48 h): <b>' + n(F.expired) + '</b>.</p></div>';
       var T = D.trips || [], mxv = Math.max.apply(null, T.map(function (x) { return x.views; }).concat(1));
       h += '<h3 class="pg-h3">Ranking tras</h3><div class="pg-card"><table class="pg-tab"><thead><tr><th scope="col">Trasa</th><th scope="col">Wejścia na stronę</th><th scope="col">Otwarcia pełnej trasy</th><th scope="col">Trasy z dzieckiem</th><th scope="col">Ocena rodzin</th></tr></thead><tbody>' +
-        (T.length ? T.map(function (x) { return '<tr><th scope="row"><a href="#/' + esc(x.slug) + '">' + esc(tripName(x.slug)) + '</a></th><td>' + n(x.views) + ' ' + bar(x.views, mxv) + '</td><td>' + n(x.opens) + '<small>' + n(x.members) + ' kont</small></td><td>' + n(x.runs) + '<small>' + n(x.parents) + ' rodzin</small></td><td>' +
+        (T.length ? T.map(function (x) { return '<tr><th scope="row"><a href="#/opinie/' + esc(x.slug) + '">' + esc(tripName(x.slug)) + '</a></th><td>' + n(x.views) + ' ' + bar(x.views, mxv) + '</td><td>' + n(x.opens) + '<small>' + n(x.members) + ' kont</small></td><td>' + n(x.runs) + '<small>' + n(x.parents) + ' rodzin</small></td><td>' +
           (x.ratings ? '★ ' + esc(String(x.rating).replace('.', ',')) + '<small>' + n(x.ratings) + ' ocen</small>' : '—') + '</td></tr>'; }).join('') : '<tr><td colspan="5">Brak opublikowanych tras.</td></tr>') +
-        '</tbody></table><p class="pg-trend">Ocena to „Jak wam poszło?” na końcu trasy (1–5).</p></div>';
+        '</tbody></table><p class="pg-trend">Ocena to „Jak wam poszło?” na końcu trasy (1–5). Klik w trasę: jej zgłoszenia, oceny i komentarze. <button type="button" class="qc-btn qc-btn--sm" data-rcsv style="min-height:44px">Pobierz CSV</button></p></div>';
       var L = D.langs || [];
       h += '<h3 class="pg-h3">Języki</h3><div class="pg-card"><table class="pg-tab"><thead><tr><th scope="col">Język</th><th scope="col">Wejścia (przeglądarka)</th><th scope="col">Nowe konta</th><th scope="col">Konta w trasach</th></tr></thead><tbody>' +
         (L.length ? L.map(function (x) { return '<tr><th scope="row">' + esc(LN[x.key] || x.key) + '</th><td>' + n(x.visitors) + '</td><td>' + n(x.signups) + '</td><td>' + n(x.members) + '</td></tr>'; }).join('') : '<tr><td colspan="4">Brak danych.</td></tr>') +
@@ -2925,7 +2931,9 @@
         langs: [{ key: 'pl', visitors: 300, signups: 12, members: 5 }, { key: 'de', visitors: 60, signups: 2, members: 0 }], channels: [{ key: 'Social', visitors: 200 }], sources: [{ key: 'facebook', signups: 9, confirmed: 6 }], countries: [{ key: 'PL', visitors: 330 }], daily: [] })
         : api('/rpc/traffic_overview', { method: 'POST', body: { p_days: days } })).then(function (r) { D = r || {}; err = null; draw(); }, function (e) { err = e.message; draw(); });
     }
-    $d.onclick = function (e) { var b = e.target.closest && e.target.closest('[data-tdays]'); if (!b) return; days = +b.getAttribute('data-tdays'); try { localStorage.setItem('adm.trafficDays', days); } catch (x) { /* brak */ } load(); };
+    $d.onclick = function (e) {
+      if (e.target.closest && e.target.closest('[data-rcsv]') && window.AdminHub) { AdminHub.csv(D.trips, [['slug', 'trasa'], ['views', 'wejścia'], ['opens', 'otwarcia pełnej trasy'], ['runs', 'trasy z dzieckiem'], ['parents', 'rodziny'], ['rating', 'ocena'], ['ratings', 'liczba ocen']], 'ranking-tras'); return; }
+      var b = e.target.closest && e.target.closest('[data-tdays]'); if (!b) return; days = +b.getAttribute('data-tdays'); try { localStorage.setItem('adm.trafficDays', days); } catch (x) { /* brak */ } load(); };
     $d.onsubmit = null; $d.oninput = null;
     load();
     document.title = 'Ruch i trasy · Quolino admin';
@@ -3052,7 +3060,8 @@
         '<dl class="pg-kpi"><div><dt>nowe</dt><dd>' + (C['new'] || 0) + '</dd></div><div><dt>w toku</dt><dd>' + (C.open || 0) + '</dd></div><div><dt>czekają na klienta</dt><dd>' + (C.waiting || 0) + '</dd></div><div><dt>rozwiązane</dt><dd>' + (C.resolved || 0) + '</dd></div></dl></header>';
       h += '<div class="pg-seg tk-seg" role="group" aria-label="Pokaż">' + [['active', 'Otwarte'], ['new', 'Nowe'], ['waiting', 'Czekają na klienta'], ['resolved', 'Rozwiązane'], ['closed', 'Zamknięte'], ['spam', 'Spam'], ['all', 'Wszystkie']].map(function (o) {
         return '<button type="button" data-tkf="' + o[0] + '" aria-pressed="' + (filt === o[0]) + '">' + o[1] + '</button>'; }).join('') +
-        '<button type="button" data-tktpl aria-pressed="' + showTpl + '">Gotowe odpowiedzi</button></div>';
+        '<button type="button" data-tktpl aria-pressed="' + showTpl + '">Gotowe odpowiedzi</button><button type="button" data-tkcsv>CSV</button></div>' +
+        '<p class="pg-trend" style="margin:6px 0">Skróty: <kbd>j</kbd>/<kbd>k</kbd> następny/poprzedni · <kbd>r</kbd> odpowiedź · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> wyślij · <kbd>Esc</kbd> zamknij.</p>';
       if (showTpl) h += drawTpl();
       var list = L.tickets || [];
       h += '<div class="tk-wrap" style="display:grid;gap:16px;grid-template-columns:minmax(0,1fr)' + (cur ? ' minmax(0,1.4fr)' : '') + '">';
@@ -3073,7 +3082,7 @@
       var canMail = !!T.email;
       return '<article class="pg-card" aria-label="Ticket ' + esc(T.number) + '"><header class="pg-card__head"><div><div class="pg-card__title"><b>' + esc(T.subject) + '</b> ' + pill(T.status) + '</div>' +
         '<p class="fb-meta">' + esc(T.number) + ' · ' + esc(TK_SRC[T.source] || T.source) + (T.city_slug ? ' · <a href="#/' + esc(T.city_slug) + '">' + esc(titleCase(T.city_slug)) + '</a>' : '') + (T.stop ? ' · ' + esc(T.stop) : '') +
-        ' · ' + esc(when(T.created_at)) + (T.lang ? ' · język ' + esc(T.lang) : '') + '<br>' + (T.email ? 'Kontakt: ' + esc(T.email) + (T.has_account ? ' (konto)' : '') : 'Bez e-maila — odpowiedź zobaczy tylko w koncie, jeśli je założy na tym urządzeniu') + '</p></div>' +
+        ' · ' + esc(when(T.created_at)) + (T.lang ? ' · język ' + esc(T.lang) : '') + '<br>' + (T.email ? 'Kontakt: <a href="#/klient/' + encodeURIComponent(T.email) + '">' + esc(T.email) + '</a>' + (T.has_account ? ' (konto)' : '') : 'Bez e-maila — odpowiedź zobaczy tylko w koncie, jeśli je założy na tym urządzeniu') + '</p></div>' +
         '<button type="button" class="qc-btn qc-btn--sm" data-tkclose aria-label="Zamknij podgląd">✕</button></header>' +
         '<div class="tk-thread" style="display:grid;gap:10px;margin:12px 0">' + (T.messages || []).map(function (m) {
           var team = m.author === 'team', note = m.author === 'note';
@@ -3109,7 +3118,7 @@
       return p.then(function (r) {
         if (r && r.error) throw new Error({ not_found: 'nie ma takiego ticketu', length: 'za krótko albo za długo', status: 'zły status' }[r.error] || r.error);
         return Promise.all([loadList(), cur ? rpc('ticket_get', { p_number: cur }) : null]);
-      }).then(function (v) { if (v[1]) T = v[1]; msg = okMsg || ''; draw(); })
+      }).then(function (v) { if (v[1]) T = v[1]; msg = okMsg || ''; draw(); if (window.AdminHub) AdminHub.reloadCounts(); })
         .catch(function (e) { msg = 'Nie zapisano: ' + e.message; draw(); });
     }
     var submitter = null;
@@ -3119,6 +3128,7 @@
       if ((b = el.closest('[data-tkmode]'))) { submitter = b.getAttribute('data-tkmode'); return; }
       if ((b = el.closest('[data-tkf]'))) { filt = b.getAttribute('data-tkf'); try { localStorage.setItem('adm.tkFilt', filt); } catch (x) { /* brak */ } loadList(); return; }
       if (el.closest('[data-tktpl]')) { showTpl = !showTpl; editTpl = null; draw(); return; }
+      if (el.closest('[data-tkcsv]') && window.AdminHub) { AdminHub.csv(L.tickets, [['number', 'numer'], ['subject', 'temat'], ['status', 'status'], ['source', 'źródło'], ['city_slug', 'trasa'], ['priority', 'priorytet'], ['category', 'kategoria'], ['created_at', 'utworzony'], ['updated_at', 'zmiana'], ['preview', 'ostatnia wiadomość']], 'zgloszenia'); return; }
       if ((b = el.closest('[data-tk]'))) { openOne(b.getAttribute('data-tk')); return; }
       if (el.closest('[data-tkclose]')) { cur = null; T = null; draw(); return; }
       if ((b = el.closest('[data-tkst]'))) { if (DEMO) { T.status = b.getAttribute('data-tkst'); draw(); return; } after(rpc('ticket_set', { p_number: cur, p_status: b.getAttribute('data-tkst') }), 'Status zmieniony.'); return; }
@@ -3150,7 +3160,20 @@
         mode === 'note' ? 'Notatka dodana.' : T && T.email ? 'Odpowiedź wysłana (konto i e-mail).' : 'Odpowiedź zapisana.');
     };
     $d.oninput = null;
-    draw(); loadList(); loadTpl();
+    var want = null; try { want = sessionStorage.getItem('adm.openTicket'); sessionStorage.removeItem('adm.openTicket'); } catch (x) { /* brak */ }
+    if (want) { filt = 'all'; cur = want; }
+    draw(); loadList(); loadTpl(); if (want) openOne(want);
+    // skróty (JP 2026-11-07): j / k — następny / poprzedni, r — odpowiedź, Ctrl+Enter — wyślij, Esc — zamknij podgląd
+    if (!state.tkKeys) { state.tkKeys = true; document.addEventListener('keydown', function (e) {
+      if (location.hash !== '#/zgloszenia' || e.altKey || e.metaKey) return;
+      var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
+      if (e.ctrlKey && e.key === 'Enter' && document.activeElement && document.activeElement.id === 'tkReply') { e.preventDefault(); var f = document.getElementById('tkForm'); if (f) f.requestSubmit(f.querySelector('[data-tkmode="reply"]')); return; }
+      if (typing || e.ctrlKey) return;
+      var btns = [].slice.call($d.querySelectorAll('[data-tk]')), i = btns.findIndex(function (b) { return b.getAttribute('aria-current') === 'true'; });
+      if (e.key === 'j' || e.key === 'k') { e.preventDefault(); var nb = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === 'j' ? 1 : -1)))]; if (nb) nb.click(); }
+      else if (e.key === 'r') { var ta = document.getElementById('tkReply'); if (ta) { e.preventDefault(); ta.focus(); } }
+      else if (e.key === 'Escape') { var c = $d.querySelector('[data-tkclose]'); if (c) c.click(); }
+    }); }
     state.poll = setInterval(function () { if (location.hash === '#/zgloszenia' && !document.activeElement.closest('#tkForm, #tplForm')) loadList(); }, 60000);
     document.title = 'Zgłoszenia · Quolino admin';
   }

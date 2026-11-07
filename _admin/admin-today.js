@@ -253,6 +253,7 @@
     if (!h.DEMO && B.source === 'panel') html += '<p class="ad-note">Pełny meldunek (pisany przez AI, z zleceniami i strażnikami z serwera) pojawi się, gdy panel dostanie <code>ops_status</code> w schemacie admin.</p>';
     html += '</div>';
     h.$d.innerHTML = html;
+    if (window.AdminHub) window.AdminHub.todayStrip(h.$d);   // liczby: zgłoszenia, konta, ruch, szkice (JP 2026-11-07)
     document.dispatchEvent(new CustomEvent('adm:today', { detail: { brief: B } }));
   }
 
