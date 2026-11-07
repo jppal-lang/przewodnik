@@ -1,6 +1,6 @@
 {
  "slug": "asyz",
- "at": "2026-11-07T20:20:09.056Z",
+ "at": "2026-11-07T21:20:09.989Z",
  "comments": [
   {
    "id": "114",
@@ -866,15 +866,15 @@
    "hermes_reply": "Gelateria Leccapaletta: Zmieniono misję dla dzieci oraz wskazówkę na zadanie polegające na sprawdzeniu oznaczeń lodów bez mleka i laktozy oraz policzeniu dostępnych danego dnia smaków, niezależnie od zmiennego asortymentu. Poprawione w szkicu v16 (zmian: 21). · Sprawdzone: naniesiona",
    "resolved_in_version": 16,
    "created_at": "2026-11-05T20:44:07.300Z",
-   "updated_at": "2026-11-07T18:48:17.411Z",
+   "updated_at": "2026-11-07T20:30:28.955Z",
    "request_id": "19",
    "kb_rule_id": null,
    "done": false,
    "verify_status": "applied",
-   "verify_note": "Treść misji została całkowicie zastąpiona nową propozycją dotyczącą oznaczeń lodów bez laktozy i liczby smaków.",
+   "verify_note": "Wprowadzono nową wersję zadania dla dzieci zgodnie z zaakceptowaną propozycją zmiany.",
    "verify_quote": "Sprawdź na tabliczkach w witrynie chłodniczej, jak oznaczono lody bez mleka i laktozy, oraz policz, ile smaków jest dziś do wyboru",
    "verified_in_version": 16,
-   "verified_at": "2026-11-07T18:48:17.411Z"
+   "verified_at": "2026-11-07T20:30:28.955Z"
   }
  ],
  "revision_requests": [
@@ -1670,16 +1670,16 @@
    ],
    "status": "done",
    "result_version": 16,
-   "hermes_reply": "Gelateria Leccapaletta: Zmieniono misję dla dzieci oraz wskazówkę na zadanie polegające na sprawdzeniu oznaczeń lodów bez mleka i laktozy oraz policzeniu dostępnych danego dnia smaków, niezależnie od zmiennego asortymentu. Poprawione w szkicu v16 (zmian: 21). · Sprawdzone: nie gotowa — 1/1 naniesionych, 0 częściowo, 0 nie naniesionych, walidator: 1 nowych błędów",
+   "hermes_reply": "Gelateria Leccapaletta: Zmieniono misję dla dzieci oraz wskazówkę na zadanie polegające na sprawdzeniu oznaczeń lodów bez mleka i laktozy oraz policzeniu dostępnych danego dnia smaków, niezależnie od zmiennego asortymentu. Poprawione w szkicu v16 (zmian: 21). · Sprawdzone: gotowa — 1/1 naniesionych, 0 częściowo, 0 nie naniesionych, walidator: 0 nowych błędów",
    "attempts": 1,
    "created_at": "2026-11-05T20:44:07.300Z",
-   "updated_at": "2026-11-07T18:48:17.413Z",
+   "updated_at": "2026-11-07T20:30:28.959Z",
    "verify": {
     "ok": true,
     "items": [
      {
       "id": "154",
-      "note": "Treść misji została całkowicie zastąpiona nową propozycją dotyczącą oznaczeń lodów bez laktozy i liczby smaków.",
+      "note": "Wprowadzono nową wersję zadania dla dzieci zgodnie z zaakceptowaną propozycją zmiany.",
       "quote": "Sprawdź na tabliczkach w witrynie chłodniczej, jak oznaczono lody bez mleka i laktozy, oraz policz, ile smaków jest dziś do wyboru",
       "where": "Gelateria Leccapaletta · Misja dla dzieci",
       "status": "applied",
@@ -1687,7 +1687,7 @@
      }
     ],
     "label": "v10f",
-    "ready": false,
+    "ready": true,
     "round": 1,
     "stale": 0,
     "total": 1,
@@ -1698,14 +1698,12 @@
     "version": 16,
     "unplaced": 0,
     "ai_failed": false,
-    "checked_at": "2026-11-07T18:48:17.410Z",
-    "new_errors": 1,
+    "checked_at": "2026-11-07T20:30:28.953Z",
+    "new_errors": 0,
     "pending_ai": false,
     "from_version": 14,
     "validator_ok": true,
-    "new_error_lines": [
-     "[BŁĄD] asyz: pl: parking-mojano — brak 'photo_task', a zadanie foto jest obowiazkowe"
-    ]
+    "new_error_lines": []
    },
    "retry_of": null
   }
