@@ -1,0 +1,10 @@
+{
+ "script": "trip-approve.mjs",
+ "args": ["spello"],
+ "title": "Zatwierdzenie Spello v27 (kontrola bez uwag)",
+ "why": "JP: zatwierdź Spello, jeśli nie ma błędów krytycznych. Publikacja + tłumaczenia w dziennym limicie. Bramka publikacji sama odmówi, jeśli coś zostało otwarte.",
+ "est_usd": 0.05,
+ "by": "Claude",
+ "timeout_min": 20,
+ "jp_ok": { "date": "2026-11-05", "quote": "przejrzyj uwagi jeśli nie ma błedów kreytycznych w asyzy u spello zatwierdź" }
+}
