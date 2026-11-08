@@ -36,6 +36,7 @@ export const ALLOWED = {
   'usage-summary.mjs': () => true,
   // diagnostyka bazy tylko do odczytu (JP 2026-11-03: znaleźć, co blokuje nowe trasy)
   'db-diag.mjs': (a) => a.length === 0,
+  'tickets-dump.mjs': (a) => a.length === 0,   // lista ticketów bez danych osobowych → _content/reports/tickety.json (2026-11-08)
   // raport uwag JP i flag kontroli do analizy redakcji (tylko odczyt, plik w repo)
   'comments-dump.mjs': (a) => a.length === 1 && /^[a-z0-9][a-z0-9-]{1,62}$/.test(a[0]),
   // ponowienie tłumaczenia opublikowanej trasy (te same kontrole jakości co w kolejce; bez --dry/--job z zewnątrz)
