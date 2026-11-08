@@ -1,0 +1,9 @@
+{
+ "script": "tickets-dump.mjs",
+ "args": [],
+ "title": "Lista ticketów do przeglądu (testowe do usunięcia)",
+ "why": "JP 2026-11-08: przejrzyj zgłoszenia, zrobione przez agentów usuń. Odczyt bez AI, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 10
+}
