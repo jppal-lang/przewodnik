@@ -72,6 +72,8 @@
       '<button type="button" class="qr-x">' + esc(L.cancel) + '</button><span class="qr-msg" aria-live="polite"></span></div>';
     btn.replaceWith(f);
     var ta = f.querySelector('textarea'); ta.focus();
+    var hh = { 'Content-Type': 'application/json' }; if (KEY) { hh.apikey = KEY; hh.Authorization = 'Bearer ' + KEY; }
+    var pow = window.QPow ? QPow.start(API, hh) : Promise.resolve(null);   // „czy człowiek” liczy się w tle, zanim rodzic skończy pisać
     f.querySelector('.qr-x').addEventListener('click', function () { f.replaceWith(btn); });
     f.querySelector('.qr-send').addEventListener('click', function () {
       var msg = f.querySelector('.qr-msg'), send = f.querySelector('.qr-send');
@@ -80,13 +82,15 @@
       send.disabled = true; setQuo(f, 'zglos');
       var h = { 'Content-Type': 'application/json' };
       if (KEY) { h.apikey = KEY; h.Authorization = 'Bearer ' + KEY; }
-      fetch(API + '/rpc/report_issue', {
-        method: 'POST', headers: h,
-        body: JSON.stringify({ p_city: city(), p_stop: num, p_type: type, p_message: ta.value.trim(), p_lang: lang(), p_client: client() })
+      pow.catch(function () { return null; }).then(function (alt) {
+        return fetch(API + '/rpc/report_issue', {
+          method: 'POST', headers: h,
+          body: JSON.stringify({ p_city: city(), p_stop: num, p_type: type, p_message: ta.value.trim(), p_lang: lang(), p_client: client(), p_altcha: alt })
+        });
       }).then(function (r) {
         if (r.ok) { f.innerHTML = quo('zgloszenie-dzieki') + '<span class="qr-msg">' + esc(L.ok) + '</span>'; return; }
         return r.json().catch(function () { return null; }).then(function (j) { throw new Error(j && j.message && lang() === 'pl' ? j.message : L.err); });
-      }).catch(function (e) { setQuo(f, 'blad-wysylki'); msg.textContent = e.message || L.err; send.disabled = false; });
+      }).catch(function (e) { setQuo(f, 'blad-wysylki'); msg.textContent = e.message || L.err; send.disabled = false; pow = window.QPow ? QPow.start(API, hh) : pow; });
     });
   }
 

@@ -11,7 +11,7 @@
 <meta name="pt-title" content="page.account.title">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preload" href="/media/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=44">
+<link rel="stylesheet" href="/styles.css?v=45">
 <script src="/lang-pick.js?v=2"></script>
 <script src="/page-i18n.js?v=4" data-keys="page.account,page.footer"></script>
 <script src="/kid-reward.js?v=6"></script>
@@ -201,6 +201,17 @@
         <button type="button" class="qc-btn" data-act="export" data-t="page.account.export_btn">Pobierz moje dane (JSON)</button>
         <button type="button" class="qc-btn acc-danger" data-act="delete" disabled data-t="page.account.delete_btn">Usuń konto i dane</button>
       </div>
+      <!-- potwierdzenie na stronie, bez okienek (zasada: zero pop-upów, JP 2026-11-08) -->
+      <form class="acc-del" id="accDel" novalidate hidden>
+        <p data-t="page.account.delete_warn">Usunięcie konta jest nieodwracalne: znikną konto, zgłoszenia, kupony i zgody.</p>
+        <label for="accDelMail" data-t="page.account.delete_label">Wpisz swój adres e-mail, żeby potwierdzić</label>
+        <input type="email" id="accDelMail" autocomplete="email" required>
+        <div class="acc-priv__acts">
+          <button type="submit" class="qc-btn acc-danger" data-t="page.account.delete_go">Usuń na zawsze</button>
+          <button type="button" class="qc-btn" data-act="delete-cancel" data-t="page.account.delete_cancel">Anuluj</button>
+        </div>
+        <p class="acc-del__msg" role="status" aria-live="polite"></p>
+      </form>
       <!-- hasło opcjonalne (JP 2026-10-29, D-1): logujesz się kodem z maila; kto chce, ustawia hasło. Tylko dla zalogowanego. -->
       <form class="acc-pass" id="accPass" novalidate hidden>
         <h3 data-t="page.account.pass_h">Hasło (opcjonalnie)</h3>
@@ -750,17 +761,26 @@
   if (del && !AS && window.QAuth) {
     var delState = function () { del.disabled = !QAuth.current(); };
     QAuth.ready.then(delState); document.addEventListener('qauth', delState);
+    var df = document.getElementById('accDel'), dm = document.getElementById('accDelMail'), dmsg = df && df.querySelector('.acc-del__msg');
+    var FAIL = function () { return P('page.account.delete_fail', 'Nie udało się usunąć konta. Napisz do nas przez formularz kontaktowy.'); };
     del.addEventListener('click', function () {
-      var s = QAuth.current(); if (!s) return;
-      var c = window.prompt(P('page.account.delete_confirm', 'Usunięcie konta jest nieodwracalne: znikną konto, zgłoszenia, kupony i zgody. Wpisz swój adres e-mail, żeby potwierdzić:'), '');
-      if (c == null) return;
+      if (!QAuth.current() || !df) return;
+      df.hidden = false; dmsg.textContent = ''; dm.value = ''; dm.focus();
+    });
+    df.querySelector('[data-act="delete-cancel"]').addEventListener('click', function () { df.hidden = true; del.focus(); });
+    df.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var c = dm.value.trim(), go = df.querySelector('button[type="submit"]');
+      if (!c || go.disabled || !QAuth.current()) return;
+      go.disabled = true; dmsg.textContent = '';
       token().then(function (t) { return rpc('delete_my_account', { p_token: t, p_confirm: c }); }).then(function (r) {
         if (r && r.ok) {
           ['qc.parent.news', 'qc.src'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { /* brak */ } });
           (QAuth.signOut ? QAuth.signOut() : Promise.resolve()).then(function () { location.href = '/'; }); return;
         }
-        window.alert(r && r.error === 'confirm_mismatch' ? P('page.account.delete_mismatch', 'Adres się nie zgadza — konto nie zostało usunięte.') : P('page.account.delete_fail', 'Nie udało się usunąć konta. Napisz do nas przez formularz kontaktowy.'));
-      }, function () { window.alert(P('page.account.delete_fail', 'Nie udało się usunąć konta. Napisz do nas przez formularz kontaktowy.')); });
+        go.disabled = false;
+        dmsg.textContent = r && r.error === 'confirm_mismatch' ? P('page.account.delete_mismatch', 'Adres się nie zgadza — konto nie zostało usunięte.') : FAIL();
+      }, function () { go.disabled = false; dmsg.textContent = FAIL(); });
     });
   }
 })();
@@ -963,9 +983,10 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-copy-code]'); if (!b) return;
     var code = b.getAttribute('data-copy-code');
+    var show = function () { b.textContent = code; try { var r = document.createRange(); r.selectNodeContents(b); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) { /* brak */ } };   // bez schowka: kod zaznaczony do skopiowania, bez okienka
     var done = function () { b.textContent = PT('page.account.treasure.copied', 'Skopiowano'); setTimeout(function () { b.textContent = PT('page.account.treasure.copy', 'Kopiuj kod'); }, 2500); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, function () { window.prompt('', code); });
-    else window.prompt('', code);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, function () { show(); });
+    else show();
   });
   run();
   if (window.PT && PT.lang !== 'pl') PT.ready.then(render);

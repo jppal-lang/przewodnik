@@ -88,9 +88,11 @@
       '</div><div class="qo-lbl" aria-live="polite"></div><textarea maxlength="500" placeholder="' + esc(L.ph) + '"></textarea>' +
       '<div class="qo-row"><button type="button" class="qo-send">' + esc(L.send) + '</button><span class="qo-msg" aria-live="polite"></span></div>';
     var btns = box.querySelectorAll('.qo-stars button'), lbl = box.querySelector('.qo-lbl');
+    var hh = { 'Content-Type': 'application/json' }; if (KEY) { hh.apikey = KEY; hh.Authorization = 'Bearer ' + KEY; }
+    var pow = null, startPow = function () { if (!pow) pow = window.QPow ? QPow.start(API, hh) : Promise.resolve(null); return pow; };   // „czy człowiek” w tle od pierwszej gwiazdki
     btns.forEach(function (b) {
       b.addEventListener('click', function () {
-        stars = +b.getAttribute('data-n'); lbl.textContent = L.stars[stars - 1];
+        stars = +b.getAttribute('data-n'); lbl.textContent = L.stars[stars - 1]; startPow();
         btns.forEach(function (x) { var on = +x.getAttribute('data-n') <= stars; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(+x.getAttribute('data-n') === stars)); });
       });
     });
@@ -100,13 +102,15 @@
       send.disabled = true;
       var h = { 'Content-Type': 'application/json' };
       if (KEY) { h.apikey = KEY; h.Authorization = 'Bearer ' + KEY; }
-      fetch(API + '/rpc/rate_trip', {
-        method: 'POST', headers: h,
-        body: JSON.stringify({ p_city: c, p_stars: stars, p_comment: box.querySelector('textarea').value.trim() || null, p_lang: lang(), p_client: client() })
+      startPow().catch(function () { return null; }).then(function (alt) {
+        return fetch(API + '/rpc/rate_trip', {
+          method: 'POST', headers: h,
+          body: JSON.stringify({ p_city: c, p_stars: stars, p_comment: box.querySelector('textarea').value.trim() || null, p_lang: lang(), p_client: client(), p_altcha: alt })
+        });
       }).then(function (r) {
         if (r.ok) { mark(c, stars); thanks(box, c); return; }
         return r.json().catch(function () { return null; }).then(function (j) { throw new Error(j && j.message && lang() === 'pl' ? j.message : L.err); });
-      }).catch(function (e) { msg.textContent = e.message || L.err; send.disabled = false; });
+      }).catch(function (e) { msg.textContent = e.message || L.err; send.disabled = false; pow = null; });
     });
   }
 

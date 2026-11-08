@@ -2031,3 +2031,8 @@ html.qk-hand-on .qc-dock,html.qk-hand-on .qc-pager{visibility:hidden}
 .acc-tk-new input,.acc-tk-new textarea{font:inherit;font-size:18px;padding:10px 12px;min-height:44px;border:1px solid var(--line,#e2ded6);border-radius:10px;width:100%;box-sizing:border-box}
 .acc-tk-new .qc-btn{justify-self:start;min-height:44px}
 .acc-tk-msg{font-size:18px;min-height:1.4em}
+/* potwierdzenie usunięcia konta na stronie (bez okienek) */
+.acc-del{margin-top:16px;padding:16px;border:2px solid var(--rosso);border-radius:12px}
+.acc-del label{display:block;margin:8px 0 4px;font-size:18px}
+.acc-del input{width:100%;min-height:44px;font-size:18px;padding:8px 12px;box-sizing:border-box}
+.acc-del__msg{color:var(--rosso);font-size:18px;min-height:1em}

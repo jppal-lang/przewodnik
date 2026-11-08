@@ -29,11 +29,12 @@
     arr.forEach(function(d, i){
       var im = document.createElement('img');
       im.src = d; im.alt = 'zdjęcie ' + (i+1); im.loading = 'lazy';
-      im.title = 'Dotknij, aby usunąć';
+      im.title = 'Dotknij dwa razy, aby usunąć';
+      // bez okienka (zero pop-upów): pierwsze dotknięcie zaznacza, drugie w ciągu 3 s usuwa
       im.addEventListener('click', function(){
-        if(confirm('Usunąć to zdjęcie z albumu?')){
-          arr.splice(i,1); save(key, arr); render(box, key);
-        }
+        if(im.dataset.arm){ arr.splice(i,1); save(key, arr); render(box, key); return; }
+        im.dataset.arm = '1'; im.style.outline = '4px solid #c0392b'; im.title = 'Dotknij jeszcze raz, aby usunąć';
+        setTimeout(function(){ delete im.dataset.arm; im.style.outline = ''; im.title = 'Dotknij dwa razy, aby usunąć'; }, 3000);
       });
       box.appendChild(im);
     });
