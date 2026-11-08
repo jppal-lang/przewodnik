@@ -15,7 +15,7 @@ serwer (porty, SSH). **Poza zakresem**: kod SSR (`server.mjs` na VPS — nie ma 
 | **Pełna treść wycieczek anonimowo przez API** | ⚠️ otwarte | Etap A z `DOSTEP-I-KONTA.md` — tabele `stops`, `stop_translations` itd. nadal czytelne dla `web_anon`. Każdy może pobrać wszystkie wycieczki jednym skryptem. |
 | **Limity opinii i zgłoszeń** | ⚠️ do poprawy | Limit „na urządzenie” opiera się na `client_id`, który przysyła przeglądarka — skrypt może losować nowy przy każdym wywołaniu i nabijać oceny (do 60/h na miasto). |
 | **Linki podglądu szkicu** | ⚠️ do poprawy | Token w `draft_previews` nie ma daty ważności — raz udostępniony link działa zawsze i pokazuje nieopublikowaną treść z recenzją. |
-| **Nagłówki bezpieczeństwa** | ⚠️ brak | Brak CSP, HSTS, `X-Content-Type-Options`, `frame-ancestors`. |
+| **Nagłówki bezpieczeństwa** | 🟡 częściowo | `X-Content-Type-Options` i `Referrer-Policy` są. HSTS i `frame-ancestors` (bez cudzych ramek; wyjątek: podgląd w panelu) w `ops/perf-traefik.sh` od 2026-11-08, po zgodzie JP. Brak: `Permissions-Policy`, pełny CSP. |
 | **Wstrzykiwanie poleceń do AI (prompt injection)** | ⚠️ ryzyko procesu | Hermes czyta strony WWW i Discorda. Treść z zewnątrz musi być traktowana jako dane; zmiany w repo tylko od JP/Claude z sumą md5; konfiguracja Hermesa zablokowana (patrz 07:20 16.10). |
 
 ## 2. Zasady na stałe (dla wszystkich ról)

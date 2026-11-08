@@ -64,6 +64,10 @@ L = {'traefik.enable': 'true', 'quolino.perf': 'D1 2026-10-29',
      'traefik.http.middlewares.quolino-compress.compress.minresponsebodybytes': '1024',
      # PostgREST dodaje „Content-Range”, a kompresja Traefika pomija odpowiedzi z tym nagłówkiem — strona go nie używa, usuwamy
      'traefik.http.middlewares.quolino-norange.headers.customresponseheaders.Content-Range': ''}
+# nagłówki bezpieczeństwa strony (JP 2026-11-08, kontrola bezpieczeństwa; docs/BEZPIECZENSTWO.md §5): HTTPS na stałe i zakaz
+# osadzania strony w cudzych ramkach (wyjątek: podgląd szkicu w panelu admin.quolino.com). Permissions-Policy i pełny CSP — osobno.
+L['traefik.http.middlewares.quolino-sec.headers.customresponseheaders.Strict-Transport-Security'] = 'max-age=31536000'
+L['traefik.http.middlewares.quolino-sec.headers.customresponseheaders.Content-Security-Policy'] = "frame-ancestors 'self' https://admin.quolino.com"
 CC = {'quolino-cc-api': 'public, max-age=300', 'quolino-cc-img': 'public, max-age=2592000, stale-while-revalidate=86400',
       'quolino-cc-font': 'public, max-age=31536000, immutable', 'quolino-cc-asset': 'public, max-age=86400', 'quolino-cc-html': 'no-cache'}
 for k, v in CC.items(): L['traefik.http.middlewares.%s.headers.customresponseheaders.Cache-Control' % k] = v
@@ -83,7 +87,7 @@ for n, r in sorted(api.items()):
     add(n + '-perf', r, '(%s)' % r['rule'], p + 1, ['quolino-compress@docker', 'quolino-norange@docker'])
     add(n + '-perf-get', r, '(%s) && Method(`GET`) && !PathPrefix(`/rest/v1/rpc`)' % r['rule'], p + 2, ['quolino-compress@docker', 'quolino-norange@docker', 'quolino-cc-api@docker'])
 for n, r in ssr.items():
-    r['_svc'] = svc(n, r); add(n + '-perf', r, '(%s)' % r['rule'], prio(r) + 1, ['quolino-compress@docker'])
+    r['_svc'] = svc(n, r); add(n + '-perf', r, '(%s)' % r['rule'], prio(r) + 1, ['quolino-compress@docker', 'quolino-sec@docker'])
 w = routers[web[0]]; w['_svc'] = svc(web[0], w)
 if prio(w) >= 90: die('router strony ma priorytet %d ≥ 90' % prio(w))
 H = 'Host(`quolino.com`)'
@@ -92,7 +96,7 @@ for i, (suffix, rule, cc) in enumerate([
         ('font', r'PathRegexp(`\.woff2$`)', 'quolino-cc-font'),
         ('asset', r'PathRegexp(`\.(?:css|js)$`) && QueryRegexp(`v`, `.+`)', 'quolino-cc-asset'),
         ('html', r'(Path(`/`) || PathRegexp(`(?:/|\.html)$`))', 'quolino-cc-html')]):
-    add('quolino-web-perf-' + suffix, w, '%s && %s' % (H, rule), 90 - i, ['quolino-compress@docker', cc + '@docker'])
+    add('quolino-web-perf-' + suffix, w, '%s && %s' % (H, rule), 90 - i, ['quolino-compress@docker', cc + '@docker', 'quolino-sec@docker'])
 L['traefik.docker.network'] = net_of.get(w['container'], '')
 h = hashlib.sha256(json.dumps(L, sort_keys=True).encode()).hexdigest()[:16]
 L['quolino.perf.hash'] = h
@@ -126,6 +130,8 @@ echo "$h" | grep -q '^cache-control: public, max-age=300' || fail="$fail API-bez
 # POST (RPC) nie dostaje Cache-Control z założenia: router z cache ma Method(`GET`) && !PathPrefix(`/rest/v1/rpc`)
 h=$(hdr 'https://quolino.com/'); echo "$h" | grep -q '^http/[0-9.]* 200' || fail="$fail strona≠200"
 echo "$h" | grep -q '^cache-control: no-cache' || fail="$fail HTML-bez-no-cache"
+echo "$h" | grep -q '^strict-transport-security: max-age=31536000' || fail="$fail strona-bez-HSTS"
+echo "$h" | grep -q "^content-security-policy: frame-ancestors" || fail="$fail strona-bez-frame-ancestors"
 h=$(hdr 'https://quolino.com/media/hero-poster.jpg'); echo "$h" | grep -q 'max-age=2592000' || fail="$fail zdjęcia-bez-cache"
 h=$(hdr 'https://quolino.com/sitemap.xml'); echo "$h" | grep -q '^http/[0-9.]* 200' || fail="$fail SSR≠200"
 echo "$h" | grep -q '^content-encoding: ' || fail="$fail SSR-bez-kompresji"
@@ -134,4 +140,4 @@ if [ -n "$fail" ]; then
   echo "kompresja/cache: sprawdzenie NIE przeszło ($fail) — cofnięte (kontener usunięty)"; exit 1
 fi
 [ -n "$warn" ] && echo "kompresja/cache: uwaga — $warn"
-echo "kompresja/cache: wdrożone ($HASH) — API gzip/br + max-age=300, SSR gzip/br, zdjęcia 30 dni, fonty 1 rok, CSS/JS z ?v= 1 dzień, HTML no-cache"
+echo "kompresja/cache: wdrożone ($HASH) — HSTS + frame-ancestors na stronie, API gzip/br + max-age=300, SSR gzip/br, zdjęcia 30 dni, fonty 1 rok, CSS/JS z ?v= 1 dzień, HTML no-cache"
