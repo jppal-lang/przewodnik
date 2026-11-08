@@ -1,0 +1,556 @@
+{
+ "at": "2026-11-08T11:00:11.310Z",
+ "count": 25,
+ "tickets": [
+  {
+   "number": "Q-3WVX-DR79",
+   "source": "rating",
+   "source_id": "411cee3f-8cd2-46c2-a6b4-e9de65b2f6d7",
+   "subject": "Opinia o wycieczce: 2/5",
+   "status": "new",
+   "city_slug": "spello",
+   "stop": null,
+   "lang": "de",
+   "created_at": "2026-10-11T17:21:38.646Z",
+   "updated_at": "2026-10-11T17:21:38.646Z",
+   "client_id": "fe9608df",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-11T17:21:38.646437+00:00",
+     "body": "świetnie sprawdzam czy przeszło, to komentarz testowy"
+    }
+   ]
+  },
+  {
+   "number": "Q-VAYZ-8FEQ",
+   "source": "report",
+   "source_id": "c7902dc9-caee-4876-a90f-adb999eb7ab3",
+   "subject": "Zamknięte — Parking Villa dei Mosaici",
+   "status": "new",
+   "city_slug": "spello",
+   "stop": "Parking Villa dei Mosaici",
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "ca16a0df",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "Parking przy bramie zamknięty na stałe, teren ogrodzony."
+    }
+   ]
+  },
+  {
+   "number": "Q-H4ZA-U3C9",
+   "source": "report",
+   "source_id": "35380512-9567-4dd7-b4ff-99010d4ee984",
+   "subject": "Zgłoszenie — Fontana Maggiore",
+   "status": "new",
+   "city_slug": "perugia",
+   "stop": "Fontana Maggiore",
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "c7e54311",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "Zagadka dla dzieci podaje odpowiedź już w pytaniu, syn zgadł bez szukania."
+    }
+   ]
+  },
+  {
+   "number": "Q-Y4EZ-MDYF",
+   "source": "report",
+   "source_id": "ca1db518-0978-4b7f-925e-f4f8aa3f0f92",
+   "subject": "Zgłoszenie — Palazzo Ducale i Galleria Nazionale delle Marche",
+   "status": "new",
+   "city_slug": "urbino",
+   "stop": "Palazzo Ducale i Galleria Nazionale delle Marche",
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "925631b0",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "Przy murach nie ma barierki, dziecko prawie spadło ze skarpy, uważajcie."
+    }
+   ]
+  },
+  {
+   "number": "Q-69WX-FE69",
+   "source": "report",
+   "source_id": "0608aa17-bde4-4a9d-a591-fa51c54802fd",
+   "subject": "Zgłoszenie — Parking port, rejon Traiano",
+   "status": "new",
+   "city_slug": "ancona",
+   "stop": "Parking port, rejon Traiano",
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "14569fbc",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "Na telefonie nie działa przycisk mapy, strona się zawiesza."
+    }
+   ]
+  },
+  {
+   "number": "Q-PRT7-B7E4",
+   "source": "report",
+   "source_id": "0fcf5a11-e791-4e64-8ba9-a4d9a7fdd805",
+   "subject": "Zła cena — Parking przy Ponte di Tiberio",
+   "status": "new",
+   "city_slug": "rimini",
+   "stop": "Parking przy Ponte di Tiberio",
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "b43b3533",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "Bilet kosztuje teraz 12 euro, a nie 8."
+    }
+   ]
+  },
+  {
+   "number": "Q-U4P2-9U42",
+   "source": "report",
+   "source_id": "5564e5c5-ff05-4eb9-94d9-e21fd47701a9",
+   "subject": "Zgłoszenie — Basilica di Santa Chiara",
+   "status": "new",
+   "city_slug": "asyz",
+   "stop": "Basilica di Santa Chiara",
+   "lang": "en",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "a710b9bf",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "The English page is half in Polish and some sentences are not translated at all."
+    }
+   ]
+  },
+  {
+   "number": "Q-2PGQ-RN8U",
+   "source": "report",
+   "source_id": "5c3823a3-72b6-4458-b5b9-cb3bc155b0a9",
+   "subject": "Złe godziny — Trasa turystyczna jaskiń",
+   "status": "new",
+   "city_slug": "frasassi",
+   "stop": "Trasa turystyczna jaskiń",
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.326Z",
+   "updated_at": "2026-10-25T11:18:07.326Z",
+   "client_id": "f9424c62",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.326229+00:00",
+     "body": "Na stronie wejście od 9:30, na miejscu pierwsza tura była dopiero o 10:00."
+    }
+   ]
+  },
+  {
+   "number": "Q-WJZN-ANTS",
+   "source": "rating",
+   "source_id": "7c9c0828-0894-4f9e-8002-89fba98958ef",
+   "subject": "Opinia o wycieczce: 1/5",
+   "status": "closed",
+   "city_slug": "ancona",
+   "stop": null,
+   "lang": "en",
+   "created_at": "2026-10-25T11:18:07.528Z",
+   "updated_at": "2026-10-25T11:18:07.528Z",
+   "client_id": "99e22190",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.528849+00:00",
+     "body": "BUY CHEAP PILLS www.cheap-pills.xyz best price click now"
+    }
+   ]
+  },
+  {
+   "number": "Q-WVPE-SH2W",
+   "source": "rating",
+   "source_id": "ffe3b187-61d9-451f-9ccc-6ca65ea40d53",
+   "subject": "Opinia o wycieczce: 3/5",
+   "status": "new",
+   "city_slug": "rawenna",
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.528Z",
+   "updated_at": "2026-10-25T11:18:07.528Z",
+   "client_id": "cc97b7ee",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.528849+00:00",
+     "body": "Fajnie by było dodać wersję na deszczowy dzień i więcej przystanków dla maluchów."
+    }
+   ]
+  },
+  {
+   "number": "Q-XD7P-QBMV",
+   "source": "rating",
+   "source_id": "74936ace-d693-4593-8fa4-d9e72c2f0b16",
+   "subject": "Opinia o wycieczce: 5/5",
+   "status": "new",
+   "city_slug": "rimini",
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:07.528Z",
+   "updated_at": "2026-10-25T11:18:07.528Z",
+   "client_id": "bafde89c",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:07.528849+00:00",
+     "body": "Dzieci zachwycone, najlepsza wycieczka w tym roku."
+    }
+   ]
+  },
+  {
+   "number": "Q-GJPX-P483",
+   "source": "contact",
+   "source_id": "1",
+   "subject": "Współpraca",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:08.103Z",
+   "updated_at": "2026-10-25T11:18:08.103Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:08.103146+00:00",
+     "body": "Prowadzimy agroturystykę koło Urbino i chcielibyśmy polecać wasze trasy gościom. Porozmawiamy o współpracy?"
+    }
+   ]
+  },
+  {
+   "number": "Q-4RAW-2GCR",
+   "source": "contact",
+   "source_id": "2",
+   "subject": "Prywatność i dane",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T11:18:08.103Z",
+   "updated_at": "2026-10-25T11:18:08.103Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:08.103146+00:00",
+     "body": "Proszę o usunięcie moich danych i konta z serwisu Quolino, dziękuję."
+    }
+   ]
+  },
+  {
+   "number": "Q-VAXQ-8ZX8",
+   "source": "contact",
+   "source_id": "3",
+   "subject": "Wiadomość",
+   "status": "spam",
+   "city_slug": null,
+   "stop": null,
+   "lang": "en",
+   "created_at": "2026-10-25T11:18:08.103Z",
+   "updated_at": "2026-10-25T11:18:08.103Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T11:18:08.103146+00:00",
+     "body": "Crypto airdrop claim now http://x.example http://y.example free tokens free tokens"
+    }
+   ]
+  },
+  {
+   "number": "Q-FFTK-Z6GH",
+   "source": "contact",
+   "source_id": "4",
+   "subject": "Błąd na stronie",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:20:14.716Z",
+   "updated_at": "2026-10-25T13:20:14.716Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:20:14.716916+00:00",
+     "body": "TEST: na telefonie nie działa przycisk logowania, strona się zawiesza po kliknięciu."
+    }
+   ]
+  },
+  {
+   "number": "Q-VMFD-Q7AA",
+   "source": "report",
+   "source_id": "ca491981-2ff5-472f-a386-0931863fb9e6",
+   "subject": "Zgłoszenie — Łuk Trajana i spacer nabrzeżem",
+   "status": "new",
+   "city_slug": "ancona",
+   "stop": "Łuk Trajana i spacer nabrzeżem",
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.198Z",
+   "updated_at": "2026-10-25T13:44:21.198Z",
+   "client_id": "2fe755e9",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.198723+00:00",
+     "body": "TEST: Na stronie miasta nie ładuje się mapa i przycisk nawigacji nic nie robi."
+    }
+   ]
+  },
+  {
+   "number": "Q-K25T-TJXX",
+   "source": "report",
+   "source_id": "8b031c3e-5754-4a1a-86c4-98fd02c0d22c",
+   "subject": "Złe godziny — Parking Borgo Mercatale",
+   "status": "new",
+   "city_slug": "urbino",
+   "stop": "Parking Borgo Mercatale",
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.198Z",
+   "updated_at": "2026-10-25T13:44:21.198Z",
+   "client_id": "e2293908",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.198723+00:00",
+     "body": "TEST: Pałac otwierają o 8:30, nie o 9:00 jak na stronie."
+    }
+   ]
+  },
+  {
+   "number": "Q-NFMX-WRSV",
+   "source": "report",
+   "source_id": "067b2216-ec44-45c8-88da-be35605e8816",
+   "subject": "Zgłoszenie — Most Tyberiusza",
+   "status": "new",
+   "city_slug": "rimini",
+   "stop": "Most Tyberiusza",
+   "lang": "de",
+   "created_at": "2026-10-25T13:44:21.198Z",
+   "updated_at": "2026-10-25T13:44:21.198Z",
+   "client_id": "b7e03491",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.198723+00:00",
+     "body": "TEST: Die deutsche Seite ist teilweise auf Polnisch, bitte übersetzen."
+    }
+   ]
+  },
+  {
+   "number": "Q-5ZBW-BJ32",
+   "source": "rating",
+   "source_id": "2c4a0adc-5628-4977-b136-dea4b6e7f6e6",
+   "subject": "Opinia o wycieczce: 1/5",
+   "status": "new",
+   "city_slug": "rimini",
+   "stop": null,
+   "lang": "en",
+   "created_at": "2026-10-25T13:44:21.411Z",
+   "updated_at": "2026-10-25T13:44:21.411Z",
+   "client_id": "e25ded92",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.411757+00:00",
+     "body": "TEST: cheap watches replica best price visit www.replica-shop.example now"
+    }
+   ]
+  },
+  {
+   "number": "Q-QD79-WCER",
+   "source": "rating",
+   "source_id": "1ee2a23e-2f33-47bf-96b2-03fd419791f7",
+   "subject": "Opinia o wycieczce: 4/5",
+   "status": "new",
+   "city_slug": "perugia",
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.411Z",
+   "updated_at": "2026-10-25T13:44:21.411Z",
+   "client_id": "9ccb3407",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.411757+00:00",
+     "body": "TEST: Przydałaby się wersja trasy na deszczowy dzień i mapa offline."
+    }
+   ]
+  },
+  {
+   "number": "Q-FPTB-EHTP",
+   "source": "rating",
+   "source_id": "3447f797-58cd-48a0-975e-dae0a5166e4e",
+   "subject": "Opinia o wycieczce: 5/5",
+   "status": "new",
+   "city_slug": "urbino",
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.411Z",
+   "updated_at": "2026-10-25T13:44:21.411Z",
+   "client_id": "c63f9a91",
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.411757+00:00",
+     "body": "TEST: Super wycieczka, córka zebrała wszystkie naklejki, dziękujemy."
+    }
+   ]
+  },
+  {
+   "number": "Q-MKYJ-BNFB",
+   "source": "contact",
+   "source_id": "6",
+   "subject": "Pytanie o wycieczkę",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.619Z",
+   "updated_at": "2026-10-25T13:44:21.619Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.619833+00:00",
+     "body": "TEST: Czy wycieczka po Urbino nadaje się dla dziecka w wózku?"
+    }
+   ]
+  },
+  {
+   "number": "Q-GATQ-MYJW",
+   "source": "contact",
+   "source_id": "7",
+   "subject": "Prywatność i dane",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.619Z",
+   "updated_at": "2026-10-25T13:44:21.619Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.619833+00:00",
+     "body": "TEST: Proszę o eksport moich danych z konta."
+    }
+   ]
+  },
+  {
+   "number": "Q-WCHR-6YMA",
+   "source": "contact",
+   "source_id": "5",
+   "subject": "Płatność lub dostęp",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.619Z",
+   "updated_at": "2026-10-25T13:44:21.619Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.619833+00:00",
+     "body": "TEST: Zapłaciłem za wycieczkę po Perugii, ale nadal widzę kłódkę i nie mogę otworzyć pełnej trasy."
+    }
+   ]
+  },
+  {
+   "number": "Q-5XD5-ADKM",
+   "source": "contact",
+   "source_id": "8",
+   "subject": "Współpraca",
+   "status": "open",
+   "city_slug": null,
+   "stop": null,
+   "lang": "pl",
+   "created_at": "2026-10-25T13:44:21.619Z",
+   "updated_at": "2026-10-25T13:44:21.619Z",
+   "client_id": null,
+   "email": null,
+   "has_account": false,
+   "messages": [
+    {
+     "author": "client",
+     "at": "2026-10-25T13:44:21.619833+00:00",
+     "body": "TEST: Jesteśmy muzeum w Ankonie, chcemy dodać misje dla dzieci w naszym obiekcie."
+    }
+   ]
+  }
+ ]
+}
