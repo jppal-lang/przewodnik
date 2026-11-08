@@ -1,0 +1,9 @@
+{
+ "script": "comments-dump.mjs",
+ "args": ["perugia"],
+ "title": "Perugia v4: raport uwag do przeglądu",
+ "why": "JP pyta, o co chodzi z Perugią (szkic v4, 33 uwagi kontroli). Tylko odczyt, 0 $.",
+ "est_usd": 0,
+ "by": "Claude",
+ "timeout_min": 10
+}

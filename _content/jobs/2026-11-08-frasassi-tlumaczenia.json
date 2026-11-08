@@ -1,0 +1,11 @@
+{
+ "script": "trip-translate.mjs",
+ "args": ["frasassi"],
+ "title": "Frasassi: tłumaczenia po usunięciu km z parkingu La Cuna",
+ "why": "Tłumaczenie EN stało na „odległość w km” (parking-la-cuna). SQL 2026-11-08-frasassi-bez-km.sql zamienia zwrot. W dziennym limicie tłumaczeń.",
+ "est_usd": 0.25,
+ "by": "Claude",
+ "timeout_min": 60,
+ "not_before": "2026-11-08T13:30:00Z",
+ "jp_ok": { "date": "2026-11-08", "quote": "reste zrób" }
+}
