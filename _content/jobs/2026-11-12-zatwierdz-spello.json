@@ -1,0 +1,10 @@
+{
+ "script": "trip-approve.mjs",
+ "args": ["spello"],
+ "title": "Zatwierdzenie Spello v27 (0 błędów)",
+ "why": "JP 2026-11-12: „tak” na „Spello zatwierdzić teraz”. Poprzednia próba (8.11) odrzucona: zgoda starsza niż 3 dni. Publikacja + tłumaczenia w dziennym limicie.",
+ "est_usd": 0.25,
+ "by": "Claude",
+ "timeout_min": 120,
+ "jp_ok": { "date": "2026-11-12", "quote": "tak, i przejdzmy do kolejnej trasy" }
+}

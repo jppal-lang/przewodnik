@@ -1,0 +1,11 @@
+{
+ "script": "trip-translate.mjs",
+ "args": ["asyz"],
+ "title": "Asyż v16: tłumaczenia od nowa (strona jest tylko po polsku)",
+ "why": "Job 112 padł na wszystkich językach: stare tłumaczenia miały 4 przystanki, trasa ma 9. Poprawka trip-translate (2026-11-12) tłumaczy wtedy całość. W dziennym limicie tłumaczeń, może rozłożyć się na 2 dni.",
+ "est_usd": 0.25,
+ "by": "Claude",
+ "timeout_min": 180,
+ "not_before": "2026-11-12T10:00:00Z",
+ "jp_ok": { "date": "2026-11-12", "quote": "tak, i przejdzmy do kolejnej trasy" }
+}
