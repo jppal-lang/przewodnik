@@ -258,6 +258,14 @@ async function one(src, lang, ref, pl, pln = { mode: 'full' }) {
   const task = lang === 'en' ? 'translate_en' : 'translate_xx';
   const cacheFile = `${WORK}/${lang}.json`;
   let feedback = '';
+  // gotowe tłumaczenie z innym zestawem przystanków (trasa przebudowana, np. Asyż v16: 4 → 9 przystanków) nie nadaje się
+  // ani do „delta”, ani do ponownego użycia — baza i tak je odrzuci („Przystanki tłumaczenia ≠ przystanki wycieczki”)
+  if (pln.mode !== 'full' && existsSync(cacheFile)) {
+    try {
+      const keys = (o) => (o?.stops ?? []).map(x => x.stop_key).sort().join(',');
+      if (keys(JSON.parse(readFileSync(cacheFile, 'utf8'))) !== keys(src)) { log(`  ${lang}: inne przystanki niż w gotowym tłumaczeniu — tłumaczę całość`); pln = { mode: 'full' }; }
+    } catch { pln = { mode: 'full' }; }
+  }
   for (let attempt = 1; attempt <= 2; attempt++) {
     let result, notes = [], models = [];
     const delta = attempt === 1 && pln.mode === 'delta';
