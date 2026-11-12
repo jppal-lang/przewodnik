@@ -116,3 +116,16 @@ przez Google albo e-mail.
 - Kto jest administratorem danych (JDG JP czy spółka) — od tego zależy polityka prywatności i faktury.
 - Dostawca e-maili transakcyjnych (najlepiej z serwerami w UE).
 - Operator płatności.
+
+## Logowanie do panelu: login + hasło + kod (od 2026-11-12)
+
+- Formularz pod admin.quolino.com: **login**, **hasło**, **kod z Google Authenticatora**. Dopuszczony jest tylko login `admin_jp`.
+- Błędny login albo błędne hasło: wpis w Dzienniku panelu („blokada IP na 90 dni”) i blokada adresu IP na 90 dni dla całej bramki
+  (panel, statystyki, linki z Discorda, także otwarte sesje z tego adresu). IPv6 blokowane całą siecią /64. Zły **kod** nie blokuje IP
+  (5 złych kodów = 15 minut przerwy, jak dotąd).
+- Hasła nie ma w repo ani w dokumentach: baza trzyma tylko skrót bcrypt (`ops.admin_password`). Ustawienie i zmiana: `/haslo` po
+  zalogowaniu (zmiana wymaga obecnego hasła, min. 16 znaków). Do pierwszego ustawienia logowanie działa loginem i kodem, potem bramka
+  sama przenosi na `/haslo`.
+- Adres IP bramka bierze z **ostatniego** wpisu `X-Forwarded-For` (dopisuje go Traefik) — podrobiony nagłówek nie zablokuje cudzego adresu.
+- Zdjęcie blokady: `admin.totp_ip_unblock('<adres>')` (lista: `admin.totp_ip_blocks()`), np. zleceniem SQL z repo.
+- Konta zespołu (support/editor) są wyłączone — loguje się tylko `admin_jp`.

@@ -6,6 +6,9 @@
 // /totp-setup?t=… z Discorda → QR, przycisk otpauth:// i klucz. Link z Discorda działa dalej jako zapas.
 // Od 2026-11-07: konta zespołu (role support / editor, każdy z własnym Authenticatorem); rola sprawdzana w bramce dla /api,
 // kto zalogowany → nagłówek X-Admin-Who do API (dziennik zdarzeń), GET /_whoami dla panelu.
+// Od 2026-11-12 (JP): przed kodem login i hasło. Dopuszczony tylko login admin_jp; błędny login albo hasło = raport w Dzienniku
+// i blokada IP na 90 dni (IPv6 /64) dla całej bramki (admin.totp_pass_login, SQL 2026-11-12-panel-haslo-blokady.sql).
+// Hasła nie ma w repo: baza trzyma skrót bcrypt, JP ustawia je sam na /haslo po zalogowaniu. Konta zespołu wyłączone (tylko admin_jp).
 // Bez zależności. Za Traefikiem (HTTPS). Przepuszcza do admin-web (statyczny panel + /api → admin-api).
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -59,21 +62,41 @@ const rpc = async (fn, args) => {
   } catch (e) { log('rpc', fn, e.message); return null; }
 };
 const readBody = async (req) => { let b = ''; for await (const ch of req) { b += ch; if (b.length > 2000) break; } return new URLSearchParams(b); };
-const newSession = (res, ip, how, who = 'JP', role = 'owner') => {
+const newSession = (res, ip, how, who = 'JP', role = 'owner', to = AFTER) => {
   const id = crypto.randomBytes(32).toString('base64url');
   sessions.set(id, { start: Date.now(), last: Date.now(), who, role });
   log('nowa sesja', how, who, role, ip);
-  res.writeHead(303, { 'Set-Cookie': `${CK}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: AFTER,
+  res.writeHead(303, { 'Set-Cookie': `${CK}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax`, Location: to,
     'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
   res.end();
 };
 const HEAD = `<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>Panel Quolino</title><body style="font:18px/1.5 system-ui,sans-serif;max-width:24em;margin:12vh auto;padding:0 16px;color:#0E1A2B;text-align:center">`;
 const codeForm = (msg) => `${HEAD}<h1 style="font-size:24px">Panel Quolino</h1>${msg ? `<p style="color:#B42318">${msg}</p>` : ''}
-<form method="post" action="/code"><label for="c">Kod z Google Authenticatora</label><br>
-<input id="c" name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus
- style="font:600 28px ui-monospace,monospace;letter-spacing:.3em;width:8em;text-align:center;margin:12px 0;padding:10px;min-height:44px">
-<br><button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Wejdź</button></form></body></html>`;
+${loginFields(true)}</body></html>`;
+// login + hasło + kod (ten sam zestaw na stronie logowania i po włączeniu Authenticatora)
+const FLD = 'font:18px system-ui;width:100%;box-sizing:border-box;margin:4px 0 12px;padding:10px;min-height:44px';
+const loginFields = (focus, btn = 'Wejdź') => `<form method="post" action="/code" style="text-align:left">
+<label for="l">Login</label><input id="l" name="l" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="40" required${focus ? ' autofocus' : ''} style="${FLD}">
+<label for="p">Hasło</label><input id="p" name="p" type="password" autocomplete="current-password" maxlength="200" style="${FLD}">
+<label for="c">Kod z Google Authenticatora</label><input id="c" name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required
+ style="font:600 28px ui-monospace,monospace;letter-spacing:.3em;width:8em;text-align:center;margin:4px 0 12px;padding:10px;min-height:44px;display:block">
+<button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">${btn}</button></form>
+<p style="font-size:16px;color:#5B6676">Uwaga: błędny login albo hasło blokuje ten adres IP na 90 dni.</p>`;
+const passForm = (msg, hasOld) => `${HEAD}<h1 style="font-size:24px">Hasło do panelu</h1>${msg ? `<p style="color:#B42318">${msg}</p>` : ''}
+<form method="post" action="/haslo" style="text-align:left">
+${hasOld ? `<label for="o">Obecne hasło</label><input id="o" name="o" type="password" autocomplete="current-password" maxlength="200" required style="${FLD}">` : ''}
+<label for="n">Nowe hasło (min. 16 znaków)</label><input id="n" name="n" type="password" autocomplete="new-password" minlength="16" maxlength="200" required style="${FLD}">
+<label for="r">Powtórz nowe hasło</label><input id="r" name="r" type="password" autocomplete="new-password" minlength="16" maxlength="200" required style="${FLD}">
+<button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Zapisz hasło</button></form></body></html>`;
+// blokada IP: pamięć na 60 s, żeby nie pytać bazy przy każdym żądaniu; null z bazy (awaria) = nie blokujemy po cichu
+const blockCache = new Map();
+async function ipBlocked(ip) {
+  const c = blockCache.get(ip); if (c && Date.now() - c.at < 60e3) return c.v;
+  const v = (await rpc('totp_ip_blocked', { p_ip: ip })) === true;
+  blockCache.set(ip, { v, at: Date.now() }); if (blockCache.size > 5000) blockCache.clear();
+  return v;
+}
 const html = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
   'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' }); res.end(body); };
 const TOTP = PURPOSE === 'admin';
@@ -84,7 +107,10 @@ http.createServer((req, res) => handle(req, res).catch((e) => { log('błąd', e.
 async function handle(req, res) {
   if (!req.url.startsWith('/') || req.url.startsWith('//')) return away(res);
   const u = new URL(req.url, 'http://x');
-  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
+  // IP: OSTATNI wpis X-Forwarded-For — dopisuje go Traefik; pierwszy wpisuje klient (podrobiony nagłówek zablokowałby cudzy adres)
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean).pop() || req.socket.remoteAddress;
+  // blokada obejmuje też otwarte sesje z tego adresu (przejęte ciasteczko nie pomoże)
+  if (await ipBlocked(ip)) { log('zablokowany IP', ip, u.pathname); return page(res, 403, 'Dostęp z tego adresu jest zablokowany.'); }
 
   if (TOTP) {
     // biblioteka QR z panelu (plik publiczny) — potrzebna stronie włączenia, zanim jest sesja
@@ -97,13 +123,14 @@ async function handle(req, res) {
       return (await rpc('totp_enabled')) === true ? html(res, 200, codeForm('')) : away(res);
     }
     if (u.pathname === '/code' && req.method === 'POST') {
-      const c = String((await readBody(req)).get('c') || '').replace(/\s/g, '');
-      // od 2026-11-07: kod JP albo osoby z zespołu (admin.totp_login → {ok, who, role}); bez tej funkcji — jak dotąd tylko JP
-      const lg = await rpc('totp_login', { p_code: c, p_ip: ip });
-      if (lg && typeof lg === 'object') { if (lg.ok && ['owner', 'support', 'editor'].includes(lg.role)) return newSession(res, ip, 'kod', String(lg.who || '?').slice(0, 40), lg.role); }
-      else if ((await rpc('totp_verify', { p_code: c, p_ip: ip })) === true) return newSession(res, ip, 'kod');
+      const b = await readBody(req);
+      const c = String(b.get('c') || '').replace(/\s/g, ''), l = String(b.get('l') || '').trim(), pw = String(b.get('p') || '');
+      // od 2026-11-12: login + hasło + kod (admin.totp_pass_login); brak funkcji/awaria bazy = odmowa (zapas: link z Discorda)
+      const lg = await rpc('totp_pass_login', { p_login: l, p_pass: pw, p_code: c, p_ip: ip });
+      if (lg && lg.blocked === true) { blockCache.set(ip, { v: true, at: Date.now() }); log('blokada IP po próbie', ip, l.slice(0, 40)); return page(res, 403, 'Dostęp z tego adresu jest zablokowany.'); }
+      if (lg && lg.ok === true) return newSession(res, ip, lg.need_password ? 'kod (bez hasła)' : 'hasło + kod', 'JP', 'owner', lg.need_password ? '/haslo' : AFTER);
       log('zły kod', ip);
-      return html(res, 403, codeForm('Kod się nie zgadza albo był już użyty. Wpisz nowy (po kilku błędach blokada na 15 minut).'));
+      return html(res, 403, codeForm(lg ? 'Kod się nie zgadza albo był już użyty. Wpisz nowy (po kilku błędach przerwa 15 minut).' : 'Logowanie chwilowo niedostępne. Spróbuj za chwilę.'));
     }
     // włączenie Authenticatora: GET nic nie zużywa (podglądy linków), dopiero POST zużywa jednorazowy link
     if (u.pathname === '/totp-setup' && req.method === 'GET') {
@@ -123,9 +150,7 @@ async function handle(req, res) {
 <p>Na komputerze: zeskanuj kod aplikacją.</p><div id="qr" style="display:inline-block;background:#fff;padding:12px"></div>
 <p style="font-size:16px">Albo wpisz klucz ręcznie:<br><code style="font-size:18px;word-break:break-all">${key.replace(/(.{4})/g, '$1 ').trim()}</code></p>
 <p>Na koniec wpisz pierwszy kod z aplikacji — to go zatwierdzi i od razu Cię wpuści. Ta strona działa tylko raz.</p>
-<form method="post" action="/code"><input name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required
- style="font:600 28px ui-monospace,monospace;letter-spacing:.3em;width:8em;text-align:center;margin:12px 0;padding:10px;min-height:44px">
-<br><button type="submit" style="font:600 18px system-ui;padding:12px 28px;min-height:44px">Zatwierdź</button></form>
+${loginFields(false, 'Zatwierdź')}
 <script src="/qrcode.js"></script><script>try{var q=qrcode(0,'M');q.addData(${JSON.stringify(uri).replace(/</g, '\\u003c')});q.make();document.getElementById('qr').innerHTML=q.createSvgTag(6,0);}catch(e){}</script></body></html>`);
     }
   }
@@ -153,6 +178,19 @@ async function handle(req, res) {
   }
   if (!valid(cookie(req))) return away(res);
   const S = sessions.get(cookie(req));
+  // hasło do panelu (tylko JP): ustawienie po pierwszym wejściu bez hasła albo zmiana (wymaga obecnego)
+  if (TOTP && u.pathname === '/haslo' && S.role === 'owner') {
+    const isSet = (await rpc('totp_pass_isset')) === true;
+    if (req.method === 'GET') return html(res, 200, passForm(isSet ? '' : 'Ustaw hasło — od następnego logowania będzie wymagane przed kodem.', isSet));
+    if (req.method === 'POST') {
+      const b = await readBody(req), n = String(b.get('n') || '');
+      if (n !== String(b.get('r') || '')) return html(res, 400, passForm('Hasła się różnią.', isSet));
+      const r = await rpc('totp_pass_set', { p_new: n, p_old: String(b.get('o') || '') || null });
+      if (!r || !r.ok) return html(res, 400, passForm(esc((r && r.error) || 'Nie udało się zapisać hasła.'), isSet));
+      log('hasło panelu', isSet ? 'zmienione' : 'ustawione', ip);
+      res.writeHead(303, { Location: AFTER, 'Cache-Control': 'no-store' }); return res.end();
+    }
+  }
   // kto jest zalogowany (panel chowa sekcje spoza roli) — JP 2026-11-07, konta zespołu
   if (u.pathname === '/_whoami') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ who: S.who || 'JP', role: S.role || 'owner' })); }
   // role: support = tylko tickety, klienci i partnerzy; editor = wszystko poza kontami, RODO, kosztami, wdrożeniami, publikacją i ustawieniami.
