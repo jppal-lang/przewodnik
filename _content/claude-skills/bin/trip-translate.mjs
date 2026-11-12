@@ -215,13 +215,44 @@ function diffSource(base, src) {
   changed.sort((x, y) => x.localeCompare(y, 'en', { numeric: true }));
   return { structural: false, changed, resized, removed };
 }
+// Wyrównuje stare źródło (base) i stare tłumaczenie (cache) do układu bieżącego źródła: przystanki w kolejności src
+// (brakujące = kopia polskiego przystanku, więc diff uzna wszystkie jego pola za zmienione), listy o innej długości = kopia src.
+function restructure(base, cache, src) {
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const keyed = (t) => new Map((t.stops ?? []).map(x => [x.stop_key, x]));
+  const bs = keyed(base), cs = keyed(cache);
+  let added = 0;
+  const nb = clone(base), nc = clone(cache);
+  nb.stops = []; nc.stops = [];
+  for (const s of src.stops ?? []) {
+    if (bs.has(s.stop_key) && cs.has(s.stop_key)) { nb.stops.push(clone(bs.get(s.stop_key))); nc.stops.push(clone(cs.get(s.stop_key))); }
+    else { added++; nb.stops.push({ stop_key: s.stop_key }); nc.stops.push(clone(s)); }   // nowy przystanek: szkielet z polskiego, tekst nadpisze tłumaczenie
+  }
+  for (const k of ['day_plan', 'emergency_points']) {
+    if ((base[k] ?? []).length !== (src[k] ?? []).length) { nb[k] = (src[k] ?? []).map(() => ({})); nc[k] = clone(src[k] ?? []); }
+  }
+  // szkielet z polskiego ma te same klucze co base po wyrównaniu, ale bez tekstów → diff = wszystkie pola nowych elementów
+  for (const k of ['day_plan', 'emergency_points']) if (Array.isArray(nb[k])) nb[k] = nb[k].map((x, i) => Object.keys(x).length ? x : Object.fromEntries(Object.entries(src[k][i] ?? {}).filter(([f]) => INVARIANT.has(f))));
+  nb.stops = nb.stops.map((x, i) => Object.keys(x).length > 1 ? x : Object.fromEntries(Object.entries(src.stops[i]).filter(([f]) => INVARIANT.has(f))));
+  return { base: nb, cache: nc, added, dropped: [...bs.keys()].filter(k => !(src.stops ?? []).some(s => s.stop_key === k)).length };
+}
 function plan(lang, src) {
   if (FRESH) return { mode: 'full' };
   const cacheF = `${WORK}/${lang}.json`, baseF = `${WORK}/${lang}.base.json`;
   if (!existsSync(cacheF)) return { mode: 'full' };
   if (!existsSync(baseF)) return { mode: 'legacy' };       // tłumaczenie sprzed 2026-10-11 — bez zapisanego źródła
-  const d = diffSource(JSON.parse(readFileSync(baseF, 'utf8')), src);
-  if (d.structural) return { mode: 'full', why: 'zmienił się układ wycieczki' };
+  let d = diffSource(JSON.parse(readFileSync(baseF, 'utf8')), src);
+  if (d.structural) {
+    // JP 2026-11-12: „powinny być tłumaczone konkretne punkty”. Inny układ (nowe/usunięte/przestawione przystanki, inna liczba
+    // punktów planu) nie wymusza już całości: przystanki, które zostały, biorą gotowe tłumaczenie (+ zmienione pola),
+    // nowe przystanki i przebudowane listy tłumaczymy w całości, usunięte znikają.
+    try {
+      const r = restructure(JSON.parse(readFileSync(baseF, 'utf8')), JSON.parse(readFileSync(cacheF, 'utf8')), src);
+      d = diffSource(r.base, src);
+      if (!d.structural) return { mode: 'delta', ...d, skeleton: r.cache, why: `nowy układ: ${r.added} nowych przystanków, ${r.dropped} usuniętych` };
+    } catch { /* niżej: całość */ }
+    return { mode: 'full', why: 'zmienił się układ wycieczki' };
+  }
   if (!d.changed.length && !d.removed.length) return { mode: 'skip' };
   return { mode: 'delta', ...d };
 }
@@ -260,7 +291,7 @@ async function one(src, lang, ref, pl, pln = { mode: 'full' }) {
   let feedback = '';
   // gotowe tłumaczenie z innym zestawem przystanków (trasa przebudowana, np. Asyż v16: 4 → 9 przystanków) nie nadaje się
   // ani do „delta”, ani do ponownego użycia — baza i tak je odrzuci („Przystanki tłumaczenia ≠ przystanki wycieczki”)
-  if (pln.mode !== 'full' && existsSync(cacheFile)) {
+  if (pln.mode === 'legacy' && existsSync(cacheFile)) {
     try {
       const keys = (o) => (o?.stops ?? []).map(x => x.stop_key).sort().join(',');
       if (keys(JSON.parse(readFileSync(cacheFile, 'utf8'))) !== keys(src)) { log(`  ${lang}: inne przystanki niż w gotowym tłumaczeniu — tłumaczę całość`); pln = { mode: 'full' }; }
@@ -270,7 +301,8 @@ async function one(src, lang, ref, pl, pln = { mode: 'full' }) {
     let result, notes = [], models = [];
     const delta = attempt === 1 && pln.mode === 'delta';
     if (delta) {
-      result = JSON.parse(readFileSync(cacheFile, 'utf8'));
+      result = pln.skeleton ?? JSON.parse(readFileSync(cacheFile, 'utf8'));
+      if (pln.why) log(`  ${lang}: ${pln.why}`);
       for (const k of pln.resized ?? []) {               // inna liczba akapitów: przycinamy, nowe dopisze tłumaczenie
         const st = result.stops.find(x => x.stop_key === k), n = (src.stops.find(x => x.stop_key === k)?.desc_paragraphs ?? []).length;
         if (st) st.desc_paragraphs = (st.desc_paragraphs ?? []).slice(0, n);

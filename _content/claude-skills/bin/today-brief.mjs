@@ -98,7 +98,8 @@ export function factsFrom(snap = {}, extra = {}) {
     const id = `repo:${j.name}`, why = j.why ? ` (${short(j.why, 70)})` : '';
     if (j.status === 'running') add(id, 'wait', `Zlecenie ${j.name} jest w pracy${why}.`, '#/pipeline', j.started_at);
     else if (j.status === 'later') add(id, 'wait', `Zlecenie ${j.name} odłożone, ruszy samo${/limit|quota|Resets in/i.test(j.result ?? '') ? ' po odnowieniu limitu Antigravity' : ''}.`, '#/pipeline', j.finished_at ?? j.started_at);
-    else if (j.status === 'failed' && recent(j.finished_at, 72, now)) add(id, 'warn', `Zlecenie ${j.name} nie powiodło się${j.result ? ': ' + short(j.result, 100) : '.'}`, '#/pipeline', j.finished_at);
+    // odrzucone przed startem (np. „zgoda JP starsza niż 3 dni”) nie ma finished_at — bez tego Spello stało 4 dni po cichu (2026-11-12)
+    else if (j.status === 'failed' && recent(j.finished_at ?? j.started_at, 72, now)) add(id, 'warn', `Zlecenie ${j.name} nie powiodło się${j.result ? ': ' + short(j.result, 100) : '.'}`, '#/pipeline', j.finished_at ?? j.started_at);
     else if (j.status === 'done' && recent(j.finished_at, 24, now)) add(id, 'done', `Zlecenie ${j.name} wykonane${j.result ? ': ' + short(j.result, 90) : '.'}`, '#/pipeline', j.finished_at);
   }
   // wdrożenia

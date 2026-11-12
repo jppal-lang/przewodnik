@@ -9,6 +9,8 @@ H=hermes-quolino-hermes-agent-1
 23 * * * *   /root/quolino-web/ops/auth-cleanup.sh >> /root/quolino-web/auth-cleanup.log 2>&1
 # przypomnienie o potwierdzeniu konta: jeden drugi mail po ~20 h (przed skasowaniem po 48 h), JP 2026-11-07
 19 * * * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node signup-reminder.mjs >> /root/quolino-web/signup-reminder.log 2>&1
+# zapas szkiców tras: gdy w drodze mniej niż drafts_ahead (domyślnie 3), dokłada miasta z planu tras, JP 2026-11-12
+47 * * * *   docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node drafts-ahead.mjs >> /root/quolino-web/drafts-ahead.log 2>&1
 # ruch na stronie do panelu (Umami → ops.site_daily: lejek, języki, ranking tras, kanały), JP 2026-11-07
 33 */3 * * * docker exec -u hermes -e HOME=/opt/data/home -w /opt/data/quolino $H node site-metrics.mjs >> /root/quolino-web/site-metrics.log 2>&1
 # tickety: odpowiedzi z panelu wysyłane e-mailem (SMTP Brevo), JP 2026-11-07
